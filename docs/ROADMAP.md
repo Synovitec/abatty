@@ -36,16 +36,21 @@ to the changelog; the order here is the order of the evidence.
 
 ## Later - hardening and reach
 
-| #   | Change                                                                                                 | Evidence                                                               | Size       |
-| --- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ---------- |
-| 12  | Type declarations generated from the JSDoc; the generated gap analysis typed once its checks live here | Buildless stays; the one `@ts-nocheck` goes                            | half a day |
-| 13  | Secret scan and audit in the gate, shared with the pre-commit hook                                     | The standard requires them; the package does not wire them             | half a day |
-| 14  | Rule-ID namespacing in the standard itself                                                             | The collision the first night found is structural                      | half a day |
-| 15  | Sandboxed nights under the guard                                                                       | The guard is a text match on commands; a sandbox is the layer below it | 1 day      |
-| 16  | Budget by allowance, a resumable runner state                                                          | A subscription makes the money cap a proxy                             | half a day |
-| 17  | Publish to the registry once the ratchet is in and the API is stable                                   | The git-URL install works; a registry is for third parties             | half a day |
+| #   | Change                                                               | Evidence                                                               | Size       |
+| --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| 12  | Type declarations generated from the JSDoc                           | Buildless stays; the checks are typed since the catalog                | half a day |
+| 13  | Secret scan and audit in the gate, shared with the pre-commit hook   | The standard requires them; the package does not wire them             | half a day |
+| 14  | Rule-ID namespacing in the standard itself                           | The collision the first night found is structural                      | half a day |
+| 15  | Sandboxed nights under the guard                                     | The guard is a text match on commands; a sandbox is the layer below it | 1 day      |
+| 16  | Budget by allowance, a resumable runner state                        | A subscription makes the money cap a proxy                             | half a day |
+| 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-14 · the rule catalog: every check as data (level, insurance, phase, reason, the
+  check as a pure function of a typed context); `abatty rules`, `abatty explain`; a
+  repository's own rules file and dated waivers; `docs/CATALOG.md` kept equal by a test; the
+  generated module and its `@ts-nocheck` gone. The ratchet (#1) builds on it.
 
 - 2026-09-14 · v0.1.0: `init`, `measure`, `gate`, `doctor`, three presets; proven on the
   reference repository.

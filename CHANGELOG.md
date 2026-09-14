@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The rule catalog (`src/rules/`): every check as data - ID, family, statement, the standard's
+  IDs, must or should, what insures it (hard, ratchet, review, prose), the phase, the reason,
+  the check as a pure function of a typed repository context. `abatty measure` runs it; the
+  scores of the reference repositories are unchanged (80/100, 29/100).
+- `abatty rules [--family] [--level] [--json|--md]` and `abatty explain <ID> [dir]`; the
+  dated report and the dashboard carry the level and the insurance of every check;
+  `docs/CATALOG.md` is the catalog as a document, kept equal by a test.
+- A repository's own rules from `abatty.rules.mjs` (validated; a built-in ID is refused) and
+  waivers with a reason in `adoption.json` → `rules.waived` (listed, not scored, `until` dated).
+
+### Removed
+
+- The generated gap analysis and its port script: the checks live here, typed; the one
+  `@ts-nocheck` is gone.
+
 - The terminal: a zero-dependency styling layer (colour, glyphs, bars, tables, timings) that
   degrades to plain text in a pipe or CI; `abatty` alone is the repository at a glance (score,
   families, harness, no-trace, nights, next steps); every command prints a scorecard.

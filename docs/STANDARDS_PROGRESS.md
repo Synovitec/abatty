@@ -15,8 +15,8 @@ related: ["./README.md", "../README.md"]
 | Metric                                                    | Day 0 (2026-09-14)                                                             | Now       | Target | Held by                                                          | Rule   |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------ | --------- | ------ | ---------------------------------------------------------------- | ------ |
 | `tsc --noEmit` over `checkJs` strict                      | 0                                                                              | **0**     | 0      | `npm run typecheck` in the gate                                  | CODE 3 |
-| Files under `// @ts-nocheck`                              | 1 (`src/core/gap-analysis.mjs`, generated from an untyped script; 48 findings) | **1**     | 0      | the header names it; typed when the checks move here             | CODE 3 |
-| Tests                                                     | 13                                                                             | **21**    | -      | `npm test` in the gate                                           | TEST 1 |
+| Files under `// @ts-nocheck`                              | 1 (`src/core/gap-analysis.mjs`, generated from an untyped script; 48 findings) | **0**     | 0      | the checks moved into `src/rules/`, typed, on 2026-09-14         | CODE 3 |
+| Tests                                                     | 13                                                                             | **30**    | -      | `npm test` in the gate                                           | TEST 1 |
 | Templates in sync with ops-hub                            | yes                                                                            | **yes**   | yes    | `test/templates.test.mjs`, `doctor --templates-only` in the gate | -      |
 | Prettier                                                  | clean                                                                          | **clean** | clean  | `format:check` in the gate                                       | CODE 4 |
 | Lines naming a tool, a vendor or a model (`abatty scrub`) | 341 (day 0, before the scrub)                                                  | **0**     | 0      | `abatty scrub .` in the gate, the commit-msg hook, the guard     | -      |
@@ -29,3 +29,10 @@ The first slice: `init`, `measure`, `gate`, `doctor`, three presets, the templat
 analysis synced from ops-hub. Proven on paycore_dms (measure 80/100 as the ops-hub tool; the
 gate green in seven steps; doctor in step). One named debt: the generated gap analysis is
 untyped until its checks move into the package for good.
+
+### 2026-09-14 - The catalog
+
+The checks moved into the package as the rule catalog (`src/rules/`, 65 rules in 13 families,
+typed): the `@ts-nocheck` file and the port script are gone, 0 files under the escape. Tests
+21 -> 30. The scores of the reference repositories are unchanged by the port (paycore_dms
+80/100 over 63, abatty 29/100 over 51), which is the proof the checks are the same.
