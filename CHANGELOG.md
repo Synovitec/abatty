@@ -16,6 +16,9 @@ under Unreleased in the same commit.
   `docs/CATALOG.md` is the catalog as a document, kept equal by a test.
 - A repository's own rules from `abatty.rules.mjs` (validated; a built-in ID is refused) and
   waivers with a reason in `adoption.json` → `rules.waived` (listed, not scored, `until` dated).
+- The `adopt-standards` skill reads the catalog: `abatty rules` for the phase's checks, must
+  before should, `abatty explain <ID>` before touching a check it does not understand; the
+  wrap-up measures with `abatty measure` and never adds a waiver itself.
 
 ### Removed
 
