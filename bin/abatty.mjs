@@ -10,13 +10,18 @@
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
+ *   abatty rules [dir] [--family <name>] [--level must|should] [--json|--md]   the rule catalog
+ *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty presets · abatty version
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { renderMarkdown } from "../src/core/gap-analysis.mjs";
+import { renderMarkdown, stdIds } from "../src/core/gap-analysis.mjs";
+import { FAMILIES, loadCatalog, ruleById, runCatalog } from "../src/rules/index.mjs";
+import { buildContext } from "../src/rules/context.mjs";
+import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
 import { initRepo } from "../src/core/init.mjs";
 import { doctor } from "../src/core/doctor.mjs";
 import { runGate } from "../src/core/gate.mjs";
@@ -44,6 +49,8 @@ const KNOWN = [
   "scrub",
   "report",
   "dashboard",
+  "rules",
+  "explain",
   "presets",
   "version",
   "help",
@@ -59,11 +66,13 @@ const opt = (/** @type {string} */ name) => {
   const v = i >= 0 ? rest[i + 1] : undefined;
   return v && !v.startsWith("--") ? v : "";
 };
-const VALUE_FLAGS = ["--stack", "--out", "--range", "--base", "--message"];
+const VALUE_FLAGS = ["--stack", "--out", "--range", "--base", "--message", "--family", "--level"];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
 );
-const dir = repoRoot(positional[0] || process.cwd());
+// `explain <ID> [dir]` takes the rule first; every other command takes the directory first.
+const dirArg = command === "explain" ? positional[1] : positional[0];
+const dir = repoRoot(dirArg || process.cwd());
 const out = (/** @type {string} */ s) => process.stdout.write(s);
 const err = (/** @type {string} */ s) => process.stderr.write(s);
 const VERSION = String(
@@ -108,7 +117,7 @@ switch (command) {
     // --fresh), the harness, the nights, what to do next.
     const known = latestReport(dir);
     const fresh = flag("--fresh") || !known;
-    const r = fresh || !known ? buildReport(dir, { abattyVersion: VERSION }) : known;
+    const r = fresh || !known ? await buildReport(dir, { abattyVersion: VERSION }) : known;
     const present = r.findings.filter((f) => f.status === "present").length;
     const partial = r.findings.filter((f) => f.status === "partial").length;
     const missing = r.findings.filter((f) => f.status === "missing").length;
@@ -210,7 +219,8 @@ switch (command) {
     break;
   }
   case "measure": {
-    const r = buildReport(dir, { abattyVersion: VERSION });
+    const r = await buildReport(dir, { abattyVersion: VERSION });
+    for (const p of r.problems) err(`${t.glyph.warn} ${p}\n`);
     if (flag("--json")) {
       out(JSON.stringify(r, null, 2) + "\n");
       break;
@@ -362,7 +372,7 @@ switch (command) {
     process.exit(all.length ? 1 : 0);
   }
   case "report": {
-    const r = buildReport(dir, { abattyVersion: VERSION });
+    const r = await buildReport(dir, { abattyVersion: VERSION });
     if (flag("--json")) out(JSON.stringify(r, null, 2) + "\n");
     else
       out(
@@ -374,11 +384,12 @@ switch (command) {
     // Every positional is a repository; none means the current one. A repository with no report
     // yet is measured now, so the first run shows something.
     const dirs = positional.length ? positional.map((p) => repoRoot(p)) : [dir];
-    const repos = dirs.map((d) => {
+    const repos = [];
+    for (const d of dirs) {
       let reports = allReports(d);
-      if (!reports.length) reports = [buildReport(d, { abattyVersion: VERSION })];
-      return { name: reports.at(-1)?.name || d, reports };
-    });
+      if (!reports.length) reports = [await buildReport(d, { abattyVersion: VERSION })];
+      repos.push({ name: reports.at(-1)?.name || d, reports });
+    }
     const target = resolve(dirs[0] || dir, opt("--out") || join(".abatty", "dashboard.html"));
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, renderDashboard(repos, { abattyVersion: VERSION }));
@@ -386,6 +397,83 @@ switch (command) {
       `${t.glyph.ok} dashboard: ${target} ${t.gray(`· ${repos.length} repositor${repos.length === 1 ? "y" : "ies"}`)}\n`,
     );
     if (flag("--open")) openFile(target);
+    break;
+  }
+  case "rules": {
+    // The catalog as this repository sees it: the built-in rules, its own rules file, its
+    // waivers. Outside a repository the built-in catalog alone.
+    const catalog = await loadCatalog(dir);
+    for (const p of catalog.problems) err(`${t.glyph.warn} ${p}\n`);
+    const family = opt("--family").toLowerCase();
+    const level = opt("--level").toLowerCase();
+    const list = catalog.rules.filter(
+      (r) => (!family || r.family.toLowerCase() === family) && (!level || r.level === level),
+    );
+    if (flag("--json")) {
+      out(
+        JSON.stringify(
+          list.map(({ check, ...r }) => r),
+          null,
+          2,
+        ) + "\n",
+      );
+      break;
+    }
+    if (flag("--md")) {
+      out(renderCatalogMarkdown(list));
+      break;
+    }
+    out(
+      `\n${t.banner(VERSION)}  ${t.bold("rules")} ${t.gray(`· ${list.length} of ${catalog.rules.length}${catalog.localFile ? " · " + catalog.localFile : ""}`)}\n\n`,
+    );
+    for (const fam of FAMILIES.filter((f) => list.some((r) => r.family === f))) {
+      out(t.heading(fam));
+      for (const r of list.filter((x) => x.family === fam))
+        out(
+          `  ${r.waived ? t.glyph.skip : r.level === "must" ? t.glyph.ok : t.glyph.warn} ${t.bold(r.id.padEnd(22))} ${t.gray(r.level.padEnd(7))} ${t.gray(r.enforcement.padEnd(8))} ${t.gray(("phase " + r.phase).padEnd(12))} ${r.waived ? t.gray(r.title + " · waived") : stdIds(r.title)}${r.source && r.source !== "abatty" ? t.gray(" · " + r.source) : ""}\n`,
+        );
+    }
+    const counts = ["hard", "ratchet", "review", "prose"].map(
+      (e) => `${list.filter((r) => r.enforcement === e).length} ${e}`,
+    );
+    out(
+      `\n  ${t.gray(`${list.filter((r) => r.level === "must").length} must · ${list.filter((r) => r.level === "should").length} should · insured by: ${counts.join(", ")} · abatty explain <ID>`)}\n\n`,
+    );
+    break;
+  }
+  case "explain": {
+    const id = positional[0] || "";
+    const catalog = await loadCatalog(dir);
+    const rule = id ? ruleById(id, catalog.rules) : null;
+    if (!rule) {
+      err(
+        `${t.glyph.fail} ${id ? `no rule ${id}` : "abatty explain <ID>"}; abatty rules lists the catalog\n`,
+      );
+      process.exit(2);
+    }
+    const finding = runCatalog(buildContext(dir), [rule])[0];
+    out(`\n${t.banner(VERSION)}  ${t.bold(rule.id)} ${t.gray("·")} ${stdIds(rule.title)}\n\n`);
+    out(t.kv("family", rule.family) + "\n");
+    out(t.kv("level", rule.level === "must" ? t.bold("must") : "should") + "\n");
+    out(
+      t.kv(
+        "insured by",
+        `${rule.enforcement}${t.gray(rule.enforcement === "hard" ? " · a machine refuses the work" : rule.enforcement === "ratchet" ? " · a number that may only fall" : rule.enforcement === "review" ? " · the reviewer's checklist" : " · written, checked by nothing yet")}`,
+      ) + "\n",
+    );
+    if (rule.standard?.length) out(t.kv("standard", stdIds(rule.standard.join(", "))) + "\n");
+    out(t.kv("phase", rule.phase) + "\n");
+    if (rule.source && rule.source !== "abatty") out(t.kv("source", rule.source) + "\n");
+    out(t.heading("Why"));
+    out(`  ${rule.why}\n`);
+    out(t.heading("Here", finding ? `${dir}` : ""));
+    if (finding) {
+      out(t.kv("status", t.status(finding.status)) + "\n");
+      out(t.kv("evidence", stdIds(finding.evidence)) + "\n");
+      if (finding.status === "missing" || finding.status === "partial")
+        out(t.kv("next", stdIds(finding.next)) + "\n");
+    }
+    out("\n");
     break;
   }
   case "presets": {
@@ -414,6 +502,8 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
+  ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--json|--md]  the rule catalog: what must hold, why, what insures it
+  ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
 

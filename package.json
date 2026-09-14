@@ -15,6 +15,7 @@
     ".": "./src/index.mjs",
     "./gap-analysis": "./src/core/gap-analysis.mjs",
     "./presets": "./src/presets/index.mjs",
+    "./rules": "./src/rules/index.mjs",
     "./scrub-map": "./src/core/scrub-map.mjs",
     "./vocabulary": "./src/core/vocabulary.mjs"
   },

@@ -125,7 +125,7 @@ td.id,td.ph{font-family:var(--mono);font-size:12px;white-space:nowrap}
 td.ev{color:var(--muted)}
 .st{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono)}
 .st i{width:8px;height:8px;border-radius:2px}
-.st.present i{background:var(--ok)}.st.partial i{background:var(--warn)}.st.missing i{background:var(--bad)}.st.na i{background:var(--na)}
+.st.present i{background:var(--ok)}.st.partial i{background:var(--warn)}.st.missing i{background:var(--bad)}.st.na i,.st.waived i{background:var(--na)}
 .st.missing{color:var(--bad)}.st.partial{color:var(--warn)}
 footer{color:var(--muted);font:12px var(--mono);margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
 .empty{padding:40px 0;color:var(--muted)}
@@ -211,10 +211,10 @@ function render() {
       cell("phases", phases.length ? done + " / " + phases.length : "—", phases.length && done === phases.length ? "ok" : "", phases.length ? "done in unattended nights" : "no night yet") +
       cell("decisions", String(r.night.decisions), "", "taken alone, recorded") +
       cell("last night", r.night.lastReport ? esc(r.night.lastReport.replace(/^docs\\//, "").replace(/ADOPTION_REPORT_|\\.md/g, "")) : "—", "", r.night.lastReport ? esc(r.night.lastReport) : "") + '</section>' +
-    '<section class="checks"><h2>Every check</h2><div class="filters">' + [["todo", "to do"], ["all", "all"], ["present", "present"], ["partial", "partial"], ["missing", "missing"], ["n/a", "n/a"]].map(([k, l]) => '<button type="button" data-f="' + k + '" aria-pressed="' + String(filter === k) + '">' + l + '</button>').join("") + '</div>' +
-      '<div class="tablewrap"><table><thead><tr><th>ID</th><th>Family</th><th>Rule</th><th>Status</th><th>Evidence</th><th>Next</th><th>Phase</th></tr></thead><tbody>' +
-      rows.map((f) => '<tr><td class="id">' + esc(f.id) + '</td><td>' + esc(f.family) + '</td><td>' + esc(f.rule) + '</td><td><span class="st ' + (f.status === "n/a" ? "na" : f.status) + '"><i></i>' + esc(f.status) + '</span></td><td class="ev">' + esc(f.evidence) + '</td><td>' + (f.status === "present" || f.status === "n/a" ? "" : esc(f.next)) + '</td><td class="ph">' + esc(f.phase) + '</td></tr>').join("") +
-      (rows.length ? "" : '<tr><td colspan="7" class="empty">Nothing here.</td></tr>') + '</tbody></table></div></section>';
+    '<section class="checks"><h2>Every check</h2><div class="filters">' + [["todo", "to do"], ["all", "all"], ["present", "present"], ["partial", "partial"], ["missing", "missing"], ["n/a", "n/a"]].concat(r.findings.some((f) => f.status === "waived") ? [["waived", "waived"]] : []).map(([k, l]) => '<button type="button" data-f="' + k + '" aria-pressed="' + String(filter === k) + '">' + l + '</button>').join("") + '</div>' +
+      '<div class="tablewrap"><table><thead><tr><th>ID</th><th>Family</th><th>Rule</th><th>Level</th><th>Insured by</th><th>Status</th><th>Evidence</th><th>Next</th><th>Phase</th></tr></thead><tbody>' +
+      rows.map((f) => '<tr><td class="id">' + esc(f.id) + '</td><td>' + esc(f.family) + '</td><td>' + esc(f.rule) + '</td><td class="ph">' + esc(f.level || "") + '</td><td class="ph">' + esc(f.enforcement || "") + '</td><td><span class="st ' + (f.status === "n/a" ? "na" : f.status) + '"><i></i>' + esc(f.status) + '</span></td><td class="ev">' + esc(f.evidence) + '</td><td>' + (f.status === "present" || f.status === "n/a" || f.status === "waived" ? "" : esc(f.next)) + '</td><td class="ph">' + esc(f.phase) + '</td></tr>').join("") +
+      (rows.length ? "" : '<tr><td colspan="9" class="empty">Nothing here.</td></tr>') + '</tbody></table></div></section>';
   $("#main").querySelectorAll(".filters button").forEach((b) => b.addEventListener("click", () => { filter = b.dataset.f; render(); }));
   $("#foot").textContent = DATA.length + " repositor" + (DATA.length === 1 ? "y" : "ies") + " · " + reports.length + " reading" + (reports.length === 1 ? "" : "s");
 }

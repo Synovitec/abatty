@@ -25,7 +25,6 @@
 
   "standard": "../ops-hub/engineering/ENGINEERING_STANDARD.md",
   "plan": "../ops-hub/engineering/ADOPTION_PLAN.md",
-  "gapAnalysis": "../ops-hub/engineering/tools/gap-analysis.mjs",
 
   "sourceGlobs": ["src/", "server/", "apps/", "packages/", "scripts/", "tests/", "e2e/", "migrations/", "drizzle/", ".woodpecker"],
 
@@ -34,6 +33,11 @@
   "protectedPaths": ["migrations/", "drizzle/", "packages/db/prisma/migrations/", ".env", ".env.", "docker-compose.production", "prod.dont.touch"],
 
   "mcpServers": [],
+
+  "rules": {
+    "local": "abatty.rules.mjs",
+    "waived": {}
+  },
 
   "lintOnEdit": true,
   "lintExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],

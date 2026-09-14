@@ -6,7 +6,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { analyze } from "./gap-analysis.mjs";
+import { measure } from "./gap-analysis.mjs";
 import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
 import { scanFiles, allowList } from "./scrub.mjs";
@@ -16,9 +16,10 @@ import { scanFiles, allowList } from "./scrub.mjs";
  *   version: 1,
  *   abatty: string,
  *   repo: string, name: string, date: string, at: string, branch: string, commit: string,
- *   score: number, applicable: number,
- *   families: { name: string, present: number, partial: number, missing: number, na: number }[],
- *   findings: { id: string, family: string, rule: string, status: string, evidence: string, next: string, phase: string }[],
+ *   score: number, applicable: number, waived: number,
+ *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
+ *   findings: import("../rules/index.mjs").Finding[],
+ *   problems: string[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
@@ -55,17 +56,19 @@ function nightFacts(repoDir) {
 }
 
 /**
- * Measure the repository and assemble the report. Writes it under .abatty/reports/ unless
- * `write` is false. @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
+ * Measure the repository (its full catalog: built-in rules, its own, its waivers) and assemble
+ * the report. Writes it under .abatty/reports/ unless `write` is false.
+ * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
  */
-export function buildReport(repoDir, o = {}) {
-  const gap = analyze(repoDir);
+export async function buildReport(repoDir, o = {}) {
+  const gap = await measure(repoDir);
   const families = gap.families.map((name) => ({
     name,
     present: gap.findings.filter((f) => f.family === name && f.status === "present").length,
     partial: gap.findings.filter((f) => f.family === name && f.status === "partial").length,
     missing: gap.findings.filter((f) => f.family === name && f.status === "missing").length,
     na: gap.findings.filter((f) => f.family === name && f.status === "n/a").length,
+    waived: gap.findings.filter((f) => f.family === name && f.status === "waived").length,
   }));
   const d = drift(repoDir);
   const harnessPresent = existsSync(join(repoDir, ".claude", "hooks", "self-test.mjs"));
@@ -81,12 +84,10 @@ export function buildReport(repoDir, o = {}) {
     commit: git(repoDir, "rev-parse", "--short", "HEAD"),
     score: gap.score,
     applicable: gap.applicable,
+    waived: gap.waived,
     families,
-    findings: gap.findings.map((f) => ({
-      ...f,
-      evidence: String(f.evidence),
-      phase: String(f.phase),
-    })),
+    findings: gap.findings,
+    problems: gap.problems,
     harness: {
       present: harnessPresent,
       drift: d.filter((x) => x.state === "differs").length,

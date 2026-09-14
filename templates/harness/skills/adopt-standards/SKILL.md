@@ -133,8 +133,9 @@ revert it, close the phase as `in_progress` with `numbersAfter` so far, commit, 
    and record the deferral).
 2. Version: bump `files.version` - minor if any phase reached `done` in this run, patch
    otherwise. Move `[Unreleased]` into `## [x.y.z] - YYYY-MM-DD`.
-3. If `adoption.json` → `gapAnalysis` points at a file that exists, run
-   `node <gapAnalysis> . --quiet` so `docs/GAP_ANALYSIS_<date>.md` is fresh, and cite its score.
+3. Run `npx abatty measure --quiet` so `docs/GAP_ANALYSIS_<date>.md` is fresh, and cite its
+   score. A rule the repository set aside is in `adoption.json` → `rules.waived` with its
+   reason; never add one there yourself (record `gate-deferred` instead).
 4. Write `docs/ADOPTION_REPORT_<date>.md` with front matter: the scoreboard before/after, the
    gap-analysis score before and after the run, each phase's status and reason, every decision
    taken, what to review first in the morning, the commits (`git log --oneline main..HEAD`).

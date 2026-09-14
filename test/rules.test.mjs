@@ -1,0 +1,286 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
+import {
+  FAMILIES,
+  RULES,
+  loadCatalog,
+  ruleById,
+  runCatalog,
+  scoreOf,
+  validate,
+} from "../src/rules/index.mjs";
+import { buildContext } from "../src/rules/context.mjs";
+import { analyze, measure } from "../src/core/gap-analysis.mjs";
+import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
+
+// The checks of the first days, by ID: a rule renamed or dropped by accident would break every
+// dated report that cites it. Adding one appends here.
+const IDS = [
+  "DOC-CONTEXT",
+  "DOC-CONTEXT-SECTIONS",
+  "DOC-RULES",
+  "DOC-CONVENTIONS",
+  "DOC-PROGRESS",
+  "DOC-CHANGELOG",
+  "DOC-INDEX",
+  "DOC-ADR",
+  "DOC-FRONTMATTER",
+  "DOC-FRESHNESS",
+  "DOC-AGENTS-MD",
+  "INST-RATCHET",
+  "INST-DEBT",
+  "INST-CONTROLS",
+  "INST-GATE",
+  "INST-PRECOMMIT",
+  "INST-CI",
+  "INST-CI-STEPS",
+  "INST-DEAD-CI",
+  "HARNESS-HOOKS",
+  "HARNESS-ADOPTION",
+  "HARNESS-SKILL",
+  "HARNESS-GITIGNORE",
+  "CODE-ESLINT",
+  "CODE-MAXWARN",
+  "CODE-SHAPE",
+  "CODE-JSDOC",
+  "CODE-ARCH-IMPORTS",
+  "CODE-ARCH-GRAPH",
+  "CODE-DEADCODE",
+  "CODE-DUP",
+  "CODE-SIZE-800",
+  "CODE-SIZE-300",
+  "CODE-BARRELS",
+  "CODE-FORMAT",
+  "TYPES-CHECKJS",
+  "TYPES-STRICT",
+  "TYPES-SCRIPT",
+  "TYPES-ESCAPES",
+  "VALID-ZOD",
+  "VALID-ENV",
+  "DATA-MIGRATIONS",
+  "DATA-TENANT",
+  "DATA-BACKUP",
+  "TEST-UNIT",
+  "TEST-INTEGRATION",
+  "TEST-COVERAGE",
+  "TEST-E2E",
+  "TEST-E2E-CONFIG",
+  "TEST-MUTATION",
+  "SEC-SECRETS",
+  "SEC-AUDIT",
+  "SEC-LOCKFILE",
+  "SEC-ENVFILES",
+  "FLOW-COMMITS",
+  "FLOW-TRAILER",
+  "FLOW-EMDASH",
+  "FLOW-CHANGELOG-GATE",
+  "FLOW-VERSION",
+  "I18N-CATALOGUE",
+  "I18N-LINT",
+  "I18N-PARITY",
+  "A11Y-LINT",
+  "A11Y-CONTRAST",
+  "PWA-CONTRACT",
+];
+
+test("the catalog is well-formed: 65 rules, unique IDs, every field, a reason on each", () => {
+  assert.deepEqual(validate(RULES), []);
+  assert.deepEqual(
+    RULES.map((r) => r.id),
+    IDS,
+  );
+  assert.equal(FAMILIES.length, 13);
+  for (const r of RULES) {
+    assert.ok(r.why.length > 40, `${r.id}: why is too short to be a reason`);
+    assert.ok(r.title.length > 10, `${r.id}: title`);
+    for (const s of r.standard || []) assert.match(s, /^[A-Z0-9]+-\d+$/, `${r.id}: standard ${s}`);
+  }
+  assert.ok(RULES.filter((r) => r.level === "must").length > 40);
+  assert.ok(RULES.some((r) => r.enforcement === "ratchet"));
+  assert.ok(RULES.some((r) => r.enforcement === "prose"));
+});
+
+test("validate names what a malformed rule lacks", () => {
+  const problems = validate(
+    /** @type {any} */ ([
+      {
+        id: "bad id",
+        family: "X",
+        title: "t",
+        level: "maybe",
+        enforcement: "hope",
+        phase: "1",
+        why: "w",
+        next: "n",
+      },
+    ]),
+  );
+  assert.ok(problems.some((p) => /id must be FAMILY-NAME/.test(p)));
+  assert.ok(problems.some((p) => /level must be/.test(p)));
+  assert.ok(problems.some((p) => /enforcement must be/.test(p)));
+  assert.ok(problems.some((p) => /check must be a function/.test(p)));
+});
+
+test("a check that throws is a finding, never a crash of the measurement", () => {
+  const dir = tempRepo("throws", { "package.json": NEXT_PKG });
+  const ctx = buildContext(dir);
+  const [f] = runCatalog(ctx, [
+    {
+      .../** @type {import("../src/rules/index.mjs").Rule} */ (RULES[0]),
+      id: "X-BOOM",
+      check: () => {
+        throw new Error("boom");
+      },
+    },
+  ]);
+  assert.equal(f?.status, "missing");
+  assert.match(f?.evidence || "", /check failed: boom/);
+});
+
+test("analyze runs the catalog: one finding per rule, the score over the applicable ones", () => {
+  const dir = tempRepo("analyze", {
+    "package.json": NEXT_PKG,
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const r = analyze(dir);
+  assert.equal(r.findings.length, RULES.length);
+  assert.equal(r.findings.filter((f) => f.status === "n/a").length + r.applicable, RULES.length);
+  assert.equal(scoreOf(r.findings).score, r.score);
+  const f = r.findings.find((x) => x.id === "DOC-CHANGELOG");
+  assert.equal(f?.status, "missing");
+  assert.equal(f?.level, "must");
+  assert.equal(f?.enforcement, "hard");
+  assert.deepEqual(f?.standard, ["CHANGE-1"]);
+  // A TypeScript repository: the checkJs rule is n/a, the strict one applies.
+  assert.equal(r.findings.find((x) => x.id === "TYPES-CHECKJS")?.status, "n/a");
+  assert.notEqual(r.findings.find((x) => x.id === "TYPES-STRICT")?.status, "n/a");
+});
+
+test("a waiver with a reason lists the rule and takes it out of the score; one past its date does not", async () => {
+  const dir = tempRepo("waive", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
+  mkdirSync(join(dir, ".claude"), { recursive: true });
+  writeFileSync(join(dir, ".claude", "adoption.json"), JSON.stringify({ rules: { waived: {} } }));
+  const plain = await measure(dir);
+  writeFileSync(
+    join(dir, ".claude", "adoption.json"),
+    JSON.stringify({
+      rules: {
+        waived: {
+          "DOC-CHANGELOG": {
+            reason: "the changelog lives in the release notes",
+            until: "2099-01-01",
+          },
+          "CODE-DUP": "not measured on a prototype",
+          "TEST-MUTATION": { reason: "expired", until: "2000-01-01" },
+          "NOPE-X": "not a rule",
+        },
+      },
+    }),
+  );
+  const r = await measure(dir);
+  assert.equal(r.findings.find((f) => f.id === "DOC-CHANGELOG")?.status, "waived");
+  assert.match(
+    r.findings.find((f) => f.id === "DOC-CHANGELOG")?.evidence || "",
+    /release notes.*until 2099/,
+  );
+  assert.equal(r.findings.find((f) => f.id === "CODE-DUP")?.status, "waived");
+  assert.equal(r.findings.find((f) => f.id === "TEST-MUTATION")?.status, "missing");
+  assert.equal(r.waived, 2);
+  assert.equal(r.applicable, plain.applicable - 2);
+  assert.ok(r.score >= plain.score, "two missing rules waived: the score cannot fall");
+  assert.ok(r.problems.some((p) => /NOPE-X is not a rule/.test(p)));
+  const cli1 = cli(["measure", dir, "--quiet"], dir);
+  assert.equal(cli1.code, 0, cli1.out);
+  assert.match(cli1.out, /NOPE-X is not a rule/);
+});
+
+test("a repository adds its own rules from abatty.rules.mjs; a built-in id is refused", async () => {
+  const dir = tempRepo("local", {
+    "package.json": NEXT_PKG,
+    "src/a.ts": "export const a = 1;\n",
+    OWNERS: "team\n",
+  });
+  writeFileSync(
+    join(dir, "abatty.rules.mjs"),
+    `export const rules = [{
+      id: "OWN-OWNERS", family: "Ownership", title: "An OWNERS file names the team", level: "must", enforcement: "prose", phase: "0",
+      why: "A repository without an owner is a repository nobody answers for; the file is the name.",
+      next: "Add OWNERS at the root",
+      check: (c) => ({ status: c.exists("OWNERS") ? "present" : "missing", evidence: c.exists("OWNERS") ? "OWNERS" : "none" }),
+    }];\n`,
+  );
+  const catalog = await loadCatalog(dir);
+  assert.deepEqual(catalog.problems, []);
+  assert.equal(catalog.localFile, "abatty.rules.mjs");
+  assert.equal(catalog.rules.length, RULES.length + 1);
+  assert.equal(ruleById("own-owners", catalog.rules)?.source, "abatty.rules.mjs");
+  const r = await measure(dir);
+  assert.equal(r.findings.find((f) => f.id === "OWN-OWNERS")?.status, "present");
+  assert.ok(r.families.includes("Ownership"));
+  const ex = cli(["explain", "OWN-OWNERS", dir], dir);
+  assert.equal(ex.code, 0, ex.out);
+  assert.match(ex.out, /OWN-OWNERS/);
+  assert.match(ex.out, /nobody answers for/);
+  assert.match(ex.out, /present/);
+  // A built-in id redefined: refused with the reason, the file's rules not loaded.
+  writeFileSync(
+    join(dir, "abatty.rules.mjs"),
+    `export const rules = [{ id: "CODE-DUP", family: "Code", title: "mine", level: "must", enforcement: "hard", phase: "1", why: "because I said so, at length", next: "n", check: () => ({ status: "present", evidence: "" }) }];\n`,
+  );
+  const again = await loadCatalog(dir);
+  assert.ok(again.problems.some((p) => /CODE-DUP is a built-in id/.test(p)));
+  assert.equal(again.rules.length, RULES.length);
+});
+
+test("abatty rules lists the catalog, filters it, and explain refuses an unknown id", () => {
+  const dir = tempRepo("rules-cli", { "package.json": NEXT_PKG });
+  const all = cli(["rules", dir], dir);
+  assert.equal(all.code, 0, all.out);
+  assert.match(all.out, /65 of 65/);
+  assert.match(all.out, /CODE-DEADCODE/);
+  assert.match(all.out, /\d+ must · \d+ should · insured by: \d+ hard/);
+  const fam = cli(["rules", dir, "--family", "Security", "--level", "must"], dir);
+  assert.match(fam.out, /4 of 65/);
+  assert.doesNotMatch(fam.out, /CODE-DEADCODE/);
+  const json = cli(["rules", dir, "--json"], dir);
+  const list = JSON.parse(json.out);
+  assert.equal(list.length, 65);
+  assert.equal(list[0].check, undefined, "the function is not in the JSON");
+  const nope = cli(["explain", "NOPE-1", dir], dir);
+  assert.equal(nope.code, 2);
+  assert.match(nope.out, /no rule NOPE-1/);
+  const ex = cli(["explain", "code-deadcode", dir], dir);
+  assert.equal(ex.code, 0, ex.out);
+  assert.match(ex.out, /CODE-DEADCODE/);
+  assert.match(ex.out, /insured by\s+hard/);
+  assert.match(ex.out, /CODE 6/, "the standard's id is spaced");
+  assert.match(ex.out, /status\s+missing/);
+});
+
+test("docs/CATALOG.md is the catalog: abatty rules --md, committed", () => {
+  const doc = readFileSync(new URL("../docs/CATALOG.md", import.meta.url), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
+  assert.equal(
+    doc.trimEnd(),
+    renderCatalogMarkdown(RULES).trimEnd(),
+    "run: node bin/abatty.mjs rules --md > docs/CATALOG.md",
+  );
+});
+
+test("the markdown report carries the level and the insurance of every check", () => {
+  const dir = tempRepo("md", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
+  const r = cli(["measure", dir, "--quiet"], dir);
+  assert.equal(r.code, 0, r.out);
+  const md = readFileSync(
+    join(dir, "docs", `GAP_ANALYSIS_${new Date().toISOString().slice(0, 10)}.md`),
+    "utf8",
+  );
+  assert.match(md, /\| ID \| Family \| Rule \| Level \| Insured by \| Status \|/);
+  assert.match(md, /\| CODE-DEADCODE \| Code \| [^|]+ \| must \| hard \| \*\*missing\*\* \|/);
+  assert.match(md, /abatty explain <ID>/);
+});

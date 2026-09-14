@@ -23,9 +23,9 @@ test("the terminal helpers degrade to plain text when colour is off", () => {
   assert.equal(duration(61_500), "1 min 2 s");
 });
 
-test("a report is written under .abatty/reports and read back as the latest reading", () => {
+test("a report is written under .abatty/reports and read back as the latest reading", async () => {
   const dir = tempRepo("report", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
-  const r = buildReport(dir, { abattyVersion: "0.0.0-test" });
+  const r = await buildReport(dir, { abattyVersion: "0.0.0-test" });
   assert.equal(r.version, 1);
   assert.equal(typeof r.score, "number");
   assert.ok(existsSync(join(dir, ".abatty", "reports", `${r.date}.json`)));
@@ -45,9 +45,9 @@ test("status is the default command and shows the score, the families and the ne
   assert.match(r.out, /Next/);
 });
 
-test("the dashboard embeds the reports, both themes and the score dial", () => {
+test("the dashboard embeds the reports, both themes and the score dial", async () => {
   const dir = tempRepo("dash", { "package.json": NEXT_PKG });
-  const r = buildReport(dir);
+  const r = await buildReport(dir);
   const html = renderDashboard([{ name: "fixture-next", reports: [r] }], {
     abattyVersion: "0.0.0-test",
   });

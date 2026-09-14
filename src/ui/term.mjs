@@ -53,6 +53,9 @@ export function status(s) {
     case "failed":
     case "blocked":
       return red(s);
+    case "waived":
+    case "n/a":
+      return gray(s);
     default:
       return gray(s);
   }
