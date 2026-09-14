@@ -20,6 +20,10 @@ under Unreleased in the same commit.
   before should, `abatty explain <ID>` before touching a check it does not understand; the
   wrap-up measures with `abatty measure` and never adds a waiver itself.
 
+- Fixture repositories for the `vite-react` and `node` presets in the tests: detection from
+  the dependencies, `init`, `measure`, `doctor` in step, the gate skeleton stopping at the
+  first missing tool by name. A preset is still proven only by a repository that ran it.
+
 ### Fixed
 
 - The next steps of `status` and of the dashboard sorted phase 0 last (a zero read as "no
