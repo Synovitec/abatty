@@ -20,6 +20,12 @@ under Unreleased in the same commit.
   before should, `abatty explain <ID>` before touching a check it does not understand; the
   wrap-up measures with `abatty measure` and never adds a waiver itself.
 
+### Fixed
+
+- The next steps of `status` and of the dashboard sorted phase 0 last (a zero read as "no
+  phase"); they now sort by the phase's number, must before should within a phase, and the
+  status screen names the waived rules and the catalog problems.
+
 ### Removed
 
 - The generated gap analysis and its port script: the checks live here, typed; the one

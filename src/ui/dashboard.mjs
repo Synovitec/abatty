@@ -186,6 +186,7 @@ function spark(reports) {
   const area = d + " L" + xs.at(-1).toFixed(1) + " " + (h - pad) + " L" + xs[0].toFixed(1) + " " + (h - pad) + " Z";
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true"><line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="var(--line-2)"/><path d="' + area + '" fill="var(--accent)" opacity=".12"/><path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="' + xs.at(-1).toFixed(1) + '" cy="' + ys.at(-1).toFixed(1) + '" r="3.5" fill="var(--accent)"/></svg>';
 }
+function phaseOrder(p) { const m = String(p).match(/\d+/); return m ? Number(m[0]) : 99; }
 function render() {
   tabs();
   const repo = DATA[repoIndex]; const reports = repo.reports; const r = reports.at(-1);
@@ -194,7 +195,7 @@ function render() {
   const present = n("present"), partial = n("partial"), missing = n("missing"), na = n("n/a");
   const phases = r.night && r.night.state && Array.isArray(r.night.state.phases) ? r.night.state.phases : [];
   const done = phases.filter((p) => p.status === "done").length;
-  const next = r.findings.filter((f) => f.status === "missing" || f.status === "partial").sort((a, b) => (parseInt(a.phase) || 99) - (parseInt(b.phase) || 99)).slice(0, 7);
+  const next = r.findings.filter((f) => f.status === "missing" || f.status === "partial").sort((a, b) => phaseOrder(a.phase) - phaseOrder(b.phase) || (a.level === "should" ? 1 : 0) - (b.level === "should" ? 1 : 0)).slice(0, 7);
   const rows = r.findings.filter((f) => filter === "all" ? true : filter === "todo" ? f.status === "missing" || f.status === "partial" : f.status === filter);
   const chip = (cls, count, label) => '<span class="chip ' + cls + '"><i></i><b>' + count + '</b> ' + label + '</span>';
   const cell = (k, v, cls, s) => '<div><div class="k">' + k + '</div><div class="v ' + (cls || "") + '">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';

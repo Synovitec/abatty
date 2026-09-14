@@ -113,11 +113,21 @@ function openFile(file) {
   else spawnSync(process.platform === "darwin" ? "open" : "xdg-open", [file], { stdio: "ignore" });
 }
 
+/** Phase "0" sorts first, "A.1 / 0" by its number, "-" last. @param {string} p */
+const phaseOrder = (p) => {
+  const m = String(p).match(/\d+/);
+  return m ? Number(m[0]) : 99;
+};
 /** The next steps of a report, in plan order. @param {import("../src/core/report.mjs").Report} r @param {number} n */
 const nextSteps = (r, n) =>
   r.findings
     .filter((f) => f.status === "missing" || f.status === "partial")
-    .sort((a, b) => (parseInt(a.phase) || 99) - (parseInt(b.phase) || 99))
+    // Plan order, and within a phase the must rules before the should ones.
+    .sort(
+      (a, b) =>
+        phaseOrder(a.phase) - phaseOrder(b.phase) ||
+        (a.level === "should" ? 1 : 0) - (b.level === "should" ? 1 : 0),
+    )
     .slice(0, n);
 
 switch (command) {
@@ -190,12 +200,14 @@ switch (command) {
           : t.gray("none yet"),
       ) + "\n",
     );
+    if (r.waived) out(t.kv("waived", `${r.waived} rule(s) set aside with a reason`) + "\n");
+    for (const p of r.problems || []) out(`  ${t.glyph.warn} ${t.yellow(p)}\n`);
     const next = nextSteps(r, 5);
     if (next.length) {
-      out(t.heading("Next", "in plan order"));
+      out(t.heading("Next", "in plan order, must before should · abatty explain <ID>"));
       for (const f of next)
         out(
-          `  ${t.gray("phase " + String(f.phase).padEnd(4))} ${t.bold(f.id)}  ${t.gray(f.next.slice(0, 90))}\n`,
+          `  ${t.gray("phase " + String(f.phase).padEnd(4))} ${t.bold(f.id)} ${t.gray((f.level || "").padEnd(6))} ${t.gray(f.next.slice(0, 84))}\n`,
         );
     }
     out(`\n${t.gray("abatty measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
