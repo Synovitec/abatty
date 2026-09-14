@@ -10,7 +10,7 @@
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
- *   abatty rules [dir] [--family <name>] [--level must|should] [--json|--md]   the rule catalog
+ *   abatty rules [dir] [--family <name>] [--level must|should] [--phase <n>] [--json|--md]   the rule catalog
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty presets · abatty version
  */
@@ -66,7 +66,16 @@ const opt = (/** @type {string} */ name) => {
   const v = i >= 0 ? rest[i + 1] : undefined;
   return v && !v.startsWith("--") ? v : "";
 };
-const VALUE_FLAGS = ["--stack", "--out", "--range", "--base", "--message", "--family", "--level"];
+const VALUE_FLAGS = [
+  "--stack",
+  "--out",
+  "--range",
+  "--base",
+  "--message",
+  "--family",
+  "--level",
+  "--phase",
+];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
 );
@@ -406,8 +415,13 @@ switch (command) {
     for (const p of catalog.problems) err(`${t.glyph.warn} ${p}\n`);
     const family = opt("--family").toLowerCase();
     const level = opt("--level").toLowerCase();
+    // --phase N: the rules the plan's phase N installs; a rule's phase may name several ("7 / 8").
+    const phase = opt("--phase");
     const list = catalog.rules.filter(
-      (r) => (!family || r.family.toLowerCase() === family) && (!level || r.level === level),
+      (r) =>
+        (!family || r.family.toLowerCase() === family) &&
+        (!level || r.level === level) &&
+        (!phase || r.phase.split(/\s*\/\s*/).includes(phase)),
     );
     if (flag("--json")) {
       out(
@@ -502,7 +516,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
-  ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--json|--md]  the rule catalog: what must hold, why, what insures it
+  ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--phase <n>] [--json|--md]  the rule catalog: what must hold, why, what insures it
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}

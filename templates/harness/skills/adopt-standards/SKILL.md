@@ -47,8 +47,8 @@ Run `commands.standards` (and `commands.typecheck`, and the coverage command if 
 2 or 10). Write the relevant numbers into `phases[N].numbersBefore`. If the ratchet script
 does not exist yet (phase 0 is what creates it), record `"none"`.
 
-The phase's checks are rules of the catalog: `npx abatty rules` lists them by family with the
-level (must first) and what insures each; before touching a check you do not fully understand,
+The phase's checks are rules of the catalog: `npx abatty rules --phase N` lists them by family
+with the level (must first) and what insures each; before touching a check you do not fully understand,
 `npx abatty explain <ID>` gives its reason, the standard's IDs, and its finding in this
 repository (status, evidence, the next step). Work the `must` rules of the phase before any
 `should`; a `should` left for later is not a decision, a `must` skipped is.

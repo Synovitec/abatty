@@ -245,6 +245,16 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   const fam = cli(["rules", dir, "--family", "Security", "--level", "must"], dir);
   assert.match(fam.out, /4 of 65/);
   assert.doesNotMatch(fam.out, /CODE-DEADCODE/);
+  const ph = cli(["rules", dir, "--phase", "12", "--json"], dir);
+  assert.deepEqual(
+    JSON.parse(ph.out).map((/** @type {{ id: string }} */ r) => r.id),
+    ["CODE-ARCH-GRAPH", "CODE-DEADCODE", "CODE-DUP"],
+  );
+  const ph8 = cli(["rules", dir, "--phase", "8", "--json"], dir);
+  assert.ok(
+    JSON.parse(ph8.out).some((/** @type {{ id: string }} */ r) => r.id === "CODE-SHAPE"),
+    "a rule of phase 7 / 8 is in phase 8",
+  );
   const json = cli(["rules", dir, "--json"], dir);
   const list = JSON.parse(json.out);
   assert.equal(list.length, 65);

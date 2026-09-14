@@ -11,7 +11,7 @@ under Unreleased in the same commit.
   IDs, must or should, what insures it (hard, ratchet, review, prose), the phase, the reason,
   the check as a pure function of a typed repository context. `abatty measure` runs it; the
   scores of the reference repositories are unchanged (80/100, 29/100).
-- `abatty rules [--family] [--level] [--json|--md]` and `abatty explain <ID> [dir]`; the
+- `abatty rules [--family] [--level] [--phase] [--json|--md]` and `abatty explain <ID> [dir]`; the
   dated report and the dashboard carry the level and the insurance of every check;
   `docs/CATALOG.md` is the catalog as a document, kept equal by a test.
 - A repository's own rules from `abatty.rules.mjs` (validated; a built-in ID is refused) and

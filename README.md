@@ -32,7 +32,7 @@ IDs it holds, **must** or **should**, what insures it once present (**hard**: a 
 the work; **ratchet**: a number that may only fall; **review**: the reviewer's checklist;
 **prose**: nothing yet), the adoption-plan phase that installs it, the reason in two sentences,
 and the check itself, a pure function of the repository's context. `abatty measure` runs the
-catalog; `abatty rules` lists it (`--family`, `--level`, `--json`, `--md`); `abatty explain
+catalog; `abatty rules` lists it (`--family`, `--level`, `--phase`, `--json`, `--md`); `abatty explain
 <ID>` opens one rule against the repository; [`docs/CATALOG.md`](docs/CATALOG.md) is the
 whole of it, kept equal to the code by a test.
 
