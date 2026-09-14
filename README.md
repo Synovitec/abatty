@@ -7,14 +7,21 @@ is the part you install in a repository: the harness, the gate, the analysis too
 measurement, per stack, kept in step.
 
 ```sh
-npm i -D github:Synovitec/abatty#v0.1.0
+npm i -D github:Synovitec/abatty
+npx abatty                       # the repository at a glance: score, families, harness, nights, next steps
 npx abatty init --stack next     # the instrument, from the templates and the preset
 npx abatty measure               # the gap analysis: score, every check, next steps by phase
 npx abatty gate --fast           # the path-aware gate (the pre-push hook and the night run it too)
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty presets               # the stacks, and which repository proved each
 npx abatty scrub                 # no trace of the tools: files (--fix), commit messages (--commits), pull requests (--prs)
+npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
 ```
+
+Every command prints for a terminal (colour, glyphs, bars, timings) and degrades to plain text
+in a pipe or CI; `--json` on `measure` and `report` is the machine-readable form. Each
+measurement writes a dated report under `.abatty/reports/` (ignored by git); the dashboard is
+built from those and needs no server: `abatty dashboard repoA repoB --open`.
 
 ## What `init` writes
 
@@ -74,6 +81,11 @@ the hooks carry a copy. Two names cannot go because the agent itself requires th
 settings and its context: the `.claude/` folder and `CLAUDE.md`. A line that mentions only
 those is not a finding. A repository allows its own product terms through
 `adoption.json` → `scrub.allow` (path substrings), with the reason in its decisions file.
+
+## Roadmap
+
+[`docs/ROADMAP.md`](docs/ROADMAP.md): what changes next, in the order the evidence dictates, each
+item with the evidence that put it there.
 
 ## What is not here yet
 

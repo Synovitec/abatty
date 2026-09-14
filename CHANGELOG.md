@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The terminal: a zero-dependency styling layer (colour, glyphs, bars, tables, timings) that
+  degrades to plain text in a pipe or CI; `abatty` alone is the repository at a glance (score,
+  families, harness, no-trace, nights, next steps); every command prints a scorecard.
+- The report: one dated JSON per measurement under `.abatty/reports/` (`abatty report`,
+  written by `measure` and `status` too), the shape the status screen and the dashboard read.
+- The dashboard: `abatty dashboard [repo ...] --open`, one self-contained page over the reports
+  of one or many repositories - a score dial with the 70/90 ticks, families as stacked bars,
+  the next steps in plan order, the nights, every check with filters; light and dark; the
+  trend once there are two readings.
+- `docs/ROADMAP.md`: what changes next and why.
+
 - `abatty scrub`: no trace of the tools in a repository. Scans files, commit messages and pull
   requests; `--fix` rewrites files by a word map that protects the two names the agent requires;
   `--message` is the commit-msg hook; `--history` prints the filter-repo command for an existing

@@ -1,0 +1,121 @@
+/**
+ * The report: one JSON per measurement, under .abatty/reports/, the shape the terminal status
+ * screen and the dashboard read. A report is a reading, dated, never rewritten; the newest one
+ * is the repository's state. Nights add their own facts (the state file, the decisions, the
+ * receipts under the agent's night folder) and the report gathers what exists.
+ */
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { analyze } from "./gap-analysis.mjs";
+import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
+import { drift } from "./doctor.mjs";
+import { scanFiles, allowList } from "./scrub.mjs";
+
+/**
+ * @typedef {{
+ *   version: 1,
+ *   abatty: string,
+ *   repo: string, name: string, date: string, at: string, branch: string, commit: string,
+ *   score: number, applicable: number,
+ *   families: { name: string, present: number, partial: number, missing: number, na: number }[],
+ *   findings: { id: string, family: string, rule: string, status: string, evidence: string, next: string, phase: string }[],
+ *   harness: { present: boolean, drift: number, missing: number },
+ *   scrub: { lines: number },
+ *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
+ * }} Report
+ */
+
+export const REPORT_DIR = join(".abatty", "reports");
+
+/** The newest facts of the last night, when any. @param {string} repoDir */
+function nightFacts(repoDir) {
+  const adoption = readAdoption(repoDir);
+  const stateFile = adoption?.files?.state || "docs/ADOPTION_STATE.json";
+  const decisionsFile = adoption?.files?.decisions || "docs/ADOPTION_DECISIONS.md";
+  const state = readJsonFile(repoDir, stateFile);
+  const decisions = existsSync(join(repoDir, decisionsFile))
+    ? (readFileSync(join(repoDir, decisionsFile), "utf8").match(/^- \*\*\d{4}-\d{2}-\d{2}/gm) || [])
+        .length
+    : 0;
+  const reports = existsSync(join(repoDir, "docs"))
+    ? readdirSync(join(repoDir, "docs"))
+        .filter((f) => /^ADOPTION_REPORT_\d{4}-\d{2}-\d{2}\.md$/.test(f))
+        .sort()
+    : [];
+  const nightRoot = join(repoDir, ".claude", "night");
+  const lastRun = existsSync(join(nightRoot, "run.json"))
+    ? readJsonFile(nightRoot, "run.json")
+    : null;
+  return {
+    state,
+    decisions,
+    lastReport: reports.at(-1) ? `docs/${reports.at(-1)}` : null,
+    lastRun,
+  };
+}
+
+/**
+ * Measure the repository and assemble the report. Writes it under .abatty/reports/ unless
+ * `write` is false. @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
+ */
+export function buildReport(repoDir, o = {}) {
+  const gap = analyze(repoDir);
+  const families = gap.families.map((name) => ({
+    name,
+    present: gap.findings.filter((f) => f.family === name && f.status === "present").length,
+    partial: gap.findings.filter((f) => f.family === name && f.status === "partial").length,
+    missing: gap.findings.filter((f) => f.family === name && f.status === "missing").length,
+    na: gap.findings.filter((f) => f.family === name && f.status === "n/a").length,
+  }));
+  const d = drift(repoDir);
+  const harnessPresent = existsSync(join(repoDir, ".claude", "hooks", "self-test.mjs"));
+  /** @type {Report} */
+  const report = {
+    version: 1,
+    abatty: o.abattyVersion || "",
+    repo: repoDir,
+    name: readPackage(repoDir).name || gap.name,
+    date: gap.date,
+    at: new Date().toISOString(),
+    branch: git(repoDir, "rev-parse", "--abbrev-ref", "HEAD"),
+    commit: git(repoDir, "rev-parse", "--short", "HEAD"),
+    score: gap.score,
+    applicable: gap.applicable,
+    families,
+    findings: gap.findings.map((f) => ({
+      ...f,
+      evidence: String(f.evidence),
+      phase: String(f.phase),
+    })),
+    harness: {
+      present: harnessPresent,
+      drift: d.filter((x) => x.state === "differs").length,
+      missing: d.filter((x) => x.state === "missing").length,
+    },
+    scrub: { lines: scanFiles(repoDir, { allow: allowList(repoDir) }).length },
+    night: nightFacts(repoDir),
+  };
+  if (o.write !== false) {
+    const dir = join(repoDir, REPORT_DIR);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, `${gap.date}.json`), JSON.stringify(report, null, 2) + "\n");
+    writeFileSync(join(dir, "latest.json"), JSON.stringify(report, null, 2) + "\n");
+  }
+  return report;
+}
+
+/** The newest report on disk, or null. @param {string} repoDir @returns {Report | null} */
+export function latestReport(repoDir) {
+  return readJsonFile(repoDir, join(REPORT_DIR, "latest.json"));
+}
+
+/** Every dated report on disk, oldest first. @param {string} repoDir @returns {Report[]} */
+export function allReports(repoDir) {
+  const dir = join(repoDir, REPORT_DIR);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .sort()
+    .map((f) => readJsonFile(dir, f))
+    .filter(Boolean);
+}

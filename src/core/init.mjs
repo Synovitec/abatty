@@ -122,7 +122,7 @@ export function initRepo(o) {
   }
 
   // 5. The ignore files.
-  appendLines(repoDir, ".gitignore", [".claude/night/"], events, dryRun);
+  appendLines(repoDir, ".gitignore", [".claude/night/", ".abatty/"], events, dryRun);
   appendLines(
     repoDir,
     ".prettierignore",
