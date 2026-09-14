@@ -1,0 +1,45 @@
+{
+  "$comment": "Per-repository configuration read by the hooks, the skill and the runner. Copy to .claude/adoption.json and edit the commands to the repository's own npm scripts.",
+
+  "baseBranch": "main",
+  "branchPrefix": "adopt/standards",
+  "directPushToBase": false,
+
+  "commands": {
+    "gate": "npm run gate:fast",
+    "gateFull": "npm run gate",
+    "standards": "npm run standards",
+    "lintFile": "npx eslint --max-warnings=0",
+    "test": "npm test",
+    "typecheck": "npm run typecheck"
+  },
+
+  "files": {
+    "changelog": "CHANGELOG.md",
+    "version": "package.json",
+    "state": "docs/ADOPTION_STATE.json",
+    "decisions": "docs/ADOPTION_DECISIONS.md",
+    "progress": "docs/STANDARDS_PROGRESS.md",
+    "baseline": "scripts/ci/standards-baseline.json"
+  },
+
+  "standard": "../ops-hub/engineering/ENGINEERING_STANDARD.md",
+  "plan": "../ops-hub/engineering/ADOPTION_PLAN.md",
+  "gapAnalysis": "../ops-hub/engineering/tools/gap-analysis.mjs",
+
+  "sourceGlobs": ["src/", "server/", "apps/", "packages/", "scripts/", "tests/", "e2e/", "migrations/", "drizzle/", ".woodpecker"],
+
+  "changelogRequiredFor": ["src/", "server/", "apps/", "packages/", "scripts/", "migrations/", "drizzle/", ".woodpecker", "eslint.config", "tsconfig"],
+
+  "protectedPaths": ["migrations/", "drizzle/", "packages/db/prisma/migrations/", ".env", ".env.", "docker-compose.production", "prod.dont.touch"],
+
+  "mcpServers": [],
+
+  "lintOnEdit": true,
+  "lintExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],
+
+  "maxStopBlocks": 6,
+  "maxSessionsPerPhase": 2,
+
+  "phases": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+}

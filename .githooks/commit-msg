@@ -1,0 +1,3 @@
+#!/bin/sh
+# No trace of the tools in this repository's history. Installed by `npm run hooks:install`.
+node bin/abatty.mjs scrub --message "$1"

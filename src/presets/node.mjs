@@ -1,0 +1,118 @@
+/**
+ * The plain Node service preset (Express, Fastify, Hono, a worker, a CLI): no browser suite,
+ * a source root under src/ or server/. NOT PROVEN by a repository yet - the standard's rule
+ * is that a preset is real when a repository has run it, so `init` says so and the gap
+ * analysis will name what the first Node repository finds.
+ */
+
+/** @type {import("./index.mjs").Preset} */
+export const node = {
+  id: "node",
+  name: "Node service (Express / Fastify / Hono / worker)",
+  proven: "",
+  detect: (deps) =>
+    !deps.has("next") &&
+    !deps.has("vite") &&
+    !deps.has("astro") &&
+    (deps.has("express") || deps.has("fastify") || deps.has("hono") || deps.has("koa")),
+  adoption: {
+    commands: {
+      gate: "npm run gate:fast",
+      gateFull: "npm run gate",
+      standards: "npm run standards",
+      lintFile: "npx eslint --max-warnings=0",
+      test: "npm test",
+      typecheck: "npm run typecheck",
+    },
+    sourceGlobs: ["src/", "server/", "scripts/", "tests/", "migrations/", ".woodpecker"],
+    changelogRequiredFor: [
+      "src/",
+      "server/",
+      "scripts/",
+      "migrations/",
+      ".woodpecker",
+      "eslint.config",
+      "tsconfig",
+    ],
+    protectedPaths: [
+      "migrations/",
+      "prisma/migrations/",
+      "drizzle/",
+      ".env",
+      ".env.",
+      "docker-compose.production",
+      "prod.dont.touch",
+    ],
+    lintExtensions: [".ts", ".js", ".mjs"],
+  },
+  scripts: {
+    typecheck: "tsc --noEmit",
+    lint: "eslint . --max-warnings=0",
+    "format:check": "prettier --check --end-of-line auto .",
+    graph: "depcruise src --config .dependency-cruiser.cjs --ignore-known --output-type err",
+    "graph:mermaid": "depcruise src --config .dependency-cruiser.cjs --output-type mermaid",
+    dead: "knip --max-issues 0",
+    gate: "abatty gate",
+    "gate:fast": "abatty gate --fast",
+    "hooks:install": "git config core.hooksPath .githooks",
+  },
+  devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
+  gate: {
+    always: [
+      {
+        // Run directly, never through the repository's script: on a Windows worktree the files are
+        // CRLF and "prettier --check ." reports every file; --end-of-line auto is the standard's form.
+        label: "format",
+        command: ["npx", "prettier", "--check", "--end-of-line", "auto", "."],
+        requires: [
+          ".prettierrc",
+          ".prettierrc.json",
+          ".prettierrc.js",
+          ".prettierrc.cjs",
+          ".prettierrc.mjs",
+          ".prettierrc.yaml",
+          ".prettierrc.yml",
+          "prettier.config.js",
+          "prettier.config.cjs",
+          "prettier.config.mjs",
+        ],
+      },
+      { label: "lint (CODE-4)", script: "lint" },
+      { label: "typecheck (CODE-3)", script: "typecheck" },
+      {
+        label: "import graph (CODE-5)",
+        script: "graph",
+        requires: [".dependency-cruiser.cjs", ".dependency-cruiser.js", ".dependency-cruiser.mjs"],
+      },
+      {
+        label: "dead code (CODE-6)",
+        script: "dead",
+        requires: ["knip.jsonc", "knip.json", "knip.ts"],
+      },
+      { label: "unit tests (TEST-1)", script: "test" },
+      {
+        label: "abatty ratchet + changelog range (CHANGE-2)",
+        script: "standards",
+        rangeArg: true,
+      },
+    ],
+    suites: [
+      {
+        name: "database suite + coverage (DATA-4, TEST-4)",
+        paths:
+          /^(migrations\/|prisma\/|drizzle\/|src\/db\/|server\/db\/|tests\/(integration|db)\/)/,
+        docker: true,
+        steps: [
+          {
+            label: "integration suite against a real database",
+            script: "test:integration",
+            alternatives: ["test:db"],
+          },
+          { label: "coverage gate (TEST-4)", script: "coverage" },
+        ],
+      },
+    ],
+  },
+  rules: ["testing.md", "size-limits.md"],
+  tooling: { dependencyCruiser: true, knip: true },
+};

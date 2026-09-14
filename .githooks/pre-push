@@ -1,0 +1,3 @@
+#!/bin/sh
+# The package's own gate before a push: format, typecheck, tests, no trace of the tools in the files.
+npm run -s gate

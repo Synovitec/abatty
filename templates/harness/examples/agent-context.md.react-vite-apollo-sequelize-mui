@@ -1,0 +1,248 @@
+---
+name: claude-guide
+description: Conventions and constraints for AI agents working in this repository. Read before any code change.
+applies_to: apps/web, apps/api, packages/shared
+updated: 2026-09-04
+---
+
+<!-- Reference example of a stack CLAUDE.md that stays under 200 lines (React 19 + Vite, Apollo
+     Server, Sequelize 6, MUI). To use it with the engineering standard: keep §Stack, §Commands,
+     §Structure, §Rules, §Naming, §Do not touch and §Gotchas here; move the GraphQL, Sequelize,
+     MUI, testing, i18n, a11y, PWA and size sections to .claude/rules/<topic>.md (the rules/
+     folder beside this file has them, path-scoped) and append §7-§10 of CLAUDE.md.template
+     (delivery rules, skills and agents, the autonomy contract, known gaps). -->
+
+# CLAUDE.md
+
+Internal business application. Not public facing. Keep this file under 200 lines.
+
+## Stack
+
+- Frontend: React 19 + Vite + TypeScript (`strict: true`)
+- Backend: Node.js 22 + Apollo Server + TypeScript
+- API: GraphQL, SDL first, types generated with graphql-codegen
+- Database: PostgreSQL + Sequelize 6
+- Validation: Zod, shared between client and server
+- Data fetching: Apollo Client
+- UI: MUI Material 9 + `@mui/icons-material` + `@mui/x-data-grid`, styled with Emotion
+- npm workspaces
+
+## Commands
+
+```bash
+npm run dev                 # web + api in parallel
+npm run typecheck           # tsc --noEmit, all packages
+npm run lint                # eslint, zero warnings allowed
+npm run lint:fix
+npm test                    # vitest
+npm run codegen             # regenerate GraphQL types, run after any .graphql change
+npm run db:migrate
+npm run db:migrate:undo
+npm run db:seed
+
+npm ci                      # install, never `npm install` in CI
+npm run dev -w apps/web     # single workspace
+```
+
+Never edit `package-lock.json` by hand. Add a dependency with `npm install <pkg> -w apps/<app>` and commit the lockfile in the same change.
+
+Gate before finishing any task, in this order: `npm run codegen` (if schema touched), `npm run typecheck`, `npm run lint`, `npm test`. Do not report a task as done if any of them fails.
+
+## Structure
+
+```
+apps/web/src/
+  ├── features/<name>/
+  │     ├── operations.graphql   queries and mutations for this feature
+  │     ├── hooks.ts             wrappers around generated Apollo hooks
+  │     ├── components/
+  │     └── pages/
+  ├── components/                shared presentational components, no business logic
+  ├── theme/
+  │     ├── index.ts             createTheme, palette, typography, shape
+  │     ├── components.ts        MUI component overrides and defaultProps
+  │     └── tokens.ts            colors, radii, spacing constants
+  ├── generated/graphql.ts       generated, do not edit
+  ├── i18n/                      locale files
+  ├── lib/
+  └── main.tsx
+
+apps/api/src/
+  ├── modules/<name>/
+  │     ├── schema.graphql       SDL for this module
+  │     ├── resolvers.ts         thin, no business logic
+  │     ├── service.ts           business logic, no GraphQL context handling
+  │     ├── model.ts             Sequelize model
+  │     └── loaders.ts           DataLoader instances
+  ├── db/
+  │     ├── migrations/          generated, do not edit
+  │     ├── seeders/
+  │     └── index.ts
+  ├── generated/graphql.ts       generated resolver types, do not edit
+  ├── context.ts                 request context: user, loaders, transaction
+  ├── env.ts                     validated environment variables
+  └── server.ts
+```
+
+Feature names match between `apps/web/src/features/` and `apps/api/src/modules/`.
+
+## Rules
+
+1. Layers on the API: resolver reads args and context only, service holds logic, model holds persistence. A resolver never queries the database directly.
+2. Every mutation input is validated with a Zod schema in the service before any write.
+3. Types come from `generated/graphql.ts` or from Zod inference. Never declared twice by hand.
+4. No `any`, no `@ts-ignore`, no non-null assertion `!` outside tests.
+5. Environment variables only through `env.ts`.
+6. No barrel files. Import concrete paths via the `@/` alias.
+7. One exported component per file.
+8. Errors: services throw a typed `AppError` with a machine readable `code`. The Apollo error formatter is the only place that maps it to a GraphQL error.
+9. No raw SQL string interpolation. Use Sequelize finders or `replacements`.
+
+## GraphQL conventions
+
+- Every list field is paginated: `items`, `totalCount`, `hasNextPage`. No unbounded lists.
+- Mutations take a single `input` argument and return a payload type, never a bare scalar.
+- Nullability is deliberate. Non-null by default, nullable only when the domain allows absence.
+- Every association resolver goes through a DataLoader. An association resolved with a direct query is a bug.
+- Deprecate fields with `@deprecated(reason: "...")`, never delete them in the same change.
+- After editing any `.graphql` file, run `npm run codegen` before typechecking.
+
+## Sequelize conventions
+
+- Models typed with `InferAttributes` / `InferCreationAttributes`. No untyped `Model`.
+- Table names snake_case plural, columns snake_case, exposed to TypeScript as camelCase via `underscored: true`.
+- Associations declared in one place, `apps/api/src/db/associations.ts`, not scattered across models.
+- Schema changes go through a migration file. Never `sync({ alter: true })` outside tests.
+- Multi-write operations run inside a transaction taken from the request context.
+- Always scope reads by tenant or owner in the service, never rely on the resolver to do it.
+
+## Material UI conventions
+
+- Never hardcode a color, radius, spacing or font size. Read them from the theme: `theme.palette.primary.main`, `theme.spacing(2)`, `theme.shape.borderRadius`.
+- A value that is not in the theme and is needed twice goes into `theme/tokens.ts` first.
+- Recurring visual changes go into `theme/components.ts` as `styleOverrides` or `defaultProps`, not repeated `sx` props across files.
+- `sx` is for one off layout adjustments only. More than about 8 keys means the component needs `styled()` or a theme override.
+- No inline `style={{}}`, no CSS files per component, no `!important`.
+- Layout with `Stack`, `Grid` and `Box`. No manual flexbox utility soup.
+- Icons come from `@mui/icons-material`. No emoji anywhere in the UI, no icon fonts, no inline SVG for standard icons.
+- Lists use `@mui/x-data-grid` with server side pagination wired to the GraphQL `items` / `totalCount` shape. Never load all rows and paginate client side.
+- Column definitions live outside the component body, or in `useMemo`, never rebuilt on each render.
+- Light mode only unless stated otherwise. Do not add a dark palette speculatively.
+- Dialogs, menus and drawers use MUI components. No custom modal implementation.
+- Feedback: `Snackbar` or the toast helper for transient messages, `Alert` for inline state, `Skeleton` for loading, never a bare spinner on a full page.
+
+## Naming
+
+- Files kebab-case, components PascalCase.
+- Hooks: `useInvoices`, `useCreateInvoice`.
+- GraphQL operations named after the feature: `query InvoiceList`, `mutation InvoiceCreate`.
+- No `utils.ts` catch-all. Name the file after what it does.
+
+## Size limits
+
+| Type | Target | Hard max |
+|---|---|---|
+| React component | 80-150 | 250 |
+| Page component | 60-120 | 200 |
+| Resolvers file | 50-120 | 200 |
+| Service | 100-200 | 300 |
+| Sequelize model | 60-150 | 250 |
+| SDL file | 50-150 | 250 |
+| Hook | 40-80 | 150 |
+| Utility | 20-60 | 100 |
+| Test | - | 400 |
+
+- Functions: 60 lines max, 4 parameters max, cyclomatic complexity 12 max.
+- More than 5 exported functions in one file means it should be split.
+- JSX blocks over 100 lines or nested deeper than 3 levels mean a component is missing.
+- Exempt: `generated/`, `migrations/`, `seeders/`, config files, constant tables.
+
+Enforced in `eslint.config.js` via `max-lines`, `max-lines-per-function`, `max-params`, `complexity`. Do not disable these rules inline to make code fit.
+
+## Lint and typecheck
+
+- ESLint runs with `--max-warnings=0`. A warning is a failure.
+- `eslint-disable` requires a reason comment on the same line.
+- `tsc --noEmit` must pass on every package before a task is done.
+- Formatting is Prettier, never hand adjusted.
+
+## Testing
+
+- Vitest everywhere. Tests colocated: `service.test.ts` next to `service.ts`.
+- Required: every service function, every non-trivial utility, every reducer.
+- Not required: presentational components, generated code, thin resolvers.
+- Integration tests hit a real Postgres test database inside a rolled back transaction. No mocking of Sequelize.
+- One behaviour per test, named `it("rejects an invoice with a past due date")`.
+- Fixtures live in `test/factories/`, never inline blobs copied between files.
+
+## JSDoc
+
+- Required on: exported service functions, custom hooks, permission checks, cache invalidation, anything with non-obvious business rules.
+- Not required on: React components, types, obvious getters, tests.
+- Document the why and the edge cases. Never restate the signature.
+
+```ts
+/**
+ * Cancels an invoice and releases the reserved stock.
+ * Throws if the invoice is already paid, cancellation is only allowed while status is DRAFT or SENT.
+ */
+```
+
+## Documentation
+
+- `README.md`: setup, environment variables, how to run.
+- `docs/architecture.md`: request flow, module map, transaction and auth boundaries.
+- `docs/decisions/NNNN-title.md`: one short ADR per structural decision, problem, choice, consequence.
+- Update the doc in the same change as the code. A stale doc is worse than no doc.
+- Every markdown file in `docs/` starts with the same YAML header as this file: `name`, `description`, `updated`.
+
+## Mobile and responsive
+
+- Layout must work down to the `md` breakpoint. Below that, only read views need to be usable.
+- Breakpoints only through `theme.breakpoints`, never a raw media query string.
+- DataGrid collapses into stacked `Card` items under `md`. No horizontal scrolling of the whole page.
+- Touch targets at least 44px, enforced in `theme/components.ts` with a `@media (pointer: coarse)` override on `Button` and `IconButton`.
+- Text inputs are 16px on touch to prevent iOS zoom.
+- Dialogs use full width with 16px margins under `sm`.
+- Not a mobile first product. Do not spend effort on phone specific layouts unless asked.
+
+## PWA
+
+- Installable with a manifest and an app icon, used for kiosk and tablet deployments.
+- Service worker caches the app shell and static assets only. Never cache GraphQL responses.
+- Offline state shows an explicit banner. No optimistic writes while offline.
+- Version the service worker and force reload on activation to avoid stale bundles.
+
+## Accessibility
+
+- Use the MUI component that carries the right semantics. A `Box` with `onClick` is not acceptable, use `Button`, `IconButton` or `ListItemButton`.
+- Every field uses `TextField` with a real `label`, or an explicit `InputLabel` linked by id. Every `IconButton` has an `aria-label`.
+- Keep MUI focus rings. `Dialog` and `Drawer` already trap and restore focus, do not disable that.
+- Tooltips are never the only carrier of information.
+- Full keyboard operation for the main workflows: navigation, forms, tables, dialogs.
+- Contrast ratio 4.5:1 minimum for text.
+- `eslint-plugin-jsx-a11y` runs as an error, not a warning.
+
+## Internationalisation
+
+- All user facing strings go through the i18n layer. No literal text in JSX.
+- Keys namespaced by feature: `invoices.form.dueDate.label`.
+- Locales: `fr` default, `en`, `nl`. Adding a key means adding it to all three files.
+- Dates, numbers and currency formatted with `Intl`, never manually.
+- Server side messages return an error `code` plus params. The client does the translation.
+
+## Not applicable
+
+SEO, sitemaps, meta tags, structured data, server side rendering for crawlers. The application sits behind authentication. Do not add them.
+
+## Do not touch
+
+- `apps/api/src/db/migrations/` and `seeders/`
+- `generated/` in either app, regenerate with `npm run codegen`
+- `dist/`, `node_modules/`, lockfiles
+
+## Gotchas
+
+<!-- Replace with the real traps in this project -->
+- The Apollo context creates one DataLoader set per request. Never reuse loaders across requests.
+- Timestamps are stored in UTC and converted only at render time.

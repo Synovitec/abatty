@@ -1,0 +1,43 @@
+{
+  "name": "abatty",
+  "version": "0.1.0",
+  "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
+  "license": "UNLICENSED",
+  "private": false,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "abatty": "./bin/abatty.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./gap-analysis": "./src/core/gap-analysis.mjs",
+    "./presets": "./src/presets/index.mjs",
+    "./scrub-map": "./src/core/scrub-map.mjs",
+    "./vocabulary": "./src/core/vocabulary.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check --end-of-line auto .",
+    "gate": "npm run -s format:check && npm run -s typecheck && npm test && node bin/abatty.mjs scrub .",
+    "gate:fast": "npm run -s gate",
+    "hooks:install": "git config core.hooksPath .githooks"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.0"
+  },
+  "homepage": "https://abatty.io"
+}
