@@ -91,6 +91,7 @@ export function ratchetSetup(repoDir: string): {
  *   citationsExempt: string[],
  *   changelog: string,
  *   changelogRequiredFor: string[],
+ *   coupled: unknown[],
  * }} RatchetConfig
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
  * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "skipped"} VerdictStatus
@@ -164,6 +165,7 @@ export type RatchetConfig = {
     citationsExempt: string[];
     changelog: string;
     changelogRequiredFor: string[];
+    coupled: unknown[];
 };
 export type Measurement = {
     metric: string;

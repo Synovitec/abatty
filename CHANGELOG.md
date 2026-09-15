@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Coupled paths as one mechanism (roadmap #23): pairs of paths (`coupled` in the config: a
+  prefix or a glob, a `why`) judged per commit over the pushed range, an offender cured only
+  by a later commit touching the counterpart; the ratchet's `change.coupledMissing` probe
+  (hard, with controls) for the gate and CI, the Stop hook's check at night, and the
+  changelog rule re-expressed on the same mechanism.
 - Presets per workspace, composed (roadmap #22): the workspaces of a monorepo read from the
   root's `workspaces` field, a pnpm workspace file or the conventional folders, each detected
   from its own dependencies or named in the config (`workspaces`), gated in its own folder by

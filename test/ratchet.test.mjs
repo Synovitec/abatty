@@ -268,7 +268,7 @@ test("the changelog range: a source commit after the last changelog touch fails 
   assert.equal(red.code, 1, red.out);
   assert.match(red.out, /change\.changelogMissing/);
   assert.match(red.out, /HARD FAIL/);
-  assert.match(red.out, /feat: six \(no CHANGELOG\.md touch after it\)/);
+  assert.match(red.out, /feat: six: src\/a\.ts changed, CHANGELOG\.md not touched after it/);
   writeFileSync(join(dir, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n- six\n");
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "docs: changelog");

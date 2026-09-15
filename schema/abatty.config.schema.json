@@ -72,6 +72,24 @@
       "items": { "type": "string" },
       "description": "Path prefixes whose commits must carry a changelog line."
     },
+    "coupled": {
+      "type": "array",
+      "description": "Coupled paths: when this changes, that changes in the same push. Judged per commit over the pushed range by the ratchet (the gate, CI) and the Stop hook; a `when` path changed without a `then` path after it is refused until a later commit touches it. A schema and its migration, an API and its client, a document and the code it describes.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["when", "then"],
+        "properties": {
+          "when": {
+            "type": ["string", "array"],
+            "items": { "type": "string" },
+            "description": "A prefix or a glob (* a segment, ** any depth)."
+          },
+          "then": { "type": ["string", "array"], "items": { "type": "string" } },
+          "why": { "type": "string" }
+        }
+      }
+    },
     "protectedPaths": {
       "type": "array",
       "items": { "type": "string" },

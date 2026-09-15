@@ -166,3 +166,8 @@ Tests 119 -> 122.
 
 A monorepo composes presets, each gated in its own folder; documents alone have a preset.
 Tests 122 -> 126.
+
+### 2026-09-15 - Coupled paths
+
+One mechanism for "when this changes, that changes in the same push"; this repository couples
+the rule families to the catalog. Tests 126 -> 130.

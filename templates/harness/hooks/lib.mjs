@@ -203,3 +203,59 @@ export function tail(text, lines = 60) {
   const all = String(text || "").split(/\r?\n/).filter(Boolean);
   return all.slice(-lines).join("\n");
 }
+
+/**
+ * Coupled paths, the same mechanism the ratchet's probe runs (src/core/coupled.mjs in the
+ * package): a pattern is a prefix, or a glob with `*` and `**`; over a range, oldest first, a
+ * commit touching a `when` path without a `then` path is an offender until a later commit
+ * touches the `then` path. Returns one line per offender.
+ */
+export function coupledOffenders(range, declared) {
+  const pairs = (Array.isArray(declared) ? declared : [])
+    .map((d) => ({ when: [].concat(d?.when ?? []).map(String), then: [].concat(d?.then ?? []).map(String), why: String(d?.why || "") }))
+    .filter((p) => p.when.length && p.then.length);
+  if (!pairs.length) return [];
+  const matcher = (pattern) => {
+    const p = String(pattern).replace(/\\/g, "/");
+    if (!/[*?]/.test(p)) return (path) => path === p || path.startsWith(p) || path.includes(`/${p}`);
+    let re = "^";
+    for (let i = 0; i < p.length; i++) {
+      const ch = p.charAt(i);
+      if (ch === "*" && p.charAt(i + 1) === "*") {
+        if (p.charAt(i + 2) === "/") {
+          re += "(?:.*/)?";
+          i += 2;
+        } else {
+          re += ".*";
+          i += 1;
+        }
+      } else if (ch === "*") re += "[^/]*";
+      else if (ch === "?") re += "[^/]";
+      else re += /[.+^${}()|[\]\\]/.test(ch) ? `\\${ch}` : ch;
+    }
+    return (path) => new RegExp(re + "$").test(path);
+  };
+  const commits = git("log", "--reverse", "--no-merges", "--format=%h%x00%s", range)
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, subject] = l.split("\0");
+      return { sha, subject: subject || "", files: git("diff-tree", "--no-commit-id", "--name-only", "-r", sha).split("\n").filter(Boolean) };
+    });
+  const out = [];
+  for (const pair of pairs) {
+    const whenHit = pair.when.map(matcher);
+    const thenHit = pair.then.map(matcher);
+    let pending = [];
+    for (const c of commits) {
+      if (c.files.some((f) => thenHit.some((m) => m(f)))) {
+        pending = [];
+        continue;
+      }
+      const hit = c.files.filter((f) => whenHit.some((m) => m(f)));
+      if (hit.length) pending.push(`${c.sha} ${c.subject}: ${hit[0]} changed, ${pair.then.join(" or ")} not touched after it${pair.why ? ` (${pair.why})` : ""}`);
+    }
+    out.push(...pending);
+  }
+  return out;
+}

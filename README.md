@@ -372,6 +372,15 @@ its root (`kinds` and their budgets, `exempt` paths, `cap`, `contextMax`, `barre
 `envModule`, `include`/`exclude` of metrics, `hard`/`ratchet` overrides, `mustScan`) and names
 the baseline through `files.baseline` (default `scripts/ci/standards-baseline.json`).
 
+**Coupled paths.** "When this changes, that changes in the same push" is one mechanism:
+pairs of paths (a prefix, or a glob with `*` and `**`) declared in the config (`coupled`,
+with a `why`), judged per commit over the pushed range by the ratchet's probe (so the gate
+and CI) and by the Stop hook at night. A commit that touches a `when` path without a `then`
+path is refused until a later commit touches the `then` path, so the cure is always a new
+commit. The changelog rule is the same mechanism (the source prefixes, then the changelog);
+a schema and its migration, an API and its client, a document and the code it describes are
+the pairs a repository adds.
+
 ## What is not here yet
 
 The `update` command (a three-way merge that keeps a repository's own edits), `night-report`

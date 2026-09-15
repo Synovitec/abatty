@@ -26,7 +26,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { checkDirection, formatDirection } from "./check-direction.mjs";
 import { join } from "node:path";
-import { NIGHT, NIGHT_DIR, appendLog, counter, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, tail, writeReceipt } from "./lib.mjs";
+import { NIGHT, NIGHT_DIR, appendLog, counter, coupledOffenders, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, tail, writeReceipt } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -131,6 +131,16 @@ if (mergeBase) {
   }
 }
 pass("changelog");
+
+// 5b. The coupled paths the config declares (a schema and its migration, an API and its client,
+// a document and the code it describes), the same rule over the same range: a `when` path
+// changed without its `then` path after it is a block, cured by a new commit.
+if (mergeBase) {
+  const offenders = coupledOffenders(`${mergeBase}..HEAD`, config.coupled);
+  if (offenders.length)
+    block("coupled", `${offenders.length} coupled path(s) changed without their counterpart after them:\n${offenders.slice(0, 10).join("\n")}\n\nChange the counterpart in a new commit (amending is not allowed unattended), or record why not as a decision.`);
+}
+pass("coupled");
 
 // 6. The state file, for the phase this session was started for.
 const stateFile = config.files?.state || "docs/ADOPTION_STATE.json";

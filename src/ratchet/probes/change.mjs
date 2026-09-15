@@ -1,8 +1,12 @@
 /**
- * Delivery (standard CHANGE.1): over the pushed range, every commit that touches source is
- * followed or accompanied by a changelog touch. A rule about commits, so it reads the range
- * alone, never the tree; with no range there is nothing to judge and the probe says so.
+ * Delivery (standard CHANGE.1, CHANGE.2): over the pushed range, every commit that touches
+ * source is followed or accompanied by a changelog touch, and every coupled pair the
+ * repository declares (a schema and its migration, an API and its client, a document and the
+ * code it describes) holds the same way. One mechanism (src/core/coupled.mjs), two probes. A
+ * rule about commits, so it reads the range alone, never the tree; with no range there is
+ * nothing to judge and the probe says so.
  */
+import { changelogPairs, commitsOf, coupledFindings, normalisePairs } from "../../core/coupled.mjs";
 
 /** @type {import("../index.mjs").Probe[]} */
 export const probes = [
@@ -20,29 +24,11 @@ export const probes = [
           findings: [],
           skipped: "no range (pass --range <a..b>, or auto for the push)",
         };
-      const log = c.git("log", "--reverse", "--format=%h%x00%s", o.range);
-      if (!log) return { scanned: 0, findings: [] };
-      const commits = log.split("\n").map((l) => l.split("\0"));
-      const required = o.config.changelogRequiredFor;
-      const changelog = o.config.changelog;
-      /** @type {{ path: string, detail: string }[]} */
-      let offenders = [];
-      for (const [sha, subject] of commits) {
-        const files = c
-          .git("show", "--name-only", "--format=", String(sha))
-          .split("\n")
-          .filter(Boolean);
-        if (files.includes(changelog)) {
-          offenders = [];
-          continue;
-        }
-        if (files.some((f) => required.some((p) => f.startsWith(p) || f.includes(p))))
-          offenders.push({
-            path: String(sha),
-            detail: `${subject} (no ${changelog} touch after it)`,
-          });
-      }
-      return { scanned: commits.length, findings: offenders };
+      const commits = commitsOf(c.git, o.range);
+      return {
+        scanned: commits.length,
+        findings: coupledFindings(commits, changelogPairs(o.config)),
+      };
     },
     controls: [
       {
@@ -70,6 +56,79 @@ export const probes = [
         files: { "CHANGELOG.md": "# Changelog\n", "docs/a.md": "# a\n" },
         commits: [{ files: { "docs/a.md": "# a\n\nmore\n" }, message: "docs: a" }],
         range: "HEAD~1..HEAD",
+        expect: 0,
+      },
+    ],
+  },
+  {
+    metric: "change.coupledMissing",
+    kind: "hard",
+    standard: ["CHANGE.2"],
+    title:
+      "Coupled paths: a `when` path changed in the pushed range without its `then` path after it",
+    why: "When this changes, that changes in the same push: a schema without its migration, an API without its client, a document behind the code it describes. Declared as pairs in the config (coupled), judged per commit, cured by a new commit.",
+    emptyScanOk: true,
+    scan: (c, o) => {
+      const pairs = normalisePairs(o.config.coupled);
+      if (!pairs.length)
+        return {
+          scanned: 0,
+          findings: [],
+          skipped: "no coupled pairs declared (config → coupled)",
+        };
+      if (!o.range)
+        return {
+          scanned: 0,
+          findings: [],
+          skipped: "no range (pass --range <a..b>, or auto for the push)",
+        };
+      const commits = commitsOf(c.git, o.range);
+      return { scanned: commits.length, findings: coupledFindings(commits, pairs) };
+    },
+    controls: [
+      {
+        name: "the schema changed, no migration after it",
+        files: { "src/db/schema.ts": "export {};\n", "migrations/0001.sql": "-- one\n" },
+        commits: [
+          { files: { "src/db/schema.ts": "export const t = 1;\n" }, message: "feat: a column" },
+        ],
+        range: "HEAD~1..HEAD",
+        config: {
+          coupled: [
+            {
+              when: "src/db/schema.ts",
+              then: "migrations/",
+              why: "a schema change ships its migration",
+            },
+          ],
+        },
+        expect: 1,
+      },
+      {
+        name: "the migration in a later commit of the range",
+        files: { "src/db/schema.ts": "export {};\n", "migrations/0001.sql": "-- one\n" },
+        commits: [
+          { files: { "src/db/schema.ts": "export const t = 1;\n" }, message: "feat: a column" },
+          { files: { "migrations/0002.sql": "-- two\n" }, message: "feat: its migration" },
+        ],
+        range: "HEAD~2..HEAD",
+        config: { coupled: [{ when: "src/db/schema.ts", then: "migrations/" }] },
+        expect: 0,
+      },
+      {
+        name: "a glob pair: the API and its client in the same commit",
+        files: { "src/api/users.ts": "export {};\n", "src/client/users.ts": "export {};\n" },
+        commits: [
+          {
+            files: {
+              "src/api/users.ts": "export const u = 1;\n",
+              "src/client/users.ts": "export const u = 1;\n",
+            },
+            message: "feat: users",
+          },
+        ],
+        range: "HEAD~1..HEAD",
+        config: { coupled: [{ when: "src/api/**/*.ts", then: "src/client/**" }] },
         expect: 0,
       },
     ],

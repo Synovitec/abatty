@@ -31,6 +31,7 @@
 
   "changelogRequiredFor": ["src/", "server/", "apps/", "packages/", "scripts/", "migrations/", "drizzle/", ".woodpecker", "eslint.config", "tsconfig"],
 
+  "coupled": [],
   "protectedPaths": ["migrations/", "drizzle/", "packages/db/prisma/migrations/", ".env", ".env.", "docker-compose.production", "prod.dont.touch"],
 
   "mcpServers": [],

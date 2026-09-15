@@ -81,6 +81,7 @@ export const DEFAULT_CONFIG = {
     "drizzle/",
     "prisma/",
   ],
+  coupled: [],
 };
 
 /**
@@ -96,6 +97,7 @@ export function resolveConfig(adoption) {
   if (adoption?.files?.changelog) c.changelog = String(adoption.files.changelog);
   if (Array.isArray(adoption?.changelogRequiredFor) && !r.changelogRequiredFor)
     c.changelogRequiredFor = adoption.changelogRequiredFor.map(String);
+  if (Array.isArray(adoption?.coupled) && !r.coupled) c.coupled = adoption.coupled;
   return c;
 }
 
