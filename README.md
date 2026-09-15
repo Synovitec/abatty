@@ -12,6 +12,8 @@ npx abatty                       # the repository at a glance: score, families, 
 npx abatty init --stack next     # the instrument, from the templates and the preset
 npx abatty measure               # the gap analysis: score, every check, next steps by phase
 npx abatty gate --fast           # the path-aware gate (the pre-push hook and the night run it too)
+npx abatty ratchet --range auto  # the ratchet: every probe against the committed baseline, per total and per file
+npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty presets               # the stacks, and which repository proved each
 npx abatty scrub                 # no trace of the tools: files (--fix), commit messages (--commits), pull requests (--prs)
@@ -130,20 +132,49 @@ those is not a finding. A repository allows its own product terms through
 [`docs/ROADMAP.md`](docs/ROADMAP.md): what changes next, in the order the evidence dictates, each
 item with the evidence that put it there.
 
+## The ratchet
+
+`abatty ratchet` measures every mechanical rule the linter cannot state and refuses a number
+that goes the wrong way; `abatty baseline` writes today's numbers as the floor. A **probe** is
+data with one function: `{ metric, kind, standard, title, why, scan(ctx), controls }`. Two
+kinds: **hard** must be zero, now and forever; **ratchet** holds today's number and may only
+fall, by its total **and per file** (the `debt` in the baseline), so debt cannot relocate: a
+file may improve, never worsen, and a file not on the list carries none. A metric at zero is
+promoted to hard by the baseline writer; a hard metric above zero is never recorded; a floor
+that rose is refused without `--reason`, and the reason belongs in `docs/STANDARDS_PROGRESS.md`
+too. A probe that scans zero files where the baseline saw some fails the run, so a moved path
+never reports green forever. The changelog check over the pushed range (CHANGE-1) is one probe
+among the others; the gate passes it the range.
+
+The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE-1, the budgets
+by kind of file and the 800 cap), `context.overCap` (AIR-1), `types.escapes` (CODE-3),
+`valid.rawEnv` (VALID-3), `code.barrels` (CODE-5), `docs.frontMatter`, `docs.indexDrift`,
+`docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC-2..5), `change.changelogMissing`
+(CHANGE-1). A readability score over the same numbers is printed as a trend, never a gate.
+
+Every probe carries its **control cases in both directions**, and `abatty ratchet --controls`
+runs them on throwaway repositories; the package's own test runs them on every push, so a probe
+with no failing control case cannot be added. A repository adds its own probes in
+`abatty.probes.mjs` at its root, the same shape, controls required, a built-in name refused;
+it configures the ratchet under `ratchet` in its adoption config or in `abatty.config.json` at
+its root (`kinds` and their budgets, `exempt` paths, `cap`, `contextMax`, `barrelMax`,
+`envModule`, `include`/`exclude` of metrics, `hard`/`ratchet` overrides, `mustScan`) and names
+the baseline through `files.baseline` (default `scripts/ci/standards-baseline.json`).
+
 ## What is not here yet
 
-The ratchet itself (`check-standards`, the probes with per-file floors, `standards:baseline`)
-is still copied from the reference repository named in ops-hub's `ADOPTION_STATUS.md`; it is
-the next slice. Then the night runner in Node (one implementation for Windows and POSIX), the
-`update` command (a three-way merge that keeps a repository's own edits), `night-report` (the
-learning distillation), and the dashboard over every repository's `standards-report.json`.
+The night runner in Node (one implementation for Windows and POSIX), the `update` command (a
+three-way merge that keeps a repository's own edits), `night-report` (the learning
+distillation), and the dashboard over every repository's report. The function-shape probe
+(CODE-2) is not here: ESLint holds it (`CODE-SHAPE`).
 
 ## Development
 
 ```sh
 npm test                 # node:test, temp repositories, the real self-test
 npm run typecheck        # checkJs strict, zero findings, no file under ts-nocheck
-npm run gate             # format, typecheck, tests, no trace of the tools
+npm run gate             # format, typecheck, tests, the ratchet, no trace of the tools
+npm run standards        # this package against its own baseline (scripts/ci/standards-baseline.json)
 node bin/abatty.mjs rules --md > docs/CATALOG.md   # after a rule changed; the test is red until it is run
 ```
 

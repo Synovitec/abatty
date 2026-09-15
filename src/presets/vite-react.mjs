@@ -48,6 +48,8 @@ export const viteReact = {
     graph: "depcruise src server --config .dependency-cruiser.cjs --ignore-known --output-type err",
     "graph:mermaid": "depcruise src server --config .dependency-cruiser.cjs --output-type mermaid",
     dead: "knip --max-issues 0",
+    standards: "abatty ratchet",
+    "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
     "hooks:install": "git config core.hooksPath .githooks",

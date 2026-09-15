@@ -31,9 +31,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check --end-of-line auto .",
-    "gate": "npm run -s format:check && npm run -s typecheck && npm test && node bin/abatty.mjs scrub .",
+    "gate": "npm run -s format:check && npm run -s typecheck && npm test && npm run -s standards && node bin/abatty.mjs scrub .",
     "gate:fast": "npm run -s gate",
-    "hooks:install": "git config core.hooksPath .githooks"
+    "hooks:install": "git config core.hooksPath .githooks",
+    "standards": "node bin/abatty.mjs ratchet --range auto",
+    "standards:baseline": "node bin/abatty.mjs baseline"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

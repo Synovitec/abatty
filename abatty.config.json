@@ -1,0 +1,19 @@
+{
+  "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config.",
+  "files": {
+    "baseline": "scripts/ci/standards-baseline.json"
+  },
+  "ratchet": {
+    "exempt": [
+      "(^|/)(generated|__generated__|vendor|vendored)/",
+      "(^|/)(migrations|seeders|seeds)/",
+      "(^|/)(i18n|locales|messages|dictionaries)/",
+      "(^|/)[^/]*\\.config\\.[cm]?[jt]s$",
+      "^scripts/",
+      "^bin/",
+      "^\\.claude/hooks/",
+      "^(tests?|e2e)/",
+      "^templates/harness/(hooks|testing)/"
+    ]
+  }
+}

@@ -14,9 +14,9 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     why: "A rule with a number is enforced the day the number is committed: existing debt is allowed, a new violation is refused, and a number that must go up is a decision written in the same commit.",
-    next: "Copy the reference ratchet and write the baseline",
+    next: "Add `standards: abatty ratchet` (init writes it) and run `abatty baseline` to record the floor",
     check: (c) => {
-      const std = c.script(/^standards$|check-standards|check-limits/);
+      const std = c.script(/^standards$|check-standards|check-limits|abatty ratchet/);
       const baseline = c.firstFile(/standards-baseline\.json$/);
       return {
         status: std && baseline ? "present" : std || baseline ? "partial" : "missing",
@@ -56,10 +56,14 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     why: "A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added.",
-    next: "Add a standards-probe.test file under tests/lint with a violation, a clean case and each regression",
+    next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), or add a standards-probe.test file with a violation, a clean case and each regression",
     check: (c) => {
       const t = c.firstFile(/standards-probe\.test\.|check-standards\.test\.|check-limits\.test\./);
-      return { status: t ? "present" : "missing", evidence: t || "none" };
+      const packaged = c.script(/abatty ratchet/);
+      return {
+        status: t || packaged ? "present" : "missing",
+        evidence: t || (packaged ? "the package's probes, each with controls both ways" : "none"),
+      };
     },
   },
   {

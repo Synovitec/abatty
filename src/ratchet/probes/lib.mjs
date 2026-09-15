@@ -1,0 +1,73 @@
+/**
+ * What every probe shares: the exempt test, the kind budget of a path, a regex list compiled
+ * once, the front matter of a document.
+ */
+
+/** Compile regex sources once per call site. @param {string[]} sources */
+export function regexes(sources) {
+  return sources.map((s) => new RegExp(s));
+}
+
+/** True when a path matches any of the sources. @param {string} path @param {RegExp[]} list */
+export function matchesAny(path, list) {
+  return list.some((re) => re.test(path));
+}
+
+/**
+ * The code-line budget of a path: the first kind whose pattern matches, else the module budget.
+ * @param {string} path @param {import("../index.mjs").RatchetConfig} config
+ * @returns {{ kind: string, max: number }}
+ */
+export function budgetOf(path, config) {
+  for (const k of config.kinds)
+    if (new RegExp(k.match).test(path)) return { kind: k.kind, max: k.max };
+  return { kind: "module", max: config.defaultMax };
+}
+
+/**
+ * The front matter of a Markdown document as a flat map: scalar values as strings, `[...]`
+ * lists as arrays of strings, `- item` lists under a key as arrays. Null when the document does
+ * not open with `---`.
+ * @param {string} text
+ * @returns {Record<string, string | string[]> | null}
+ */
+export function frontMatter(text) {
+  const t = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  if (!t.startsWith("---")) return null;
+  const end = t.indexOf("\n---", 3);
+  if (end < 0) return null;
+  const body = t.slice(3, end).split(/\r?\n/);
+  /** @type {Record<string, string | string[]>} */
+  const out = {};
+  let key = "";
+  for (const line of body) {
+    const item = line.match(/^\s+-\s+(.*)$/);
+    if (item && key) {
+      const prev = out[key];
+      out[key] = [...(Array.isArray(prev) ? prev : []), unquote(item[1] || "")];
+      continue;
+    }
+    const kv = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+    if (!kv) continue;
+    key = kv[1] || "";
+    const raw = (kv[2] || "").replace(/\s+#.*$/, "").trim();
+    if (raw.startsWith("[") && raw.endsWith("]"))
+      out[key] = raw
+        .slice(1, -1)
+        .split(",")
+        .map((s) => unquote(s.trim()))
+        .filter(Boolean);
+    else out[key] = raw === "" ? [] : unquote(raw);
+  }
+  return out;
+}
+
+/** @param {string} s */
+function unquote(s) {
+  return s.replace(/^["']|["']$/g, "");
+}
+
+/** Lines of a text, CRLF or LF. @param {string} text */
+export function lines(text) {
+  return text.split(/\r?\n/);
+}

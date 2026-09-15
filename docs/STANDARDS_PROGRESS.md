@@ -12,14 +12,15 @@ related: ["./README.md", "../README.md"]
 
 ## Scoreboard
 
-| Metric                                                    | Day 0 (2026-09-14)                                                             | Now       | Target | Held by                                                          | Rule   |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------ | --------- | ------ | ---------------------------------------------------------------- | ------ |
-| `tsc --noEmit` over `checkJs` strict                      | 0                                                                              | **0**     | 0      | `npm run typecheck` in the gate                                  | CODE 3 |
-| Files under `// @ts-nocheck`                              | 1 (`src/core/gap-analysis.mjs`, generated from an untyped script; 48 findings) | **0**     | 0      | the checks moved into `src/rules/`, typed, on 2026-09-14         | CODE 3 |
-| Tests                                                     | 13                                                                             | **32**    | -      | `npm test` in the gate                                           | TEST 1 |
-| Templates in sync with ops-hub                            | yes                                                                            | **yes**   | yes    | `test/templates.test.mjs`, `doctor --templates-only` in the gate | -      |
-| Prettier                                                  | clean                                                                          | **clean** | clean  | `format:check` in the gate                                       | CODE 4 |
-| Lines naming a tool, a vendor or a model (`abatty scrub`) | 341 (day 0, before the scrub)                                                  | **0**     | 0      | `abatty scrub .` in the gate, the commit-msg hook, the guard     | -      |
+| Metric                                                    | Day 0 (2026-09-14)                                                                          | Now       | Target | Held by                                                          | Rule   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------- | ------ | ---------------------------------------------------------------- | ------ |
+| `tsc --noEmit` over `checkJs` strict                      | 0                                                                                           | **0**     | 0      | `npm run typecheck` in the gate                                  | CODE 3 |
+| Files under `// @ts-nocheck`                              | 1 (`src/core/gap-analysis.mjs`, generated from an untyped script; 48 findings)              | **0**     | 0      | the checks moved into `src/rules/`, typed, on 2026-09-14         | CODE 3 |
+| Tests                                                     | 13                                                                                          | **32**    | -      | `npm test` in the gate                                           | TEST 1 |
+| Templates in sync with ops-hub                            | yes                                                                                         | **yes**   | yes    | `test/templates.test.mjs`, `doctor --templates-only` in the gate | -      |
+| Prettier                                                  | clean                                                                                       | **clean** | clean  | `format:check` in the gate                                       | CODE 4 |
+| Lines naming a tool, a vendor or a model (`abatty scrub`) | 341 (day 0, before the scrub)                                                               | **0**     | 0      | `abatty scrub .` in the gate, the commit-msg hook, the guard     | -      |
+| Ratchet metrics above zero (`npm run standards`)          | 4 of 13 (2026-09-15: size.overBudget 1, size.excessCode 9, types.escapes 7, valid.rawEnv 7) | **4**     | 0      | `scripts/ci/standards-baseline.json`, the ratchet in the gate    | P 2    |
 
 ## Log
 
@@ -36,3 +37,14 @@ The checks moved into the package as the rule catalog (`src/rules/`, 65 rules in
 typed): the `@ts-nocheck` file and the port script are gone, 0 files under the escape. Tests
 21 -> 32. The scores of the reference repositories are unchanged by the port (paycore_dms
 80/100 over 63, abatty 29/100 over 51), which is the proof the checks are the same.
+
+### 2026-09-15 - The ratchet
+
+The ratchet moved into the package (`abatty ratchet`, `abatty baseline`, thirteen probes with
+their controls). This package baselined itself the same day: nine metrics at zero and
+promoted to HARD; four ratchets with their debt on the list - `size.overBudget` 1 and
+`size.excessCode` 9 (`src/rules/families/code.mjs`, 9 code lines over the module budget),
+`types.escapes` 7 (the escape patterns quoted in the probe's and a rule's own source),
+`valid.rawEnv` 7 (the terminal layer's colour switches, the same quoted patterns). The hook
+and stub templates are exempt from the kind budget through `abatty.config.json` (they are
+sequential procedures where stdout is the interface), still under the 800 cap. Tests 32 -> 53.

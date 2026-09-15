@@ -7,6 +7,19 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The ratchet in the package (`src/ratchet/`): `abatty ratchet [--range auto] [--json]
+  [--controls]` and `abatty baseline [--reason] [--dry-run]`. Probes as data with one function
+  (`{ metric, kind, standard, title, why, scan, controls }`), thirteen built in (size by kind
+  and the 800 cap, the context file's cap, type escapes, raw env reads, barrels, front matter,
+  the index, citations, freshness, dangling source_truth, the changelog over the pushed range),
+  each with control cases both ways that the package's test runs. HARD is zero forever, RATCHET
+  may only fall per total and per file; zero promotes to HARD, a rise is refused without a
+  reason, scanned-zero fails where the baseline saw files. A repository's own probes in
+  `abatty.probes.mjs` (validated, controls required); the config under `ratchet` in the
+  adoption config or in `abatty.config.json` at the root; a readability score as a trend.
+- The presets write `standards: abatty ratchet` and `standards:baseline`; the gate's ratchet
+  step now runs. This package holds its own baseline (`scripts/ci/standards-baseline.json`)
+  and runs the ratchet in its gate.
 - `docs/ROADMAP.md`: the "any project" section - the four facts in the code that stop a
   stranger's repository from a meaningful score, and items 18 to 27 (a root config with nothing
   outside the repository, profiles, an `applies` predicate, a stage, presets per workspace,

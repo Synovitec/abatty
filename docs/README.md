@@ -1,3 +1,13 @@
+---
+title: "Documentation index"
+description: "Every document of the package with what it is for, its category and its status; the one entry point, kept equal to the tree by the ratchet's docs.indexDrift metric."
+category: reference
+status: living
+audience: ["developer", "agent"]
+tags: ["index", "docs"]
+related: ["../README.md"]
+---
+
 # Documentation index
 
 | Document                | What it is for                                                                         | Category   | Status |

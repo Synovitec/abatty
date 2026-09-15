@@ -39,6 +39,14 @@
     "waived": {}
   },
 
+  "ratchet": {
+    "$comment": "The ratchet's configuration (abatty ratchet / abatty baseline): the repository's own probes file, metrics to exclude, kind overrides (hard, ratchet), exempt path patterns; the budgets by kind, the caps and the env module take the standard's defaults unless set here.",
+    "local": "abatty.probes.mjs",
+    "exclude": [],
+    "hard": [],
+    "ratchet": []
+  },
+
   "lintOnEdit": true,
   "lintExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"],
 
