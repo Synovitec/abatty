@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import { LOCK, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
@@ -149,6 +150,11 @@ export function initRepo(o) {
     "docs/ADOPTION_DECISIONS.md",
     '---\ntitle: "Adoption decisions"\ndescription: "The decisions taken alone by the unattended adoption nights (/adopt-standards): date, phase, situation, the default taken, the alternative set aside, what the morning must re-read."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "adoption", "decisions"]\nrelated: ["./README.md", "./STANDARDS_PROGRESS.md"]\n---\n\n# Adoption decisions\n\n',
   );
+
+  // 7. The lock: the package version and the hash of every shipped file as installed, and the
+  //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.
+  if (!dryRun) writeLock(repoDir, preset);
+  events.push({ file: LOCK, action: "written" });
 
   const missingDeps = preset.devDependencies.filter(
     (d) => !(pkg.devDependencies || {})[d] && !(pkg.dependencies || {})[d],

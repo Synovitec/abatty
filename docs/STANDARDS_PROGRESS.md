@@ -73,3 +73,8 @@ through the happy path, canary only, six abort paths and three refusals, on ever
 same slice fixed a self-test defect the first week never saw because it ran on Windows: the
 no-op gate `node -e process.exit(0)` is a syntax error to a POSIX shell, so `doctor` was red on
 Linux and macOS for a reason that was not the harness. Tests 55 -> 62.
+
+### 2026-09-15 - update
+
+`abatty update` merges the package's harness with a repository's own edits; the reference
+repository's harness was synced by hand three times in one day before it. Tests 62 -> 70.

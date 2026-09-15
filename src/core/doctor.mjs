@@ -9,6 +9,7 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
+import { packageVersion, readLock } from "./update.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -101,5 +102,15 @@ export function doctor(o) {
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
   const ok = st.code === 0 && missing.length === 0 && (!o.strict || differs.length === 0);
-  return { ok, selfTest: st, drift: d, missing, differs, missingScripts: scripts };
+  const lock = readLock(repoDir);
+  return {
+    ok,
+    selfTest: st,
+    drift: d,
+    missing,
+    differs,
+    missingScripts: scripts,
+    installed: lock?.abatty || null,
+    packageVersion: packageVersion(),
+  };
 }

@@ -5,6 +5,18 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- `abatty update` (roadmap #3): the harness to the package's version, the repository's edits
+  kept - a three-way merge per file against the installed copy (`init` and `update` write
+  `.claude/harness.lock.json` with the version and the formatting-blind hash of every shipped
+  file, and keep the installed copies under `.abatty/harness/<version>/`); untouched files take
+  the new version, files edited while the package did not change them are kept, files both
+  changed are merged with `git merge-file`, a conflict leaves `<file>.abatty-new` beside yours;
+  `adoption.json` gains the template's new keys and keeps every value set here; the absent
+  scripts are added; `--dry-run`, `--force`. `doctor` names the installed version when it is
+  not the package's.
+
 ### Changed
 
 - The night runner is one implementation in Node, `abatty night` (roadmap #2), replacing

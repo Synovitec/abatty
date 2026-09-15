@@ -7,6 +7,7 @@
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
  *   abatty doctor [dir] [--strict] [--skip-self-test]
+ *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
@@ -27,7 +28,8 @@ import { buildContext } from "../src/rules/context.mjs";
 import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
 import { initRepo } from "../src/core/init.mjs";
 import { doctor } from "../src/core/doctor.mjs";
-import { pushRange, runGate } from "../src/core/gate.mjs";
+import { updateRepo } from "../src/core/update.mjs";
+import { runGate } from "../src/core/gate.mjs";
 import { dependencyNames, readAdoption, readJsonFile, repoRoot } from "../src/core/repo.mjs";
 import { detectPreset, presetById, presets } from "../src/presets/index.mjs";
 import {
@@ -41,18 +43,8 @@ import {
 import { DEFAULT_MAP } from "../src/core/scrub-map.mjs";
 import { allReports, buildReport, latestReport } from "../src/core/report.mjs";
 import { renderDashboard } from "../src/ui/dashboard.mjs";
-import {
-  compare,
-  failed,
-  loadProbes,
-  measureAll,
-  ratchetSetup,
-  readBaseline,
-  scoreOf,
-  writeBaseline,
-} from "../src/ratchet/index.mjs";
-import { runControls } from "../src/ratchet/controls.mjs";
-import { runNight } from "../src/night/runner.mjs";
+import { ratchetCommand } from "../src/cli/ratchet.mjs";
+import { nightCommand } from "../src/cli/night.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -62,6 +54,7 @@ const KNOWN = [
   "measure",
   "gate",
   "doctor",
+  "update",
   "scrub",
   "report",
   "dashboard",
@@ -281,6 +274,39 @@ switch (command) {
     );
     break;
   }
+  case "update": {
+    // The harness to the package's version, the repository's own edits kept: a three-way merge
+    // per file against the installed copy; a conflict leaves the new version beside yours.
+    const preset = choosePreset(false);
+    const r = updateRepo({
+      repoDir: dir,
+      preset,
+      force: flag("--force"),
+      dryRun: flag("--dry-run"),
+    });
+    out(
+      `\n${t.banner(VERSION)}  ${t.bold("update")} ${t.gray(`· ${r.from ? "from " + r.from : "no lock"} → ${r.to}`)}${flag("--dry-run") ? t.gray(" · dry run") : ""}\n\n`,
+    );
+    for (const e of r.events) {
+      if (e.action === "in step") continue;
+      const g =
+        e.action === "conflict"
+          ? t.glyph.fail
+          : e.action === "kept"
+            ? t.glyph.skip
+            : e.action === "merged"
+              ? t.glyph.warn
+              : t.glyph.ok;
+      out(
+        `  ${g} ${t.gray(e.action.padEnd(11))} ${e.file}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
+      );
+    }
+    const changed = r.events.filter((e) => e.action !== "in step" && e.action !== "kept").length;
+    out(
+      `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
+    );
+    process.exit(r.conflicts ? 1 : 0);
+  }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });
     for (const p of r.problems) err(`${t.glyph.warn} ${p}\n`);
@@ -377,11 +403,19 @@ switch (command) {
     for (const d of r.drift)
       if (d.state !== "in step") out(`  ${t.glyph.warn} ${t.status(d.state)}  ${d.file}\n`);
     out(
-      `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty init --force takes the package's version; or keep yours and say why in the decisions file") : ""}\n`,
+      `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits; or keep yours and say why in the decisions file") : ""}\n`,
     );
     if (r.missingScripts.length)
       out(
         `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
+      );
+    if (r.installed && r.installed !== r.packageVersion)
+      out(
+        `  ${t.glyph.warn} harness installed by abatty ${r.installed}, the package is ${r.packageVersion} · abatty update\n`,
+      );
+    else if (!r.installed && r.drift.some((d) => d.state !== "missing"))
+      out(
+        `  ${t.glyph.warn} no harness lock (.claude/harness.lock.json): abatty update writes it and merges from here on\n`,
       );
     out(
       `\n${r.ok ? t.glyph.ok + " " + t.green("doctor: ok") : t.glyph.fail + " " + t.red("doctor: NOT ok")}\n\n`,
@@ -553,172 +587,14 @@ switch (command) {
     out("\n");
     break;
   }
-  case "ratchet": {
-    // The ratchet: every probe over the repository, judged against the committed baseline.
-    // --controls runs each probe's control cases on throwaway repositories instead.
-    const { adoption, config, baselineRel } = ratchetSetup(dir);
-    const { probes, problems } = await loadProbes(dir, config);
-    if (!flag("--json")) {
-      out(`\n${t.banner(VERSION)}  ${t.bold("ratchet")} ${t.gray("·")} ${dir}\n\n`);
-      for (const p of problems) out(`  ${t.glyph.fail} ${t.red(p)}\n`);
-    }
-    if (flag("--controls")) {
-      let bad = 0;
-      for (const p of probes) {
-        const results = runControls(p);
-        const failing = results.filter((r) => !r.ok);
-        bad += failing.length;
-        out(
-          `  ${failing.length ? t.glyph.fail : t.glyph.ok} ${t.bold(p.metric)} ${t.gray(`${results.length} control(s)${p.source && p.source !== "abatty" ? " · " + p.source : ""}`)}\n`,
-        );
-        for (const r of failing)
-          out(
-            `      ${t.red(`${r.name}: expected ${r.expect}, got ${r.got}`)}${r.detail ? t.gray(" · " + r.detail) : ""}\n`,
-          );
-      }
-      out(
-        `\n${bad || problems.length ? t.glyph.fail : t.glyph.ok} ${bad || problems.length ? t.red(`${bad} control(s) failing`) : t.green("every control holds, both directions")}\n\n`,
-      );
-      process.exit(bad || problems.length ? 1 : 0);
-    }
-    const baseline = readBaseline(dir, baselineRel);
-    const rangeOpt = opt("--range");
-    const base = opt("--base") || adoption?.baseBranch || "main";
-    const range = rangeOpt === "auto" ? pushRange(dir, base) : rangeOpt;
-    const ctx = buildContext(dir);
-    const measurements = measureAll(probes, ctx, { config, range }, baseline);
-    const verdicts = compare(measurements, baseline, config);
-    const { score, axes } = scoreOf(measurements);
-    if (flag("--json")) {
-      out(
-        JSON.stringify(
-          { repo: dir, baseline: baseline ? baselineRel : null, range, score, axes, verdicts },
-          null,
-          2,
-        ) + "\n",
-      );
-      process.exit(failed(verdicts) || problems.length ? 1 : 0);
-    }
-    out(
-      `  ${t.gray(baseline ? `floor ${baselineRel} (${baseline.measuredAt})` : `no baseline at ${baselineRel} - every metric above zero fails until \`abatty baseline\` records the floor`)}${range ? t.gray(` · range ${range}`) : ""}\n\n`,
-    );
-    const mark = (/** @type {string} */ s) =>
-      s === "ok" || s === "improved" ? t.glyph.ok : s === "skipped" ? t.glyph.skip : t.glyph.fail;
-    for (const v of verdicts) {
-      const word =
-        v.status === "regressed"
-          ? t.red("REGRESSED")
-          : v.status === "hard-fail"
-            ? t.red("HARD FAIL")
-            : v.status === "scanned-zero"
-              ? t.red("SCANNED ZERO")
-              : v.status === "unbaselined"
-                ? t.red("NO FLOOR")
-                : v.status === "improved"
-                  ? t.green("improved")
-                  : v.status === "skipped"
-                    ? t.gray("skipped")
-                    : t.green("ok");
-      out(
-        `  ${mark(v.status)} ${t.bold(v.metric.padEnd(24))} ${String(v.value).padStart(5)}${v.floor !== null ? t.gray(` / ${v.floor}`) : t.gray("      ")}  ${t.gray(v.kind.padEnd(7))} ${word}${v.scanned ? t.gray(`  · ${v.scanned} scanned`) : ""}\n`,
-      );
-      for (const m of v.messages)
-        out(
-          `      ${v.status === "skipped" || v.status === "improved" ? t.gray(m) : t.yellow(m)}\n`,
-        );
-    }
-    const red = failed(verdicts);
-    out(
-      `\n  ${t.gray("readability")} ${t.bold(String(score))}${t.gray("/100")} ${t.gray(
-        Object.entries(axes)
-          .map(([a, n]) => `${a} ${n}`)
-          .join(" · "),
-      )}\n`,
-    );
-    out(
-      `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(`· ${verdicts.length} metric(s)`)}\n\n`,
-    );
-    process.exit(red || problems.length ? 1 : 0);
-  }
+  case "ratchet":
   case "baseline": {
-    // Today's numbers as the floor: zeros promoted to HARD, a HARD metric above zero refused, a
-    // rise refused without --reason (and the reason belongs in the progress log too).
-    const { adoption, config, baselineRel } = ratchetSetup(dir);
-    const { probes, problems } = await loadProbes(dir, config);
-    out(
-      `\n${t.banner(VERSION)}  ${t.bold("baseline")} ${t.gray("·")} ${join(dir, baselineRel)}\n\n`,
-    );
-    for (const p of problems) out(`  ${t.glyph.fail} ${t.red(p)}\n`);
-    if (problems.length) process.exit(1);
-    const previous = readBaseline(dir, baselineRel);
-    const base = opt("--base") || adoption?.baseBranch || "main";
-    const ctx = buildContext(dir);
-    const measurements = measureAll(probes, ctx, { config, range: pushRange(dir, base) }, previous);
-    const r = writeBaseline({
-      repoDir: dir,
-      rel: baselineRel,
-      measurements,
-      config,
-      previous,
-      today: ctx.today,
-      reason: opt("--reason"),
-      dryRun: flag("--dry-run"),
-    });
-    for (const m of measurements) {
-      if (m.skipped) continue;
-      const hard = r.baseline.hard?.includes(m.metric);
-      out(
-        `  ${t.glyph.dot} ${t.bold(m.metric.padEnd(24))} ${String(m.value).padStart(5)}  ${t.gray(hard ? "hard" : "ratchet")}${r.promoted.includes(m.metric) ? t.green("  promoted to HARD (zero today)") : ""}${m.value > 0 ? t.gray(`  · ${Object.keys(m.debt).length} file(s) on the list`) : ""}\n`,
-      );
-    }
-    for (const x of r.refusals) out(`\n  ${t.glyph.fail} ${t.red(x)}\n`);
-    if (r.rises.length && r.ok)
-      out(
-        `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised with a reason: ${r.rises.join(", ")} - write the same reason in docs/STANDARDS_PROGRESS.md`)}\n`,
-      );
-    out(
-      `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green(flag("--dry-run") ? "baseline computed (not written: --dry-run)" : "baseline written") : t.red("baseline refused; nothing written")} ${t.gray(`· readability ${r.baseline.score}/100`)}\n\n`,
-    );
-    process.exit(r.ok ? 0 : 1);
+    await ratchetCommand(command, { dir, opt, flag, out, err, VERSION });
+    break;
   }
   case "night": {
-    // The unattended night: one headless session per phase on a dedicated branch, the
-    // pre-flight (self-test, harness untouched, gate green, canary) or no night.
-    const mode = opt("--mode") || "auto";
-    if (mode !== "auto" && mode !== "dontAsk") {
-      err(`${t.glyph.fail} --mode is auto or dontAsk\n`);
-      process.exit(2);
-    }
-    out(`\n${t.banner(VERSION)}  ${t.bold("night")} ${t.gray("·")} ${dir}\n\n`);
-    const r = runNight({
-      repoDir: dir,
-      until: opt("--until") || "07:00",
-      maxCostUsd: opt("--max-cost") ? Number(opt("--max-cost")) : 60,
-      phases: opt("--phases")
-        ? opt("--phases")
-            .split(/[\s,]+/)
-            .filter(Boolean)
-        : [],
-      model: opt("--model") || "opus",
-      effort: opt("--effort") || "high",
-      mode,
-      noPush: flag("--no-push"),
-      skipCanary: flag("--skip-canary"),
-      canaryOnly: flag("--canary-only"),
-      agent: opt("--agent"),
-      log: (line) => {
-        for (const l of line.split("\n")) {
-          if (/ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree/.test(l))
-            out(`${t.glyph.fail} ${t.red(l)}\n`);
-          else if (/^\[\d\d:\d\d\]/.test(l)) out(`${t.glyph.run} ${t.bold(l)}\n`);
-          else if (/canary ok|night-run done|pre-flight done/.test(l))
-            out(`${t.glyph.ok} ${t.green(l)}\n`);
-          else out(`${t.gray(l)}\n`);
-        }
-      },
-    });
-    out("\n");
-    process.exit(r.code);
+    nightCommand({ dir, opt, flag, out, err, VERSION });
+    break;
   }
   case "presets": {
     out(`\n${t.banner(VERSION)}  ${t.bold("presets")}\n\n`);
