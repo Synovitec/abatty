@@ -95,6 +95,8 @@ export const next = {
         script: "standards",
         rangeArg: true,
       },
+      { label: "secret scan (SEC-1)", builtin: "secrets" },
+      { label: "audit (SEC-1)", builtin: "audit" },
     ],
     // Path-aware: run when the push or the working tree touches the paths; need Docker or are
     // deferred loudly to CI.

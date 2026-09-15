@@ -13,6 +13,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { git, hasScript, readPackage } from "./repo.mjs";
+import { auditOutcome, scanSecrets } from "./secrets.mjs";
 
 /**
  * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
@@ -102,6 +103,59 @@ export function runGate(o) {
     ) || null;
 
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
+    if (s.builtin === "secrets") {
+      log(`\n▶ ${s.label}`);
+      const t0 = Date.now();
+      const r = scanSecrets(repoDir, { mode: "tree" });
+      if (r.findings.length) {
+        for (const f of r.findings) log(`  ${f.path}:${f.line}  ${f.kind}  ${f.sample}`);
+        events.push({
+          label: s.label,
+          outcome: "failed",
+          ms: Date.now() - t0,
+          detail: `${r.findings.length} finding(s)`,
+        });
+        log(
+          `\n✗ ${s.label} failed (${r.findings.length} finding(s)). Rotate the secret, remove it, or mark a false positive on its line with abatty:allow-secret. The gate stops here.`,
+        );
+        return false;
+      }
+      events.push({
+        label: s.label,
+        outcome: "ok",
+        ms: Date.now() - t0,
+        detail: `${r.scanned} file(s)`,
+      });
+      return true;
+    }
+    if (s.builtin === "audit") {
+      log(`\n▶ ${s.label}`);
+      const t0 = Date.now();
+      const a = auditOutcome(repoDir, (cmd, args) => {
+        const r = spawnSync(cmd, args, {
+          cwd: repoDir,
+          encoding: "utf8",
+          shell: true,
+          maxBuffer: 16 * 1024 * 1024,
+        });
+        return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
+      });
+      if (a.outcome === "failed") {
+        log(a.detail);
+        events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });
+        log(`\n✗ ${s.label} failed. The gate stops here.`);
+        return false;
+      }
+      if (a.outcome === "deferred") log(`\n· DEFERRED to CI: ${s.label}\n  reason: ${a.detail}.`);
+      else if (a.outcome === "skipped") log(`· skipped ${s.label}: ${a.detail}`);
+      events.push({
+        label: s.label,
+        outcome: a.outcome,
+        ms: Date.now() - t0,
+        detail: a.detail || undefined,
+      });
+      return true;
+    }
     if (s.requires && !s.requires.some((f) => existsSync(join(repoDir, f)))) {
       events.push({ label: s.label, outcome: "skipped", detail: `no ${s.requires[0]}` });
       log(`· skipped ${s.label}: no ${s.requires[0]} in the repository`);

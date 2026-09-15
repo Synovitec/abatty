@@ -19,6 +19,7 @@ npx abatty night --canary-only   # the unattended night (one implementation, Win
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
 npx abatty night-report          # the morning after: the night's facts and the lessons they propose
+npx abatty secrets --staged      # the secret scan: the tree, the staged files (the pre-commit hook), a range (CI); one implementation
 npx abatty ci --provider github  # CI generated from the gate (Woodpecker, GitHub Actions); the PR template; --ruleset prints the org ruleset
 npx abatty serve --token <t>     # the dashboard hosted: CI posts each report, one page over every repository, a badge
 npx abatty publish --to <url>    # the CI step: post this repository's newest report to a service
@@ -195,8 +196,15 @@ the harness was installed by when it is not the package's.
 One implementation, three callers: `npm run gate`, `.githooks/pre-push`, the night's Stop hook.
 Always on, in this order - format (Prettier with `--end-of-line auto`), lint at zero warnings,
 typecheck, the import graph, dead code, unit tests, the abatty ratchet with the changelog
-check over the pushed range - then the preset's heavy suites only when the push or the working
-tree touches their paths, deferred loudly to CI when Docker is absent. A step whose script the
+check over the pushed range, the secret scan and the audit - then the preset's heavy suites
+only when the push or the working tree touches their paths, deferred loudly to CI when Docker
+is absent. The secret scan is built into the gate (no dependency: a private key block, a cloud
+access key, a provider token, a payment key, a chat token, a signed web token, a long literal on
+a secret-like name; a false positive is marked on its line with `abatty:allow-secret` or by path
+in `secrets.allow`), and it is ONE implementation for the pre-commit hook (`abatty secrets
+--staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit runs
+`npm audit --audit-level=high` where a lockfile exists and is deferred loudly when the registry
+is unreachable, never red and never silently green. A step whose script the
 repository does not have yet is reported as skipped, so a fresh repository can run the gate
 before everything exists; the gap analysis names what is missing.
 

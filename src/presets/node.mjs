@@ -97,6 +97,8 @@ export const node = {
         script: "standards",
         rangeArg: true,
       },
+      { label: "secret scan (SEC-1)", builtin: "secrets" },
+      { label: "audit (SEC-1)", builtin: "audit" },
     ],
     suites: [
       {

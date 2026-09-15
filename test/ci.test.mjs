@@ -25,8 +25,8 @@ test("the CI steps are the gate's steps in the gate's order, then the secret sca
       p.id,
     );
     assert.ok(
-      steps.some((s) => /gitleaks/.test(s.command)),
-      `${p.id}: secret scan`,
+      steps.some((s) => /npx abatty secrets --range origin\/main\.\.HEAD/.test(s.command)),
+      `${p.id}: secret scan, one implementation`,
     );
     assert.ok(
       steps.some((s) => /npm audit/.test(s.command)),
@@ -50,6 +50,7 @@ test("both providers render every step and the suites, guard the publish step be
     const wp = renderWoodpecker(p);
     const gh = renderGithubActions(p);
     for (const s of p.gate.always) {
+      if (s.builtin) continue; // the scan and the audit are asserted by their own commands below
       const cmd = s.command ? s.command.join(" ") : `npm run -s ${s.script}`;
       assert.ok(
         wp.includes(cmd) || (s.script === "standards" && wp.includes("npm run -s standards")),
@@ -64,7 +65,8 @@ test("both providers render every step and the suites, guard the publish step be
     assert.match(wp, /secrets: \[abatty_dashboard, abatty_token\]/);
     assert.match(gh, /^name: checks\n/m);
     assert.match(gh, /if: \$\{\{ env\.ABATTY_DASHBOARD != '' \}\}/);
-    assert.match(gh, /gitleaks\/gitleaks-action@v2/);
+    assert.match(gh, /npx abatty secrets --range/);
+    assert.match(wp, /npx abatty secrets --range/);
     if (p.gate.suites.some((s) => /database/i.test(s.name))) {
       assert.match(wp, /image: postgres:16/);
       assert.match(gh, /^  database:\n    needs: checks/m);

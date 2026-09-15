@@ -135,7 +135,7 @@ export const rules = [
         "typecheck|type-check",
         "test",
         "standards|check-limits|invariants",
-        "gitleaks|scan-secrets|secret-scan|secretlint|trufflehog",
+        "gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets",
         "audit",
       ].map((re) => [re, new RegExp(re, "i").test(c.ciText)]);
       return {

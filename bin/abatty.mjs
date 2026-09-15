@@ -7,6 +7,7 @@
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
+ *   abatty secrets [dir] [--staged|--range <r>] [--json]                the secret scan: the tree, the staged files (pre-commit), a range (CI)
  *   abatty ci [dir] [--provider woodpecker,github] [--check] [--ruleset]  CI generated from the gate; the PR template; the ruleset printed
  *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
@@ -40,6 +41,7 @@ import { ADAPTERS, configuredAdapters, lostGuarantees } from "../src/agents/inde
 import { serve } from "../src/mcp/server.mjs";
 import { hostedCommand } from "../src/cli/hosted.mjs";
 import { ciCommand } from "../src/cli/ci.mjs";
+import { secretsCommand } from "../src/cli/secrets.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -81,6 +83,7 @@ const KNOWN = [
   "serve",
   "publish",
   "ci",
+  "secrets",
   "scrub",
   "report",
   "dashboard",
@@ -431,6 +434,9 @@ switch (command) {
         config: readAdoption(dir),
       }),
     );
+  }
+  case "secrets": {
+    process.exit(secretsCommand({ dir, opt, flag, out, err, VERSION }));
   }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });

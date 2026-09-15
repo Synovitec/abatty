@@ -157,6 +157,18 @@
         }
       }
     },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Path substrings the secret scan skips (fixtures, samples), with the reason beside them."
+        }
+      }
+    },
     "ci": {
       "type": "object",
       "additionalProperties": false,

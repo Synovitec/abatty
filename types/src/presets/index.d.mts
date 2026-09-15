@@ -16,6 +16,7 @@ export type GateStep = {
     label: string;
     script?: string;
     command?: string[];
+    builtin?: "secrets" | "audit";
     requires?: string[];
     alternatives?: string[];
     rangeArg?: boolean;

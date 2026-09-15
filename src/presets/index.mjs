@@ -2,7 +2,7 @@
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
  * implementation); one that no repository has run is marked `proven: false` and `init` says so.
  *
- * @typedef {{ label: string, script?: string, command?: string[], requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
+ * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
  * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
  * @typedef {{
  *   id: string,

@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The secret scan and the audit in the gate (roadmap #13): a built-in scanner with no
+  dependency (a private key block, a cloud access key id, a provider token, a payment key, a
+  chat token, a signed web token, a long literal on a secret-like name; placeholders refused;
+  `abatty:allow-secret` on a line, `secrets.allow` by path), one implementation for the
+  pre-commit hook (`abatty secrets --staged`, written by `init`), the gate (a built-in step
+  over the tree) and CI (the generated pipeline scans the pushed range); the audit as a
+  built-in gate step, skipped without a lockfile, deferred loudly when the registry is
+  unreachable. The security and CI rules recognise the built-in scan.
 - Type declarations generated from the JSDoc (roadmap #12): `npm run types` emits `types/`
   from the sources (buildless stays: `.d.mts` beside the `.mjs`), the package names them
   (`types`, a `types` condition on every export, shipped in `files`), and a test keeps the

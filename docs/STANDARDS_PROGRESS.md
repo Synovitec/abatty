@@ -121,3 +121,8 @@ The gate and CI are one list now, because one is generated from the other. Tests
 ### 2026-09-15 - The declarations
 
 `types/` from the JSDoc, 58 files, equal to a fresh emit by a test. Tests 96 -> 98.
+
+### 2026-09-15 - The secret scan and the audit
+
+Built into the gate, shared with the pre-commit hook and CI; this repository's own gate runs
+both, and its pre-commit hook scans the staged files. Tests 98 -> 102.

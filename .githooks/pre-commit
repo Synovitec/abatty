@@ -1,0 +1,3 @@
+#!/bin/sh
+# The secret scan over the staged files, the same implementation the gate and CI run. Installed by `npm run hooks:install`.
+node bin/abatty.mjs secrets --staged

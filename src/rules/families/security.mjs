@@ -14,13 +14,16 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree.",
-    next: "Add gitleaks (staged in pre-commit, history in CI)",
+    next: "abatty init writes the pre-commit hook (abatty secrets --staged) and abatty ci the CI step; the gate runs the same scan",
     check: (c) => {
       const scanner = c.exists(".gitleaks.toml")
         ? ".gitleaks.toml"
         : c.firstFile(/scan-secrets|secret-scan|gitleaks/) ||
-          (c.script(/secret/) ? "npm script" : "");
-      const ci = /gitleaks|scan-secrets|secret-scan|secretlint|trufflehog/.test(c.ciText);
+          (c.script(/secret/) ? "npm script" : "") ||
+          (c.script(/abatty gate/) ? "the gate's built-in scan" : "");
+      const ci = /gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets/.test(
+        c.ciText,
+      );
       const hook = /gitleaks|secret/.test(c.read(c.firstFile(/pre-commit/) || ""));
       return {
         status: ci && (hook || scanner) ? "present" : ci || scanner || hook ? "partial" : "missing",

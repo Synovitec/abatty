@@ -36,7 +36,7 @@ export function ciSteps(preset, o = {}) {
   }
   steps.push({
     name: "secret scan (SEC-1)",
-    command: "gitleaks detect --source . --no-banner --redact",
+    command: `git fetch --no-tags origin ${base} && npx abatty secrets --range origin/${base}..HEAD`,
     when: "always",
   });
   steps.push({ name: "audit (SEC-1)", command: "npm audit --audit-level=high", when: "always" });
@@ -87,13 +87,7 @@ export function renderWoodpecker(preset, o = {}) {
   /** @param {CiStep} s */
   const step = (s) => {
     const lines = [`  ${ident(s.name)}:`];
-    if (/gitleaks/.test(s.command))
-      lines.push(
-        `    image: zricethezav/gitleaks:latest`,
-        `    commands:`,
-        `      - ${y(s.command)}`,
-      );
-    else if (/abatty publish/.test(s.command))
+    if (/abatty publish/.test(s.command))
       lines.push(
         `    image: ${image}`,
         `    secrets: [abatty_dashboard, abatty_token]`,
@@ -190,13 +184,6 @@ export function renderGithubActions(preset, o = {}) {
   const steps = ciSteps(preset, o);
   /** @param {CiStep} s */
   const step = (s) => {
-    if (/gitleaks/.test(s.command))
-      return [
-        `      - name: ${y(s.name)}`,
-        `        uses: gitleaks/gitleaks-action@v2`,
-        `        env:`,
-        `          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}`,
-      ].join("\n");
     if (/abatty publish/.test(s.command))
       return [
         `      - name: ${y(s.name)}`,

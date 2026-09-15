@@ -123,6 +123,10 @@ export function initRepo(o) {
 
   // 4. The pre-push hook that calls the gate, and the scripts.
   put(
+    ".githooks/pre-commit",
+    "#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. Installed by `npm run hooks:install`.\nnpx abatty secrets --staged\n",
+  );
+  put(
     ".githooks/pre-push",
     "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`. Installed by `npm run hooks:install`.\nnpm run -s gate\n",
   );
