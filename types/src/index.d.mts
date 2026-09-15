@@ -1,6 +1,7 @@
 export { buildContext } from "./rules/context.mjs";
 export { analyze, measure, renderMarkdown, renderSummary, stdIds, todoOf } from "./core/gap-analysis.mjs";
 export { RULES, FAMILIES, ruleById, loadCatalog, runCatalog, scoreOf, enforcedOf, validate } from "./rules/index.mjs";
+export { PROFILES, DEFAULT_PROFILES, profileById, loadProfile, loadProfiles, validateProfile, catalogOf, phasesOf } from "./profiles/index.mjs";
 export { buildReport, latestReport, allReports } from "./core/report.mjs";
 export { initRepo, TEMPLATES } from "./core/init.mjs";
 export { doctor, drift, selfTest } from "./core/doctor.mjs";

@@ -21,6 +21,7 @@ export function allReports(repoDir: string): Report[];
  *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
  *   findings: import("../rules/index.mjs").Finding[],
  *   problems: string[],
+ *   profiles: string[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
@@ -50,6 +51,7 @@ export type Report = {
     }[];
     findings: import("../rules/index.mjs").Finding[];
     problems: string[];
+    profiles: string[];
     harness: {
         present: boolean;
         drift: number;

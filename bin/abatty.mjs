@@ -24,6 +24,7 @@
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
  *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]
+ *   abatty profiles [dir] [--json]                                    the profiles this repository follows: rules, phases, presets as one package
  *   abatty presets · abatty version
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -31,7 +32,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { renderMarkdown, stdIds } from "../src/core/gap-analysis.mjs";
-import { FAMILIES, loadCatalog, ruleById, runCatalog } from "../src/rules/index.mjs";
+import { loadCatalog, ruleById, runCatalog } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
 import { initRepo } from "../src/core/init.mjs";
@@ -66,6 +67,7 @@ import { allReports, buildReport, latestReport } from "../src/core/report.mjs";
 import { renderDashboard } from "../src/ui/dashboard.mjs";
 import { ratchetCommand } from "../src/cli/ratchet.mjs";
 import { nightCommand, nightReportCommand } from "../src/cli/night.mjs";
+import { profilesCommand } from "../src/cli/catalog.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -93,6 +95,7 @@ const KNOWN = [
   "baseline",
   "night",
   "presets",
+  "profiles",
   "version",
   "help",
   "--help",
@@ -671,9 +674,9 @@ switch (command) {
       break;
     }
     out(
-      `\n${t.banner(VERSION)}  ${t.bold("rules")} ${t.gray(`· ${list.length} of ${catalog.rules.length}${catalog.localFile ? " · " + catalog.localFile : ""}`)}\n\n`,
+      `\n${t.banner(VERSION)}  ${t.bold("rules")} ${t.gray(`· ${list.length} of ${catalog.rules.length} · profiles ${catalog.profiles.join(", ")}${catalog.localFile ? " · " + catalog.localFile : ""}`)}\n\n`,
     );
-    for (const fam of FAMILIES.filter((f) => list.some((r) => r.family === f))) {
+    for (const fam of [...new Set(list.map((r) => r.family))]) {
       out(t.heading(fam));
       for (const r of list.filter((x) => x.family === fam))
         out(
@@ -730,6 +733,10 @@ switch (command) {
   }
   case "night": {
     nightCommand({ dir, opt, flag, out, err, VERSION });
+    break;
+  }
+  case "profiles": {
+    await profilesCommand({ dir, opt, flag, out, err, VERSION });
     break;
   }
   case "presets": {

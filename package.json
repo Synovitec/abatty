@@ -59,6 +59,10 @@
     "./config": {
       "types": "./types/src/core/config.d.mts",
       "default": "./src/core/config.mjs"
+    },
+    "./profiles": {
+      "types": "./types/src/profiles/index.d.mts",
+      "default": "./src/profiles/index.mjs"
     }
   },
   "files": [

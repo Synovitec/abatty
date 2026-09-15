@@ -1,17 +1,18 @@
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[] }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[] }} GapResult
  */
 /**
  * Run a catalog (the built-in rules by default) over a repository, synchronously.
- * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[] }} [o]
+ * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[] }} [o]
  * @returns {GapResult}
  */
 export function analyze(repoDir: string, o?: {
     today?: string;
     catalog?: import("../rules/index.mjs").CatalogRule[];
     problems?: string[];
+    profiles?: string[];
 }): GapResult;
 /**
  * Measure a repository with its full catalog: the built-in rules, its own rules file, its
@@ -50,5 +51,6 @@ export type GapResult = {
     families: string[];
     waived: number;
     problems: string[];
+    profiles: string[];
 };
 import { enforcedOf } from "../rules/index.mjs";

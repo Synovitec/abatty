@@ -21,6 +21,7 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
  *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
  *   findings: import("../rules/index.mjs").Finding[],
  *   problems: string[],
+ *   profiles: string[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
@@ -90,6 +91,7 @@ export async function buildReport(repoDir, o = {}) {
     families,
     findings: gap.findings,
     problems: gap.problems,
+    profiles: gap.profiles,
     harness: {
       present: harnessPresent,
       drift: d.filter((x) => x.state === "differs").length,

@@ -7,6 +7,11 @@
   "additionalProperties": false,
   "patternProperties": { "^\\$": {} },
   "properties": {
+    "profiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The profiles this repository follows, in order: a built-in id (synovitec), a file (./profiles/acme.mjs) or an installed package exporting a profile (rules, phases, presets, harness rule files as one package). [\"synovitec\"] when absent; a client project names only its own."
+    },
     "stack": {
       "type": "string",
       "description": "The preset this repository runs: next, vite-react, node."

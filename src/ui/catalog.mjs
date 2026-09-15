@@ -32,11 +32,11 @@ export function renderCatalogMarkdown(rules, o = {}) {
   md.push(`# ${o.title || "Rule catalog"}`);
   md.push("");
   md.push(
-    `${rules.length} rules in ${families.length} families; ${must} must, ${rules.length - must} should. A rule is a check with a reason: \`abatty measure\` runs every one, \`abatty explain <ID>\` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. The standard's rule IDs are written with a space (\`CODE 6\`) so a repository's own citation check does not claim them.`,
+    `${rules.length} rules in ${families.length} families; ${must} must, ${rules.length - must} should. A rule is a check with a reason: \`abatty measure\` runs every one, \`abatty explain <ID>\` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. The standard's rule IDs are \`FAMILY.N\` (\`CODE.6\`), a namespace of their own that a repository's citation check never claims.`,
   );
   md.push("");
   md.push(
-    `A repository adds rules of its own in \`abatty.rules.mjs\` at its root (the same shape, \`export const rules = [...]\`) and waives one with a reason in its adoption config (\`rules.waived\`); a waived rule is listed, not scored.`,
+    `The rules come from profiles: the built-in \`synovitec\` profile is the standard the package was built on; a repository names the profiles it follows in its config (\`profiles\`), a file or a package exporting a profile of its own among them. A repository adds rules of its own in \`abatty.rules.mjs\` at its root (the same shape, \`export const rules = [...]\`) and waives one with a reason in its config (\`rules.waived\`); a waived rule is listed, not scored.`,
   );
   md.push("");
   for (const fam of families) {

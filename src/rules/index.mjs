@@ -5,25 +5,21 @@
  * that reads a repository and returns a finding. `measure` runs the catalog; `rules` lists it;
  * `explain` opens one rule against a repository.
  *
- * A repository extends the catalog with its own rules from `abatty.rules.mjs` at its root (the
- * path is configurable through adoption.json → rules.local) and waives a rule with a reason
- * through adoption.json → rules.waived. A waived rule is listed, not scored.
+ * The rules come from profiles (src/profiles): the built-in `synovitec` profile is the standard
+ * the package was built on; a repository names the profiles it follows in its config. It
+ * extends the catalog with its own rules from `abatty.rules.mjs` at its root (the path is
+ * configurable through the config → rules.local) and waives a rule with a reason through
+ * rules.waived. A waived rule is listed, not scored.
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readAdoption } from "../core/repo.mjs";
-import { rules as documents } from "./families/documents.mjs";
-import { rules as instrument } from "./families/instrument.mjs";
-import { rules as harness } from "./families/harness.mjs";
-import { rules as code } from "./families/code.mjs";
-import { rules as types } from "./families/types.mjs";
-import { rules as boundaries } from "./families/boundaries.mjs";
-import { rules as data } from "./families/data.mjs";
-import { rules as tests } from "./families/tests.mjs";
-import { rules as security } from "./families/security.mjs";
-import { rules as delivery } from "./families/delivery.mjs";
-import { rules as platform } from "./families/platform.mjs";
+import { synovitec } from "../profiles/synovitec.mjs";
+import { catalogOf, loadProfiles } from "../profiles/index.mjs";
+import { validate } from "./validate.mjs";
+
+export { validate };
 
 /**
  * @typedef {"present" | "partial" | "missing" | "n/a" | "waived"} Status
@@ -49,20 +45,8 @@ import { rules as platform } from "./families/platform.mjs";
  * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[] }} Finding
  */
 
-/** The built-in rules, in the order the reports print them. @type {Rule[]} */
-export const RULES = [
-  ...documents,
-  ...instrument,
-  ...harness,
-  ...code,
-  ...types,
-  ...boundaries,
-  ...data,
-  ...tests,
-  ...security,
-  ...delivery,
-  ...platform,
-].map((r) => ({ source: "abatty", ...r }));
+/** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
+export const RULES = synovitec.rules.map((r) => ({ source: "abatty", ...r }));
 
 /** The families, in catalog order. */
 export const FAMILIES = [...new Set(RULES.map((r) => r.family))];
@@ -73,42 +57,14 @@ export function ruleById(id, catalog = RULES) {
   return catalog.find((r) => r.id.toUpperCase() === key) || null;
 }
 
-/** The problems a rule list has, as messages; none for a well-formed catalog. @param {Rule[]} list */
-export function validate(list) {
-  /** @type {string[]} */
-  const problems = [];
-  const seen = new Set();
-  for (const r of list) {
-    const where = r?.id || "(no id)";
-    if (!r || typeof r !== "object") problems.push("a rule is not an object");
-    else {
-      if (!/^[A-Z0-9]+-[A-Z0-9-]+$/.test(String(r.id || "")))
-        problems.push(`${where}: id must be FAMILY-NAME in capitals`);
-      if (seen.has(r.id)) problems.push(`${where}: duplicate id`);
-      seen.add(r.id);
-      for (const k of ["family", "title", "phase", "why", "next"])
-        if (typeof (/** @type {any} */ (r)[k]) !== "string" || !(/** @type {any} */ (r)[k]))
-          problems.push(`${where}: ${k} must be a non-empty string`);
-      if (!["must", "should"].includes(r.level))
-        problems.push(`${where}: level must be must|should`);
-      if (!["hard", "ratchet", "review", "prose"].includes(r.enforcement))
-        problems.push(`${where}: enforcement must be hard|ratchet|review|prose`);
-      if (typeof r.check !== "function") problems.push(`${where}: check must be a function`);
-      if (r.standard && !Array.isArray(r.standard))
-        problems.push(`${where}: standard must be an array`);
-    }
-  }
-  return problems;
-}
-
 /**
  * The rules file of a repository: `abatty.rules.mjs` at the root, or the path named by
  * adoption.json → rules.local. Exports `rules` (an array) or a default array. Returns the
  * loaded rules and the problems found; a missing file is neither.
- * @param {string} repoDir @param {Record<string, any> | null} adoption
+ * @param {string} repoDir @param {Record<string, any> | null} adoption @param {Rule[]} [base] the profiles' rules a local one may not redefine
  * @returns {Promise<{ file: string | null, rules: Rule[], problems: string[] }>}
  */
-export async function loadLocalRules(repoDir, adoption) {
+export async function loadLocalRules(repoDir, adoption, base = RULES) {
   const relPath = String(adoption?.rules?.local || "abatty.rules.mjs");
   const file = resolve(repoDir, relPath);
   if (!existsSync(file)) return { file: null, rules: [], problems: [] };
@@ -123,7 +79,7 @@ export async function loadLocalRules(repoDir, adoption) {
     if (!list)
       return { file: relPath, rules: [], problems: [`${relPath}: export \`rules\` (an array)`] };
     const problems = validate(list).map((p) => `${relPath}: ${p}`);
-    const builtIn = new Set(RULES.map((r) => r.id));
+    const builtIn = new Set(base.map((r) => r.id));
     for (const r of list)
       if (builtIn.has(r.id))
         problems.push(`${relPath}: ${r.id} is a built-in id; waive it instead of redefining it`);
@@ -142,22 +98,24 @@ export async function loadLocalRules(repoDir, adoption) {
 }
 
 /**
- * The catalog of a repository: the built-in rules, its own, and the waivers applied. A waiver
- * names a reason; one with an `until` date in the past no longer waives.
+ * The catalog of a repository: the rules of the profiles it names, its own, and the waivers
+ * applied. A waiver names a reason; one with an `until` date in the past no longer waives.
  * @param {string} repoDir @param {{ adoption?: Record<string, any> | null, today?: string }} [o]
- * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[] }>}
+ * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[] }>}
  */
 export async function loadCatalog(repoDir, o = {}) {
   const adoption = o.adoption === undefined ? readAdoption(repoDir) : o.adoption;
-  const local = await loadLocalRules(repoDir, adoption);
+  const loaded = await loadProfiles(repoDir, adoption);
+  const base = catalogOf(loaded.profiles);
+  const local = await loadLocalRules(repoDir, adoption, base);
   const today = o.today || new Date().toISOString().slice(0, 10);
   /** @type {Record<string, { reason?: string, until?: string } | string>} */
   const waived = adoption?.rules?.waived || {};
-  const problems = [...local.problems];
-  const known = new Set([...RULES, ...local.rules].map((r) => r.id));
+  const problems = [...loaded.problems, ...local.problems];
+  const known = new Set([...base, ...local.rules].map((r) => r.id));
   for (const id of Object.keys(waived))
     if (!known.has(id)) problems.push(`rules.waived: ${id} is not a rule`);
-  const rules = [...RULES, ...local.rules].map((r) => {
+  const rules = [...base, ...local.rules].map((r) => {
     const w = waived[r.id];
     if (!w) return r;
     const reason = typeof w === "string" ? w : String(w.reason || "");
@@ -166,7 +124,7 @@ export async function loadCatalog(repoDir, o = {}) {
     if (until && until < today) return r;
     return { ...r, waived: until ? { reason, until } : { reason } };
   });
-  return { rules, localFile: local.file, problems };
+  return { rules, localFile: local.file, problems, profiles: loaded.profiles.map((p) => p.id) };
 }
 
 /**

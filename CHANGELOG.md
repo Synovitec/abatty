@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Profiles (roadmap #19): a standard as a package of rules, phases, presets and harness rule
+  files. The 65 rules, the thirteen phases and the four presets become the built-in
+  `synovitec` profile; a repository names the profiles it follows (`profiles` in the config: a
+  built-in id, a file or an installed package exporting `profile`), its own rules file on
+  top; `abatty profiles` lists them; the report and the catalog name them. `validate` moved
+  to its own module; `./profiles` is a package export.
 - Publishable to the registry (roadmap #17): the package's `repository`, `bugs`, `keywords`
   and `publishConfig` (public, with provenance), `prepublishOnly` running the gate, the
   package's own checks workflow and a release workflow publishing a `vX.Y.Z` tag after the

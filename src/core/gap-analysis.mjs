@@ -13,12 +13,12 @@ import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf } from "../rules/in
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[] }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[] }} GapResult
  */
 
 /**
  * Run a catalog (the built-in rules by default) over a repository, synchronously.
- * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[] }} [o]
+ * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[] }} [o]
  * @returns {GapResult}
  */
 export function analyze(repoDir, o = {}) {
@@ -36,6 +36,7 @@ export function analyze(repoDir, o = {}) {
     families: [...new Set(findings.map((f) => f.family))],
     waived: findings.filter((f) => f.status === "waived").length,
     problems: o.problems || [],
+    profiles: o.profiles || ["synovitec"],
   };
 }
 
@@ -45,7 +46,12 @@ export function analyze(repoDir, o = {}) {
  */
 export async function measure(repoDir, o = {}) {
   const catalog = await loadCatalog(repoDir, { today: o.today });
-  return analyze(repoDir, { today: o.today, catalog: catalog.rules, problems: catalog.problems });
+  return analyze(repoDir, {
+    today: o.today,
+    catalog: catalog.rules,
+    problems: catalog.problems,
+    profiles: catalog.profiles,
+  });
 }
 
 /**
@@ -104,7 +110,7 @@ export function renderMarkdown(result) {
   md.push(`# Gap analysis - ${name} - ${date}`);
   md.push("");
   md.push(
-    `**Score ${score}/100** over ${applicable.length} applicable checks. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
+    `**Score ${score}/100** over ${applicable.length} applicable checks of the ${result.profiles.join(", ")} profile${result.profiles.length > 1 ? "s" : ""}. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
     "",
     enforcedLine(result),
   );
@@ -148,7 +154,7 @@ export function renderMarkdown(result) {
   md.push("## How to read this");
   md.push("");
   md.push(
-    "Static and dependency-free: nothing of the repository was executed, so a present check means the mechanism is there, not that it is green today; run the repository's own gate for that. Rule IDs refer to the engineering standard and are written with a space (`CODE 12` for the rule the standard numbers 12 in its CODE family) so that a repository which checks its own rule citations does not read them as its own; phases to the adoption plan; the level of insurance each mechanism gives (hard, ratchet, review, prose) is the enforcement map's. `abatty explain <ID>` opens one rule with its reason. Re-run after each phase and keep the dated reports side by side.",
+    "Static and dependency-free: nothing of the repository was executed, so a present check means the mechanism is there, not that it is green today; run the repository's own gate for that. Rule IDs refer to the engineering standard in their namespaced form (`CODE.12` for the rule the standard numbers 12 in its CODE family), a namespace a repository's own citation check never claims; phases to the adoption plan; the level of insurance each mechanism gives (hard, ratchet, review, prose) is the enforcement map's. `abatty explain <ID>` opens one rule with its reason. Re-run after each phase and keep the dated reports side by side.",
   );
   md.push("");
   return md.join("\n");

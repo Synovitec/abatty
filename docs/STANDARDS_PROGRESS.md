@@ -146,3 +146,8 @@ and a night resumable. Tests 111 -> 113.
 
 The tarball a third party installs is proven by a test that packs it, installs it in a clean
 project and runs `init` from it. Tests 113 -> 114.
+
+### 2026-09-15 - Profiles
+
+The rules, phases and presets as one package, the built-in one named; a client project can
+carry its own. Tests 114 -> 116.

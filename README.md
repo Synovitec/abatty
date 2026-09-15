@@ -55,6 +55,15 @@ the part a machine holds (hard, ratchet) against the part a reviewer or a senten
 dashboard carry it, and `abatty rules --enforcement prose` lists what a night moves up a level
 next; the `adopt-standards` skill moves one rule up per night once the phase's checks are done.
 
+The rules come from **profiles**: a standard as a package, rules, the phases of its adoption
+plan, the presets it ships and the harness rule files it installs, as one unit. The built-in
+profile, `synovitec`, is the standard the package was built on; every rule's text and every
+phase in it is one company's. A repository names the profiles it follows in its config
+(`profiles`, `["synovitec"]` when absent): a built-in id, a file (`./profiles/acme.mjs`) or an
+installed package exporting `profile`; a client project that names only its own carries only
+its own standard with the same instrument. `abatty profiles` lists what is loaded and what
+each brings; a rule two profiles define is a problem, the later one loses it.
+
 A repository extends the catalog with its own rules in `abatty.rules.mjs` at its root, the same
 shape:
 

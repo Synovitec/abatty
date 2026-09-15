@@ -1,24 +1,22 @@
 /** @param {string} id @param {Rule[]} [catalog] */
 export function ruleById(id: string, catalog?: Rule[]): Rule | null;
-/** The problems a rule list has, as messages; none for a well-formed catalog. @param {Rule[]} list */
-export function validate(list: Rule[]): string[];
 /**
  * The rules file of a repository: `abatty.rules.mjs` at the root, or the path named by
  * adoption.json → rules.local. Exports `rules` (an array) or a default array. Returns the
  * loaded rules and the problems found; a missing file is neither.
- * @param {string} repoDir @param {Record<string, any> | null} adoption
+ * @param {string} repoDir @param {Record<string, any> | null} adoption @param {Rule[]} [base] the profiles' rules a local one may not redefine
  * @returns {Promise<{ file: string | null, rules: Rule[], problems: string[] }>}
  */
-export function loadLocalRules(repoDir: string, adoption: Record<string, any> | null): Promise<{
+export function loadLocalRules(repoDir: string, adoption: Record<string, any> | null, base?: Rule[]): Promise<{
     file: string | null;
     rules: Rule[];
     problems: string[];
 }>;
 /**
- * The catalog of a repository: the built-in rules, its own, and the waivers applied. A waiver
- * names a reason; one with an `until` date in the past no longer waives.
+ * The catalog of a repository: the rules of the profiles it names, its own, and the waivers
+ * applied. A waiver names a reason; one with an `until` date in the past no longer waives.
  * @param {string} repoDir @param {{ adoption?: Record<string, any> | null, today?: string }} [o]
- * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[] }>}
+ * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[] }>}
  */
 export function loadCatalog(repoDir: string, o?: {
     adoption?: Record<string, any> | null;
@@ -27,6 +25,7 @@ export function loadCatalog(repoDir: string, o?: {
     rules: CatalogRule[];
     localFile: string | null;
     problems: string[];
+    profiles: string[];
 }>;
 /**
  * Run a catalog against a context: one finding per rule, in catalog order. A check that throws
@@ -57,6 +56,7 @@ export function scoreOf(findings: Finding[]): {
     score: number;
     applicable: number;
 };
+export { validate };
 /**
  * @typedef {"present" | "partial" | "missing" | "n/a" | "waived"} Status
  * @typedef {"must" | "should"} Level
@@ -80,7 +80,7 @@ export function scoreOf(findings: Finding[]): {
  * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
  * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[] }} Finding
  */
-/** The built-in rules, in the order the reports print them. @type {Rule[]} */
+/** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
 export const RULES: Rule[];
 /** The families, in catalog order. */
 export const FAMILIES: string[];
@@ -157,3 +157,4 @@ export type Finding = {
     enforcement: Enforcement;
     standard: string[];
 };
+import { validate } from "./validate.mjs";
