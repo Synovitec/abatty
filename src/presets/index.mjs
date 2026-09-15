@@ -11,6 +11,8 @@
  *   name: string,
  *   proven?: string,
  *   detect: (deps: Set<string>) => boolean,
+ *   detectFiles?: (files: (re: RegExp) => string[]) => boolean,
+ *   pack?: string,
  *   adoption: Record<string, unknown>,
  *   scripts: Record<string, string>,
  *   devDependencies: string[],
@@ -24,9 +26,10 @@ import { viteReact } from "./vite-react.mjs";
 import { node } from "./node.mjs";
 import { astro } from "./astro.mjs";
 import { docs } from "./docs.mjs";
+import { python } from "./python.mjs";
 
 /** @type {Preset[]} */
-export const presets = [next, astro, viteReact, node, docs];
+export const presets = [next, astro, viteReact, node, python, docs];
 
 /** @param {string} id */
 export function presetById(id) {
@@ -36,8 +39,13 @@ export function presetById(id) {
 /**
  * The preset a repository's dependencies point at, or null. Order matters: the more specific
  * stack first (a Vite React app also depends on react; a Next app also depends on react).
- * @param {Set<string>} deps
+ * A preset without npm dependencies (Python) is detected from the tree when `files` is given.
+ * @param {Set<string>} deps @param {(re: RegExp) => string[]} [files]
  */
-export function detectPreset(deps) {
-  return presets.find((p) => p.detect(deps)) || null;
+export function detectPreset(deps, files) {
+  return (
+    presets.find((p) => p.detect(deps)) ||
+    (files ? presets.find((p) => p.detectFiles && p.detectFiles(files)) : null) ||
+    null
+  );
 }

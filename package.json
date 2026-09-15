@@ -63,6 +63,18 @@
     "./profiles": {
       "types": "./types/src/profiles/index.d.mts",
       "default": "./src/profiles/index.mjs"
+    },
+    "./packs": {
+      "types": "./types/src/packs/index.d.mts",
+      "default": "./src/packs/index.mjs"
+    },
+    "./workspaces": {
+      "types": "./types/src/presets/workspaces.d.mts",
+      "default": "./src/presets/workspaces.mjs"
+    },
+    "./controls": {
+      "types": "./types/src/core/step-controls.d.mts",
+      "default": "./src/core/step-controls.mjs"
     }
   },
   "files": [

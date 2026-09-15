@@ -36,7 +36,7 @@ function fixture(name) {
 test("every step has a control that means something; planted, run, removed: a step that goes red is proven, one that stays green is absent, one without a script is skipped", () => {
   for (const [key, c] of Object.entries(STEP_CONTROLS)) {
     assert.ok(c.means, `${key} says what it plants`);
-    const files = c.files(new Set(["vitest"]));
+    const files = c.files(new Set(["vitest"]), "javascript");
     assert.ok(
       Object.keys(files).every((f) => f.includes("abatty-control.__")),
       `${key} plants under the control name`,

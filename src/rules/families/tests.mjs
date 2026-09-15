@@ -3,14 +3,15 @@
  * with axe and its retry policy, mutation testing. Standard TEST.1..5, DATA.4, A11Y.1.
  */
 
-import { BROWSER, DATABASE, SOURCES } from "../applies.mjs";
+import { BROWSER, DATABASE, JS_SOURCES, SOURCES } from "../applies.mjs";
+import { perPack } from "../../packs/rules.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
     id: "TEST-UNIT",
     family: "Tests",
-    title: "A unit test runner and tests",
+    title: "A unit test runner and tests, for every language in the tree",
     standard: ["TEST.1"],
     level: "must",
     enforcement: "hard",
@@ -19,11 +20,24 @@ export const rules = [
     why: "A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has.",
     next: "Add vitest and colocated tests for services and guards",
     check: (c) => {
-      const runner = c.has("vitest") ? "vitest" : c.has("jest") ? "jest" : "";
+      const others = perPack(c, "test", (p) => p.id !== "javascript");
       const testFiles = c.files(/\.(test|spec)\.(ts|tsx|js|jsx|mjs)$/);
+      if (!c.stack.js) {
+        const py = c.files(/(^|\/)(test_[^/]*\.py|[^/]*_test\.py)$/).length;
+        return { ...others, evidence: `${others.evidence}, ${py} test file(s)` };
+      }
+      const runner = c.has("vitest") ? "vitest" : c.has("jest") ? "jest" : "";
+      const js = runner && testFiles.length > 0 ? "present" : runner ? "partial" : "missing";
       return {
-        status: runner && testFiles.length > 0 ? "present" : runner ? "partial" : "missing",
-        evidence: `${runner || "no runner"}, ${testFiles.length} test file(s)`,
+        status:
+          others.status === "n/a"
+            ? js
+            : js === "present" && others.status === "present"
+              ? "present"
+              : js === "missing" && others.status === "missing"
+                ? "missing"
+                : "partial",
+        evidence: `${runner || "no runner"}, ${testFiles.length} test file(s)${others.status === "n/a" ? "" : "; " + others.evidence}`,
       };
     },
   },
@@ -54,7 +68,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "2",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "A threshold pinned at today's figure is a floor coverage cannot fall below unnoticed; reportOnFailure keeps the report when the suite is red, which is when it is read.",
     next: "Pin thresholds at today's measured figure per area; set reportOnFailure: true",
     check: (c) => {
@@ -133,7 +147,7 @@ export const rules = [
     level: "should",
     enforcement: "hard",
     phase: "10",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code.",
     next: "Add StrykerJS on changed files per PR with break at today's floor",
     check: (c) => {

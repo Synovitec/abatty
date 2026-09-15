@@ -65,7 +65,9 @@ export function detectWorkspaces(repoDir, config) {
     const dir = join(repoDir, path);
     const name = String(readPackage(dir).name || path);
     const wanted = named[path] ? String(named[path]) : "";
-    const preset = wanted ? presetById(wanted) : detectPreset(dependencyNames(dir));
+    const preset = wanted
+      ? presetById(wanted)
+      : detectPreset(dependencyNames(dir), (re) => readdirSync(dir).filter((f) => re.test(f)));
     return {
       path,
       name,

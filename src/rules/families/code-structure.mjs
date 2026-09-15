@@ -2,7 +2,8 @@
  * Code, its structure: the import graph, dead code, duplication, file size, barrels, format.
  * Standard CODE.1, CODE.4..6, CODE.12. The same family as code.mjs, split by what reads it.
  */
-import { SOURCES } from "../applies.mjs";
+import { JS_SOURCES, SOURCES } from "../applies.mjs";
+import { perPack } from "../../packs/rules.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -14,7 +15,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "1",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "A vendor SDK imported outside its provider home, or a component reaching the database, is the architecture eroding one import at a time; the linter refuses the import.",
     next: "Ban vendor SDKs outside their provider home and enforce the import direction",
     check: (c) => {
@@ -31,7 +32,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "12",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "The boundary map in the context file is a wish until the graph is checked: a cycle, an orphan and a forbidden arrow are then refused by the gate, not hoped against.",
     next: "Copy the dependency-cruiser template, write one rule per arrow of the boundary map, add the graph step to the gate; on an existing repository start from --baseline",
     check: (c) => {
@@ -81,15 +82,26 @@ export const rules = [
       const max = run
         ? Number((String(run[1] || "").match(/--max-issues[= ](\d+)/) || [0, 0])[1])
         : 0;
+      const others = perPack(c, "dead", (p) => p.id !== "javascript");
+      if (!c.stack.js) return others;
+      const js =
+        run && max === 0 ? "present" : run || config || c.has("knip") ? "partial" : "missing";
+      const jsEvidence = run
+        ? "run by " +
+          run[0] +
+          (max ? " at --max-issues " + max : " at 0") +
+          (config ? ", " + config : ", no config (plugins only)")
+        : config || (c.has("knip") ? "dependency installed, not run" : "none");
       return {
         status:
-          run && max === 0 ? "present" : run || config || c.has("knip") ? "partial" : "missing",
-        evidence: run
-          ? "run by " +
-            run[0] +
-            (max ? " at --max-issues " + max : " at 0") +
-            (config ? ", " + config : ", no config (plugins only)")
-          : config || (c.has("knip") ? "dependency installed, not run" : "none"),
+          others.status === "n/a"
+            ? js
+            : js === "present" && others.status === "present"
+              ? "present"
+              : js === "missing" && others.status === "missing"
+                ? "missing"
+                : "partial",
+        evidence: `javascript: ${jsEvidence}${others.status === "n/a" ? "" : "; " + others.evidence}`,
       };
     },
   },
@@ -101,7 +113,7 @@ export const rules = [
     level: "should",
     enforcement: "ratchet",
     phase: "12",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "Two copies of a block fix one bug twice, or once; the count of clones is a number that may only fall.",
     next: "Add jscpd with a dup script and read its report as dup.clones / dup.clonedLines in the ratchet, or record the decision not to measure",
     check: (c) => {
@@ -130,7 +142,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "8",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "Past 800 lines a file has more than one responsibility, and no reader, human or model, holds it whole.",
     next: "Split by responsibility; the ratchet holds the count",
     check: (c) => {
@@ -150,7 +162,7 @@ export const rules = [
     level: "should",
     enforcement: "ratchet",
     phase: "8",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "Three hundred code lines is where an agent starts reading a file in pieces and editing what it did not read; per-kind budgets keep modules under it.",
     next: "Per-kind budgets in the ratchet, then split worst-first",
     check: (c) => {
@@ -180,7 +192,7 @@ export const rules = [
     level: "must",
     enforcement: "ratchet",
     phase: "8",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "A wide barrel hides who imports what, defeats tree-shaking and makes every import a potential cycle; import from the defining file.",
     next: "Import from the defining file; keep barrels leaf-level",
     check: (c) => {
@@ -198,7 +210,7 @@ export const rules = [
   {
     id: "CODE-FORMAT",
     family: "Code",
-    title: "A formatter configured and the format checked",
+    title: "A formatter configured and the format checked, for every language in the tree",
     standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
@@ -207,17 +219,16 @@ export const rules = [
     why: "Formatting argued in review is attention taken from the change; one formatter, checked, ends the argument.",
     next: "Add Prettier and a format check with --end-of-line auto in the gate",
     check: (c) => {
-      const config =
-        c.firstFile(/(^|\/)\.prettierrc(\.\w+)?$|(^|\/)prettier\.config\./) ||
-        (c.pkg.prettier
-          ? "package.json#prettier"
-          : c.has("prettier")
-            ? "prettier dependency"
-            : null);
+      const tools = perPack(c, "formatter");
       const checked = c.script(/prettier|format/);
       return {
-        status: config && checked ? "present" : config ? "partial" : "missing",
-        evidence: `${config || "no config"}${checked ? ", format script" : ""}`,
+        status:
+          tools.status === "present" && checked
+            ? "present"
+            : tools.status === "missing"
+              ? "missing"
+              : "partial",
+        evidence: `${tools.evidence}${checked ? ", format script" : ", no format script"}`,
       };
     },
   },

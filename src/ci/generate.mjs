@@ -43,10 +43,10 @@ export function ciSteps(preset, o = {}) {
   for (const suite of preset.gate.suites) {
     const db = /database|DATA.4/i.test(suite.name);
     for (const s of suite.steps)
-      if (s.script)
+      if (s.script || s.command)
         steps.push({
           name: `${s.label} · ${suite.name}`,
-          command: `npm run -s ${s.script}`,
+          command: s.command ? s.command.join(" ") : `npm run -s ${s.script}`,
           when: db ? "db" : "browser",
         });
   }

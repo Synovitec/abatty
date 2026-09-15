@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";
 import { readAdoption } from "../core/repo.mjs";
 import { stageOf } from "./stage.mjs";
+import { detectPacks } from "../packs/index.mjs";
 
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -31,7 +32,6 @@ const IGNORE_DIRS = new Set([
 // projects and agent-memory hold transcripts, night holds run state. None of it is the repository.
 const AGENT_DIRS = new Set(["hooks", "rules", "skills", "agents", "commands"]);
 const AGENT_ROOT = ".claude";
-const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
 /**
  * @typedef {object} RepoContext
@@ -58,7 +58,9 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
  * @property {string[]} ciFiles the CI pipelines (Woodpecker, GitHub Actions)
  * @property {string} ciText
  * @property {string[]} ghWorkflows the GitHub workflows
- * @property {string[]} sourceFiles source files outside the agent folder, migrations and tests
+ * @property {string[]} sourceFiles source files of every detected pack, outside the agent folder, migrations and tests
+ * @property {import("../packs/index.mjs").Pack[]} packs the language packs the tree carries, JavaScript first
+ * @property {string[]} pySources
  * @property {string[]} docFiles the Markdown files under docs/
  * @property {string[]} tsSources
  * @property {string[]} jsSources
@@ -82,6 +84,7 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
  * @property {boolean} database an ORM, a query builder or a database driver
  * @property {boolean} i18n translation catalogues or an i18n library
  * @property {boolean} pwa a service worker or a web manifest
+ * @property {boolean} python Python sources or a Python manifest
  * @property {boolean} docsOnly no sources and no package: documents, decisions, a schema, a mockup
  */
 
@@ -215,20 +218,31 @@ export function buildContext(repoDir, o = {}) {
 
   const eslintFiles = files(/(^|\/)eslint\.config\.(js|mjs|cjs|ts)$/);
   const ciFiles = files(/^\.woodpecker(\/.*\.ya?ml|\.ya?ml)$|^\.github\/workflows\/.*\.ya?ml$/);
+  const packs = detectPacks(files);
   const sourceFiles = allFiles.filter(
     (f) =>
-      SOURCE_EXT.has(f.slice(f.lastIndexOf("."))) &&
+      packs.some((p) => p.source.test(f) && !p.test.test(f)) &&
       !f.startsWith(AGENT_ROOT + "/") &&
       !/(^|\/)(migrations|seeders|drizzle|prisma\/migrations)\//.test(f) &&
       !/\.(test|spec)\./.test(f),
   );
+  const pySources = sourceFiles.filter((f) => /\.pyi?$/.test(f));
   // A generated .d.ts is not a TypeScript source: a JavaScript repository that emits declarations
   // for its models is still read as JavaScript (checkJs), not held to the strict flags.
   const tsSources = sourceFiles.filter((f) => /\.tsx?$/.test(f) && !/\.d\.ts$/.test(f));
   const jsSources = sourceFiles.filter((f) => /\.(js|jsx|mjs|cjs)$/.test(f));
   // The agent's context file: the primary's at the root or in its folder, else the open
   // AGENTS.md convention another adapter reads.
-  const stack = stackFacts({ has, deps, files, sourceFiles, tsSources, exists });
+  const stack = stackFacts({
+    has,
+    deps,
+    files,
+    sourceFiles,
+    tsSources,
+    jsSources,
+    pySources,
+    exists,
+  });
   const adoption = readAdoption(REPO);
   const staged = stageOf(adoption, stack, files, scripts);
   const contextName = "CLAUDE.md";
@@ -267,6 +281,8 @@ export function buildContext(repoDir, o = {}) {
     ciText: ciFiles.map(read).join("\n"),
     ghWorkflows: files(/^\.github\/workflows\/.*\.ya?ml$/),
     sourceFiles,
+    packs,
+    pySources,
     docFiles: files(/^docs\/.*\.md$/),
     tsSources,
     jsSources,
@@ -339,12 +355,12 @@ const I18N_DEPS = [
 ];
 
 /**
- * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], exists: (p: string) => boolean }} c
+ * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], jsSources: string[], pySources: string[], exists: (p: string) => boolean }} c
  * @returns {StackFacts}
  */
 export function stackFacts(c) {
   const pkg = c.exists("package.json");
-  const js = c.sourceFiles.length > 0;
+  const js = c.tsSources.length + c.jsSources.length > 0;
   const ui =
     UI_DEPS.some(c.has) || c.sourceFiles.some((f) => /\.(tsx|jsx|vue|svelte|astro)$/.test(f));
   return {
@@ -366,6 +382,9 @@ export function stackFacts(c) {
       c.files(
         /(^|\/)(sw|service-worker)\.(js|ts)$|(^|\/)manifest\.(json|webmanifest)$|manifest\.webmanifest\/route\.ts$/,
       ).length > 0 || [...c.deps].some((d) => /workbox|next-pwa|vite-plugin-pwa/.test(d)),
-    docsOnly: !pkg && !js,
+    python:
+      c.pySources.length > 0 ||
+      c.files(/^(pyproject\.toml|requirements\.txt|setup\.py|Pipfile)$/).length > 0,
+    docsOnly: !pkg && c.sourceFiles.length === 0,
   };
 }

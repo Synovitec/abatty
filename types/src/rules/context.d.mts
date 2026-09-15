@@ -23,7 +23,9 @@
  * @property {string[]} ciFiles the CI pipelines (Woodpecker, GitHub Actions)
  * @property {string} ciText
  * @property {string[]} ghWorkflows the GitHub workflows
- * @property {string[]} sourceFiles source files outside the agent folder, migrations and tests
+ * @property {string[]} sourceFiles source files of every detected pack, outside the agent folder, migrations and tests
+ * @property {import("../packs/index.mjs").Pack[]} packs the language packs the tree carries, JavaScript first
+ * @property {string[]} pySources
  * @property {string[]} docFiles the Markdown files under docs/
  * @property {string[]} tsSources
  * @property {string[]} jsSources
@@ -46,6 +48,7 @@
  * @property {boolean} database an ORM, a query builder or a database driver
  * @property {boolean} i18n translation catalogues or an i18n library
  * @property {boolean} pwa a service worker or a web manifest
+ * @property {boolean} python Python sources or a Python manifest
  * @property {boolean} docsOnly no sources and no package: documents, decisions, a schema, a mockup
  */
 /**
@@ -56,7 +59,7 @@ export function buildContext(repoDir: string, o?: {
     today?: string;
 }): RepoContext;
 /**
- * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], exists: (p: string) => boolean }} c
+ * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], jsSources: string[], pySources: string[], exists: (p: string) => boolean }} c
  * @returns {StackFacts}
  */
 export function stackFacts(c: {
@@ -65,6 +68,8 @@ export function stackFacts(c: {
     files: (re: RegExp) => string[];
     sourceFiles: string[];
     tsSources: string[];
+    jsSources: string[];
+    pySources: string[];
     exists: (p: string) => boolean;
 }): StackFacts;
 export type RepoContext = {
@@ -149,9 +154,14 @@ export type RepoContext = {
      */
     ghWorkflows: string[];
     /**
-     * source files outside the agent folder, migrations and tests
+     * source files of every detected pack, outside the agent folder, migrations and tests
      */
     sourceFiles: string[];
+    /**
+     * the language packs the tree carries, JavaScript first
+     */
+    packs: import("../packs/index.mjs").Pack[];
+    pySources: string[];
     /**
      * the Markdown files under docs/
      */
@@ -220,6 +230,10 @@ export type StackFacts = {
      * a service worker or a web manifest
      */
     pwa: boolean;
+    /**
+     * Python sources or a Python manifest
+     */
+    python: boolean;
     /**
      * no sources and no package: documents, decisions, a schema, a mockup
      */

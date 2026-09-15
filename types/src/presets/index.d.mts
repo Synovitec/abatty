@@ -3,9 +3,10 @@ export function presetById(id: string): Preset | null;
 /**
  * The preset a repository's dependencies point at, or null. Order matters: the more specific
  * stack first (a Vite React app also depends on react; a Next app also depends on react).
- * @param {Set<string>} deps
+ * A preset without npm dependencies (Python) is detected from the tree when `files` is given.
+ * @param {Set<string>} deps @param {(re: RegExp) => string[]} [files]
  */
-export function detectPreset(deps: Set<string>): Preset | null;
+export function detectPreset(deps: Set<string>, files?: (re: RegExp) => string[]): Preset | null;
 /** @type {Preset[]} */
 export const presets: Preset[];
 /**
@@ -46,6 +47,8 @@ export type Preset = {
     name: string;
     proven?: string;
     detect: (deps: Set<string>) => boolean;
+    detectFiles?: (files: (re: RegExp) => string[]) => boolean;
+    pack?: string;
     adoption: Record<string, unknown>;
     scripts: Record<string, string>;
     devDependencies: string[];

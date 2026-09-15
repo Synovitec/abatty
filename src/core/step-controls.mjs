@@ -22,9 +22,12 @@ export const CONTROLS_FILE = ".abatty/controls.json";
 const MARK = "abatty-control.__";
 
 /**
- * @typedef {{ files: (deps: Set<string>) => Record<string, string>, means: string }} StepControl
+ * @typedef {{ files: (deps: Set<string>, pack: string) => Record<string, string>, means: string }} StepControl
  * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
  */
+
+/** One planted file, typed as the record a control returns. @param {string} path @param {string} text @returns {Record<string, string>} */
+const file = (path, text) => ({ [path]: text });
 
 /** @param {number} n */
 const longFile = (n) =>
@@ -34,33 +37,49 @@ const longFile = (n) =>
 export const STEP_CONTROLS = {
   format: {
     means: "an unformatted file",
-    files: () => ({ [`src/${MARK}.ts`]: "const   x={a:1,b:2}\nexport   const y=x\n" }),
+    files: (_d, pack) =>
+      pack === "python"
+        ? file(`src/${MARK}.py`, "x    =   {  'a':1 }\n")
+        : file(`src/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
   },
   lint: {
-    means: "a debugger statement",
-    files: () => ({ [`src/${MARK}.ts`]: "debugger;\nexport const abattyControl = 1;\n" }),
+    means: "a debugger statement (an unused import for Python)",
+    files: (_d, pack) =>
+      pack === "python"
+        ? file(`src/${MARK}.py`, "import os\n")
+        : file(`src/${MARK}.ts`, "debugger;\nexport const abattyControl = 1;\n"),
   },
   typecheck: {
     means: "a type error",
-    files: () => ({
-      [`src/${MARK}.ts`]: 'export const abattyControl: number = "not a number";\n',
-    }),
+    files: (_d, pack) =>
+      pack === "python"
+        ? file(`src/${MARK}.py`, 'abatty_control: int = "not a number"\n')
+        : file(`src/${MARK}.ts`, 'export const abattyControl: number = "not a number";\n'),
   },
   test: {
     means: "a test that throws",
-    files: (deps) => ({
-      [`src/${MARK}.test.ts`]:
-        (deps.has("vitest") ? 'import { test } from "vitest";\n' : "") +
-        'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
-    }),
+    files: (deps, pack) =>
+      pack === "python"
+        ? {
+            [`tests/test_abatty_control__.py`]:
+              'def test_abatty_control():\n    raise Exception("planted")\n',
+          }
+        : file(
+            `src/${MARK}.test.ts`,
+            (deps.has("vitest") ? 'import { test } from "vitest";\n' : "") +
+              'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
+          ),
   },
   dead: {
     means: "an unused export in an unreferenced file",
-    files: () => ({ [`src/${MARK}.ts`]: "export const abattyUnused = 1;\n" }),
+    files: (_d, pack) =>
+      pack === "python"
+        ? file(`src/${MARK}.py`, "def abatty_unused():\n    return 1\n")
+        : file(`src/${MARK}.ts`, "export const abattyUnused = 1;\n"),
   },
   standards: {
     means: "a file over the 800-line cap",
-    files: () => ({ [`src/${MARK}.ts`]: longFile(801) }),
+    files: (_d, pack) => file(`src/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
   },
   secrets: {
     means: "a planted cloud access key",
@@ -124,7 +143,7 @@ export function runStepControls(o) {
       });
       continue;
     }
-    const files = control.files(deps);
+    const files = control.files(deps, preset.pack || "javascript");
     const clash = Object.keys(files).find((f) => existsSync(join(repoDir, f)));
     if (clash) {
       steps.push({
@@ -158,6 +177,17 @@ export function runStepControls(o) {
       for (const rel of Object.keys(files)) rmSync(join(repoDir, rel), { force: true });
     }
     const ms = Date.now() - t0;
+    // 127 is the shell's "command not found": a tool that is not installed proves nothing.
+    if (code === 127) {
+      steps.push({
+        label: s.label,
+        outcome: "skipped",
+        detail: `the tool is not installed (${s.command ? s.command[0] : script})`,
+        ms,
+      });
+      log(`  not installed`);
+      continue;
+    }
     if (code !== 0)
       steps.push({ label: s.label, outcome: "red", detail: `went red on ${control.means}`, ms });
     else

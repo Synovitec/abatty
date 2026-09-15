@@ -1,5 +1,7 @@
-/** @type {Applies} */
+/** Sources of any language pack: the rules about the tools (the linter, the formatter, the typecheck, the dead-code tool, the test runner). @type {Applies} */
 export const SOURCES: Applies;
+/** JavaScript or TypeScript sources: the rules whose check reads that language. @type {Applies} */
+export const JS_SOURCES: Applies;
 /** @type {Applies} */
 export const PACKAGE: Applies;
 /** @type {Applies} */

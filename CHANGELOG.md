@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Language packs beyond JavaScript (roadmap #25): a pack names a language's extensions,
+  test shape, manifest and tools; the context detects the packs of a tree and reads the
+  sources of every pack; the linter, formatter, typecheck, dead-code and test rules judge
+  per pack with the same words, the JavaScript-only rules are n/a elsewhere, the step
+  controls plant in the pack's language and skip a tool that is not installed; the Python
+  pack and an unproven `python` preset (ruff, mypy, pytest, vulture as commands), detected
+  from the tree.
 - Every gate step proves it can go red (roadmap #24): `abatty doctor --controls` plants a
   language-neutral violation per always-on step (an unformatted file, a debugger statement,
   a type error, a failing test, an unused export, an oversized file, a planted key), runs the

@@ -4,25 +4,23 @@
  * barrels, format) is code-structure.mjs, the same family.
  */
 
-import { SOURCES } from "../applies.mjs";
+import { JS_SOURCES, SOURCES } from "../applies.mjs";
+import { perPack } from "../../packs/rules.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
     id: "CODE-ESLINT",
     family: "Code",
-    title: "A linter with a flat config exists",
+    title: "A linter configured, for every language in the tree",
     standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
     phase: "1",
     ...SOURCES,
-    why: "The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them.",
-    next: "Add eslint.config.js with the day-0 block from CODE.1",
-    check: (c) => ({
-      status: c.eslintFiles.length ? "present" : "missing",
-      evidence: c.eslintFiles.join(", ") || "none",
-    }),
+    why: "The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them. Each language pack names its linter; the rule keeps the same words.",
+    next: "Add the pack's linter config (eslint.config.js with the day-0 block from CODE.1; ruff for Python)",
+    check: (c) => perPack(c, "linter"),
   },
   {
     id: "CODE-MAXWARN",
@@ -32,7 +30,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "1",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "A warning nobody has to fix is a rule nobody follows; at zero, a warning is an error with a softer name.",
     next: "Add --max-warnings=0 to the lint script",
     check: (c) => {
@@ -68,7 +66,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "7 / 8",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "An 800-line file and a 150-line function are what an agent cannot read whole, and what a reviewer cannot hold; the four limits are the shape a module keeps.",
     next: "Add the four rules at warn under --max-warnings=0, exemptions generated from the baseline debt",
     check: (c) => {
@@ -99,7 +97,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "11",
-    ...SOURCES,
+    ...JS_SOURCES,
     why: "An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say.",
     next: "Add eslint-plugin-jsdoc (typescript-flavor on TS) with the fixer disabled",
     check: (c) => {

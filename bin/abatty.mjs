@@ -158,7 +158,7 @@ function choosePreset(required) {
   // from dependencies since there are none.
   const p = id
     ? presetById(id)
-    : detectPreset(dependencyNames(dir)) ||
+    : detectPreset(dependencyNames(dir), buildContext(dir).files) ||
       (!existsSync(join(dir, "package.json")) && buildContext(dir).stack.docsOnly
         ? presetById("docs")
         : null);

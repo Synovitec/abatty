@@ -104,7 +104,7 @@ export const rules = [
 The context `c` gives a rule the repository as git keeps it (`files`, `firstFile`, `read`,
 `readJson`, `exists`, `git`), its package (`pkg`, `scripts`, `script`, `deps`, `has`), its
 configs (`eslintText`, `tsconfigText`, `ciText`), its sources (`sourceFiles`, `docFiles`,
-`isTs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
+`isTs`, `packs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
 `.claude/adoption.json` → `rules.waived` (`"CODE-DUP": "not measured on a prototype"`, or
 `{ "reason": ..., "until": "2026-12-31" }`): listed, not scored, and since that file is
 read-only to the night's worker, a waiver is a human's decision.
@@ -302,6 +302,7 @@ rules files); the standard says what must hold. A preset is real when a reposito
 | `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                                                                    |
 | `astro`      | nobody yet - `init` says so; the fixture in the tests proves init, measure, doctor and the gate's order on the shape                                                     |
 | `node`       | nobody yet - `init` says so                                                                                                                                              |
+| `python`     | nobody yet - ruff, mypy, pytest, vulture as commands; the ratchet and the secret scan from the package; detected from the tree (pyproject.toml, .py sources)             |
 | `docs`       | nobody yet - a repository at the design stage or documents alone: the format check, the document probes, the secret scan; chosen when there is no package and no sources |
 
 **Presets per workspace, composed.** A monorepo is several stacks in one tree: the root's
@@ -313,6 +314,16 @@ path-aware under it, after the root's steps; the built-in steps (the secret scan
 and the ratchet run once at the root, and the rules read the repository once. A workspace
 without a preset is listed by `abatty` and not gated. `sql`, `python`, `expo` and `tauri` are
 not here: each is real only when a named repository has run it.
+
+**Language packs.** The rules keep the same words across languages: a pack names a
+language's source extensions, its test-file shape, its manifest and its tools (the formatter,
+the linter, the typecheck, the dead-code tool, the test runner) as the config files, scripts
+and dependencies a rule looks for. The context detects the packs of a tree from its files and
+reads the sources of every pack; the rules about the tools judge each pack (present when
+every pack has the tool, partial when some, the evidence naming the pack), the rules whose
+check reads JavaScript are n/a on a tree without it, and `doctor --controls` plants the
+violation in the pack's language. JavaScript is the pack the package was built on; Python is
+the first beyond it, with a preset that no repository has run yet.
 
 ## Provenance, and the scrub as an option
 

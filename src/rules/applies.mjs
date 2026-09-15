@@ -12,8 +12,14 @@
 /** The stages an application's surfaces exist at: not design. @type {import("./stage.mjs").Stage[]} */
 const BUILT = ["build", "run"];
 
-/** @type {Applies} */
+/** Sources of any language pack: the rules about the tools (the linter, the formatter, the typecheck, the dead-code tool, the test runner). @type {Applies} */
 export const SOURCES = {
+  when: "a repository with sources (any language pack)",
+  stages: BUILT,
+  applies: (c) => c.sourceFiles.length > 0 || "no sources",
+};
+/** JavaScript or TypeScript sources: the rules whose check reads that language. @type {Applies} */
+export const JS_SOURCES = {
   when: "a repository with JavaScript or TypeScript sources",
   stages: BUILT,
   applies: (c) => c.stack.js || "no JavaScript or TypeScript sources",

@@ -33,10 +33,9 @@ preset that is real only when a named repository proved it, and a `doctor` that 
 The four blockers come first; without them the rest is polish on a tool for three
 repositories. Item 17 above is part of this list and is not repeated; 1 to 11 are done.
 
-| #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                              | Tier      | Size   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
-| 25  | **Language packs beyond JavaScript**: the extensions, the formatter, the linter, the typecheck and the dead-code tool come from a pack; the rules keep the same words                                                                                                                                                         | Source files are found by extension, `isTs` is a count of two extensions, `lintExtensions` is a fixed list                            | structure | 2 days |
-| 27  | **Distribution**: a license, a registry publish (item 17), a version pinned per repository and recorded in the config, a README a stranger can act on in two minutes; `scrub` moves to an opt-in package with its purpose stated; then one repository outside the company, and its reading published beside the internal ones | `UNLICENSED`, a git-URL install, a README that assumes `ops-hub` was read; proven on two repositories of one company since 2026-09-14 | reach     | 2 days |
+| #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                              | Tier  | Size   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------ |
+| 27  | **Distribution**: a license, a registry publish (item 17), a version pinned per repository and recorded in the config, a README a stranger can act on in two minutes; `scrub` moves to an opt-in package with its purpose stated; then one repository outside the company, and its reading published beside the internal ones | `UNLICENSED`, a git-URL install, a README that assumes `ops-hub` was read; proven on two repositories of one company since 2026-09-14 | reach | 2 days |
 
 ## Next - the shape of a framework
 
@@ -49,6 +48,9 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 | --- | ------ | -------- | ---- |
 
 ## Done
+
+- 2026-09-15 · language packs (#25): the tools per pack, the rules with the same words; the
+  Python pack and its unproven preset.
 
 - 2026-09-15 · every gate step proves it can go red (#24): a planted violation per step,
   `doctor --controls`, a step that stays green reported as absent.

@@ -176,3 +176,7 @@ the rule families to the catalog. Tests 126 -> 130.
 
 A step that never went red may be checking nothing; the doctor plants the violation and says
 which step stayed green. Tests 130 -> 132.
+
+### 2026-09-15 - Language packs
+
+The rules read the tools per pack; Python is the first pack beyond JavaScript. Tests 132 -> 135.
