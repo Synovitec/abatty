@@ -12,6 +12,10 @@ last_verified: "2026-09-14"
 
 # the agent templates
 
+The files below are the harness of the primary adapter (`abatty agents`); another adapter gets
+the context file and the rules in its own shape from `abatty init --agent <id>`, and none of the
+hooks, which is why a night runs on the primary only.
+
 | Template | Copy to | Notes |
 |---|---|---|
 | `settings.user.json` | merge into `~/.claude/settings.json` | `defaultMode: "auto"` only works from here or managed settings. Keep your existing `allow`, `autoMode`, `enabledPlugins` and add these keys |

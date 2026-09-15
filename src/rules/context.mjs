@@ -207,12 +207,16 @@ export function buildContext(repoDir, o = {}) {
   // for its models is still read as JavaScript (checkJs), not held to the strict flags.
   const tsSources = sourceFiles.filter((f) => /\.tsx?$/.test(f) && !/\.d\.ts$/.test(f));
   const jsSources = sourceFiles.filter((f) => /\.(js|jsx|mjs|cjs)$/.test(f));
+  // The agent's context file: the primary's at the root or in its folder, else the open
+  // AGENTS.md convention another adapter reads.
   const contextName = "CLAUDE.md";
   const contextFile = exists(contextName)
     ? contextName
     : exists(`${AGENT_ROOT}/${contextName}`)
       ? `${AGENT_ROOT}/${contextName}`
-      : null;
+      : exists("AGENTS.md")
+        ? "AGENTS.md"
+        : null;
 
   return {
     repo: REPO,

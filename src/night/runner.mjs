@@ -71,8 +71,10 @@ export function runNight(o) {
     mcpConfig,
     mcpServers,
     harnessMoved,
+    adapter,
   } = pf;
   const session = {
+    adapter,
     agent,
     mode,
     model: o.model || "opus",

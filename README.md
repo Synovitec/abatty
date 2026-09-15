@@ -16,6 +16,7 @@ npx abatty gate --fast           # the path-aware gate (the pre-push hook and th
 npx abatty ratchet --range auto  # the ratchet: every probe against the committed baseline, per total and per file
 npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
 npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
+npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
 npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
@@ -84,6 +85,7 @@ read-only to the night's worker, a waiver is a human's decision.
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | root           | `abatty.config.json`: the one config, the hooks' and the package's (commands, files, push policy, phases, `mcpServers`, `rules.waived`, `ratchet`, `scrub`, `provenance`), with its `$schema` line; validated by `abatty config` and `doctor` against the schema the package ships (`schema/`)                            | yes; merged key by key, your values kept |
 | `.claude/`     | `settings.json` (the hooks wired), `mcp.night.json` (the only MCP servers a night has), the seven hooks and their self-test, the `adopt-standards` skill, the two agents, the preset's `rules/*.md`, `harness.lock.json` (the package version and the hash of every shipped file as installed, what `update` merges from) | yes                                      |
+| per adapter    | `AGENTS.md` for the open convention and Cursor (the primary's context file then imports it), `.cursor/rules/*.mdc` for Cursor (the preset's rules, the paths as globs)                                                                                                                                                    | yes                                      |
 | root           | `.dependency-cruiser.cjs` (the import graph: cycles, orphans, one rule per arrow of the boundary map), `knip.jsonc` (dead code), `.githooks/pre-push`, `CLAUDE.md` (the template, placeholders to fill), `CHANGELOG.md`                                                                                                   | yes                                      |
 | `package.json` | `gate`, `gate:fast`, `graph`, `dead`, `typecheck`, `lint`, `format:check`, `hooks:install`                                                                                                                                                                                                                                | an existing script is never replaced     |
 | `docs/`        | `README.md` (the index), `STANDARDS_PROGRESS.md`, `ADOPTION_DECISIONS.md`                                                                                                                                                                                                                                                 | yes                                      |
@@ -92,6 +94,23 @@ Dependencies are named, never installed (`npm i -D dependency-cruiser knip ...` 
 dependency change is a decision. Then by hand: fill `CLAUDE.md`, write the boundary-map rules
 in `.dependency-cruiser.cjs`, on an existing repository `depcruise --baseline` once and knip at
 today's count, `npm run hooks:install`, `abatty doctor`, `abatty measure`, `npm run gate`.
+
+## Agents
+
+The harness talks to an agent through an **adapter**: its settings folder, its context file,
+where its path-scoped rules go and in what shape, whether it has a hook protocol, the flags
+of its headless mode. `abatty agents` lists them; `agents` in the config (or `init --agent
+<id,id>`) names the ones a repository writes for. Three today: the harness's own agent (its id
+is derived from its folder, so this package names no tool), the open `AGENTS.md` convention
+any agent reads, and Cursor (`AGENTS.md`, the rules as `.cursor/rules/*.mdc` with the paths as
+globs). With more than one, the context file is `AGENTS.md` and the primary's file imports
+it, so there is one source.
+
+What an adapter cannot give is said plainly, because the enforcement of a night is the hooks:
+an agent without a hook protocol gets the context, the rules, the gate and CI, and loses the
+guard, the file guard, the Stop gate, the canary and the night itself. `abatty night` refuses
+a repository whose adapters have no hooks and names what is lost. The runner builds every
+session's flags from the adapter, never from a hard-coded list.
 
 ## Configuration
 

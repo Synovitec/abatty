@@ -11,10 +11,11 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseJson } from "../core/repo.mjs";
 import { agentFromEnv } from "../core/env.mjs";
+import { PRIMARY, sessionArgs } from "../agents/index.mjs";
 
 /**
  * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
- * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void }} SessionOptions
+ * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void, adapter?: import("../agents/index.mjs").Adapter }} SessionOptions
  */
 
 /**
@@ -75,27 +76,15 @@ export function runSession(run, o) {
   const json = `${run.outBase}.json`;
   const stderrFile = `${run.outBase}.stderr.txt`;
   o.log(`[${clock()}] ${run.name}`);
-  const args = [
-    "-p",
-    run.prompt,
-    "--permission-mode",
-    o.mode,
-    "--permission-prompts",
-    "none",
-    "--output-format",
-    "json",
-    "--max-budget-usd",
-    String(run.budget),
-    "--model",
-    o.model,
-    "--effort",
-    o.effort,
-    "--strict-mcp-config",
-    "--mcp-config",
-    o.mcpConfig,
-    "-n",
-    run.name,
-  ];
+  const args = sessionArgs(o.adapter || PRIMARY, {
+    prompt: run.prompt,
+    mode: o.mode,
+    budget: run.budget,
+    model: o.model,
+    effort: o.effort,
+    mcpConfig: o.mcpConfig,
+    name: run.name,
+  });
   const win = process.platform === "win32";
   const r = spawnSync(win ? `"${o.agent}"` : o.agent, win ? args.map(quoteWin) : args, {
     cwd: run.repoDir,

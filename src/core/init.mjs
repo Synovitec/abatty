@@ -13,6 +13,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
+import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { LOCK, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
@@ -35,6 +36,7 @@ function walk(dir, base = dir, acc = []) {
  * @param {import("../presets/index.mjs").Preset} o.preset
  * @param {boolean} [o.force]
  * @param {boolean} [o.dryRun]
+ * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
  */
 export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
@@ -139,8 +141,22 @@ export function initRepo(o) {
     dryRun,
   );
 
-  // 6. Day-0 documents, only when absent.
-  put("CLAUDE.md", tpl("harness/agent-context.md.template"));
+  // 6. Day-0 documents, only when absent. The context file goes to every configured adapter:
+  //    the primary's name, and AGENTS.md for the others, the primary importing it when both
+  //    exist so there is one source; a Cursor adapter gets the preset's rules as .mdc files.
+  const configured = configuredAdapters(o.agents?.length ? { agents: o.agents } : merged);
+  const adapters = configured.adapters.length ? configured.adapters : [PRIMARY];
+  const others = adapters.filter((a) => a.id !== PRIMARY.id);
+  const context = tpl("harness/agent-context.md.template");
+  if (others.some((a) => a.contextFile === "AGENTS.md")) {
+    put("AGENTS.md", context);
+    if (adapters.some((a) => a.id === PRIMARY.id)) put(PRIMARY.contextFile, "@AGENTS.md\n");
+  } else put(PRIMARY.contextFile, context);
+  for (const a of others)
+    if (a.rulesDir && a.rulesFormat === "mdc")
+      for (const r of preset.rules)
+        if (existsSync(join(TEMPLATES, "harness", "rules", r)))
+          put(`${a.rulesDir}/${r.replace(/\.md$/, ".mdc")}`, toMdc(tpl(`harness/rules/${r}`)));
   put(
     "CHANGELOG.md",
     "# Changelog\n\nKeep a Changelog, SemVer. Every commit that touches source, tests, scripts, CI, migrations or docs adds a line under Unreleased in the same commit (CHANGE-1, CHANGE-2).\n\n## [Unreleased]\n\n### Added\n\n- The engineering standard's instrument: harness, gate, import graph, dead code (`abatty init`).\n",

@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The agent adapters (roadmap #6): `src/agents/` describes an agent by its settings folder,
+  its context file, its rules folder and format, its hook protocol and the flags of its
+  headless mode; three adapters (the harness's own agent, the open `AGENTS.md` convention,
+  Cursor with `.mdc` rules); `agents` in the config and `init --agent <id,id>` name a
+  repository's adapters, `init` writes `AGENTS.md` (the primary importing it) and the `.mdc`
+  rules; `abatty agents` lists the adapters and what a repository loses with the ones it
+  named; the runner builds every session's flags from the adapter and refuses a night for a
+  repository whose adapters have no hook protocol, naming what is lost; the rules' context
+  reads `AGENTS.md` when it is the context file.
 - The `astro` preset (roadmap #5), unproven and saying so: pages, layouts, components and
   content under `src/`, `astro check` as the typecheck, the browser suite with axe over the
   built output, no database suite by default; its fixture repository in the tests proves

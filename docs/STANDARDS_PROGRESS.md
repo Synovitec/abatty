@@ -89,3 +89,8 @@ validates. Tests 70 -> 74.
 
 The `astro` preset and its fixture; four presets, four fixtures, two of them also proven by a
 repository. Tests 74 -> 75.
+
+### 2026-09-15 - Agent adapters
+
+Three adapters; the primary's id derived from its folder so this package names no tool; the
+night refused without hooks. Tests 75 -> 80.

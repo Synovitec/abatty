@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { git, parseJson, readAdoption } from "../core/repo.mjs";
 import { agentCommand, clock } from "./session.mjs";
+import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
 
 export const HARNESS_FILES = [
   ".claude/settings.json",
@@ -38,6 +39,7 @@ export function readJson(p) {
  *   maxSessions: number, phases: string[], date: string, branch: string, nightDir: string,
  *   startedAt: string, mcpConfig: string, mcpServers: string[],
  *   harnessMoved: (when: string) => string,
+ *   adapter: import("../agents/index.mjs").Adapter,
  * }} Preflight
  */
 
@@ -60,6 +62,20 @@ export function preflight(o, c) {
   spawnSync("git", ["fetch", "--prune"], { cwd: repoDir, stdio: "ignore" });
 
   const config = readAdoption(repoDir) || {};
+  // A night is the hooks: an adapter without a hook protocol has no guard, no Stop gate, no
+  // canary, so no night. The first configured adapter with hooks runs it.
+  const { adapters, unknown } = configuredAdapters(config);
+  if (unknown.length)
+    return refuse(
+      `unknown agent adapter(s) in the config: ${unknown.join(", ")} (abatty agents lists them)`,
+    );
+  const adapter = adapters.find((a) => a.guarantees.night);
+  if (!adapter) {
+    const first = adapters[0];
+    return refuse(
+      `no night for ${adapters.map((a) => a.id).join(", ")}: an adapter without a hook protocol loses ${first ? lostGuarantees(first).join("; ") : "every hook"}. Name an adapter with hooks in agents, or run the gate and CI by day.`,
+    );
+  }
   const base = String(config.baseBranch || "main");
   const prefix = String(config.branchPrefix || "adopt/standards");
   const stateFile = String(config.files?.state || "docs/ADOPTION_STATE.json");
@@ -181,5 +197,6 @@ export function preflight(o, c) {
     mcpConfig,
     mcpServers,
     harnessMoved,
+    adapter,
   };
 }

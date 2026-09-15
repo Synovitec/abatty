@@ -3,7 +3,8 @@
  * abatty - the engineering standard as a command.
  *
  *   abatty [status] [dir] [--fresh]                                    the repository at a glance
- *   abatty init [dir] --stack <next|vite-react|node> [--force] [--dry-run]
+ *   abatty init [dir] --stack <next|astro|vite-react|node> [--agent <id,id>] [--force] [--dry-run]
+ *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
  *   abatty doctor [dir] [--strict] [--skip-self-test]
@@ -30,6 +31,7 @@ import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
 import { initRepo } from "../src/core/init.mjs";
 import { doctor } from "../src/core/doctor.mjs";
 import { updateRepo } from "../src/core/update.mjs";
+import { ADAPTERS, configuredAdapters, lostGuarantees } from "../src/agents/index.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -65,6 +67,7 @@ const KNOWN = [
   "doctor",
   "update",
   "config",
+  "agents",
   "scrub",
   "report",
   "dashboard",
@@ -261,7 +264,17 @@ switch (command) {
   case "init": {
     const preset = choosePreset(true);
     if (!preset) break;
-    const r = initRepo({ repoDir: dir, preset, force: flag("--force"), dryRun: flag("--dry-run") });
+    const r = initRepo({
+      repoDir: dir,
+      preset,
+      force: flag("--force"),
+      dryRun: flag("--dry-run"),
+      agents: opt("--agent")
+        ? opt("--agent")
+            .split(/[\s,]+/)
+            .filter(Boolean)
+        : [],
+    });
     out(
       `\n${t.banner(VERSION)}  ${t.bold("init")} ${t.gray("·")} ${preset.name}${preset.proven ? t.gray(` · proven by ${preset.proven}`) : t.yellow(" · not yet proven by a repository: the first one names what is wrong")}${flag("--dry-run") ? t.gray(" · dry run") : ""}\n\n`,
     );
@@ -345,6 +358,25 @@ switch (command) {
       `\n${problems.length ? t.glyph.fail + " " + t.red(`${problems.length} problem(s) against the schema`) : t.glyph.ok + " " + t.green("valid against the schema")} ${t.gray("· --json for the resolved config")}\n\n`,
     );
     process.exit(problems.length ? 1 : 0);
+  }
+  case "agents": {
+    // The adapters: what each gives, and what this repository loses with the ones it named.
+    const { adapters, unknown } = configuredAdapters(readAdoption(dir));
+    out(`\n${t.banner(VERSION)}  ${t.bold("agents")} ${t.gray("·")} ${dir}\n\n`);
+    for (const a of ADAPTERS) {
+      const on = adapters.some((x) => x.id === a.id);
+      out(
+        `  ${on ? t.glyph.ok : t.glyph.skip} ${t.bold(a.id.padEnd(10))} ${a.name}\n      ${t.gray(`context ${a.contextFile} · rules ${a.rulesDir ? a.rulesDir + " (" + a.rulesFormat + ")" : "none"} · hooks ${a.hooks.protocol} · headless ${a.headless ? "yes" : "no"}`)}\n`,
+      );
+      const lost = lostGuarantees(a);
+      if (lost.length) out(`      ${t.yellow("without: " + lost.join("; "))}\n`);
+    }
+    for (const u of unknown)
+      out(`  ${t.glyph.fail} ${t.red(`unknown adapter in the config: ${u}`)}\n`);
+    out(
+      `\n  ${t.gray(`this repository: ${adapters.map((a) => a.id).join(", ") || "none"} (config → agents)${adapters.some((a) => a.guarantees.night) ? "" : " · no adapter with hooks: no night, the gate and CI by day"}`)}\n\n`,
+    );
+    process.exit(unknown.length ? 1 : 0);
   }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });
