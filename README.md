@@ -1,10 +1,11 @@
 # abatty
 
-**abatty** (abatty.io) is the Synovitec engineering standard as an installable instrument. The standard itself - the rules,
-the enforcement map, the adoption plan, the research - lives in
-[`ops-hub/engineering`](https://github.com/Synovitec/ops-hub/tree/main/engineering); this package
-is the part you install in a repository: the harness, the gate, the analysis tooling, the
-measurement, per stack, kept in step.
+**abatty** (abatty.io) is an engineering standard as an installable instrument, open source under
+Apache-2.0. The standard itself - the rules, the enforcement map, the adoption plan, the lessons,
+the research - ships with the package under [`docs/standard/`](docs/standard/README.md), versioned
+with it; the package is the part you install in a repository: the harness, the gate, the ratchet,
+the analysis tooling, the measurement, per stack, kept in step. Contributions under a DCO:
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ```sh
 npm i -D github:Synovitec/abatty

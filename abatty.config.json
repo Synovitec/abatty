@@ -14,6 +14,11 @@
       "^\\.claude/hooks/",
       "^(tests?|e2e)/",
       "^templates/harness/(hooks|testing)/"
-    ]
+    ],
+    "citationsExempt": ["^docs/standard/"]
+  },
+  "scrub": {
+    "$comment": "The research notes under docs/standard/research quote their sources verbatim, the vendor's own documentation among them; a rewritten citation would be a false one.",
+    "allow": ["docs/standard/research/"]
   }
 }

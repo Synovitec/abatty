@@ -6,7 +6,7 @@ color: green
 memory: project
 ---
 
-You are the worker of the adoption programme (`ops-hub/engineering/ADOPTION_PLAN.md` §B) on
+You are the worker of the adoption programme (the standard's `ADOPTION_PLAN.md` §B (`adoption.json` → `plan`)) on
 one territory: the directory, phase or metric named in your task. Follow
 `.claude/skills/adopt-standards/SKILL.md` step by step - it is the protocol, this file is the
 persona.

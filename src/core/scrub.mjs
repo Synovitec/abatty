@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { FORBIDDEN, FORBIDDEN_ALL, REQUIRED_PATHS, onlyRequiredPaths } from "./vocabulary.mjs";
-import { git, readAdoption } from "./repo.mjs";
+import { git, readAdoption, readJsonFile } from "./repo.mjs";
 
 /** @typedef {{ kind: "file" | "commit" | "pr", where: string, line?: number, text: string }} ScrubFinding */
 
@@ -133,10 +133,18 @@ function keyPattern(key) {
     : new RegExp(escaped, "g");
 }
 
-/** The per-repository allow-list from adoption.json. @param {string} repoDir */
+/** The per-repository allow-list: `scrub.allow` of the adoption config and of `abatty.config.json` at the root. @param {string} repoDir */
 export function allowList(repoDir) {
   const a = readAdoption(repoDir);
-  return Array.isArray(a?.scrub?.allow) ? a.scrub.allow.map(String) : [];
+  /** @type {any} */
+  let root = null;
+  try {
+    root = readJsonFile(repoDir, "abatty.config.json");
+  } catch {
+    root = null;
+  }
+  const list = [...(a?.scrub?.allow || []), ...(root?.scrub?.allow || [])];
+  return Array.isArray(list) ? list.map(String) : [];
 }
 
 /** Leftover matches in a text, for the summary. @param {string} text */

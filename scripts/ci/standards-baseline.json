@@ -31,11 +31,11 @@
   "scanned": {
     "code.barrels": 4,
     "context.overCap": 0,
-    "docs.behindCode": 0,
-    "docs.citations": 7,
-    "docs.danglingSource": 0,
-    "docs.frontMatter": 4,
-    "docs.indexDrift": 3,
+    "docs.behindCode": 5,
+    "docs.citations": 23,
+    "docs.danglingSource": 10,
+    "docs.frontMatter": 20,
+    "docs.indexDrift": 19,
     "size.excessCode": 41,
     "size.overBudget": 41,
     "size.overRaw": 53,
@@ -58,5 +58,10 @@
       "src/rules/families/tests.mjs": 1,
       "src/ui/term.mjs": 3
     }
+  },
+  "lastReason": {
+    "at": "2026-09-15",
+    "reason": "the standard's documents joined docs/ (STANDARDS_PROGRESS 2026-09-15)",
+    "rises": []
   }
 }

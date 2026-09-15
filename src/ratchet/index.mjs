@@ -69,6 +69,7 @@ export { readBaseline, writeBaseline } from "./baseline.mjs";
  *   kinds: KindBudget[],
  *   exempt: string[],
  *   envModule: string,
+ *   citationsExempt: string[],
  *   changelog: string,
  *   changelogRequiredFor: string[],
  * }} RatchetConfig

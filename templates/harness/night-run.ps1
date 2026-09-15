@@ -11,7 +11,7 @@
 .NOTES
   Requires the agent >= 2.1.259 (--permission-prompts none). The project must carry
   .claude/settings.json (hooks), .claude/adoption.json, .claude/hooks/*.mjs and
-  .claude/skills/adopt-standards/SKILL.md from ops-hub/engineering/templates/agent/.
+  .claude/skills/adopt-standards/SKILL.md from the package's templates/harness/.
   User-level hooks do not run in -p; the project's do. defaultMode in settings never applies
   to -p either: the mode is passed on the command line here.
 

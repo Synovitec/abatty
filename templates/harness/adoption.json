@@ -23,8 +23,8 @@
     "baseline": "scripts/ci/standards-baseline.json"
   },
 
-  "standard": "../ops-hub/engineering/ENGINEERING_STANDARD.md",
-  "plan": "../ops-hub/engineering/ADOPTION_PLAN.md",
+  "standard": "node_modules/abatty/docs/standard/ENGINEERING_STANDARD.md",
+  "plan": "node_modules/abatty/docs/standard/ADOPTION_PLAN.md",
 
   "sourceGlobs": ["src/", "server/", "apps/", "packages/", "scripts/", "tests/", "e2e/", "migrations/", "drizzle/", ".woodpecker"],
 

@@ -69,6 +69,7 @@ export const DEFAULT_CONFIG = {
   kinds: DEFAULT_KINDS,
   exempt: DEFAULT_EXEMPT,
   envModule: "(^|/)env\\.[cm]?[jt]s$",
+  citationsExempt: [],
   changelog: "CHANGELOG.md",
   changelogRequiredFor: [
     "src/",

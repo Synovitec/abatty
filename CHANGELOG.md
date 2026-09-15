@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The license and the standard in the open (roadmap #28): Apache-2.0 (`LICENSE`,
+  `package.json`), contributions under a DCO (`CONTRIBUTING.md`); the standard, the adoption
+  plan, the enforcement map, the autonomous-adoption protocol, the lessons, the best practices,
+  the guides and the research moved into `docs/standard/`, versioned with the package
+  (2026.09.15) and shipped in it; the templates and the context-file template point at the
+  packaged copy (`node_modules/abatty/docs/standard/...`), never at a sibling checkout.
+- `ratchet.citationsExempt`: documents that describe another repository (a standard, a guide)
+  are exempt from `docs.citations`; `scrub.allow` is read from `abatty.config.json` too.
 - `docs/ROADMAP.md`: items 28 to 30 - the license and the standard in the open, the enforced
   share as the main number, provenance as the default with the scrub as an option - each with
   its evidence and its tier.

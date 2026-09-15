@@ -4,17 +4,24 @@
  * doc's update trigger off.
  */
 import { dirname, posix } from "node:path";
-import { frontMatter } from "./lib.mjs";
+import { frontMatter, matchesAny, regexes } from "./lib.mjs";
 
 const CITATION =
   /`([^`\s]+\/[^`\s]*\.(?:mjs|cjs|js|ts|tsx|jsx|json|jsonc|md|ya?ml|sql|ps1|sh|toml|css)(?::\d+)?)`/g;
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
 
-/** The tree prefix of a source_truth entry: everything before the first glob character, without a trailing slash. @param {string} entry */
-function prefixOf(entry) {
+/**
+ * The tree prefix of a source_truth entry: everything before the first glob character, without
+ * a trailing slash; an entry starting with `./` or `../` is read from the document's folder,
+ * any other from the root. Null when the entry leaves the repository.
+ * @param {string} entry @param {string} doc the document's path
+ */
+function prefixOf(entry, doc) {
   const i = entry.search(/[*?{[]/);
-  return (i < 0 ? entry : entry.slice(0, i)).replace(/\/+$/, "");
+  const raw = (i < 0 ? entry : entry.slice(0, i)).replace(/\/+$/, "");
+  const p = /^\.\.?\//.test(raw) ? posix.normalize(posix.join(dirname(doc), raw)) : raw;
+  return p.startsWith("../") || p === ".." ? null : p;
 }
 
 /** @type {import("../index.mjs").Probe[]} */
@@ -101,13 +108,15 @@ export const probes = [
     kind: "ratchet",
     standard: ["DOC-4"],
     title: "Path citations in documents that do not resolve",
-    why: "A doc cites the code it describes; a citation that no longer resolves is the first sign the doc is behind, and a reader following it lands nowhere.",
+    why: "A doc cites the code it describes; a citation that no longer resolves is the first sign the doc is behind, and a reader following it lands nowhere. A document that describes another repository (a standard, a guide) is exempt through citationsExempt.",
     axis: "docs-freshness",
     lossAt: 40,
-    scan: (c) => {
+    scan: (c, o) => {
       const findings = [];
       let scanned = 0;
+      const exempt = regexes(o.config.citationsExempt);
       for (const f of c.docFiles) {
+        if (matchesAny(f, exempt)) continue;
         const text = c.read(f);
         const dir = dirname(f);
         for (const m of text.matchAll(CITATION)) {
@@ -167,7 +176,7 @@ export const probes = [
         scanned++;
         const behind = [];
         for (const entry of truth) {
-          const p = prefixOf(entry);
+          const p = prefixOf(entry, f);
           if (!p || !c.exists(p)) continue;
           const last = c.git("log", "-1", "--format=%cs", "--", p);
           if (last && last > verified && last !== c.today) behind.push(`${entry} moved ${last}`);
@@ -220,8 +229,8 @@ export const probes = [
         const fm = frontMatter(c.read(f));
         const truth = fm && Array.isArray(fm.source_truth) ? fm.source_truth : [];
         for (const entry of truth) {
-          const p = prefixOf(entry);
-          if (p.startsWith("..")) continue;
+          const p = prefixOf(entry, f);
+          if (p === null) continue;
           scanned++;
           if (!p || !c.exists(p))
             findings.push({ path: f, detail: `source_truth \`${entry}\` names nothing` });
@@ -238,6 +247,15 @@ export const probes = [
       {
         name: "an entry naming a folder that exists",
         files: { "docs/a.md": FM('source_truth:\n  - "src/**"\n'), "src/x.ts": "export {};\n" },
+        expect: 0,
+      },
+      {
+        name: "an entry relative to the document's folder resolves from there",
+        files: {
+          "docs/standard/a.md": FM('source_truth:\n  - "./guides/*.md"\n  - "../../src/**"\n'),
+          "docs/standard/guides/g.md": FM(),
+          "src/x.ts": "export {};\n",
+        },
         expect: 0,
       },
     ],

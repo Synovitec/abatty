@@ -48,3 +48,12 @@ promoted to HARD; four ratchets with their debt on the list - `size.overBudget` 
 `valid.rawEnv` 7 (the terminal layer's colour switches, the same quoted patterns). The hook
 and stub templates are exempt from the kind budget through `abatty.config.json` (they are
 sequential procedures where stdout is the interface), still under the 800 cap. Tests 32 -> 53.
+
+### 2026-09-15 - The standard in the open
+
+`LICENSE` (Apache-2.0), `CONTRIBUTING.md` (DCO). The standard's fifteen documents moved into
+`docs/standard/` and pass this repository's own instrument: front matter and the index at
+zero, citations exempt for the standard's documents because they cite the paths of a
+repository that adopts it (`ratchet.citationsExempt`), and the two research notes that quote
+the vendor's own documentation allowed through `scrub.allow` with the reason in
+`abatty.config.json` - a rewritten citation would be a false one.

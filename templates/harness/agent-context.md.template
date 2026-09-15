@@ -4,7 +4,7 @@
 
 This file is the agent's entry point and stays under 200 lines; what matters in one part of
 the tree only lives in `.claude/rules/<topic>.md` with `paths:` front matter. The rules are
-the standard (`ops-hub/engineering/ENGINEERING_STANDARD.md`); how they apply to this stack is
+the standard (`node_modules/abatty/docs/standard/ENGINEERING_STANDARD.md`); how they apply to this stack is
 `docs/CODE_CONVENTIONS.md`; the narrative is indexed in `docs/README.md`. Where this file and
 the standard disagree, this file wins for this repository and §10 records why. Nothing here is
 enforcement: what must happen at a fixed point is a hook in `.claude/settings.json`.
@@ -95,7 +95,7 @@ this is measured by `npm run standards`; a number that must go up is a decision 
 | `mattpocock-skills:tdd` | Any new guard, probe or behaviour: red before green, at a pre-agreed seam | Write production code before the failing test |
 | `mattpocock-skills:writing-for-agents` | Editing this file, a `.claude/rules/*.md`, a skill or an agent | Grow this file past 200 lines |
 | `mattpocock-skills:code-review` | A second reader on a diff, called with its fixed point and spec given: Standards axis = the engineering standard, Spec axis = the ticket or the phase exit criterion | Merge or rerank its two axes; ask for what the caller can pass |
-| `mattpocock-skills:research` | A best-practices pass: primary sources, cited Markdown into `ops-hub/engineering/research/` | Cite a secondary source as primary |
+| `mattpocock-skills:research` | A best-practices pass: primary sources, cited Markdown into the standard's `research/` | Cite a secondary source as primary |
 | `mattpocock-skills:resolving-merge-conflicts` / `:diagnosing-bugs` / `:wizard` | The morning merge of an adoption branch; a `behaviour-risk` or blocked phase; a human-only runbook step (restore drill, key generation) | - |
 | `/mattpocock-skills:improve-codebase-architecture`, `/mattpocock-skills:grill-with-docs` (day, user-invoked) | The morning after a night that recorded `seam-unclear`: the deletion-test scan over those files, the report, the grilling; before phase 0 of a repository (the `adoption.json` choices) or a feature spec. The ADRs they write go where the repository keeps decisions, with the house front matter, or the docs gate is red | Run unattended |
 

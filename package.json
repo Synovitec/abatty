@@ -2,7 +2,7 @@
   "name": "abatty",
   "version": "0.1.0",
   "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "private": false,
   "type": "module",
   "engines": {
@@ -23,8 +23,10 @@
     "bin",
     "src",
     "templates",
+    "docs/standard",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",

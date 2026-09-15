@@ -9,7 +9,7 @@ paths:
 
 # PWA rules (loaded when the worker, the manifest or push code is open)
 
-Depth and reasons: `ops-hub/engineering/guides/PWA.md`.
+Depth and reasons: the standard's `guides/PWA.md` (shipped under `docs/standard/` of the package).
 
 - Installable means HTTPS, a valid manifest and a registered worker; a failure is silent, so
   verify in DevTools > Application, not with a Lighthouse PWA score (it no longer exists).
