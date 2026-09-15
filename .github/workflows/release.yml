@@ -1,0 +1,33 @@
+# A release is a tag: `vX.Y.Z` pushed after the version and the changelog section are on
+# main. The gate runs again on the tagged commit, then the package is published to the
+# registry with provenance (the tarball attested to this workflow and this commit). The token
+# is a granular automation token stored as NPM_TOKEN; without it the publish step fails and
+# nothing is released.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run -s gate
+      - name: the tag is the version
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          [ "refs/tags/v$v" = "$GITHUB_REF" ] || { echo "tag $GITHUB_REF is not v$v"; exit 1; }
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

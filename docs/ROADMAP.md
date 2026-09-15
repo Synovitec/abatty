@@ -51,11 +51,13 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 ## Later - hardening and reach
 
-| #   | Change                                                               | Evidence                                                   | Size       |
-| --- | -------------------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
-| 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties | half a day |
+| #   | Change | Evidence | Size |
+| --- | ------ | -------- | ---- |
 
 ## Done
+
+- 2026-09-15 · publishable to the registry (#17): the manifest, the release workflow on a tag,
+  the tarball proven by an install into a clean project. The first publish is a human's tag.
 
 - 2026-09-15 · the allowance and the resumable night (#16): sessions or tokens as the cap under a
   subscription; the spend in `run.json` after every session; `--resume`.

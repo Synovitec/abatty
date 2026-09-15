@@ -141,3 +141,8 @@ under bubblewrap where one is found. Tests 104 -> 111.
 
 Sessions or tokens as the cap where dollars are a proxy; the spend written after every session
 and a night resumable. Tests 111 -> 113.
+
+### 2026-09-15 - Publishable
+
+The tarball a third party installs is proven by a test that packs it, installs it in a clean
+project and runs `init` from it. Tests 113 -> 114.

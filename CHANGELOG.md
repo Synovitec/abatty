@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Publishable to the registry (roadmap #17): the package's `repository`, `bugs`, `keywords`
+  and `publishConfig` (public, with provenance), `prepublishOnly` running the gate, the
+  package's own checks workflow and a release workflow publishing a `vX.Y.Z` tag after the
+  gate; a test packs the tarball, installs it in a clean project and runs `init` from it,
+  and asserts the tarball carries what the CLI needs and nothing of the repository's own.
+  The name `abatty` is free on the registry; the first publish is a human's tag.
 - The allowance and the resumable night (roadmap #16): a night's cap in the unit the account
   is billed in, dollars, sessions or tokens (`allowance` in the config, `--max-sessions`,
   `--max-tokens`), any one reached ending the night with the wrap-up not run; the spend

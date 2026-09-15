@@ -3,6 +3,26 @@
   "version": "0.1.0",
   "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Synovitec/abatty.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Synovitec/abatty/issues"
+  },
+  "keywords": [
+    "engineering-standard",
+    "ratchet",
+    "gate",
+    "harness",
+    "agents",
+    "ci",
+    "code-quality"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "private": false,
   "type": "module",
   "engines": {
@@ -63,7 +83,9 @@
     "standards": "node bin/abatty.mjs ratchet --range auto",
     "standards:baseline": "node bin/abatty.mjs baseline",
     "types": "tsc -p tsconfig.types.json",
-    "secrets": "node bin/abatty.mjs secrets"
+    "secrets": "node bin/abatty.mjs secrets",
+    "prepublishOnly": "npm run -s gate",
+    "pack:check": "npm pack --dry-run"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

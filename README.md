@@ -8,7 +8,7 @@ the analysis tooling, the measurement, per stack, kept in step. Contributions un
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ```sh
-npm i -D github:Synovitec/abatty
+npm i -D abatty                  # the registry, from the first tagged release; github:Synovitec/abatty for the branch
 npx abatty                       # the repository at a glance: score, families, harness, nights, next steps
 npx abatty init --stack next     # the instrument, from the templates and the preset
 npx abatty measure               # the gap analysis: score, every check, next steps by phase
