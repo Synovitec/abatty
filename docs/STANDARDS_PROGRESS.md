@@ -78,3 +78,9 @@ Linux and macOS for a reason that was not the harness. Tests 55 -> 62.
 
 `abatty update` merges the package's harness with a repository's own edits; the reference
 repository's harness was synced by hand three times in one day before it. Tests 62 -> 70.
+
+### 2026-09-15 - The root config
+
+`abatty.config.json` at the root, validated against the schema the package ships, read first
+by every hook and every command; this repository's own config carries the `$schema` line and
+validates. Tests 70 -> 74.

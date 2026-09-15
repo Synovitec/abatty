@@ -13,7 +13,7 @@ test("init --stack next writes the harness, the tooling, the scripts and the day
   assert.equal(r.code, 0, r.out);
   for (const f of [
     ".claude/settings.json",
-    ".claude/adoption.json",
+    "abatty.config.json",
     ".claude/mcp.night.json",
     ".claude/hooks/self-test.mjs",
     ".claude/hooks/protect.mjs",
@@ -34,7 +34,7 @@ test("init --stack next writes the harness, the tooling, the scripts and the day
   ]) {
     assert.ok(existsSync(join(dir, f)), `missing ${f}`);
   }
-  const adoption = JSON.parse(readFileSync(join(dir, ".claude/adoption.json"), "utf8"));
+  const adoption = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
   assert.equal(adoption.stack, "next");
   assert.equal(adoption.commands.gate, "npm run gate:fast");
   assert.deepEqual(adoption.mcpServers, []);

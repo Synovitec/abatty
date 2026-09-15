@@ -82,9 +82,46 @@ export function dependencyNames(dir) {
   return names;
 }
 
-/** .claude/adoption.json as the repository has it, or null. @param {string} dir */
+export const CONFIG_FILE = "abatty.config.json";
+export const LEGACY_CONFIG = ".claude/adoption.json";
+
+/** @param {unknown} v */
+const isPlain = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
+
+/** Deep merge for plain objects: `over` wins; arrays and scalars are replaced, not merged. @param {Record<string, any>} base @param {Record<string, any>} over */
+export function deepMerge(base, over) {
+  /** @type {Record<string, any>} */
+  const out = { ...base };
+  for (const [k, v] of Object.entries(over))
+    out[k] = isPlain(v) && isPlain(out[k]) ? deepMerge(out[k], v) : v;
+  return out;
+}
+
+/**
+ * The one configuration of the repository, or null when it has none: `abatty.config.json` at
+ * the root over `.claude/adoption.json` (the older place), key by key. A file that does not
+ * parse is skipped, never a crash; `abatty config` names it.
+ * @param {string} dir @returns {Record<string, any> | null}
+ */
+export function readConfig(dir) {
+  /** @param {string} rel @returns {Record<string, any> | null} */
+  const read = (rel) => {
+    try {
+      const v = readJsonFile(dir, rel);
+      return isPlain(v) ? v : null;
+    } catch {
+      return null;
+    }
+  };
+  const legacy = read(LEGACY_CONFIG);
+  const root = read(CONFIG_FILE);
+  if (!legacy && !root) return null;
+  return deepMerge(legacy || {}, root || {});
+}
+
+/** The merged configuration (see readConfig); the name the first days used. @param {string} dir */
 export function readAdoption(dir) {
-  return readJsonFile(dir, ".claude/adoption.json");
+  return readConfig(dir);
 }
 
 /** True when a package.json script of that name exists. @param {string} dir @param {string} name */

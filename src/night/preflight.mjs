@@ -13,7 +13,6 @@ import { agentCommand, clock } from "./session.mjs";
 
 export const HARNESS_FILES = [
   ".claude/settings.json",
-  ".claude/adoption.json",
   ".claude/hooks/stop-gate.mjs",
   ".claude/hooks/guard.mjs",
   ".claude/hooks/protect.mjs",
@@ -91,6 +90,13 @@ export function preflight(o, c) {
       return refuse(
         `harness incomplete on ${branch} - missing ${f}; commit the templates on ${base} first`,
       );
+  if (
+    !existsSync(join(repoDir, "abatty.config.json")) &&
+    !existsSync(join(repoDir, ".claude/adoption.json"))
+  )
+    return refuse(
+      `harness incomplete on ${branch} - no abatty.config.json (nor .claude/adoption.json); abatty init writes it, commit it on ${base} first`,
+    );
 
   // Proven on the branch that will run, after the checkout: the hooks that matter are these.
   const selfTest = spawnSync(process.execPath, [".claude/hooks/self-test.mjs"], {
@@ -104,7 +110,7 @@ export function preflight(o, c) {
   }
   /** @param {string} when */
   const harnessMoved = (when) => {
-    const moved = git(repoDir, "diff", "--name-only", base, "--", ".claude/");
+    const moved = git(repoDir, "diff", "--name-only", base, "--", ".claude/", "abatty.config.json");
     if (!moved) return "";
     log(
       `the harness (.claude/) differs from ${base} ${when}:\n${moved}\na night runs on the hooks a human committed; restore them (git checkout ${base} -- .claude/) or commit the change on ${base} first`,

@@ -11,7 +11,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import { SCHEMA_URL } from "./config.mjs";
 import { LOCK, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
@@ -71,14 +72,20 @@ export function initRepo(o) {
     if (existsSync(join(TEMPLATES, "harness", "rules", r)))
       put(`.claude/rules/${r}`, tpl(`harness/rules/${r}`));
 
-  // 2. adoption.json: the template with the preset's commands and paths; an existing one is
-  //    merged key by key (the repository's own values win), because it is the file the hooks trust.
+  // 2. The config: abatty.config.json at the root, the template with the preset's commands and
+  //    paths; a repository that still keeps it at the older place (.claude/adoption.json) has that
+  //    file merged key by key (its own values win) until `abatty config --migrate` moves it. It is
+  //    the file the hooks trust, so an existing value is never replaced.
   const base = JSON.parse(tpl("harness/adoption.json"));
   delete base.$comment;
-  const existing = readJsonFile(repoDir, ".claude/adoption.json");
+  const legacy = readJsonFile(repoDir, LEGACY_CONFIG);
+  const configRel = legacy && !readJsonFile(repoDir, CONFIG_FILE) ? LEGACY_CONFIG : CONFIG_FILE;
+  const existing = readJsonFile(repoDir, configRel);
   const merged = {
+    ...(configRel === CONFIG_FILE ? { $schema: SCHEMA_URL } : {}),
     ...base,
     ...preset.adoption,
+    stack: preset.id,
     ...(existing || {}),
     commands: {
       ...base.commands,
@@ -87,14 +94,14 @@ export function initRepo(o) {
     },
   };
   if (!existing || force) {
-    if (!dryRun) writeJsonFile(repoDir, ".claude/adoption.json", merged);
-    events.push({ file: ".claude/adoption.json", action: existing ? "overwritten" : "written" });
+    if (!dryRun) writeJsonFile(repoDir, configRel, { ...merged, stack: preset.id });
+    events.push({ file: configRel, action: existing ? "overwritten" : "written" });
   } else {
     const keys = Object.keys(merged).filter((k) => !(k in existing));
     if (keys.length) {
-      if (!dryRun) writeJsonFile(repoDir, ".claude/adoption.json", merged);
-      events.push({ file: ".claude/adoption.json", action: "merged" });
-    } else events.push({ file: ".claude/adoption.json", action: "kept" });
+      if (!dryRun) writeJsonFile(repoDir, configRel, merged);
+      events.push({ file: configRel, action: "merged" });
+    } else events.push({ file: configRel, action: "kept" });
   }
 
   // 3. The tooling: the import graph and dead code.

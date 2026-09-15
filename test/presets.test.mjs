@@ -59,7 +59,7 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     assert.match(init.out, presetById(id)?.proven ? /proven by/ : /not yet proven by a repository/);
     for (const f of [
       ".claude/settings.json",
-      ".claude/adoption.json",
+      "abatty.config.json",
       ".claude/hooks/guard.mjs",
       `.claude/rules/${fx.rule}`,
       ".dependency-cruiser.cjs",
@@ -68,7 +68,7 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
       "CLAUDE.md",
     ])
       assert.ok(existsSync(join(dir, f)), `${id}: missing ${f}`);
-    assert.equal(JSON.parse(readFileSync(join(dir, ".claude/adoption.json"), "utf8")).stack, id);
+    assert.equal(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")).stack, id);
     const measure = cli(["measure", dir, "--quiet"], dir);
     assert.equal(measure.code, 0, measure.out);
     assert.match(measure.out, /Score \d+\/100 over \d+ applicable checks/);

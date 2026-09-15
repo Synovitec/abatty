@@ -42,6 +42,10 @@ bumps the version, pushes the branch only if nothing was loosened, and leaves a 
 
 ## 1. Settings: stop the prompts
 
+> Since 2026-09-15 the per-repository config the hooks trust is `abatty.config.json` at the
+> repository root (a tool-neutral name, validated against the package's schema); `adoption.json`
+> below names the same keys at their older place, `.claude/adoption.json`, which is still read.
+
 Facts that decide the shape (the agent 2.1.270, official schema):
 
 - `permissions.defaultMode: "auto"` **takes effect only from user or managed settings**, never

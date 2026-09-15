@@ -10,6 +10,7 @@ import { spawnSync } from "node:child_process";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
+import { configFiles, configProblems } from "./config.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -101,7 +102,12 @@ export function doctor(o) {
   const missing = d.filter((x) => x.state === "missing");
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
-  const ok = st.code === 0 && missing.length === 0 && (!o.strict || differs.length === 0);
+  const problems = configProblems(repoDir);
+  const ok =
+    st.code === 0 &&
+    missing.length === 0 &&
+    problems.length === 0 &&
+    (!o.strict || differs.length === 0);
   const lock = readLock(repoDir);
   return {
     ok,
@@ -112,5 +118,6 @@ export function doctor(o) {
     missingScripts: scripts,
     installed: lock?.abatty || null,
     packageVersion: packageVersion(),
+    config: { files: configFiles(repoDir), problems },
   };
 }

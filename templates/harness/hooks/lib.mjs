@@ -37,9 +37,19 @@ export function readEvent() {
 /** True in an unattended run: the runner exports ADOPTION_RUN=1 and hooks inherit it. */
 export const NIGHT = process.env.ADOPTION_RUN === "1";
 
-/** Where .claude/adoption.json is read from (ADOPTION_CONFIG overrides, for the self-test). */
+/** The one config at the root (a tool-neutral name any agent reads), and its older place. */
+export const ROOT_CONFIG = "abatty.config.json";
+export const LEGACY_CONFIG = ".claude/adoption.json";
+
+/** Where the config is read from: ADOPTION_CONFIG (the self-test), else the root file when it exists, else the older place. */
 export function configPath() {
-  return process.env.ADOPTION_CONFIG || ".claude/adoption.json";
+  if (process.env.ADOPTION_CONFIG) return process.env.ADOPTION_CONFIG;
+  return existsSync(ROOT_CONFIG) ? ROOT_CONFIG : LEGACY_CONFIG;
+}
+
+/** True for a path the worker never writes at night: the agent folder and the root config. */
+export function isHarnessPath(rel) {
+  return rel.startsWith(HARNESS_DIR) || rel === ROOT_CONFIG;
 }
 
 function withDefaults(fromFile) {

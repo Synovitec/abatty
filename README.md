@@ -18,6 +18,7 @@ npx abatty baseline              # today's numbers as the floor; zeros promoted 
 npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
+npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
 npx abatty presets               # the stacks, and which repository proved each
 npx abatty scrub                 # opt-in: no trace of the tools in files (--fix), commit messages (--commits), pull requests (--prs)
 npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
@@ -79,17 +80,30 @@ read-only to the night's worker, a waiver is a human's decision.
 
 ## What `init` writes
 
-| Where          | What                                                                                                                                                                                                                                                                                                                                                                                                                                            | Kept if it exists                         |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `.claude/`     | `settings.json` (the hooks wired), `adoption.json` (the one config the hooks trust: commands, files, push policy, phases, `mcpServers`, `rules.waived`), `mcp.night.json` (the only MCP servers a night has), the seven hooks and their self-test, the `adopt-standards` skill, the two agents, the preset's `rules/*.md`, `harness.lock.json` (the package version and the hash of every shipped file as installed, what `update` merges from) | yes; `adoption.json` is merged key by key |
-| root           | `.dependency-cruiser.cjs` (the import graph: cycles, orphans, one rule per arrow of the boundary map), `knip.jsonc` (dead code), `.githooks/pre-push`, `CLAUDE.md` (the template, placeholders to fill), `CHANGELOG.md`                                                                                                                                                                                                                         | yes                                       |
-| `package.json` | `gate`, `gate:fast`, `graph`, `dead`, `typecheck`, `lint`, `format:check`, `hooks:install`                                                                                                                                                                                                                                                                                                                                                      | an existing script is never replaced      |
-| `docs/`        | `README.md` (the index), `STANDARDS_PROGRESS.md`, `ADOPTION_DECISIONS.md`                                                                                                                                                                                                                                                                                                                                                                       | yes                                       |
+| Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| root           | `abatty.config.json`: the one config, the hooks' and the package's (commands, files, push policy, phases, `mcpServers`, `rules.waived`, `ratchet`, `scrub`, `provenance`), with its `$schema` line; validated by `abatty config` and `doctor` against the schema the package ships (`schema/`)                            | yes; merged key by key, your values kept |
+| `.claude/`     | `settings.json` (the hooks wired), `mcp.night.json` (the only MCP servers a night has), the seven hooks and their self-test, the `adopt-standards` skill, the two agents, the preset's `rules/*.md`, `harness.lock.json` (the package version and the hash of every shipped file as installed, what `update` merges from) | yes                                      |
+| root           | `.dependency-cruiser.cjs` (the import graph: cycles, orphans, one rule per arrow of the boundary map), `knip.jsonc` (dead code), `.githooks/pre-push`, `CLAUDE.md` (the template, placeholders to fill), `CHANGELOG.md`                                                                                                   | yes                                      |
+| `package.json` | `gate`, `gate:fast`, `graph`, `dead`, `typecheck`, `lint`, `format:check`, `hooks:install`                                                                                                                                                                                                                                | an existing script is never replaced     |
+| `docs/`        | `README.md` (the index), `STANDARDS_PROGRESS.md`, `ADOPTION_DECISIONS.md`                                                                                                                                                                                                                                                 | yes                                      |
 
 Dependencies are named, never installed (`npm i -D dependency-cruiser knip ...` is printed): a
 dependency change is a decision. Then by hand: fill `CLAUDE.md`, write the boundary-map rules
 in `.dependency-cruiser.cjs`, on an existing repository `depcruise --baseline` once and knip at
 today's count, `npm run hooks:install`, `abatty doctor`, `abatty measure`, `npm run gate`.
+
+## Configuration
+
+One file, `abatty.config.json` at the repository root: a tool-neutral name any agent can read,
+the file the hooks trust and the package reads, validated against the JSON Schema the package
+ships (`schema/abatty.config.schema.json`, `$schema: https://abatty.io/schema/abatty.config.json`).
+`abatty config` lists the files that carry it, the resolved values and every problem against
+the schema; `doctor` refuses a config the schema refuses. The older place, `.claude/adoption.json`,
+is still read, the root file winning key by key, and `abatty config --migrate` moves it. At
+night the root config is read-only to the worker exactly as the agent folder is: the guard and
+the file guard refuse a write to it, the direction check and the runner refuse a night where it
+moved, the Stop gate reads it from the base branch.
 
 ## Update
 

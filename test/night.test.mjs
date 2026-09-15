@@ -19,7 +19,7 @@ function nightRepo(name, phases = ["11"]) {
   // The gate the Stop hook runs is the repository's npm script (the self-test requires a script
   // or a file, never a bare command); here a no-op that any shell runs.
   setGate(dir, 'node -e "process.exit(0)"');
-  const cfgPath = join(dir, ".claude/adoption.json");
+  const cfgPath = join(dir, "abatty.config.json");
   const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
   cfg.commands.gate = "npm run gate:fast";
   cfg.phases = phases.map(Number);

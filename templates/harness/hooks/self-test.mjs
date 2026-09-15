@@ -32,7 +32,7 @@ const opt = (name, fallback) => {
 };
 const HOOKS = opt("--hooks-dir", ".claude/hooks");
 const SETTINGS = opt("--settings", ".claude/settings.json");
-const ADOPTION = opt("--adoption", ".claude/adoption.json");
+const ADOPTION = opt("--adoption", existsSync("abatty.config.json") ? "abatty.config.json" : ".claude/adoption.json");
 const SKILL = opt("--skill", ".claude/skills/adopt-standards/SKILL.md");
 const MCP_NIGHT = opt("--mcp", join(dirname(SETTINGS), "mcp.night.json"));
 const HOOKS_ABS = resolve(HOOKS);
@@ -171,6 +171,9 @@ try {
     ["night: run a hook", bash("node .claude/hooks/self-test.mjs"), night, "none"],
     ["night: run a hook, stdout elsewhere", bash("node .claude/hooks/check-direction.mjs > /tmp/out.txt"), night, "none"],
     ["night: read the config", bash("cat .claude/adoption.json | grep gate"), night, "none"],
+    ["night: redirect into the root config", bash("echo x > abatty.config.json"), night, "deny"],
+    ["night: read the root config", bash("cat abatty.config.json"), night, "none"],
+    ["day: redirect into the root config", bash("echo x > abatty.config.json"), {}, "none"],
     ["night: restore the harness from the base", bash("git checkout main -- .claude/"), night, "none"],
     ["night: redirect into a migration", bash("echo 'ALTER TABLE x' > migrations/0001_init.sql"), night, "deny"],
     ["night: list migrations", bash("ls migrations/"), night, "none"],
@@ -189,8 +192,10 @@ try {
   const scrubCfg = join(tmp, "scrub-on.json");
   writeFileSync(scrubCfg, JSON.stringify({ ...readJson(ADOPTION), scrub: { enabled: true } }));
   const scrubOn = { ADOPTION_CONFIG: scrubCfg };
-  cases.push(["default: a commit whose message carries the authorship trailer passes (provenance kept)", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), {}, "none"]);
-  cases.push(["default, night: the same commit passes", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), night, "none"]);
+  // Pinned to the template's config: the working directory may be a repository that opted in.
+  const defaults = { ADOPTION_CONFIG: ADOPTION };
+  cases.push(["default: a commit whose message carries the authorship trailer passes (provenance kept)", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), defaults, "none"]);
+  cases.push(["default, night: the same commit passes", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), { ...night, ...defaults }, "none"]);
   cases.push(["scrub on, night: a commit whose message carries the authorship trailer", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), { ...night, ...scrubOn }, "deny"]);
   cases.push(["scrub on, day: the same commit is refused by day too", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), scrubOn, "deny"]);
   cases.push(["scrub on, day: a pull request body that names the tool", bash(`gh pr create --title "feat: x" --body "${sampleTrailer()}"`), scrubOn, "deny"]);
@@ -220,6 +225,8 @@ try {
   const fileCases = [
     ["day: edit adoption.json", edit(".claude/adoption.json"), {}, "none"],
     ["night: edit adoption.json", edit(".claude/adoption.json"), night, "deny"],
+    ["day: edit the root config", edit("abatty.config.json"), {}, "none"],
+    ["night: edit the root config", edit("abatty.config.json"), night, "deny"],
     ["night: write a hook", edit(".claude/hooks/stop-gate.mjs", "Write"), night, "deny"],
     ["night: edit a stop counter", edit(".claude/night/stop-blocks-x.json"), night, "deny"],
     ["night: edit settings.json by absolute path", edit(resolve(".claude/settings.json")), night, "deny"],

@@ -28,7 +28,7 @@ if (NIGHT) {
       lines.push(`[brief] ${stateFile} is not valid JSON - restore it first.`);
     }
   } else {
-    lines.push(`[brief] ${stateFile} is missing - create it from the phases in .claude/adoption.json before anything else.`);
+    lines.push(`[brief] ${stateFile} is missing - create it from the phases in the config (abatty.config.json, or .claude/adoption.json) before anything else.`);
   }
   const decisions = config.files?.decisions || "docs/ADOPTION_DECISIONS.md";
   if (existsSync(decisions)) {

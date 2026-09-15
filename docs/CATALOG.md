@@ -48,7 +48,7 @@ A repository adds rules of its own in `abatty.rules.mjs` at its root (the same s
 | ID | Rule | Level | Insured by | Phase | Standard | Why |
 |---|---|---|---|---|---|---|
 | HARNESS-HOOKS | Guard, protect, stop-gate, check-direction, session-brief, self-test hooks present and wired | must | hard | A.1 / 0 | FLOW 2, FLOW 3, DATA 1 | Context is not enforcement: the guard denies the dangerous command before it runs, the stop gate refuses 'done' while the gate is red, protect keeps the harness read-only to the worker, and the direction check refuses a loosened floor. Prose in the context file does none of that. |
-| HARNESS-ADOPTION | .claude/adoption.json names the gate, files, push policy and phases | must | hard | A.1 | - | The hooks read one config for the gate command, the protected paths, the base branch and the phases; without it every hook guesses. |
+| HARNESS-ADOPTION | abatty.config.json (or .claude/adoption.json) names the gate, files, push policy and phases | must | hard | A.1 | - | The hooks read one config for the gate command, the protected paths, the base branch and the phases; without it every hook guesses. |
 | HARNESS-SKILL | adopt-standards skill and standards-reviewer agent | must | review | A.1 | - | The skill is the protocol of a night (measure, pick the phase, ten files, gate, review, commit); the reviewer is the second reader with the thirteen-item checklist before every phase commit. |
 | HARNESS-GITIGNORE | .claude/night/ ignored | must | hard | A.1 | - | The night's run state and receipts are machine-local; committed, they would be a trace and a merge conflict. |
 

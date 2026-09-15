@@ -17,12 +17,14 @@
     "./presets": "./src/presets/index.mjs",
     "./rules": "./src/rules/index.mjs",
     "./scrub-map": "./src/core/scrub-map.mjs",
-    "./vocabulary": "./src/core/vocabulary.mjs"
+    "./vocabulary": "./src/core/vocabulary.mjs",
+    "./config": "./src/core/config.mjs"
   },
   "files": [
     "bin",
     "src",
     "templates",
+    "schema",
     "docs/standard",
     "README.md",
     "CHANGELOG.md",

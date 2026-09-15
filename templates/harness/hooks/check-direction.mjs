@@ -25,7 +25,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HARNESS_DIR, loadConfig, parseJsonText } from "./lib.mjs";
+import { HARNESS_DIR, ROOT_CONFIG, loadConfig, parseJsonText } from "./lib.mjs";
 
 const STRICT_FLAGS = ["strict", "noUncheckedIndexedAccess", "exactOptionalPropertyTypes", "noImplicitAny", "strictNullChecks", "checkJs", "noImplicitOverride"];
 const GUARDED_SCRIPTS = ["gate", "gate:fast", "standards", "lint", "typecheck", "test"];
@@ -60,7 +60,7 @@ export function checkDirection({ base, config = loadConfig(), cwd = process.cwd(
 
   // A. The harness. Tracked files under .claude/ that differ from the base: modified, deleted or
   // added to the index. The hooks that judge the run are not the run's to edit.
-  const harness = g("diff", "--name-only", base, "--", HARNESS_DIR).out.split(/\r?\n/).filter(Boolean);
+  const harness = g("diff", "--name-only", base, "--", HARNESS_DIR, ROOT_CONFIG).out.split(/\r?\n/).filter(Boolean);
   if (harness.length) {
     add({ kind: "harness", file: harness.join(", "), hard: true, detail: `${harness.length} file(s) under ${HARNESS_DIR} differ from ${base}`, fix: `git checkout ${base} -- ${HARNESS_DIR} && git commit -m "chore(standards): restore the harness"` });
   }

@@ -11,7 +11,7 @@
 // unattended run an ask becomes a denial, which is the intent. Everything else exits 0 with no
 // output and the normal permission flow decides. protect.mjs is the twin for the file tools.
 
-import { HARNESS_DIR, NIGHT, appendLog, currentBranch, decide, loadConfig, readEvent } from "./lib.mjs";
+import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
 
 // Fail closed: a crashed PreToolUse hook does not block, so at night an internal error denies.
@@ -122,12 +122,12 @@ if (NIGHT) {
   // A WRITE to the harness or a protected path from the shell: a write verb, a redirection or a
   // scripted write whose segment names the path. Reading, linting, running or restoring it
   // (`node .claude/hooks/x.mjs`, `git checkout <base> -- .claude/`) is not a write and passes.
-  const protectedPaths = [HARNESS_DIR, ...(config.protectedPaths || [])];
+  const protectedPaths = [HARNESS_DIR, ROOT_CONFIG, ...(config.protectedPaths || [])];
   const hit = protectedPaths.find((p) => writesTo(cmd, p));
   if (hit) {
     deny(
-      hit === HARNESS_DIR
-        ? "Unattended run: the harness (.claude/) is read-only tonight. Record the change you need as decision: harness-change; the morning applies it."
+      hit === HARNESS_DIR || hit === ROOT_CONFIG
+        ? "Unattended run: the harness (.claude/, abatty.config.json) is read-only tonight. Record the change you need as decision: harness-change; the morning applies it."
         : "Unattended run: that path is protected (applied migrations, env files, production compose). Write the next migration instead of editing one; never touch env files.",
     );
   }

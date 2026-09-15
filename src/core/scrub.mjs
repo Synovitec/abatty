@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { FORBIDDEN, FORBIDDEN_ALL, REQUIRED_PATHS, onlyRequiredPaths } from "./vocabulary.mjs";
-import { git, readAdoption, readJsonFile } from "./repo.mjs";
+import { git, readConfig } from "./repo.mjs";
 
 /** @typedef {{ kind: "file" | "commit" | "pr", where: string, line?: number, text: string }} ScrubFinding */
 
@@ -143,19 +143,12 @@ function keyPattern(key) {
  * @returns {{ enabled: boolean, allow: string[], map: Record<string, string>, trailer: string }}
  */
 export function scrubConfig(repoDir) {
-  const a = readAdoption(repoDir) || {};
-  /** @type {any} */
-  let root = null;
-  try {
-    root = readJsonFile(repoDir, "abatty.config.json");
-  } catch {
-    root = null;
-  }
-  const scrub = { ...(a.scrub || {}), ...(root?.scrub || {}) };
-  const provenance = { ...(a.provenance || {}), ...(root?.provenance || {}) };
+  const a = readConfig(repoDir) || {};
+  const scrub = a.scrub || {};
+  const provenance = a.provenance || {};
   return {
     enabled: scrub.enabled === true,
-    allow: [...(a.scrub?.allow || []), ...(root?.scrub?.allow || [])].map(String),
+    allow: (scrub.allow || []).map(String),
     map: scrub.map && typeof scrub.map === "object" ? scrub.map : {},
     trailer: typeof provenance.trailer === "string" ? provenance.trailer : "",
   };
@@ -163,16 +156,7 @@ export function scrubConfig(repoDir) {
 
 /** The per-repository allow-list: `scrub.allow` of the adoption config and of `abatty.config.json` at the root. @param {string} repoDir */
 export function allowList(repoDir) {
-  const a = readAdoption(repoDir);
-  /** @type {any} */
-  let root = null;
-  try {
-    root = readJsonFile(repoDir, "abatty.config.json");
-  } catch {
-    root = null;
-  }
-  const list = [...(a?.scrub?.allow || []), ...(root?.scrub?.allow || [])];
-  return Array.isArray(list) ? list.map(String) : [];
+  return scrubConfig(repoDir).allow;
 }
 
 /** Leftover matches in a text, for the summary. @param {string} text */

@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://abatty.io/schema/abatty.config.json",
+  "title": "abatty.config.json",
+  "description": "The one configuration of a repository under abatty: what the hooks trust (the gate command, the files, the push policy, the phases), the ratchet, the scrub, the provenance, the rules. At the repository root; the older place, .claude/adoption.json, is still read and the root file wins key by key.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^\\$": {} },
+  "properties": {
+    "stack": {
+      "type": "string",
+      "description": "The preset this repository runs: next, vite-react, node."
+    },
+    "baseBranch": {
+      "type": "string",
+      "description": "The branch a night starts from and the Stop gate reads the config from."
+    },
+    "branchPrefix": { "type": "string", "description": "The night's branch is <prefix>-<date>." },
+    "directPushToBase": {
+      "type": "boolean",
+      "description": "true for an internal platform that pushes to the base after the gate; false for a PR-only project. A night never pushes to the base."
+    },
+    "commands": {
+      "type": "object",
+      "description": "The repository's own commands, as the hooks and the runner call them.",
+      "additionalProperties": { "type": "string" },
+      "properties": {
+        "gate": { "type": "string" },
+        "gateFull": { "type": "string" },
+        "standards": { "type": "string" },
+        "lintFile": { "type": "string" },
+        "test": { "type": "string" },
+        "typecheck": { "type": "string" }
+      }
+    },
+    "files": {
+      "type": "object",
+      "description": "Where the changelog, the version, the night's state, the decisions, the progress log and the baseline live.",
+      "additionalProperties": { "type": "string" },
+      "properties": {
+        "changelog": { "type": "string" },
+        "version": { "type": "string" },
+        "state": { "type": "string" },
+        "decisions": { "type": "string" },
+        "progress": { "type": "string" },
+        "baseline": { "type": "string" }
+      }
+    },
+    "standard": {
+      "type": "string",
+      "description": "The standard's document, for the agents to read."
+    },
+    "plan": { "type": "string", "description": "The adoption plan, for the agents to read." },
+    "sourceGlobs": { "type": "array", "items": { "type": "string" } },
+    "changelogRequiredFor": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Path prefixes whose commits must carry a changelog line."
+    },
+    "protectedPaths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths a night never writes: applied migrations, env files, production compose."
+    },
+    "mcpServers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The MCP servers a night may call; every other server's tools are denied."
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "local": {
+          "type": "string",
+          "description": "The repository's own rules file (abatty.rules.mjs)."
+        },
+        "waived": {
+          "type": "object",
+          "description": "Rule ID to a reason, or to { reason, until }.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "ratchet": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "local": {
+          "type": "string",
+          "description": "The repository's own probes file (abatty.probes.mjs)."
+        },
+        "include": { "type": "array", "items": { "type": "string" } },
+        "exclude": { "type": "array", "items": { "type": "string" } },
+        "hard": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Metrics held at zero whatever the probe says."
+        },
+        "ratchet": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Metrics held as a ratchet even at zero (never promoted to hard)."
+        },
+        "mustScan": { "type": "array", "items": { "type": "string" } },
+        "cap": { "type": "integer", "minimum": 1 },
+        "defaultMax": { "type": "integer", "minimum": 1 },
+        "contextMax": { "type": "integer", "minimum": 1 },
+        "barrelMax": { "type": "integer", "minimum": 0 },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "match": { "type": "string" },
+              "kind": { "type": "string" },
+              "max": { "type": "integer", "minimum": 1 }
+            },
+            "required": ["match", "kind", "max"]
+          }
+        },
+        "exempt": { "type": "array", "items": { "type": "string" } },
+        "envModule": { "type": "string" },
+        "citationsExempt": { "type": "array", "items": { "type": "string" } },
+        "changelog": { "type": "string" },
+        "changelogRequiredFor": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "scrub": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Off unless set: provenance is the default."
+        },
+        "allow": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Path substrings whose lines are not findings."
+        },
+        "map": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "trailer": {
+          "type": "string",
+          "description": "A disclosure line every unattended commit carries; empty for none."
+        }
+      }
+    },
+    "lintOnEdit": { "type": "boolean" },
+    "lintExtensions": { "type": "array", "items": { "type": "string" } },
+    "maxStopBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
+    "maxSessionsPerPhase": { "type": "integer", "minimum": 1 },
+    "phases": {
+      "type": "array",
+      "items": { "type": ["integer", "string"] },
+      "description": "The phases a night walks, in order."
+    }
+  }
+}

@@ -25,7 +25,8 @@ const readJson = (p) => {
   const text = readFileSync(p, "utf8");
   return JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 };
-const config = readJson(process.env.ADOPTION_CONFIG || ".claude/adoption.json");
+const configPath = process.env.ADOPTION_CONFIG || (existsSync("abatty.config.json") ? "abatty.config.json" : ".claude/adoption.json");
+const config = readJson(configPath);
 const stateFile = config.files?.state || "docs/ADOPTION_STATE.json";
 const changelog = config.files?.changelog || "CHANGELOG.md";
 const git = (...a) => execFileSync("git", a, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -41,7 +42,7 @@ log(`prompt: ${prompt} · phase: ${phase} · branch: ${git("rev-parse", "--abbre
 //                    hook did not fire, to prove the runner refuses the night on each
 //   STUB_CANARY_MCP=1  a canary that reports a Slack tool, as a session in which
 //                    --strict-mcp-config did not take; the runner must refuse the night
-//   STUB_TAMPER=1   the phase also commits an edit to .claude/adoption.json, as a worker that
+//   STUB_TAMPER=1   the phase also commits an edit to the config, as a worker that
 //                    reached the config would; the Stop gate must refuse and the runner must abort
 if (process.env.STUB_CRASH === "1") {
   process.stderr.write("Error: simulated startup failure (STUB_CRASH=1)\n");
@@ -102,12 +103,12 @@ if (wrapUp) {
     writeFileSync(changelog, marker.test(text) ? text.replace(marker, (m) => `${m}\n- Stub run: phase ${phase} exercised the harness.\n`) : `## [Unreleased]\n\n- Stub run: phase ${phase} exercised the harness.\n\n${text}`);
   }
   if (process.env.STUB_TAMPER === "1") {
-    const cfgPath = ".claude/adoption.json";
+    const cfgPath = configPath;
     const tampered = { ...readJson(cfgPath), commands: { ...(readJson(cfgPath).commands || {}), gate: "node -e process.exit(0)" } };
     writeFileSync(cfgPath, JSON.stringify(tampered, null, 2) + "\n");
     git("add", cfgPath);
     git("commit", "-q", "-m", "chore: point the gate at a no-op (tamper)");
-    log("tamper: committed an edit to .claude/adoption.json");
+    log(`tamper: committed an edit to ${cfgPath}`);
   }
   // Leave the tree DIRTY on purpose: the Stop gate must be what forces the commit.
 }

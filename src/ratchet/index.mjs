@@ -15,7 +15,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { readAdoption, readJsonFile } from "../core/repo.mjs";
+import { readConfig } from "../core/repo.mjs";
 import { probes as sizeProbes } from "./probes/size.mjs";
 import { probes as docsProbes } from "./probes/docs.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
@@ -317,27 +317,12 @@ export function scoreOf(measurements) {
   return { score, axes: perAxis };
 }
 
-export const ROOT_CONFIG = "abatty.config.json";
-
 /**
- * The configuration of a repository, for the commands: the adoption config the hooks trust,
- * with `abatty.config.json` at the root on top (its `ratchet` and `files` keys), so a repository
- * without an agent folder configures the ratchet too.
+ * The configuration of a repository, for the commands: the one config (abatty.config.json at
+ * the root over the older .claude/adoption.json), resolved for the ratchet.
  * @param {string} repoDir
  */
 export function ratchetSetup(repoDir) {
-  const adoption = readAdoption(repoDir) || {};
-  /** @type {Record<string, any> | null} */
-  let root = null;
-  try {
-    root = readJsonFile(repoDir, ROOT_CONFIG);
-  } catch {
-    root = null;
-  }
-  const merged = {
-    ...adoption,
-    files: { ...(adoption.files || {}), ...(root?.files || {}) },
-    ratchet: { ...(adoption.ratchet || {}), ...(root?.ratchet || {}) },
-  };
-  return { adoption: merged, config: resolveConfig(merged), baselineRel: baselinePath(merged) };
+  const adoption = readConfig(repoDir) || {};
+  return { adoption, config: resolveConfig(adoption), baselineRel: baselinePath(adoption) };
 }

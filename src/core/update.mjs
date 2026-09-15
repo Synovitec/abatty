@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { TEMPLATES } from "./init.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
-import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 
 export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
@@ -214,7 +214,7 @@ export function updateRepo(o) {
   }
 
   // The config the hooks trust: keys the template gained are added, values you set are never replaced.
-  const adoptionRel = ".claude/adoption.json";
+  const adoptionRel = existsSync(join(repoDir, CONFIG_FILE)) ? CONFIG_FILE : LEGACY_CONFIG;
   const template = JSON.parse(readFileSync(join(TEMPLATES, "harness/adoption.json"), "utf8"));
   const adoption = readJsonFile(repoDir, adoptionRel);
   if (adoption) {

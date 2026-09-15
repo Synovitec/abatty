@@ -1,5 +1,6 @@
 {
-  "$comment": "Per-repository configuration read by the hooks, the skill and the runner. Copy to .claude/adoption.json and edit the commands to the repository's own npm scripts.",
+  "$schema": "https://abatty.io/schema/abatty.config.json",
+  "$comment": "Per-repository configuration read by the hooks, the skill and the runner: abatty.config.json at the repository root (abatty init writes it; the older place .claude/adoption.json is still read, abatty config --migrate moves it). Edit the commands to the repository's own npm scripts.",
 
   "baseBranch": "main",
   "branchPrefix": "adopt/standards",

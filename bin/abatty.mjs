@@ -8,6 +8,7 @@
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
  *   abatty doctor [dir] [--strict] [--skip-self-test]
  *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
+ *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
@@ -29,6 +30,14 @@ import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
 import { initRepo } from "../src/core/init.mjs";
 import { doctor } from "../src/core/doctor.mjs";
 import { updateRepo } from "../src/core/update.mjs";
+import {
+  CONFIG_FILE,
+  LEGACY_CONFIG,
+  configFiles,
+  configProblems,
+  migrateConfig,
+  readConfig,
+} from "../src/core/config.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { dependencyNames, readAdoption, readJsonFile, repoRoot } from "../src/core/repo.mjs";
 import { detectPreset, presetById, presets } from "../src/presets/index.mjs";
@@ -55,6 +64,7 @@ const KNOWN = [
   "gate",
   "doctor",
   "update",
+  "config",
   "scrub",
   "report",
   "dashboard",
@@ -252,13 +262,6 @@ switch (command) {
     const preset = choosePreset(true);
     if (!preset) break;
     const r = initRepo({ repoDir: dir, preset, force: flag("--force"), dryRun: flag("--dry-run") });
-    const adoption = readAdoption(dir);
-    if (adoption && !flag("--dry-run") && adoption.stack !== preset.id) {
-      writeFileSync(
-        join(dir, ".claude", "adoption.json"),
-        JSON.stringify({ ...adoption, stack: preset.id }, null, 2) + "\n",
-      );
-    }
     out(
       `\n${t.banner(VERSION)}  ${t.bold("init")} ${t.gray("·")} ${preset.name}${preset.proven ? t.gray(` · proven by ${preset.proven}`) : t.yellow(" · not yet proven by a repository: the first one names what is wrong")}${flag("--dry-run") ? t.gray(" · dry run") : ""}\n\n`,
     );
@@ -306,6 +309,42 @@ switch (command) {
       `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
     );
     process.exit(r.conflicts ? 1 : 0);
+  }
+  case "config": {
+    // The one config: which files carry it, what it resolves to, what the schema refuses.
+    const files = configFiles(dir);
+    const problems = configProblems(dir);
+    if (flag("--migrate")) {
+      const m = migrateConfig(dir, { dryRun: flag("--dry-run") });
+      out(
+        `\n${t.banner(VERSION)}  ${t.bold("config")} ${t.gray("· migrate")}\n\n  ${m.moved ? t.glyph.ok : t.glyph.skip} ${m.reason}${flag("--dry-run") ? t.gray(" · dry run") : ""}\n\n`,
+      );
+      process.exit(0);
+    }
+    if (flag("--json")) {
+      out(JSON.stringify({ files, problems, config: readConfig(dir) }, null, 2) + "\n");
+      process.exit(problems.length ? 1 : 0);
+    }
+    out(`\n${t.banner(VERSION)}  ${t.bold("config")} ${t.gray("·")} ${dir}\n\n`);
+    out(
+      `  ${t.gray("files:")} ${files.length ? files.join(t.gray(" over ")) : t.yellow("none (abatty init writes " + CONFIG_FILE + ")")}\n`,
+    );
+    if (files.length === 1 && files[0] === LEGACY_CONFIG)
+      out(
+        `  ${t.glyph.warn} ${t.yellow(`the older place; abatty config --migrate moves it to ${CONFIG_FILE}`)}\n`,
+      );
+    for (const p of problems) out(`  ${t.glyph.fail} ${t.red(p)}\n`);
+    const c = readConfig(dir) || {};
+    out(
+      `\n  ${t.gray("stack")} ${c.stack || "-"}  ${t.gray("base")} ${c.baseBranch || "main"}  ${t.gray("gate")} ${c.commands?.gate || "-"}  ${t.gray("phases")} ${(c.phases || []).join(" ") || "-"}\n`,
+    );
+    out(
+      `  ${t.gray("scrub")} ${c.scrub?.enabled ? "on" : "off (provenance kept)"}  ${t.gray("baseline")} ${c.files?.baseline || "scripts/ci/standards-baseline.json"}\n`,
+    );
+    out(
+      `\n${problems.length ? t.glyph.fail + " " + t.red(`${problems.length} problem(s) against the schema`) : t.glyph.ok + " " + t.green("valid against the schema")} ${t.gray("· --json for the resolved config")}\n\n`,
+    );
+    process.exit(problems.length ? 1 : 0);
   }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });
@@ -408,6 +447,11 @@ switch (command) {
     if (r.missingScripts.length)
       out(
         `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
+      );
+    for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);
+    if (r.config.files.length === 1 && r.config.files[0] === LEGACY_CONFIG)
+      out(
+        `  ${t.glyph.warn} the config is at the older place (${LEGACY_CONFIG}); abatty config --migrate moves it to ${CONFIG_FILE}\n`,
       );
     if (r.installed && r.installed !== r.packageVersion)
       out(

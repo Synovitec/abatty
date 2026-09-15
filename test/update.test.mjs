@@ -122,7 +122,7 @@ test("both changed on the same lines: a conflict leaves the new version beside y
 test("the config gains the keys the template gained and keeps every value set here; the scripts absent are added", () => {
   const dir = tempRepo("update-config", { "package.json": NEXT_PKG });
   cli(["init", dir, "--stack", "next"], dir);
-  const cfgPath = join(dir, ".claude/adoption.json");
+  const cfgPath = join(dir, "abatty.config.json");
   const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
   delete cfg.provenance;
   delete cfg.ratchet;
@@ -134,10 +134,7 @@ test("the config gains the keys the template gained and keeps every value set he
   delete pkg.scripts.standards;
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
   const r = updateRepo({ repoDir: dir, preset });
-  assert.match(
-    r.events.find((e) => e.file === ".claude/adoption.json")?.detail || "",
-    /provenance/,
-  );
+  assert.match(r.events.find((e) => e.file === "abatty.config.json")?.detail || "", /provenance/);
   const after = JSON.parse(readFileSync(cfgPath, "utf8"));
   assert.equal(after.commands.gate, "npm run my-gate");
   assert.equal(after.maxStopBlocks, 9);

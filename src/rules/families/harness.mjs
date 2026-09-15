@@ -60,15 +60,25 @@ export const rules = [
   {
     id: "HARNESS-ADOPTION",
     family: "Harness",
-    title: ".claude/adoption.json names the gate, files, push policy and phases",
+    title:
+      "abatty.config.json (or .claude/adoption.json) names the gate, files, push policy and phases",
     level: "must",
     enforcement: "hard",
     phase: "A.1",
     why: "The hooks read one config for the gate command, the protected paths, the base branch and the phases; without it every hook guesses.",
-    next: "Copy the adoption.json template and edit the commands (abatty init)",
+    next: "abatty init writes abatty.config.json at the root; edit the commands there",
     check: (c) => {
-      const p = c.exists(`${c.agentRoot}/adoption.json`);
-      return { status: p ? "present" : "missing", evidence: p ? "present" : "none" };
+      const root = c.exists("abatty.config.json");
+      const legacy = c.exists(`${c.agentRoot}/adoption.json`);
+      return {
+        status: root || legacy ? "present" : "missing",
+        evidence: root
+          ? "abatty.config.json" +
+            (legacy ? " (and the older .claude/adoption.json: abatty config --migrate)" : "")
+          : legacy
+            ? ".claude/adoption.json (abatty config --migrate moves it to the root)"
+            : "none",
+      };
     },
   },
   {

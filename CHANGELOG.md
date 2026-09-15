@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The root config (roadmap #4): `abatty.config.json` at the repository root is the one config,
+  with a JSON Schema the package ships (`schema/abatty.config.schema.json`) and a `$schema` line;
+  `abatty config` lists the files, the resolved values and the problems against the schema
+  (`--json`, `--migrate` to move the older `.claude/adoption.json` to the root, `--dry-run`);
+  `doctor` refuses a config the schema refuses. `init` writes the root file; every reader of the
+  package (the rules' context, the ratchet, the scrub, the report, the runner) and every hook
+  (`configPath()`), the self-test and the stub read the root file first, the older place still
+  read and the root winning key by key. The guard, the file guard, the direction check and the
+  runner treat the root config as part of the harness: read-only at night, identical to the base
+  or no night.
 - `abatty update` (roadmap #3): the harness to the package's version, the repository's edits
   kept - a three-way merge per file against the installed copy (`init` and `update` write
   `.claude/harness.lock.json` with the version and the formatting-blind hash of every shipped

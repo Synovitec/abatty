@@ -20,7 +20,7 @@
 // boundary on its own.
 
 import { basename } from "node:path";
-import { HARNESS_DIR, NIGHT, appendLog, decide, loadConfig, readEvent, toRepoPath } from "./lib.mjs";
+import { HARNESS_DIR, NIGHT, appendLog, decide, isHarnessPath, loadConfig, readEvent, toRepoPath } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -49,10 +49,10 @@ function checkPath(target) {
   if (rel === null) {
     deny(target, `Unattended run: writing outside the repository (${target}) is not allowed. Record the need in the decisions file.`);
   }
-  if (rel.startsWith(HARNESS_DIR)) {
+  if (isHarnessPath(rel)) {
     deny(
       target,
-      `Unattended run: ${rel} is part of the harness (.claude/) and is read-only tonight. If adoption.json or a hook needs a change, write the exact edit as "decision: harness-change" in the decisions file; the morning applies it.`,
+      `Unattended run: ${rel} is part of the harness (.claude/, abatty.config.json) and is read-only tonight. If adoption.json or a hook needs a change, write the exact edit as "decision: harness-change" in the decisions file; the morning applies it.`,
     );
   }
   const name = basename(rel);
