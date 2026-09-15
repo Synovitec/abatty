@@ -7,6 +7,7 @@
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
+ *   abatty ci [dir] [--provider woodpecker,github] [--check] [--ruleset]  CI generated from the gate; the PR template; the ruleset printed
  *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
@@ -38,6 +39,7 @@ import { updateRepo } from "../src/core/update.mjs";
 import { ADAPTERS, configuredAdapters, lostGuarantees } from "../src/agents/index.mjs";
 import { serve } from "../src/mcp/server.mjs";
 import { hostedCommand } from "../src/cli/hosted.mjs";
+import { ciCommand } from "../src/cli/ci.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -78,6 +80,7 @@ const KNOWN = [
   "night-report",
   "serve",
   "publish",
+  "ci",
   "scrub",
   "report",
   "dashboard",
@@ -124,6 +127,8 @@ const VALUE_FLAGS = [
   "--data",
   "--token",
   "--to",
+  "--provider",
+  "--ci",
 ];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
@@ -289,6 +294,11 @@ switch (command) {
             .split(/[\s,]+/)
             .filter(Boolean)
         : [],
+      ci: opt("--ci")
+        ? opt("--ci")
+            .split(/[\s,]+/)
+            .filter(Boolean)
+        : [],
     });
     out(
       `\n${t.banner(VERSION)}  ${t.bold("init")} ${t.gray("·")} ${preset.name}${preset.proven ? t.gray(` · proven by ${preset.proven}`) : t.yellow(" · not yet proven by a repository: the first one names what is wrong")}${flag("--dry-run") ? t.gray(" · dry run") : ""}\n\n`,
@@ -407,6 +417,20 @@ switch (command) {
   case "publish": {
     await hostedCommand(command, { dir, opt, flag, out, err, VERSION });
     break;
+  }
+  case "ci": {
+    process.exit(
+      ciCommand({
+        dir,
+        opt,
+        flag,
+        out,
+        err,
+        VERSION,
+        preset: choosePreset(false),
+        config: readAdoption(dir),
+      }),
+    );
   }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });

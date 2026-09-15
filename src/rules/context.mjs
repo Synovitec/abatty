@@ -54,7 +54,7 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
  * @property {string[]} eslintFiles
  * @property {string} eslintText every ESLint flat config, joined
  * @property {string} tsconfigText every tsconfig, joined
- * @property {string[]} ciFiles the Woodpecker pipelines
+ * @property {string[]} ciFiles the CI pipelines (Woodpecker, GitHub Actions)
  * @property {string} ciText
  * @property {string[]} ghWorkflows the GitHub workflows
  * @property {string[]} sourceFiles source files outside the agent folder, migrations and tests
@@ -195,7 +195,7 @@ export function buildContext(repoDir, o = {}) {
   const script = (re) => Object.entries(scripts).find(([k, v]) => re.test(k) || re.test(v));
 
   const eslintFiles = files(/(^|\/)eslint\.config\.(js|mjs|cjs|ts)$/);
-  const ciFiles = files(/^\.woodpecker(\/.*\.ya?ml|\.ya?ml)$/);
+  const ciFiles = files(/^\.woodpecker(\/.*\.ya?ml|\.ya?ml)$|^\.github\/workflows\/.*\.ya?ml$/);
   const sourceFiles = allFiles.filter(
     (f) =>
       SOURCE_EXT.has(f.slice(f.lastIndexOf("."))) &&

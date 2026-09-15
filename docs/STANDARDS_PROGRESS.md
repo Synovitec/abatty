@@ -113,3 +113,7 @@ decides. Tests 86 -> 89.
 
 One place over every repository, and the badge the outside reviews asked for, from the same
 renderer the local page uses. Tests 89 -> 92.
+
+### 2026-09-15 - CI from the gate
+
+The gate and CI are one list now, because one is generated from the other. Tests 92 -> 96.

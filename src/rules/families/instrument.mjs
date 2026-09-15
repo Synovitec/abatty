@@ -108,15 +108,15 @@ export const rules = [
   {
     id: "INST-CI",
     family: "Instrument",
-    title: "CI on Woodpecker with the same gates",
+    title: "CI (Woodpecker or GitHub Actions) with the same gates",
     level: "must",
     enforcement: "hard",
     phase: "0",
     why: "The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped.",
-    next: "Add .woodpecker/checks.yaml mirroring the gate",
+    next: "abatty ci generates the pipeline from the gate (Woodpecker, GitHub Actions)",
     check: (c) => ({
       status: c.ciFiles.length > 0 ? "present" : "missing",
-      evidence: c.ciFiles.join(", ") || "no .woodpecker",
+      evidence: c.ciFiles.join(", ") || "no .woodpecker/ nor .github/workflows/",
     }),
   },
   {

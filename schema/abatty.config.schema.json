@@ -157,6 +157,18 @@
         }
       }
     },
+    "ci": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^\\$": {} },
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["woodpecker", "github"] },
+          "description": "The CI providers abatty ci generates for, from the gate; init writes them too."
+        }
+      }
+    },
     "lintOnEdit": { "type": "boolean" },
     "lintExtensions": { "type": "array", "items": { "type": "string" } },
     "maxStopBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },

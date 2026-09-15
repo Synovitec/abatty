@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
+import { writeCi } from "../cli/ci.mjs";
 import { LOCK, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
@@ -37,6 +38,7 @@ function walk(dir, base = dir, acc = []) {
  * @param {boolean} [o.force]
  * @param {boolean} [o.dryRun]
  * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
+ * @param {string[]} [o.ci] the CI providers to generate for (the config's `ci.providers` when absent)
  */
 export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
@@ -181,6 +183,17 @@ export function initRepo(o) {
     "docs/ADOPTION_DECISIONS.md",
     '---\ntitle: "Adoption decisions"\ndescription: "The decisions taken alone by the unattended adoption nights (/adopt-standards): date, phase, situation, the default taken, the alternative set aside, what the morning must re-read."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "adoption", "decisions"]\nrelated: ["./README.md", "./STANDARDS_PROGRESS.md"]\n---\n\n# Adoption decisions\n\n',
   );
+
+  // 6b. CI from the gate, for the providers the repository names (init --ci, or ci.providers).
+  const providers = o.ci?.length ? o.ci : (merged.ci?.providers || []).map(String);
+  if (providers.length && !dryRun)
+    for (const e of writeCi({
+      repoDir,
+      preset,
+      providers,
+      base: String(merged.baseBranch || "main"),
+    }))
+      events.push({ file: e.file, action: e.action === "written" ? "written" : "kept" });
 
   // 7. The lock: the package version and the hash of every shipped file as installed, and the
   //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.

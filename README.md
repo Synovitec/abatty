@@ -19,6 +19,7 @@ npx abatty night --canary-only   # the unattended night (one implementation, Win
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
 npx abatty night-report          # the morning after: the night's facts and the lessons they propose
+npx abatty ci --provider github  # CI generated from the gate (Woodpecker, GitHub Actions); the PR template; --ruleset prints the org ruleset
 npx abatty serve --token <t>     # the dashboard hosted: CI posts each report, one page over every repository, a badge
 npx abatty publish --to <url>    # the CI step: post this repository's newest report to a service
 npx abatty doctor                # the harness self-test and the drift against the package
@@ -118,6 +119,21 @@ an agent without a hook protocol gets the context, the rules, the gate and CI, a
 guard, the file guard, the Stop gate, the canary and the night itself. `abatty night` refuses
 a repository whose adapters have no hooks and names what is lost. The runner builds every
 session's flags from the adapter, never from a hard-coded list.
+
+## CI from the gate
+
+`abatty ci [--provider woodpecker,github] [--check]` generates the pipeline from the preset's
+gate definition: the same steps in the same order (format, lint, typecheck, the import graph,
+dead code, unit tests, the ratchet with the changelog over `origin/<base>..HEAD`), then the
+secret scan, the audit, and the publish step to the hosted dashboard, guarded by the secret;
+the suites follow as their own pipeline or job, the database one on a real Postgres, the
+browser one with the browsers installed. Because it is generated, the gate and CI cannot list
+different steps, and `--check` says when a pipeline file is behind the gate; `init --ci
+<provider>` (or `ci.providers` in the config) writes it on day 0. GitHub also gets a
+pull-request template with the reviewer's checklist. `abatty ci --ruleset` prints a ruleset
+for the organisation (branch names naming a tool refused, a pull request required, the checks
+required); it is printed for import, never written into a repository, because it carries the
+vocabulary in the open.
 
 ## The dashboard, hosted
 

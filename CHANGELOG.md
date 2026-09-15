@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- CI from the gate (roadmap #11, and #26 with it): `abatty ci` generates the pipeline from the
+  preset's gate definition for Woodpecker and GitHub Actions - the gate's steps in order, the
+  secret scan, the audit, the publish step guarded by the secret, the suites as their own
+  pipeline or job - so the gate and CI cannot list different steps; `--check` says when a file
+  is behind; `init --ci <provider>` and `ci.providers` write it on day 0; a pull-request
+  template with the reviewer's checklist; `--ruleset` prints an organisation ruleset (branch
+  names naming a tool refused, a pull request and the checks required), never written. The CI
+  rules read both providers' files.
 - The dashboard hosted (roadmap #10): `abatty serve`, a self-hosted service with no dependency
   that stores the reports CI posts (`POST /reports`, bearer token, or `--no-auth` for a machine
   nobody else reaches) and serves the dashboard over every repository, an index, one

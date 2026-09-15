@@ -39,7 +39,7 @@ A repository adds rules of its own in `abatty.rules.mjs` at its root (the same s
 | INST-CONTROLS | Control cases for the probes, both directions | must | hard | 0 | P 1 | A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added. |
 | INST-GATE | One gate script called by the pre-push hook and by npm | must | hard | 0 | FLOW 2 | One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart. |
 | INST-PRECOMMIT | Pre-commit hook: console.log, secrets, locale set | must | hard | 0 | SEC 1, I18N 1 | The cheapest moment to refuse a secret or a stray console.log is before it is in a commit; after that it is in the history. |
-| INST-CI | CI on Woodpecker with the same gates | must | hard | 0 | - | The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. |
+| INST-CI | CI (Woodpecker or GitHub Actions) with the same gates | must | hard | 0 | - | The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. |
 | INST-CI-STEPS | CI runs lint, typecheck, tests, standards, secret scan, audit | must | hard | 0 | CODE 4, CODE 3, TEST 1, P 2, SEC 1 | A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. |
 | INST-DEAD-CI | No dead CI workflow posting meaningless red checks | should | prose | 0 | - | A red check nobody reads teaches everyone to ignore red checks. |
 

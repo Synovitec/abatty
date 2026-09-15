@@ -31,7 +31,7 @@ in `abatty.rules.mjs`, dated waivers with a reason, an `n/a` status the catalog 
 preset that is real only when a named repository proved it, and a `doctor` that sees drift.
 
 The four blockers come first; without them the rest is polish on a tool for three
-repositories. Items 11 and 17 above are part of this list and are not repeated; 1 to 10 are done.
+repositories. Item 17 above is part of this list and is not repeated; 1 to 11 are done.
 
 | #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                                                    | Tier      | Size   |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
@@ -42,14 +42,12 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 | 23  | **Coupled paths as one mechanism**: "when this changes, that changes in the same push", declared as pairs of globs and checked over the pushed range by the gate and the stop hook; covers schema and migration mapping, API and client, a doc and the code it describes                                                      | The changelog-range check and `DOC-FRESHNESS` are two hand-written cases of it                                                                              | structure | 1 day  |
 | 24  | **Every gate step proves it can go red**: `INST-CONTROLS` extended from the ratchet's probes to each gate step, language-neutral; `doctor` runs the failing control and reports a step that stays green as absent                                                                                                             | The lessons catalogue: prove a check in both directions on a tree where the answer is known; today only the probes have controls                            | structure | 1 day  |
 | 25  | **Language packs beyond JavaScript**: the extensions, the formatter, the linter, the typecheck and the dead-code tool come from a pack; the rules keep the same words                                                                                                                                                         | Source files are found by extension, `isTs` is a count of two extensions, `lintExtensions` is a fixed list                                                  | structure | 2 days |
-| 26  | **CI templates from the gate**: the CI file generated from the preset's gate definition for Woodpecker and GitHub Actions, so the gate and CI cannot list different steps; `INST-CI-STEPS` then checks a generated file. Refines item 11                                                                                      | CI is hand-written per repository; the six steps are checked by text                                                                                        | reach     | 1 day  |
 | 27  | **Distribution**: a license, a registry publish (item 17), a version pinned per repository and recorded in the config, a README a stranger can act on in two minutes; `scrub` moves to an opt-in package with its purpose stated; then one repository outside the company, and its reading published beside the internal ones | `UNLICENSED`, a git-URL install, a README that assumes `ops-hub` was read; proven on two repositories of one company since 2026-09-14                       | reach     | 2 days |
 
 ## Next - the shape of a framework
 
-| #   | Change                                                                                                                              | Evidence                                                                                            | Size  |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----- |
-| 11  | **CI templates per preset**, a pull-request template, an organisation ruleset that blocks tool-named branches and requires the gate | The night's controls stop at the push; CI is hand-written per repository; branch names were a trace | 1 day |
+| #   | Change | Evidence | Size |
+| --- | ------ | -------- | ---- |
 
 ## Later - hardening and reach
 
@@ -63,6 +61,10 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · CI from the gate (#11, #26): the pipeline generated from the preset's gate for
+  two providers, the PR template, the ruleset printed for import; the CI rules read the
+  generated files.
 
 - 2026-09-15 · the dashboard hosted (#10): `abatty serve` and `abatty publish`, the reports of
   every repository in one place, the score as a badge, no dependency added.
