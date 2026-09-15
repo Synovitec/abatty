@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The enforced share (roadmap #29): of the rules a repository has, the part held by a machine
+  (hard, ratchet) against the part held by a reviewer or a sentence (review, prose), on the
+  status and measure screens, in the report and its JSON, in the dated gap analysis and on the
+  dashboard, with the rules to move up next; `abatty rules --enforcement <hard|ratchet|review|prose>`;
+  the `adopt-standards` skill records the share and, budget remaining, moves one rule up a
+  level per night the way the enforcement map says.
 - The license and the standard in the open (roadmap #28): Apache-2.0 (`LICENSE`,
   `package.json`), contributions under a DCO (`CONTRIBUTING.md`); the standard, the adoption
   plan, the enforcement map, the autonomous-adoption protocol, the lessons, the best practices,

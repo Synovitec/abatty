@@ -6,6 +6,7 @@ import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import {
   FAMILIES,
   RULES,
+  enforcedOf,
   loadCatalog,
   ruleById,
   runCatalog,
@@ -293,4 +294,35 @@ test("the markdown report carries the level and the insurance of every check", (
   assert.match(md, /\| ID \| Family \| Rule \| Level \| Insured by \| Status \|/);
   assert.match(md, /\| CODE-DEADCODE \| Code \| [^|]+ \| must \| hard \| \*\*missing\*\* \|/);
   assert.match(md, /abatty explain <ID>/);
+});
+
+test("the enforced share counts what the repository has by what insures it, and names what a night moves up", () => {
+  /** @param {string} id @param {any} status @param {any} enforcement */
+  const f = (id, status, enforcement) => ({
+    id,
+    family: "X",
+    rule: id,
+    status,
+    evidence: "",
+    next: "",
+    phase: "0",
+    level: /** @type {const} */ ("must"),
+    enforcement,
+    standard: [],
+  });
+  const e = enforcedOf([
+    f("A", "present", "hard"),
+    f("B", "present", "ratchet"),
+    f("C", "partial", "review"),
+    f("D", "present", "prose"),
+    f("E", "missing", "prose"),
+    f("F", "n/a", "hard"),
+  ]);
+  assert.equal(e.total, 4, "present and partial count; missing and n/a do not");
+  assert.equal(e.share, 50);
+  assert.deepEqual([e.hard, e.ratchet, e.review, e.prose], [1, 1, 1, 1]);
+  assert.deepEqual(e.promotable, ["C", "D"]);
+  assert.equal(enforcedOf([]).share, null);
+  const out = cli(["rules", "--enforcement", "prose", "--json"], process.cwd()).out;
+  assert.ok(JSON.parse(out).every((/** @type {any} */ r) => r.enforcement === "prose"));
 });

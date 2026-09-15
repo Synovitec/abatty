@@ -53,6 +53,16 @@ with the level (must first) and what insures each; before touching a check you d
 repository (status, evidence, the next step). Work the `must` rules of the phase before any
 `should`; a `should` left for later is not a decision, a `must` skipped is.
 
+Record the enforced share too (`npx abatty measure --quiet` prints it beside the score: of the
+rules this repository has, the part held by a machine). It is the number a night exists to
+raise: when the phase's checks are done and budget remains, `npx abatty rules --enforcement
+prose` and `--enforcement review` list the rules held by nothing but a sentence or a
+checklist; move ONE of them up a level the way the enforcement map's "moving a rule up a
+level" says (a probe with its controls, a lint rule at error with the exemptions generated
+from the debt, a hook for a moment, a CI step for a run), prove it red then green, and log it
+in the progress file with the share before and after. One rule per night; a rule moved up is
+worth more than a phase half closed.
+
 ## 2. Work in steps
 
 A step touches at most ten files and ends in a commit. For every step:

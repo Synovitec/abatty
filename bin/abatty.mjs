@@ -10,7 +10,7 @@
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
- *   abatty rules [dir] [--family <name>] [--level must|should] [--phase <n>] [--json|--md]   the rule catalog
+ *   abatty rules [dir] [--family <name>] [--level must|should] [--enforcement <e>] [--phase <n>] [--json|--md]   the rule catalog
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
@@ -91,6 +91,7 @@ const VALUE_FLAGS = [
   "--level",
   "--phase",
   "--reason",
+  "--enforcement",
 ];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
@@ -129,6 +130,16 @@ function openFile(file) {
   else spawnSync(process.platform === "darwin" ? "open" : "xdg-open", [file], { stdio: "ignore" });
 }
 
+/**
+ * The enforced share for a screen: how much of what the repository has is held by a machine.
+ * @param {import("../src/core/gap-analysis.mjs").Enforced | undefined} e
+ */
+function enforcedLine(e) {
+  if (!e || e.share === null) return `  ${t.gray("enforced: nothing present yet")}`;
+  const colour = e.share >= 90 ? t.green : e.share >= 70 ? t.yellow : t.red;
+  return `  ${t.bar(e.share)}  ${t.bold(colour(e.share + "%"))} ${t.gray(`of ${e.total} present rules held by a machine · ${e.hard} hard · ${e.ratchet} ratchet · ${e.review} review · ${e.prose} prose${e.promotable.length ? " · next up a level: " + e.promotable.slice(0, 3).join(", ") : ""}`)}`;
+}
+
 /** Phase "0" sorts first, "A.1 / 0" by its number, "-" last. @param {string} p */
 const phaseOrder = (p) => {
   const m = String(p).match(/\d+/);
@@ -163,6 +174,7 @@ switch (command) {
     out(
       `  ${t.bar(r.score)}  ${t.bold(String(r.score))}${t.gray("/100")}  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
     );
+    out(enforcedLine(r.enforced) + "\n\n");
     out(
       t.table(
         [
@@ -277,6 +289,7 @@ switch (command) {
     out(
       `  ${t.bar(r.score)}  ${t.bold(String(r.score))}${t.gray("/100")} ${t.gray(`over ${r.applicable} applicable checks`)}\n\n`,
     );
+    out(enforcedLine(r.enforced) + "\n\n");
     out(
       t.table(
         [
@@ -443,12 +456,16 @@ switch (command) {
     for (const p of catalog.problems) err(`${t.glyph.warn} ${p}\n`);
     const family = opt("--family").toLowerCase();
     const level = opt("--level").toLowerCase();
+    // --enforcement hard|ratchet|review|prose: what insures the rule once present; review and
+    // prose are the rules a night moves up a level.
+    const enforcement = opt("--enforcement").toLowerCase();
     // --phase N: the rules the plan's phase N installs; a rule's phase may name several ("7 / 8").
     const phase = opt("--phase");
     const list = catalog.rules.filter(
       (r) =>
         (!family || r.family.toLowerCase() === family) &&
         (!level || r.level === level) &&
+        (!enforcement || r.enforcement === enforcement) &&
         (!phase || r.phase.split(/\s*\/\s*/).includes(phase)),
     );
     if (flag("--json")) {

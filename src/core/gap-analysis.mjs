@@ -8,11 +8,12 @@
  * partial = 0.5 over the applicable checks (not n/a, not waived) - a trend, not a verdict.
  */
 import { buildContext } from "../rules/context.mjs";
-import { RULES, loadCatalog, runCatalog, scoreOf } from "../rules/index.mjs";
+import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf } from "../rules/index.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, findings: Finding[], families: string[], waived: number, problems: string[] }} GapResult
+ * @typedef {ReturnType<typeof enforcedOf>} Enforced
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[] }} GapResult
  */
 
 /**
@@ -30,6 +31,7 @@ export function analyze(repoDir, o = {}) {
     date: ctx.today,
     score,
     applicable,
+    enforced: enforcedOf(findings),
     findings,
     families: [...new Set(findings.map((f) => f.family))],
     waived: findings.filter((f) => f.status === "waived").length,
@@ -103,6 +105,8 @@ export function renderMarkdown(result) {
   md.push("");
   md.push(
     `**Score ${score}/100** over ${applicable.length} applicable checks. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
+    "",
+    enforcedLine(result),
   );
   md.push("");
   md.push("| Family | Present | Partial | Missing | n/a | Waived |");
@@ -150,13 +154,24 @@ export function renderMarkdown(result) {
   return md.join("\n");
 }
 
+/** The enforced share as a sentence for the report. @param {GapResult} r */
+function enforcedLine(r) {
+  const e = r.enforced;
+  if (!e || e.share === null) return "**Enforced share**: nothing present yet.";
+  return `**Enforced share ${e.share}%**: of the ${e.total} rules this repository has, ${e.hard + e.ratchet} are held by a machine (${e.hard} hard, ${e.ratchet} ratchet) and ${e.review + e.prose} by a reviewer or a sentence (${e.review} review, ${e.prose} prose). The second group is what a night moves up a level next${e.promotable.length ? ": " + e.promotable.slice(0, 8).join(", ") + (e.promotable.length > 8 ? ", ..." : "") : ""}.`;
+}
+
 /** The console summary the CLI prints under the report. @param {GapResult} result @param {string} [reportPath] */
 export function renderSummary(result, reportPath) {
   const { findings, families, score, date, name } = result;
   /** @param {string} fam @param {string} st */
   const count = (fam, st) => findings.filter((f) => f.family === fam && f.status === st).length;
   const todo = todoOf(findings);
-  const lines = [`Gap analysis · ${name} · ${date} · score ${score}/100`, ""];
+  const e = result.enforced;
+  const lines = [
+    `Gap analysis · ${name} · ${date} · score ${score}/100 · ${e.share === null ? "nothing present yet" : `${e.share}% of ${e.total} present rules held by a machine (${e.hard} hard, ${e.ratchet} ratchet, ${e.review} review, ${e.prose} prose)`}`,
+    "",
+  ];
   for (const fam of families)
     lines.push(
       `  ${fam.padEnd(12)} present ${String(count(fam, "present")).padStart(2)}  partial ${String(count(fam, "partial")).padStart(2)}  missing ${String(count(fam, "missing")).padStart(2)}  n/a ${count(fam, "n/a")}`,

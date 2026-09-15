@@ -209,6 +209,36 @@ export function runCatalog(ctx, catalog = RULES) {
   });
 }
 
+/**
+ * The enforced share: of the rules a repository has (present or partial), the part a machine
+ * holds (hard, ratchet) against the part only a reviewer or a sentence holds (review, prose).
+ * The number that says how much of a written standard is actually enforced; the rules under
+ * review or prose are what a night moves up a level next.
+ * @param {Finding[]} findings
+ * @returns {{ share: number | null, total: number, hard: number, ratchet: number, review: number, prose: number, promotable: string[] }}
+ */
+export function enforcedOf(findings) {
+  const held = findings.filter((f) => f.status === "present" || f.status === "partial");
+  /** @param {Enforcement} e */
+  const n = (e) => held.filter((f) => f.enforcement === e).length;
+  const hard = n("hard");
+  const ratchet = n("ratchet");
+  const review = n("review");
+  const prose = n("prose");
+  const total = held.length;
+  return {
+    share: total ? Math.round((100 * (hard + ratchet)) / total) : null,
+    total,
+    hard,
+    ratchet,
+    review,
+    prose,
+    promotable: held
+      .filter((f) => f.enforcement === "review" || f.enforcement === "prose")
+      .map((f) => f.id),
+  };
+}
+
 /** The score of a list of findings: present = 1, partial = 0.5, over the applicable ones. @param {Finding[]} findings */
 export function scoreOf(findings) {
   const applicable = findings.filter((f) => f.status !== "n/a" && f.status !== "waived");

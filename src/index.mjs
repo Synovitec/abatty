@@ -13,6 +13,7 @@ export {
   loadCatalog,
   runCatalog,
   scoreOf,
+  enforcedOf,
   validate,
 } from "./rules/index.mjs";
 export { buildContext } from "./rules/context.mjs";

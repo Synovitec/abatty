@@ -33,6 +33,12 @@ test("a report is written under .abatty/reports and read back as the latest read
   assert.equal(allReports(dir).length, 1);
   assert.equal(r.harness.present, false);
   assert.equal(r.scrub.lines, 0);
+  assert.equal(typeof r.enforced.total, "number");
+  assert.ok(r.enforced.share === null || (r.enforced.share >= 0 && r.enforced.share <= 100));
+  assert.equal(
+    r.enforced.hard + r.enforced.ratchet + r.enforced.review + r.enforced.prose,
+    r.enforced.total,
+  );
 });
 
 test("status is the default command and shows the score, the families and the next steps", () => {
@@ -43,6 +49,7 @@ test("status is the default command and shows the score, the families and the ne
   assert.match(r.out, /\/100/);
   assert.match(r.out, /Harness/);
   assert.match(r.out, /Next/);
+  assert.match(r.out, /held by a machine|nothing present yet/);
 });
 
 test("the dashboard embeds the reports, both themes and the score dial", async () => {

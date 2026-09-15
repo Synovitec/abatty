@@ -39,6 +39,12 @@ catalog; `abatty rules` lists it (`--family`, `--level`, `--phase`, `--json`, `-
 <ID>` opens one rule against the repository; [`docs/CATALOG.md`](docs/CATALOG.md) is the
 whole of it, kept equal to the code by a test.
 
+The number the catalog exists for is the **enforced share**: of the rules a repository has,
+the part a machine holds (hard, ratchet) against the part a reviewer or a sentence holds
+(review, prose). `abatty` and `abatty measure` print it beside the score, the report and the
+dashboard carry it, and `abatty rules --enforcement prose` lists what a night moves up a level
+next; the `adopt-standards` skill moves one rule up per night once the phase's checks are done.
+
 A repository extends the catalog with its own rules in `abatty.rules.mjs` at its root, the same
 shape:
 
