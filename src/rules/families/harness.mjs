@@ -91,7 +91,10 @@ export const rules = [
     why: "The skill is the protocol of a night (measure, pick the phase, ten files, gate, review, commit); the reviewer is the second reader with the thirteen-item checklist before every phase commit.",
     next: "Copy the skill and the two agents (abatty init)",
     check: (c) => {
-      const skill = c.exists(`${c.agentRoot}/skills/adopt-standards/SKILL.md`);
+      const skill =
+        c.exists(`${c.agentRoot}/skills/adopt-standards/SKILL.md`) ||
+        c.exists(".agents/skills/adopt-standards/SKILL.md") ||
+        c.exists(".cursor/skills/adopt-standards/SKILL.md");
       const reviewer = c.exists(`${c.agentRoot}/agents/standards-reviewer.md`);
       return {
         status: skill && reviewer ? "present" : skill || reviewer ? "partial" : "missing",

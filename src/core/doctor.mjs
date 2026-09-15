@@ -50,10 +50,7 @@ export function shippedFiles() {
     `harness/hooks/${f}`,
     `.claude/hooks/${f}`,
   ]);
-  pairs.push([
-    "harness/skills/adopt-standards/SKILL.md",
-    ".claude/skills/adopt-standards/SKILL.md",
-  ]);
+  pairs.push(["skills/adopt-standards/SKILL.md", ".claude/skills/adopt-standards/SKILL.md"]);
   pairs.push(["harness/agents/standards-reviewer.md", ".claude/agents/standards-reviewer.md"]);
   pairs.push(["harness/agents/standards-adopter.md", ".claude/agents/standards-adopter.md"]);
   pairs.push(["harness/settings.project.json", ".claude/settings.json"]);

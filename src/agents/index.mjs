@@ -5,6 +5,8 @@
  * the enforcement of a night is the hooks (the guard, the file guard, the Stop gate), and an
  * agent without a hook protocol gets the context, the rules, the gate and CI, never a night.
  *
+ * The skill is in the open agent-skills format (a folder with SKILL.md: name, description,
+ * license, compatibility, metadata) and every adapter names where it goes.
  * The primary adapter is the one the harness was built on; its folder is the agent's own and
  * its id is derived from it, so this file names no tool. The others are open conventions.
  */
@@ -17,6 +19,7 @@ import { REQUIRED_PATHS } from "../core/vocabulary.mjs";
  *   folder: string | null,
  *   contextFile: string,
  *   rulesDir: string | null,
+ *   skillsDir: string | null,
  *   rulesFormat: "paths-front-matter" | "mdc",
  *   hooks: { protocol: "json-stdin" | "none", preToolUse: boolean, stop: boolean, sessionStart: boolean },
  *   headless: null | {
@@ -38,6 +41,7 @@ export const PRIMARY = {
   folder: primaryFolder,
   contextFile: primaryContext,
   rulesDir: `${primaryFolder}/rules`,
+  skillsDir: `${primaryFolder}/skills`,
   rulesFormat: "paths-front-matter",
   hooks: { protocol: "json-stdin", preToolUse: true, stop: true, sessionStart: true },
   headless: {
@@ -69,6 +73,7 @@ export const AGENTS_MD = {
   folder: null,
   contextFile: "AGENTS.md",
   rulesDir: null,
+  skillsDir: ".agents/skills",
   rulesFormat: "paths-front-matter",
   hooks: { protocol: "none", preToolUse: false, stop: false, sessionStart: false },
   headless: null,
@@ -90,6 +95,7 @@ export const CURSOR = {
   folder: ".cursor",
   contextFile: "AGENTS.md",
   rulesDir: ".cursor/rules",
+  skillsDir: ".cursor/skills",
   rulesFormat: "mdc",
   hooks: { protocol: "none", preToolUse: false, stop: false, sessionStart: false },
   headless: null,

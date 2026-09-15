@@ -104,7 +104,10 @@ of its headless mode. `abatty agents` lists them; `agents` in the config (or `in
 is derived from its folder, so this package names no tool), the open `AGENTS.md` convention
 any agent reads, and Cursor (`AGENTS.md`, the rules as `.cursor/rules/*.mdc` with the paths as
 globs). With more than one, the context file is `AGENTS.md` and the primary's file imports
-it, so there is one source.
+it, so there is one source. The `adopt-standards` skill is in the open agent-skills format
+(`templates/skills/adopt-standards/SKILL.md`: name, description, license, compatibility,
+metadata, an agent-neutral body) and `init` writes it to every configured adapter's skills
+folder.
 
 What an adapter cannot give is said plainly, because the enforcement of a night is the hooks:
 an agent without a hook protocol gets the context, the rules, the gate and CI, and loses the

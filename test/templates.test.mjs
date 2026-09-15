@@ -26,7 +26,7 @@ test("the package ships the harness and tooling templates", () => {
     "harness/adoption.json",
     "harness/mcp.night.json",
     "harness/agent-context.md.template",
-    "harness/skills/adopt-standards/SKILL.md",
+    "skills/adopt-standards/SKILL.md",
     "tooling/.dependency-cruiser.cjs",
     "tooling/knip.jsonc",
     "tooling/codemods/rename-import.cjs",

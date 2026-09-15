@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The skill in the open agent-skills format (roadmap #7): `templates/skills/adopt-standards/SKILL.md`
+  carries name, description, license, compatibility and metadata, and a body that names the
+  config, the context file (`CLAUDE.md`, or `AGENTS.md`) and "a skill the agent has" rather
+  than one vendor's; every adapter names its skills folder and `init` writes the skill there;
+  the harness rule accepts the skill at any adapter's place; a test holds the format's limits.
 - The agent adapters (roadmap #6): `src/agents/` describes an agent by its settings folder,
   its context file, its rules folder and format, its hook protocol and the flags of its
   headless mode; three adapters (the harness's own agent, the open `AGENTS.md` convention,

@@ -94,3 +94,8 @@ repository. Tests 74 -> 75.
 
 Three adapters; the primary's id derived from its folder so this package names no tool; the
 night refused without hooks. Tests 75 -> 80.
+
+### 2026-09-15 - The skill in the open format
+
+The protocol of a night is no longer agent-shaped: the open front matter, a neutral body,
+one file placed by every adapter. Tests 80 -> 82.

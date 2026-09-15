@@ -228,7 +228,7 @@ advance. It lives in `CLAUDE.md` §9 and the skill reads it.
 
 ## 5. The skill: `/adopt-standards`
 
-[`templates/harness/skills/adopt-standards/SKILL.md`](../../templates/harness/skills/adopt-standards/SKILL.md).
+[`templates/skills/adopt-standards/SKILL.md`](../../templates/skills/adopt-standards/SKILL.md).
 One invocation is one phase (`--phase N`) or the wrap-up (`--wrap-up`). The steps, which the
 skill spells out in the imperative:
 

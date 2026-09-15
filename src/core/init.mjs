@@ -65,7 +65,15 @@ export function initRepo(o) {
   // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
   for (const f of walk(join(TEMPLATES, "harness", "hooks")))
     put(`.claude/hooks/${f}`, tpl(`harness/hooks/${f}`));
-  put(".claude/skills/adopt-standards/SKILL.md", tpl("harness/skills/adopt-standards/SKILL.md"));
+  // The skill, in the open agent-skills format, at every configured adapter's skills folder.
+  const skillText = tpl("skills/adopt-standards/SKILL.md");
+  const skillAdapters = configuredAdapters(
+    o.agents?.length
+      ? { agents: o.agents }
+      : readJsonFile(repoDir, CONFIG_FILE) || readJsonFile(repoDir, LEGACY_CONFIG),
+  );
+  for (const a of skillAdapters.adapters.length ? skillAdapters.adapters : [PRIMARY])
+    if (a.skillsDir) put(`${a.skillsDir}/adopt-standards/SKILL.md`, skillText);
   for (const f of ["standards-reviewer.md", "standards-adopter.md"])
     put(`.claude/agents/${f}`, tpl(`harness/agents/${f}`));
   put(".claude/settings.json", tpl("harness/settings.project.json"));
