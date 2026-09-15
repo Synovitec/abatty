@@ -15,7 +15,7 @@ import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } 
 import { SCHEMA_URL } from "./config.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
-import { LOCK, writeLock } from "./update.mjs";
+import { LOCK, packageVersion, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
@@ -100,6 +100,8 @@ export function initRepo(o) {
     ...base,
     ...preset.adoption,
     stack: preset.id,
+    // The version this repository follows, recorded where a human reads it; update moves it.
+    abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
     ...(existing || {}),
     commands: {

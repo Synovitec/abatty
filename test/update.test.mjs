@@ -172,3 +172,22 @@ test("the CLI: update --dry-run writes nothing; --force takes the package's vers
   assert.match(forced.out, /overwritten\s+\.claude\/hooks\/session-brief\.mjs/);
   assert.equal(readFileSync(join(dir, HOOK), "utf8"), NEW);
 });
+
+test("the version pin: init records the version in the config, update moves it, doctor says when the package differs", () => {
+  const dir = tempRepo("update-pin", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  const cfgPath = join(dir, "abatty.config.json");
+  const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+  assert.match(cfg.abatty, /^\d+\.\d+\.\d+/);
+  writeFileSync(cfgPath, JSON.stringify({ ...cfg, abatty: "0.0.9" }, null, 2) + "\n");
+  const doc = cli(["doctor", dir, "--skip-self-test"], dir);
+  assert.match(doc.out, /the config pins abatty 0\.0\.9, the package is \d+\.\d+\.\d+/);
+  const up = cli(["update", dir], dir);
+  assert.equal(up.code, 0, up.out);
+  assert.equal(
+    JSON.parse(readFileSync(cfgPath, "utf8")).abatty,
+    cfg.abatty,
+    "moved with the harness",
+  );
+  assert.match(up.out, /abatty\.config\.json.*abatty \d+\.\d+\.\d+/);
+});

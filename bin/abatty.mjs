@@ -461,6 +461,10 @@ switch (command) {
       out(
         `  ${t.glyph.warn} the config is at the older place (${LEGACY_CONFIG}); abatty config --migrate moves it to ${CONFIG_FILE}\n`,
       );
+    if (r.pinned && r.pinned !== r.packageVersion)
+      out(
+        `  ${t.glyph.warn} the config pins abatty ${r.pinned}, the package is ${r.packageVersion} · abatty update moves the pin with the harness\n`,
+      );
     if (r.installed && r.installed !== r.packageVersion)
       out(
         `  ${t.glyph.warn} harness installed by abatty ${r.installed}, the package is ${r.packageVersion} · abatty update\n`,

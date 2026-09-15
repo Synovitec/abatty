@@ -12,6 +12,7 @@ import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
 import { configFiles, configProblems } from "./config.mjs";
 import { runStepControls } from "./step-controls.mjs";
+import { readAdoption } from "./repo.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -118,6 +119,10 @@ export function doctor(o) {
     differs,
     missingScripts: scripts,
     installed: lock?.abatty || null,
+    pinned:
+      typeof readAdoption(repoDir)?.abatty === "string"
+        ? String(readAdoption(repoDir)?.abatty)
+        : null,
     packageVersion: packageVersion(),
     config: { files: configFiles(repoDir), problems },
     controls,

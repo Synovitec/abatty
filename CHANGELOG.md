@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Distribution (roadmap #27): the version this repository follows is pinned in the config
+  (`abatty`, written by `init`, moved by `update`, read by `doctor`); the README opens with
+  the two-minute path a stranger can act on. The registry publish, the license and the
+  standard in the open were done before; a repository outside the company is what is left.
 - Language packs beyond JavaScript (roadmap #25): a pack names a language's extensions,
   test shape, manifest and tools; the context detects the packs of a tree and reads the
   sources of every pack; the linter, formatter, typecheck, dead-code and test rules judge

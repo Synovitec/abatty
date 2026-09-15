@@ -33,9 +33,9 @@ preset that is real only when a named repository proved it, and a `doctor` that 
 The four blockers come first; without them the rest is polish on a tool for three
 repositories. Item 17 above is part of this list and is not repeated; 1 to 11 are done.
 
-| #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                              | Tier  | Size   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| 27  | **Distribution**: a license, a registry publish (item 17), a version pinned per repository and recorded in the config, a README a stranger can act on in two minutes; `scrub` moves to an opt-in package with its purpose stated; then one repository outside the company, and its reading published beside the internal ones | `UNLICENSED`, a git-URL install, a README that assumes `ops-hub` was read; proven on two repositories of one company since 2026-09-14 | reach | 2 days |
+| #   | Change                                                                                                                                                                                                                                         | Evidence                                                                                                                                         | Tier  | Size               |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------------------ |
+| 27  | **One repository outside the company**: its reading published beside the internal ones; the scrub as a separate package with its purpose stated once that repository asks for it; the `python` and `docs` presets proven by a named repository | The license, the registry publish, the version pin and the two-minute README are done; what is left needs a stranger's repository, not more code | reach | needs a repository |
 
 ## Next - the shape of a framework
 
@@ -48,6 +48,11 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 | --- | ------ | -------- | ---- |
 
 ## Done
+
+- 2026-09-15 · distribution (#27, the part that is code): the version this repository follows
+  pinned in the config by `init`, moved by `update`, read by `doctor`; the README a stranger
+  can act on in two minutes. The license (#28) and the registry publish (#17) were done
+  before; what is left is a repository outside the company.
 
 - 2026-09-15 · language packs (#25): the tools per pack, the rules with the same words; the
   Python pack and its unproven preset.

@@ -7,6 +7,22 @@ with it; the package is the part you install in a repository: the harness, the g
 the analysis tooling, the measurement, per stack, kept in step. Contributions under a DCO:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## In two minutes
+
+1. `npm i -D abatty` (the registry, from the first tagged release; `github:Synovitec/abatty`
+   for the branch), in any repository: a Next, Astro, Vite, Node or Python one, a monorepo, or
+   documents alone.
+2. `npx abatty` reads it: a score over the rules that concern it (its stage, its stack, its
+   language packs), what is held by a machine, the next steps in plan order.
+3. `npx abatty init` installs the instrument for the stack it detects (`--stack` names one,
+   `--stage design` says there is no application yet): the harness the agent runs under, the
+   gate, the ratchet with today's numbers as the floor, the hooks, CI from the gate, the day-0
+   documents; the version adopted is pinned in `abatty.config.json`.
+4. `npm run gate` before a push; `npx abatty doctor --controls` proves every step can go
+   red; `npx abatty night --canary-only` proves the harness before the first unattended night.
+
+Everything else below is the same instrument in more depth.
+
 ```sh
 npm i -D abatty                  # the registry, from the first tagged release; github:Synovitec/abatty for the branch
 npx abatty                       # the repository at a glance: score, families, harness, nights, next steps
@@ -200,7 +216,9 @@ the schema; `doctor` refuses a config the schema refuses. The older place, `.cla
 is still read, the root file winning key by key, and `abatty config --migrate` moves it. At
 night the root config is read-only to the worker exactly as the agent folder is: the guard and
 the file guard refuse a write to it, the direction check and the runner refuse a night where it
-moved, the Stop gate reads it from the base branch.
+moved, the Stop gate reads it from the base branch. The config carries `abatty`, the version
+this repository follows: `init` writes it, `update` moves it with the harness, `doctor` says
+when the package differs from it.
 
 ## Update
 

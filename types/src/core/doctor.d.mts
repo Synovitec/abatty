@@ -43,6 +43,7 @@ export function doctor(o: {
     differs: DriftEvent[];
     missingScripts: (string | undefined)[];
     installed: string | null;
+    pinned: string | null;
     packageVersion: string;
     config: {
         files: string[];

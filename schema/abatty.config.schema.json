@@ -7,6 +7,11 @@
   "additionalProperties": false,
   "patternProperties": { "^\\$": {} },
   "properties": {
+    "abatty": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "The version of abatty this repository follows: written by init, moved by update, read by doctor. The one human-readable record of what was adopted; the lock under the agent folder carries the hashes."
+    },
     "profiles": {
       "type": "array",
       "items": { "type": "string" },

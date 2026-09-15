@@ -180,3 +180,7 @@ which step stayed green. Tests 130 -> 132.
 ### 2026-09-15 - Language packs
 
 The rules read the tools per pack; Python is the first pack beyond JavaScript. Tests 132 -> 135.
+
+### 2026-09-15 - Distribution
+
+The version pinned in the config, the two-minute README. Tests 135 -> 136.

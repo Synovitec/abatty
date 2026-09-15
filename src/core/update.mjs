@@ -219,9 +219,19 @@ export function updateRepo(o) {
   const adoption = readJsonFile(repoDir, adoptionRel);
   if (adoption) {
     const added = addMissingKeys(adoption, template);
-    if (added.length) {
+    // The version pin the config carries follows the package: the one human-readable record
+    // of what this repository adopted.
+    const pinned = adoption.abatty !== version;
+    if (pinned) adoption.abatty = version;
+    if (added.length || pinned) {
       if (!dryRun) writeJsonFile(repoDir, adoptionRel, adoption);
-      events.push({ file: adoptionRel, action: "merged", detail: `added ${added.join(", ")}` });
+      events.push({
+        file: adoptionRel,
+        action: "merged",
+        detail: [added.length ? `added ${added.join(", ")}` : "", pinned ? `abatty ${version}` : ""]
+          .filter(Boolean)
+          .join("; "),
+      });
     } else events.push({ file: adoptionRel, action: "in step" });
   }
   // The scripts, as init adds them: absent ones only.
