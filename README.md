@@ -15,6 +15,7 @@ npx abatty measure               # the gap analysis: score, every check, next st
 npx abatty gate --fast           # the path-aware gate (the pre-push hook and the night run it too)
 npx abatty ratchet --range auto  # the ratchet: every probe against the committed baseline, per total and per file
 npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
+npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty presets               # the stacks, and which repository proved each
 npx abatty scrub                 # opt-in: no trace of the tools in files (--fix), commit messages (--commits), pull requests (--prs)
@@ -99,6 +100,21 @@ tree touches their paths, deferred loudly to CI when Docker is absent. A step wh
 repository does not have yet is reported as skipped, so a fresh repository can run the gate
 before everything exists; the gap analysis names what is missing.
 
+## The night
+
+`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>]`
+drives the adoption programme unattended: one headless session per phase on
+`adopt/standards-<date>`, until the hour or the budget. Before the first phase, four things or
+no night: the harness self-test green, `.claude/` identical to the base branch, the gate green
+on the branch as it starts, and the canary (a real session that proves a command runs without
+a prompt, the guard fires, the Stop hook fires and reads the base, and no MCP server but the
+declared ones reached it). A crash is retried once and a second in a row aborts; fifteen
+denials abort (auto mode did not take); the harness is checked before every session; the
+branch is pushed only when nothing was loosened against the base without a decision naming
+it. The agent's executable comes from `--agent`, `ABATTY_AGENT` or `~/.abatty/config.json`,
+never from the repository. `templates/harness/testing/stub-agent.*` stands in for the agent;
+the package's test runs the whole runner with it, every abort path included.
+
 ## Presets
 
 A preset says what a stack's repository looks like (paths, scripts, gate steps and suites, the
@@ -179,9 +195,8 @@ the baseline through `files.baseline` (default `scripts/ci/standards-baseline.js
 
 ## What is not here yet
 
-The night runner in Node (one implementation for Windows and POSIX), the `update` command (a
-three-way merge that keeps a repository's own edits), `night-report` (the learning
-distillation), and the dashboard over every repository's report. The function-shape probe
+The `update` command (a three-way merge that keeps a repository's own edits), `night-report`
+(the learning distillation), and the dashboard over every repository's report. The function-shape probe
 (CODE-2) is not here: ESLint holds it (`CODE-SHAPE`).
 
 ## Development

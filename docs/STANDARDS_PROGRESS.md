@@ -65,3 +65,11 @@ The scrub became opt-in for every repository; this one keeps it on (`abatty.conf
 `scrub.enabled`), the decision of its first day. A repository that does not opt in keeps the
 agent's trailer as its audit trail and may ask for a disclosure trailer of its own
 (`provenance.trailer`), which the guard holds on unattended commits.
+
+### 2026-09-15 - The runner in Node
+
+`abatty night` replaces the two shell runners; `test/night.test.mjs` drives it with the stub
+through the happy path, canary only, six abort paths and three refusals, on every push. The
+same slice fixed a self-test defect the first week never saw because it ran on Windows: the
+no-op gate `node -e process.exit(0)` is a syntax error to a POSIX shell, so `doctor` was red on
+Linux and macOS for a reason that was not the harness. Tests 55 -> 62.

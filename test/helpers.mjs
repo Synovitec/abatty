@@ -30,10 +30,26 @@ export function cli(args, cwd) {
   const r = spawnSync(
     process.execPath,
     [new URL("../bin/abatty.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"), ...args],
-    { cwd, encoding: "utf8", env: { ...process.env, ADOPTION_RUN: "" } },
+    {
+      cwd,
+      encoding: "utf8",
+      // The agent's executable is a fact of the machine, never of the repository; the tests hand
+      // the stub to the self-test so "agent on PATH" is proven by the stub where none is set.
+      env: {
+        ...process.env,
+        ADOPTION_RUN: "",
+        ABATTY_AGENT: process.env.ABATTY_AGENT || STUB_AGENT,
+      },
+    },
   );
   return { code: r.status ?? 1, out: (r.stdout || "") + (r.stderr || "") };
 }
+
+/** The stub agent shipped with the harness templates, as a path the self-test can execute. */
+export const STUB_AGENT = new URL(
+  `../templates/harness/testing/stub-agent.${process.platform === "win32" ? "cmd" : "sh"}`,
+  import.meta.url,
+).pathname.replace(/^\/([A-Z]:)/, "$1");
 
 /** A minimal Next-shaped package.json. */
 export const NEXT_PKG =

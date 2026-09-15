@@ -15,12 +15,11 @@ to the changelog; the order here is the order of the evidence.
 
 ## Now - the gaps that hurt every day
 
-| #   | Change                                                                                                                                                                                                           | Evidence                                                                                                                                                                            | Size       |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 2   | **One runner in Node** replacing the two shell runners                                                                                                                                                           | Two implementations to keep equal; every runner bug of the first week (a BOM, a locale's decimal comma, a shell's path conversion) was runner-side; the stub night becomes its test | 1 day      |
-| 3   | **`abatty update`**: a three-way merge of the harness against the installed version, the version recorded in the repository's config                                                                             | The harness was synced into the reference repository by hand three times in one day; `doctor` sees drift but can only overwrite                                                     | 1 day      |
-| 4   | **`abatty.config.json` at the root** as the one config, with a JSON Schema                                                                                                                                       | Today the config lives under the agent's own folder; a tool-neutral name at the root reduces the required-path exceptions and lets other agents read it                             | half a day |
-| 5   | **Fixture repositories per preset** in the tests (`astro`, `express` next; `next`, `vite-react`, `node` have one since 2026-09-14, the fixture proves init, measure, doctor and the gate's order, not the stack) | "A preset is real when a repository proved it" - one repository proves one preset; fixtures prove the others without a client                                                       | 1 day each |
+| #   | Change                                                                                                                                                                                                           | Evidence                                                                                                                                                | Size       |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 3   | **`abatty update`**: a three-way merge of the harness against the installed version, the version recorded in the repository's config                                                                             | The harness was synced into the reference repository by hand three times in one day; `doctor` sees drift but can only overwrite                         | 1 day      |
+| 4   | **`abatty.config.json` at the root** as the one config, with a JSON Schema                                                                                                                                       | Today the config lives under the agent's own folder; a tool-neutral name at the root reduces the required-path exceptions and lets other agents read it | half a day |
+| 5   | **Fixture repositories per preset** in the tests (`astro`, `express` next; `next`, `vite-react`, `node` have one since 2026-09-14, the fixture proves init, measure, doctor and the gate's order, not the stack) | "A preset is real when a repository proved it" - one repository proves one preset; fixtures prove the others without a client                           | 1 day each |
 
 ## Any project - what stops a stranger's repository from a meaningful score
 
@@ -73,6 +72,10 @@ repositories. Items 1 to 4, 6, 11 and 17 above are part of this list and are not
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · one runner in Node (#2): `abatty night`, the two shell runners removed, the stub
+  night as the package's test on every push; on the way, the self-test's no-op gate that a POSIX
+  shell rejected, fixed.
 
 - 2026-09-15 · provenance as the default, the scrub as an option (#30): `scrub.enabled` off
   unless a repository opts in, `provenance.trailer` as the disclosure option the guard holds at

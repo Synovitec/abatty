@@ -14,6 +14,7 @@
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
+ *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>]
  *   abatty presets · abatty version
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -51,6 +52,7 @@ import {
   writeBaseline,
 } from "../src/ratchet/index.mjs";
 import { runControls } from "../src/ratchet/controls.mjs";
+import { runNight } from "../src/night/runner.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -67,6 +69,7 @@ const KNOWN = [
   "explain",
   "ratchet",
   "baseline",
+  "night",
   "presets",
   "version",
   "help",
@@ -93,6 +96,13 @@ const VALUE_FLAGS = [
   "--phase",
   "--reason",
   "--enforcement",
+  "--until",
+  "--max-cost",
+  "--phases",
+  "--model",
+  "--effort",
+  "--mode",
+  "--agent",
 ];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
@@ -670,6 +680,45 @@ switch (command) {
       `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green(flag("--dry-run") ? "baseline computed (not written: --dry-run)" : "baseline written") : t.red("baseline refused; nothing written")} ${t.gray(`· readability ${r.baseline.score}/100`)}\n\n`,
     );
     process.exit(r.ok ? 0 : 1);
+  }
+  case "night": {
+    // The unattended night: one headless session per phase on a dedicated branch, the
+    // pre-flight (self-test, harness untouched, gate green, canary) or no night.
+    const mode = opt("--mode") || "auto";
+    if (mode !== "auto" && mode !== "dontAsk") {
+      err(`${t.glyph.fail} --mode is auto or dontAsk\n`);
+      process.exit(2);
+    }
+    out(`\n${t.banner(VERSION)}  ${t.bold("night")} ${t.gray("·")} ${dir}\n\n`);
+    const r = runNight({
+      repoDir: dir,
+      until: opt("--until") || "07:00",
+      maxCostUsd: opt("--max-cost") ? Number(opt("--max-cost")) : 60,
+      phases: opt("--phases")
+        ? opt("--phases")
+            .split(/[\s,]+/)
+            .filter(Boolean)
+        : [],
+      model: opt("--model") || "opus",
+      effort: opt("--effort") || "high",
+      mode,
+      noPush: flag("--no-push"),
+      skipCanary: flag("--skip-canary"),
+      canaryOnly: flag("--canary-only"),
+      agent: opt("--agent"),
+      log: (line) => {
+        for (const l of line.split("\n")) {
+          if (/ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree/.test(l))
+            out(`${t.glyph.fail} ${t.red(l)}\n`);
+          else if (/^\[\d\d:\d\d\]/.test(l)) out(`${t.glyph.run} ${t.bold(l)}\n`);
+          else if (/canary ok|night-run done|pre-flight done/.test(l))
+            out(`${t.glyph.ok} ${t.green(l)}\n`);
+          else out(`${t.gray(l)}\n`);
+        }
+      },
+    });
+    out("\n");
+    process.exit(r.code);
   }
   case "presets": {
     out(`\n${t.banner(VERSION)}  ${t.bold("presets")}\n\n`);

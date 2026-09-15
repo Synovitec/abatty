@@ -21,7 +21,7 @@ last_verified: "2026-09-14"
 | `hooks/lib.mjs`, `guard.mjs`, `protect.mjs`, `stop-gate.mjs`, `check-direction.mjs`, `lint-on-edit.mjs`, `session-brief.mjs`, `self-test.mjs` | `<repo>/.claude/hooks/` | Node, exec form, no `jq`. `ADOPTION_RUN=1` switches them from advisory to blocking. `guard` watches Bash and PowerShell, `protect` watches Edit, Write and every MCP tool: at night both refuse a write under `.claude/`, and `protect` refuses every MCP server not named in `adoption.json` → `mcpServers` and holds a named server's paths to the same rules. `check-direction` is what the Stop gate and the runner call to refuse a loosening against the base. `self-test.mjs` proves the others and the wiring; the runner calls it first |
 | `skills/adopt-standards/SKILL.md` | `<repo>/.claude/skills/adopt-standards/SKILL.md` | One phase per invocation; `--wrap-up` closes a run |
 | `agents/standards-reviewer.md`, `standards-adopter.md` | `<repo>/.claude/agents/` | The reviewer is read-only; the adopter is the daytime worker persona |
-| `night-run.ps1`, `night-run.sh` | anywhere (e.g. this folder itself, called with `-Repo`) | One `the agent's headless mode` session per phase, auto mode, prompts disabled, budget and hour capped, `--strict-mcp-config` on `.claude/mcp.night.json` (or an empty config when the repository has none). Before the first phase: self-test, `.claude/` identical to the base, the gate green, and a canary session (below). Aborts when the CLI fails to start twice in a row, when one session reports 15+ permission denials, when `.claude/` moved, or when the state file it wrote does not read back. Pushes only a branch where nothing was loosened against the base |
+| the runner: `npx abatty night` (in the package, `src/night/`) | nowhere to copy: one implementation for Windows and POSIX | One `the agent's headless mode` session per phase, auto mode, prompts disabled, budget and hour capped, `--strict-mcp-config` on `.claude/mcp.night.json` (or an empty config when the repository has none). Before the first phase: self-test, `.claude/` identical to the base, the gate green, and a canary session (below). Aborts when the CLI fails to start twice in a row, when one session reports 15+ permission denials, when `.claude/` moved, or when the state file it wrote does not read back. Pushes only a branch where nothing was loosened against the base |
 | `testing/stub-agent.{mjs,cmd,sh}` | stays here | A stand-in for `the agent's headless mode` that drives the whole runner loop, the canary, the real Stop gate and the real repository gate without a session. `STUB_CRASH=1`, `STUB_DENIALS=20`, `STUB_TAMPER=1`, `STUB_CANARY_SKIP_GUARD=1`, `STUB_CANARY_SKIP_STOP=1`, `STUB_CANARY_MCP=1` exercise the runner's abort paths |
 | `CLAUDE.md.template` | `<repo>/CLAUDE.md` | Fill the placeholders; §7-§9 are the autonomy sections and are not optional |
 | `rules/*.md` (graphql, sequelize, mui, testing, i18n, a11y, pwa, size-limits) | `<repo>/.claude/rules/` | Path-scoped by `paths:` front matter, loaded only when a matching file is read. Take the ones the stack uses; a rule file is under 60 lines and points at the guide for depth |
@@ -148,14 +148,9 @@ reports is one `mcp.night.json` declares and every declared one reported a tool
 (`--strict-mcp-config` took, and a declared server started). Each failure is named; a landed
 canary commit is removed by the runner.
 
-```powershell
-.\night-run.ps1 -Repo C:\path\to\repo -CanaryOnly     # the four checks on the current branch, then stop
-.\night-run.ps1 -Repo C:\path\to\repo -SkipCanary ... # a repository the canary already passed on today
-```
-
 ```bash
-CANARY_ONLY=1 bash night-run.sh /path/to/repo
-SKIP_CANARY=1 bash night-run.sh /path/to/repo 07:00 40 "7 8"
+npx abatty night . --canary-only                     # the four checks on the current branch, then stop
+npx abatty night . --skip-canary --until 07:00 --max-cost 40 --phases "7 8"   # a repository the canary already passed on today
 ```
 
 ### A dry night with the stub, before a paid one
@@ -171,22 +166,22 @@ expect: the canary green, the state file opened and committed, one block per ses
 tree), the phase `done`, the wrap-up named a no-op session (the stub writes nothing there), two
 commits on `adopt/standards-<date>`, and a clean tree at the end.
 
-```powershell
-$T = "C:\path\to\node_modules\abatty\templates\harness"
-& "$T\night-run.ps1" -Repo C:\path\to\repo -AgentCommand "$T\testing\stub-agent.cmd" -Phases 11 -Until 23:59 -MaxCostUsd 10 -NoPush
+```bash
+T=node_modules/abatty/templates/harness
+npx abatty night . --agent $T/testing/stub-agent.sh --phases 11 --until +30min --max-cost 10 --no-push
 # the abort paths - each must end the run with a named reason, the branch local
-$env:STUB_TAMPER = "1";             & "$T\night-run.ps1" <same arguments>; Remove-Item Env:STUB_TAMPER              # the harness moved: aborted before the wrap-up
-$env:STUB_CANARY_SKIP_GUARD = "1";  & "$T\night-run.ps1" <same arguments>; Remove-Item Env:STUB_CANARY_SKIP_GUARD   # canary: the guard did not fire
-$env:STUB_CANARY_SKIP_STOP = "1";   & "$T\night-run.ps1" <same arguments>; Remove-Item Env:STUB_CANARY_SKIP_STOP    # canary: the Stop hook did not fire
-$env:STUB_CANARY_MCP = "1";         & "$T\night-run.ps1" <same arguments>; Remove-Item Env:STUB_CANARY_MCP          # canary: a Slack tool reached the session (--strict-mcp-config did not take)
-$env:STUB_CRASH = "1";              & "$T\night-run.ps1" <same arguments>; Remove-Item Env:STUB_CRASH               # the CLI fails to start
-$env:STUB_DENIALS = "20";           & "$T\night-run.ps1" <same arguments> -SkipCanary; Remove-Item Env:STUB_DENIALS # auto mode did not take
+STUB_TAMPER=1 npx abatty night . <same arguments>               # the harness moved: aborted before the wrap-up
+STUB_CANARY_SKIP_GUARD=1 npx abatty night . <same arguments>    # canary: the guard did not fire
+STUB_CANARY_SKIP_STOP=1 npx abatty night . <same arguments>     # canary: the Stop hook did not fire
+STUB_CANARY_MCP=1 npx abatty night . <same arguments>           # canary: a chat tool reached the session (--strict-mcp-config did not take)
+STUB_CRASH=1 npx abatty night . <same arguments> --skip-canary  # the CLI fails to start
+STUB_DENIALS=20 npx abatty night . <same arguments> --skip-canary  # auto mode did not take
 ```
 
-```bash
-ABATTY_AGENT=$T/testing/stub-agent.sh NO_PUSH=1 bash $T/night-run.sh /path/to/repo 23:59 10 "11"
-STUB_TAMPER=1 ABATTY_AGENT=... NO_PUSH=1 bash $T/night-run.sh ...         # and the other knobs the same way
-```
+On Windows the same commands with `stub-agent.cmd` and `set STUB_TAMPER=1` (or
+`$env:STUB_TAMPER = "1"` in PowerShell). The package's own test (`test/night.test.mjs`) runs
+every path above on a temporary repository on every push; run them by hand after a change to a
+hook.
 
 Between runs: `git checkout <base>`, `git branch -D adopt/standards-<date>`, remove
 `.claude/night/` and `docs/ADOPTION_STATE.json`. The stub writes nothing at wrap-up because it
@@ -197,19 +192,15 @@ This is the run that found, on a real repository, what the self-test alone canno
 PowerShell 5.1 writing a BOM the hooks refused; a one-phase pipeline unwrapping `phases` into
 an object; a French locale formatting the budget as `10,00`; Git Bash rewriting the
 `/adopt-standards` prompt into a Windows path; a crashed CLI counted as a session and the phase
-marked "blocked" for the wrong reason. On 2026-09-14 both runners ran every path above on a
-synthetic repository with a two-second gate (happy path, tamper, the three canary failures, two
-crashes, twenty denials, a red gate at the start), each ending with the named reason and the
-branch local; the same evening, after the MCP door was closed, both ran the happy path (canary
-"MCP servers seen: none"), `STUB_CANARY_MCP=1` and a `mcp.night.json` loading a server
-`adoption.json` does not name (refused by the self-test before the runner's own check). Repeat
-it after any change to a runner.
+marked "blocked" for the wrong reason. Every one of those was in the two shell runners, which
+is why the runner is one Node implementation since 2026-09-15: JSON in and out, the agent's
+executable called directly, the same code on both platforms, and the stub night as its test.
 
-A real dry night is the same command without `-AgentCommand`, with a small budget and a
-near hour, after `-CanaryOnly` passed:
+A real dry night is the same command without `--agent`, with a small budget and a near hour,
+after `--canary-only` passed:
 
-```powershell
-.\night-run.ps1 -Repo . -Until (Get-Date).AddMinutes(20).ToString("HH:mm") -MaxCostUsd 10 -Phases 0 -NoPush
+```bash
+npx abatty night . --until +20min --max-cost 10 --phases 0 --no-push
 ```
 
 ## What a Windows machine needs

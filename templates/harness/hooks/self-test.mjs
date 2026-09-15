@@ -270,13 +270,13 @@ try {
   check("stop-gate · cap reached lets the session end and says so", red3.code === 0 && /letting it end/.test(red3.stderr));
   check("stop-gate · the cap leaves a receipt", existsSync(redReceipt) && readJson(redReceipt).decision === "cap");
 
-  const green = hook("stop-gate.mjs", { session_id: "selftest-green-" + Date.now() }, { ...night, ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_CONFIG: cfg("node -e process.exit(0)", { changelogRequiredFor: [] }) });
+  const green = hook("stop-gate.mjs", { session_id: "selftest-green-" + Date.now() }, { ...night, ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_CONFIG: cfg("node -e \"process.exit(0)\"", { changelogRequiredFor: [] }) });
   check("stop-gate · green gate reaches the later checks (exit 0 or a named block, never a crash)", green.code === 0 || (green.code === 2 && /Uncommitted|CHANGELOG|state|direction/.test(green.stderr)), `exit ${green.code} ${oneLine(green.stderr)}`);
 
   // A config file with a UTF-8 BOM (what Windows PowerShell 5.1 writes) must parse, not block
   // as "unreadable" until the cap. Proven on the config path, which every hook reads first.
   const bomCfg = join(tmp, "adoption-bom.json");
-  writeFileSync(bomCfg, "﻿" + JSON.stringify({ commands: { gate: "node -e process.exit(0)" }, files: { state: join(tmp, "state.json") }, changelogRequiredFor: [], maxStopBlocks: 2 }));
+  writeFileSync(bomCfg, "﻿" + JSON.stringify({ commands: { gate: "node -e \"process.exit(0)\"" }, files: { state: join(tmp, "state.json") }, changelogRequiredFor: [], maxStopBlocks: 2 }));
   const bom = hook("stop-gate.mjs", { session_id: "selftest-bom-" + Date.now() }, { ...night, ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_CONFIG: bomCfg });
   check("stop-gate · a config with a UTF-8 BOM is read, not a crash", bom.code === 0 || (bom.code === 2 && /Uncommitted|CHANGELOG|state|direction/.test(bom.stderr)), `exit ${bom.code}${bom.code !== 0 && bom.code !== 2 ? " " + bom.stderr.slice(0, 120) : ""}`);
 
@@ -298,7 +298,7 @@ try {
     const stateP = join(tmp, name + "-state.json");
     writeFileSync(stateP, JSON.stringify(state));
     const p = join(tmp, name + ".json");
-    writeFileSync(p, JSON.stringify({ commands: { gate: "node -e process.exit(0)" }, files: { state: stateP }, changelogRequiredFor: [], maxStopBlocks: 3, ...extra }));
+    writeFileSync(p, JSON.stringify({ commands: { gate: "node -e \"process.exit(0)\"" }, files: { state: stateP }, changelogRequiredFor: [], maxStopBlocks: 3, ...extra }));
     return p;
   };
 
@@ -326,7 +326,7 @@ try {
   // The worker points commands.gate at a command that fails in the TREE copy; the base copy says
   // green. What must decide is the base: the block names the edited harness, never a red gate.
   const trust = newRepo("trust");
-  write(trust, ".claude/adoption.json", JSON.stringify({ commands: { gate: "node -e process.exit(0)" }, files: { state: "docs/ADOPTION_STATE.json" }, changelogRequiredFor: [] }));
+  write(trust, ".claude/adoption.json", JSON.stringify({ commands: { gate: "node -e \"process.exit(0)\"" }, files: { state: "docs/ADOPTION_STATE.json" }, changelogRequiredFor: [] }));
   gitIn(trust, "add", "-A");
   gitIn(trust, "commit", "-q", "-m", "base with harness");
   gitIn(trust, "checkout", "-q", "-b", "adopt/standards-selftest");

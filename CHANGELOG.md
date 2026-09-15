@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- The night runner is one implementation in Node, `abatty night` (roadmap #2), replacing
+  `night-run.ps1` and `night-run.sh`: the same pre-flight (self-test, harness identical to the
+  base, gate green, canary), the same loop (sessions per phase, a crash retried once, fifteen
+  denials an abort, the harness checked before every session, the wrap-up, the push only when
+  nothing was loosened), the same files under `.claude/night/`, the same exit codes; JSON in
+  and out (no BOM, no locale), the agent called directly (no shell rewriting the prompt).
+  `test/night.test.mjs` runs the whole runner with the stub: the happy path, canary only, six
+  abort paths, three refusals.
+- The harness self-test spelled its no-op gate `node -e process.exit(0)`, which a POSIX shell
+  rejects (a subshell in the argument); quoted now, so the self-test and `doctor` are green on
+  Linux and macOS. The stub agent answers `--version` with the version the harness requires,
+  and the tests hand it to the self-test as the agent on PATH.
 - Provenance is the default; the scrub is opt-in (roadmap #30). `scrub.enabled` (off unless
   set) in the adoption config or `abatty.config.json`: the guard refuses a commit, a tag, a
   pull request or an issue that names a tool only where the repository opted in; `abatty scrub

@@ -296,12 +296,21 @@ is the worker and the skill is the protocol.
 
 ## 7. The runner
 
-[`night-run.ps1`](../../templates/harness/night-run.ps1) (Windows, primary) and
-[`night-run.sh`](../../templates/harness/night-run.sh):
+`abatty night`, one implementation in Node for Windows and POSIX (`src/night/` of the
+package; the two shell runners of the first week are gone, and every bug they had - a BOM, a
+locale's decimal comma, a shell rewriting the `/adopt-standards` prompt into a path, a crash
+counted as a session - cannot recur, because the runner reads and writes JSON and calls the
+agent's executable directly):
 
 ```
-.\night-run.ps1 -Repo C:\path\to\repo -Until 07:00 -MaxCostUsd 80 -Phases 0,1,2,3,4,7,8,11
+npx abatty night . --until 07:00 --max-cost 80 --phases "0 1 2 3 4 7 8 11"
+npx abatty night . --canary-only                       # the pre-flight on the current branch, then stop
+ABATTY_AGENT=<path>/stub-agent.sh npx abatty night . --until +10min --max-cost 10 --no-push   # a dry night with the stub
 ```
+
+The agent's executable comes from `--agent`, else `ABATTY_AGENT`, else `agent.command` in
+`~/.abatty/config.json`; never from the repository. `--mode auto|dontAsk`, `--model`,
+`--effort` are the session flags; `--skip-canary` for a repository the canary passed on today.
 
 1. Refuses a dirty tree (and lists it). Fetches. Creates or reuses `adopt/standards-<date>`
    from the LOCAL base branch when it exists (it is what carries a harness committed but not
@@ -318,8 +327,8 @@ is the worker and the skill is the protocol.
    receipt exists with `decision: allow` and `configSource: base` (the Stop hook fires and
    reads the base), and the MCP servers the session reports are exactly the ones
    `.claude/mcp.night.json` declares (`--strict-mcp-config` took; a declared server started).
-   `-CanaryOnly` runs the pre-flight on the current branch and stops; `-SkipCanary` skips it
-   for a repository it passed on today.
+   `--canary-only` runs the pre-flight on the current branch and stops; `--skip-canary` skips
+   it for a repository it passed on today.
 3. Writes `docs/ADOPTION_STATE.json` if absent (every phase `pending`), without a BOM, reads
    it back the way the hooks will (`phases` a non-empty array), and commits it.
 4. Loop while the hour and the budget allow: `.claude/` still identical to the base → next

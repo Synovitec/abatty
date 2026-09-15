@@ -6,12 +6,18 @@
 //
 // It prints the same JSON shape the runner parses (total_cost_usd, permission_denials, is_error).
 //
-//   night-run.ps1 -Repo . -AgentCommand <path>\stub-agent.cmd -Until +10min -MaxCostUsd 10 -NoPush
+//   ABATTY_AGENT=<path>/stub-agent.sh npx abatty night . --until +10min --max-cost 10 --no-push
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const argv = process.argv.slice(2);
+// The self-test and the runner ask the agent for its version before a night is spent on it.
+if (argv.includes("--version")) {
+  // The version the harness requires of the agent, so the self-test's version check passes on the stub.
+  process.stdout.write("2.1.259 (stub-agent, a stand-in for the agent's headless mode)\n");
+  process.exit(0);
+}
 const prompt = argv[argv.indexOf("-p") + 1] || "";
 const phase = process.env.ADOPTION_PHASE ?? "";
 const wrapUp = /--wrap-up/.test(prompt);
