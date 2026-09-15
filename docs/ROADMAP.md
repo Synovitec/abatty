@@ -51,13 +51,15 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 ## Later - hardening and reach
 
-| #   | Change                                                               | Evidence                                                               | Size       |
-| --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
-| 15  | Sandboxed nights under the guard                                     | The guard is a text match on commands; a sandbox is the layer below it | 1 day      |
-| 16  | Budget by allowance, a resumable runner state                        | A subscription makes the money cap a proxy                             | half a day |
-| 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
+| #   | Change                                                               | Evidence                                                   | Size       |
+| --- | -------------------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
+| 16  | Budget by allowance, a resumable runner state                        | A subscription makes the money cap a proxy                 | half a day |
+| 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties | half a day |
 
 ## Done
+
+- 2026-09-15 · sandboxed nights (#15): an OS boundary under the guard (bubblewrap, sandbox-exec,
+  a container), built by the runner and proven by a probe before the first session.
 
 - 2026-09-15 · rule-ID namespacing (#14): `FAMILY.N` with a dot across the standard, the
   rules, the templates and the catalog; the hyphen form retired and kept out by a test.

@@ -2,8 +2,8 @@
  * The pre-flight of a night, in the order the shell runners proved: the agent's executable, a
  * clean tree, the branch from the local base (it carries a harness committed but not pushed
  * yet), the harness files on it, the self-test there, `.claude/` identical to the base, the
- * night folder and its run file, the MCP servers a session may have at all, and the gate green
- * on the branch as it starts. Any one red is no night.
+ * night folder and its run file, the sandbox built and proven, the MCP servers a session may
+ * have at all, and the gate green on the branch as it starts. Any one red is no night.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,6 +11,7 @@ import { spawnSync } from "node:child_process";
 import { git, parseJson, readAdoption } from "../core/repo.mjs";
 import { agentCommand, clock } from "./session.mjs";
 import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
+import { prepareSandbox } from "./sandbox.mjs";
 
 export const HARNESS_FILES = [
   ".claude/settings.json",
@@ -40,6 +41,7 @@ export function readJson(p) {
  *   startedAt: string, mcpConfig: string, mcpServers: string[],
  *   harnessMoved: (when: string) => string,
  *   adapter: import("../agents/index.mjs").Adapter,
+ *   sandbox: import("./sandbox-drivers.mjs").Sandbox | null, sandboxDriver: string,
  * }} Preflight
  */
 
@@ -137,6 +139,18 @@ export function preflight(o, c) {
 
   const nightDir = join(repoDir, ".claude", "night", date);
   mkdirSync(nightDir, { recursive: true });
+
+  // The sandbox under the guard: built from the config, proven by a probe, or no night when it
+  // is required or present and not holding. Without a driver the guard is the only layer, said.
+  const sb = prepareSandbox(config, {
+    repoDir,
+    folder: adapter.folder || ".claude",
+    nightDir,
+    mode: o.sandbox,
+  });
+  if (sb.refuse) return refuse(sb.refuse);
+  log(sb.note);
+
   const startedAt = new Date().toISOString();
   writeJson(join(repoDir, ".claude/night/run.json"), {
     startedAt,
@@ -144,6 +158,7 @@ export function preflight(o, c) {
     base,
     until,
     maxCostUsd: maxCost,
+    sandbox: sb.driver,
   });
 
   // The MCP servers a session may have at all: the committed mcp.night.json, else none.
@@ -198,5 +213,7 @@ export function preflight(o, c) {
     mcpServers,
     harnessMoved,
     adapter,
+    sandbox: sb.sandbox,
+    sandboxDriver: sb.driver,
   };
 }

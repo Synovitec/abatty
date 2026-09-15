@@ -131,3 +131,8 @@ both, and its pre-commit hook scans the staged files. Tests 98 -> 102.
 
 Every standard ID is `FAMILY.N` with a dot; the hyphen form is retired everywhere the package
 ships, and a test walks those files. Tests 102 -> 104.
+
+### 2026-09-15 - Sandboxed nights
+
+The boundary under the guard, proven before it is trusted; the package's own night test runs
+under bubblewrap where one is found. Tests 104 -> 111.

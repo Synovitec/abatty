@@ -11,6 +11,7 @@ export function readJson(p: string): any;
  *   startedAt: string, mcpConfig: string, mcpServers: string[],
  *   harnessMoved: (when: string) => string,
  *   adapter: import("../agents/index.mjs").Adapter,
+ *   sandbox: import("./sandbox-drivers.mjs").Sandbox | null, sandboxDriver: string,
  * }} Preflight
  */
 /**
@@ -45,4 +46,6 @@ export type Preflight = {
     mcpServers: string[];
     harnessMoved: (when: string) => string;
     adapter: import("../agents/index.mjs").Adapter;
+    sandbox: import("./sandbox-drivers.mjs").Sandbox | null;
+    sandboxDriver: string;
 };

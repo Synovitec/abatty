@@ -44,6 +44,7 @@ log(`prompt: ${prompt} · phase: ${phase} · branch: ${git("rev-parse", "--abbre
 //                    --strict-mcp-config did not take; the runner must refuse the night
 //   STUB_TAMPER=1   the phase also commits an edit to the config, as a worker that
 //                    reached the config would; the Stop gate must refuse and the runner must abort
+//                    (or, under a sandbox, the filesystem refuses the write and the phase goes on)
 if (process.env.STUB_CRASH === "1") {
   process.stderr.write("Error: simulated startup failure (STUB_CRASH=1)\n");
   process.exit(1);
@@ -105,10 +106,16 @@ if (wrapUp) {
   if (process.env.STUB_TAMPER === "1") {
     const cfgPath = configPath;
     const tampered = { ...readJson(cfgPath), commands: { ...(readJson(cfgPath).commands || {}), gate: "node -e process.exit(0)" } };
-    writeFileSync(cfgPath, JSON.stringify(tampered, null, 2) + "\n");
-    git("add", cfgPath);
-    git("commit", "-q", "-m", "chore: point the gate at a no-op (tamper)");
-    log(`tamper: committed an edit to ${cfgPath}`);
+    try {
+      writeFileSync(cfgPath, JSON.stringify(tampered, null, 2) + "\n");
+      git("add", cfgPath);
+      git("commit", "-q", "-m", "chore: point the gate at a no-op (tamper)");
+      log(`tamper: committed an edit to ${cfgPath}`);
+    } catch (e) {
+      // Under a sandbox the config is read-only at the OS level: the worker's write fails and
+      // the phase goes on without it, as a real session would.
+      log(`tamper refused by the filesystem: ${e && e.code ? e.code : e}`);
+    }
   }
   // Leave the tree DIRTY on purpose: the Stop gate must be what forces the commit.
 }

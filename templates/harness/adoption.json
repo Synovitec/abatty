@@ -34,6 +34,7 @@
   "protectedPaths": ["migrations/", "drizzle/", "packages/db/prisma/migrations/", ".env", ".env.", "docker-compose.production", "prod.dont.touch"],
 
   "mcpServers": [],
+  "sandbox": { "mode": "auto" },
 
   "scrub": {
     "$comment": "OFF by default: provenance is the default, an agent's trailer on the commits it made is the audit trail. A repository doing white-label work opts in with enabled: true (the guard then refuses a commit, a tag, a pull request or an issue that names a tool, day and night; the commit-msg hook too), with the reason in its decisions file; allow lists path substrings its own product terms live under.",

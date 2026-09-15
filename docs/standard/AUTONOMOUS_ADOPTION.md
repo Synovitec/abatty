@@ -26,7 +26,10 @@ prompts disabled**, so the classifier reviews actions and nothing waits for a hu
 **PreToolUse hooks** refuse what must never happen unattended: the shell guard (push to
 `main`, force push, hard reset, `--no-verify`, destructive SQL, deploys, a shell write to the
 harness) and the file guard (an Edit or Write under `.claude/`, to an applied migration, to
-an env file, outside the tree). A **Stop hook** refuses to let the session end while the gate
+an env file, outside the tree); under both, a **sandbox** (bubblewrap, `sandbox-exec` or a
+container, built by the runner and proven by a probe before the first session) holds the same
+boundary at the OS level, so a command the guard's text match misses still cannot write the
+harness, the root config, a protected path or the machine outside the tree. A **Stop hook** refuses to let the session end while the gate
 is red, something was loosened against the base branch (a floor raised, a threshold lowered, a
 rule switched off without a decision naming it, the harness edited), the tree is dirty, or the
 newest source commit has no changelog entry - so "done" means the gate said so, not the model,

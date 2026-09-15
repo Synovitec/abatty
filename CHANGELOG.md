@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Sandboxed nights (roadmap #15): the OS boundary under the guard, the layer below its text
+  match. The runner builds it from `sandbox` in the config (bubblewrap on Linux, `sandbox-exec`
+  on macOS, a container image anywhere; `mode` auto, required or off; `--sandbox` for one
+  night), keeps the tree, the hooks' log folder and the agent's state writable, mounts the
+  harness, the root config and the protected paths read-only and the rest of the machine
+  read-only, then proves it with a probe before the first session: a sandbox that does not
+  hold refuses the night. The driver is written to `run.json` and the night report.
 - Rule-ID namespacing (roadmap #14): a standard ID is `FAMILY.N` with a dot (`CODE.6`,
   `DOC.2`), a namespace of its own that no error code, hash name or third-party identifier
   shares; the hyphen form of the first days is retired across the standard, the rules, the

@@ -6,7 +6,8 @@
  * counted as a session) was runner-side.
  *
  * Before the first phase, four things or no night: the harness self-test green, `.claude/`
- * identical to the base branch, the gate green on the branch as it starts, and the canary.
+ * identical to the base branch, the gate green on the branch as it starts, and the canary; the
+ * sandbox under the guard is built and proven between them, and every session runs inside it.
  * Then the loop: the next pending phase, at most `maxSessionsPerPhase` sessions each, a crash
  * retried once and a second crash in a row an abort, fifteen denials an abort (auto mode did
  * not take), the harness checked before every session, the wrap-up, and a push only when the
@@ -33,6 +34,7 @@ import { deadlineOf, runSession } from "./session.mjs";
  *   skipCanary?: boolean,
  *   canaryOnly?: boolean,
  *   agent?: string,
+ *   sandbox?: "auto" | "required" | "off",
  *   log?: (line: string) => void,
  * }} NightOptions
  * @typedef {{ ok: boolean, code: number, abort: string, spent: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
@@ -72,9 +74,12 @@ export function runNight(o) {
     mcpServers,
     harnessMoved,
     adapter,
+    sandbox,
+    sandboxDriver,
   } = pf;
   const session = {
     adapter,
+    sandbox,
     agent,
     mode,
     model: o.model || "opus",
@@ -108,7 +113,7 @@ export function runNight(o) {
       /* nothing to remove */
     }
     log(
-      `pre-flight done on ${branch}: self-test green, harness identical to ${base}, gate green, canary green. ${spent.toFixed(2)} USD.`,
+      `pre-flight done on ${branch}: self-test green, harness identical to ${base}, gate green, canary green, sandbox ${sandboxDriver}. ${spent.toFixed(2)} USD.`,
     );
     return { ok: true, code: 0, abort: "", spent, branch, pushed: false, canaryOnly: true };
   }
@@ -264,7 +269,7 @@ export function runNight(o) {
   log(
     abort
       ? `night-run ABORTED: ${spent.toFixed(2)} USD on ${branch} (not pushed) - ${abort}`
-      : `night-run done: ${spent.toFixed(2)} USD on ${branch}${pushed ? " (pushed)" : ""}`,
+      : `night-run done: ${spent.toFixed(2)} USD on ${branch}${pushed ? " (pushed)" : ""}, sandbox ${sandboxDriver}`,
   );
   log(`read: docs/ADOPTION_REPORT_${date}.md, ${decisionsFile}, ${stateFile}, ${nightDir}/`);
   log(git(repoDir, "log", "--oneline", `${base}..${branch}`));

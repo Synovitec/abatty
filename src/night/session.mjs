@@ -15,7 +15,7 @@ import { PRIMARY, sessionArgs } from "../agents/index.mjs";
 
 /**
  * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
- * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void, adapter?: import("../agents/index.mjs").Adapter }} SessionOptions
+ * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void, adapter?: import("../agents/index.mjs").Adapter, sandbox?: import("./sandbox-drivers.mjs").Sandbox | null }} SessionOptions
  */
 
 /**
@@ -67,7 +67,8 @@ function readJsonOrNull(p) {
  * Run one session. Output goes to `<outBase>.json` and `<outBase>.stderr.txt`; the env carries
  * the night's variables for the hooks. Runs through a shell on Windows only (a `.cmd` shim
  * needs one); elsewhere the executable is called directly, so a prompt starting with "/" is
- * never rewritten into a path.
+ * never rewritten into a path. With a sandbox, the executable and its arguments go through the
+ * driver's argv: the session runs inside the boundary, the hooks with it.
  * @param {{ repoDir: string, prompt: string, budget: number, name: string, outBase: string, env: Record<string, string | undefined> }} run
  * @param {SessionOptions} o
  * @returns {SessionResult}
@@ -85,8 +86,11 @@ export function runSession(run, o) {
     mcpConfig: o.mcpConfig,
     name: run.name,
   });
+  const w = o.sandbox
+    ? o.sandbox.wrap(o.agent, args, Object.keys(run.env))
+    : { cmd: o.agent, args };
   const win = process.platform === "win32";
-  const r = spawnSync(win ? `"${o.agent}"` : o.agent, win ? args.map(quoteWin) : args, {
+  const r = spawnSync(win ? `"${w.cmd}"` : w.cmd, win ? w.args.map(quoteWin) : w.args, {
     cwd: run.repoDir,
     encoding: "utf8",
     shell: win,

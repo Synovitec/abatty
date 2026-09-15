@@ -20,6 +20,11 @@ export function nightCommand(c) {
         err(`${t.glyph.fail} --mode is auto or dontAsk\n`);
         process.exit(2);
       }
+      const sandbox = opt("--sandbox") || "";
+      if (sandbox && !["auto", "required", "off"].includes(sandbox)) {
+        err(`${t.glyph.fail} --sandbox is auto, required or off\n`);
+        process.exit(2);
+      }
       out(`\n${t.banner(VERSION)}  ${t.bold("night")} ${t.gray("·")} ${dir}\n\n`);
       const r = runNight({
         repoDir: dir,
@@ -37,9 +42,14 @@ export function nightCommand(c) {
         skipCanary: flag("--skip-canary"),
         canaryOnly: flag("--canary-only"),
         agent: opt("--agent"),
+        sandbox: /** @type {"auto" | "required" | "off" | undefined} */ (sandbox || undefined),
         log: (line) => {
           for (const l of line.split("\n")) {
-            if (/ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree/.test(l))
+            if (
+              /ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree|does not hold|could not start/.test(
+                l,
+              )
+            )
               out(`${t.glyph.fail} ${t.red(l)}\n`);
             else if (/^\[\d\d:\d\d\]/.test(l)) out(`${t.glyph.run} ${t.bold(l)}\n`);
             else if (/canary ok|night-run done|pre-flight done/.test(l))

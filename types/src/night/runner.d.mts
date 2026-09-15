@@ -11,6 +11,7 @@
  *   skipCanary?: boolean,
  *   canaryOnly?: boolean,
  *   agent?: string,
+ *   sandbox?: "auto" | "required" | "off",
  *   log?: (line: string) => void,
  * }} NightOptions
  * @typedef {{ ok: boolean, code: number, abort: string, spent: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
@@ -34,6 +35,7 @@ export type NightOptions = {
     skipCanary?: boolean;
     canaryOnly?: boolean;
     agent?: string;
+    sandbox?: "auto" | "required" | "off";
     log?: (line: string) => void;
 };
 export type NightResult = {

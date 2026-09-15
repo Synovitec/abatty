@@ -210,7 +210,7 @@ before everything exists; the gap analysis names what is missing.
 
 ## The night
 
-`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>]`
+`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off]`
 drives the adoption programme unattended: one headless session per phase on
 `adopt/standards-<date>`, until the hour or the budget. Before the first phase, four things or
 no night: the harness self-test green, `.claude/` identical to the base branch, the gate green
@@ -222,6 +222,22 @@ branch is pushed only when nothing was loosened against the base without a decis
 it. The agent's executable comes from `--agent`, `ABATTY_AGENT` or `~/.abatty/config.json`,
 never from the repository. `templates/harness/testing/stub-agent.*` stands in for the agent;
 the package's test runs the whole runner with it, every abort path included.
+
+**The sandbox under the guard.** The guard is a text match on commands; the sandbox is the
+layer below it, an OS boundary that holds whatever a command was called, in whatever shell,
+through whatever script: the working tree writable; the harness folder, the root config and the
+protected paths read-only at the OS level; the rest of the machine read-only (the temp folder
+aside); the hooks' log folder and the agent's own state writable. Drivers: bubblewrap on Linux
+(no daemon, no root), `sandbox-exec` on macOS, or a container image (`sandbox.image`, docker or
+podman) anywhere. `sandbox.mode` is `auto` (a driver found on the machine, else the guard alone,
+said loudly in the log and in `run.json`), `required` (no driver, no night) or `off`;
+`--sandbox` overrides it for one night. Before the first session the runner **proves** the
+boundary with a probe (a Node inside it tries the tree, the log folder, the harness, the root
+config, the protected paths and its own runtime folder): a sandbox that is present but does not
+hold refuses the night, because a night claiming a boundary it lacks is worse than one saying
+it has none. The network is not cut (the model is on it): pushes, deploys and publishing stay
+the guard's to refuse. The package's test runs a night under bubblewrap where the stub tampers
+with the config and the filesystem refuses it.
 
 **The morning after**, `abatty night-report [--date] [--json] [--out docs/NIGHT_REPORT_<date>.md]`
 reads what the night left (the sessions' results, the Stop gate's receipts and its log of

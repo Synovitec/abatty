@@ -189,6 +189,50 @@
       "type": "array",
       "items": { "type": ["integer", "string"] },
       "description": "The phases a night walks, in order."
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The OS boundary under the guard for a night: the tree writable, the harness, the root config and the protected paths read-only, the rest of the machine read-only. Built by the runner and proven by a probe before the first session.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "required", "off"],
+          "description": "auto: a driver found on the machine, else the guard alone (said loudly); required: no driver, no night; off: never."
+        },
+        "driver": {
+          "type": "string",
+          "enum": ["bwrap", "sandbox-exec", "container"],
+          "description": "Name a driver instead of detecting one: bubblewrap (Linux), sandbox-exec (macOS), a container image."
+        },
+        "command": {
+          "type": "string",
+          "description": "The driver's executable when it is not on the PATH (or the container engine: docker, podman)."
+        },
+        "image": {
+          "type": "string",
+          "description": "A container image carrying the agent and a Node; naming one selects the container driver."
+        },
+        "readOnly": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "More paths read-only inside the boundary."
+        },
+        "writable": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths outside the tree a session may write (a cache, a tool's state folder)."
+        },
+        "env": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The variables a container passes through, by name."
+        },
+        "home": {
+          "type": "string",
+          "description": "The container's HOME, where the agent's state folder is mounted (default /root)."
+        }
+      }
     }
   }
 }

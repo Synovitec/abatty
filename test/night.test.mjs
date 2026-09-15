@@ -1,11 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
 import { deadlineOf } from "../src/night/session.mjs";
 import { judgeMcp } from "../src/night/canary.mjs";
+import { prepareSandbox } from "../src/night/sandbox.mjs";
 
 /**
  * A repository with the harness installed and committed on main, a gate that is a no-op, and
@@ -136,11 +137,13 @@ test("the abort paths end with the named reason and the branch local", () => {
       Object.assign(process.env, before);
     }
   };
+  // The runner's own detection of a moved harness, the layer above the sandbox: proven alone.
   abortCase(
     "night-tamper",
     { STUB_TAMPER: "1" },
     /harness moved before the wrap-up|harness moved before phase/,
     2,
+    { sandbox: "off" },
   );
   abortCase(
     "night-skip-guard",
@@ -189,4 +192,40 @@ test("the CLI: abatty night --canary-only with the stub", () => {
   const r = cli(["night", dir, "--canary-only", "--agent", STUB_AGENT, "--no-push"], dir);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /pre-flight done/);
+});
+
+test("under the sandbox the tamper cannot happen: the filesystem refuses the write, the night goes on, the config is what it was", (t) => {
+  const dir = nightRepo("night-sandboxed");
+  const probe = prepareSandbox(
+    {},
+    { repoDir: dir, folder: ".claude", nightDir: join(dir, ".claude/night/probe") },
+  );
+  if (!probe.sandbox) {
+    t.skip(`no sandbox on this machine: ${probe.note || probe.refuse}`);
+    return;
+  }
+  const before = readFileSync(join(dir, "abatty.config.json"), "utf8");
+  process.env.STUB_TAMPER = "1";
+  let r;
+  try {
+    r = night(dir, { sandbox: "required" });
+  } finally {
+    delete process.env.STUB_TAMPER;
+  }
+  assert.equal(r.ok, true, r.out);
+  assert.match(r.out, /sandbox bubblewrap|sandbox sandbox-exec/);
+  assert.match(r.out, /night-run done: .* sandbox (bwrap|sandbox-exec)/);
+  assert.equal(
+    readFileSync(join(dir, "abatty.config.json"), "utf8"),
+    before,
+    "the config unchanged",
+  );
+  const run = JSON.parse(readFileSync(join(dir, ".claude/night/run.json"), "utf8"));
+  assert.notEqual(run.sandbox, "none");
+  const nightDir = join(dir, ".claude/night", new Date().toISOString().slice(0, 10));
+  const stderr = readdirSync(nightDir)
+    .filter((f) => /^phase-11-.*stderr\.txt$/.test(f))
+    .map((f) => readFileSync(join(nightDir, f), "utf8"))
+    .join("\n");
+  assert.match(stderr, /tamper refused by the filesystem: EROFS/);
 });
