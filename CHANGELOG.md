@@ -7,6 +7,9 @@ under Unreleased in the same commit.
 
 ### Added
 
+- `docs/ROADMAP.md`: items 28 to 30 - the license and the standard in the open, the enforced
+  share as the main number, provenance as the default with the scrub as an option - each with
+  its evidence and its tier.
 - The ratchet in the package (`src/ratchet/`): `abatty ratchet [--range auto] [--json]
   [--controls]` and `abatty baseline [--reason] [--dry-run]`. Probes as data with one function
   (`{ metric, kind, standard, title, why, scan, controls }`), thirteen built in (size by kind
