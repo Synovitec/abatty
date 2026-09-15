@@ -314,6 +314,7 @@ The `update` command (a three-way merge that keeps a repository's own edits), `n
 ```sh
 npm test                 # node:test, temp repositories, the real self-test
 npm run typecheck        # checkJs strict, zero findings, no file under ts-nocheck
+npm run types            # the declarations under types/, generated from the JSDoc; committed, a test keeps them equal
 npm run gate             # format, typecheck, tests, the ratchet, no trace of the tools
 npm run standards        # this package against its own baseline (scripts/ci/standards-baseline.json)
 node bin/abatty.mjs rules --md > docs/CATALOG.md   # after a rule changed; the test is red until it is run

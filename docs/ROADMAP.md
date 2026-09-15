@@ -53,7 +53,6 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 | #   | Change                                                               | Evidence                                                               | Size       |
 | --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
-| 12  | Type declarations generated from the JSDoc                           | Buildless stays; the checks are typed since the catalog                | half a day |
 | 13  | Secret scan and audit in the gate, shared with the pre-commit hook   | The standard requires them; the package does not wire them             | half a day |
 | 14  | Rule-ID namespacing in the standard itself                           | The collision the first night found is structural                      | half a day |
 | 15  | Sandboxed nights under the guard                                     | The guard is a text match on commands; a sandbox is the layer below it | 1 day      |
@@ -61,6 +60,9 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · type declarations from the JSDoc (#12): `types/`, committed and kept equal by
+  a test; a `types` condition on every export.
 
 - 2026-09-15 · CI from the gate (#11, #26): the pipeline generated from the preset's gate for
   two providers, the PR template, the ruleset printed for import; the CI rules read the

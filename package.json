@@ -12,17 +12,39 @@
     "abatty": "./bin/abatty.mjs"
   },
   "exports": {
-    ".": "./src/index.mjs",
-    "./gap-analysis": "./src/core/gap-analysis.mjs",
-    "./presets": "./src/presets/index.mjs",
-    "./rules": "./src/rules/index.mjs",
-    "./scrub-map": "./src/core/scrub-map.mjs",
-    "./vocabulary": "./src/core/vocabulary.mjs",
-    "./config": "./src/core/config.mjs"
+    ".": {
+      "types": "./types/src/index.d.mts",
+      "default": "./src/index.mjs"
+    },
+    "./gap-analysis": {
+      "types": "./types/src/core/gap-analysis.d.mts",
+      "default": "./src/core/gap-analysis.mjs"
+    },
+    "./presets": {
+      "types": "./types/src/presets/index.d.mts",
+      "default": "./src/presets/index.mjs"
+    },
+    "./rules": {
+      "types": "./types/src/rules/index.d.mts",
+      "default": "./src/rules/index.mjs"
+    },
+    "./scrub-map": {
+      "types": "./types/src/core/scrub-map.d.mts",
+      "default": "./src/core/scrub-map.mjs"
+    },
+    "./vocabulary": {
+      "types": "./types/src/core/vocabulary.d.mts",
+      "default": "./src/core/vocabulary.mjs"
+    },
+    "./config": {
+      "types": "./types/src/core/config.d.mts",
+      "default": "./src/core/config.mjs"
+    }
   },
   "files": [
     "bin",
     "src",
+    "types",
     "templates",
     "schema",
     "docs/standard",
@@ -39,12 +61,14 @@
     "gate:fast": "npm run -s gate",
     "hooks:install": "git config core.hooksPath .githooks",
     "standards": "node bin/abatty.mjs ratchet --range auto",
-    "standards:baseline": "node bin/abatty.mjs baseline"
+    "standards:baseline": "node bin/abatty.mjs baseline",
+    "types": "tsc -p tsconfig.types.json"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.0"
   },
-  "homepage": "https://abatty.io"
+  "homepage": "https://abatty.io",
+  "types": "./types/src/index.d.mts"
 }

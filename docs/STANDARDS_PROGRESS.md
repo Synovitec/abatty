@@ -117,3 +117,7 @@ renderer the local page uses. Tests 89 -> 92.
 ### 2026-09-15 - CI from the gate
 
 The gate and CI are one list now, because one is generated from the other. Tests 92 -> 96.
+
+### 2026-09-15 - The declarations
+
+`types/` from the JSDoc, 58 files, equal to a fresh emit by a test. Tests 96 -> 98.

@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Type declarations generated from the JSDoc (roadmap #12): `npm run types` emits `types/`
+  from the sources (buildless stays: `.d.mts` beside the `.mjs`), the package names them
+  (`types`, a `types` condition on every export, shipped in `files`), and a test keeps the
+  committed folder equal to a fresh emit.
 - CI from the gate (roadmap #11, and #26 with it): `abatty ci` generates the pipeline from the
   preset's gate definition for Woodpecker and GitHub Actions - the gate's steps in order, the
   secret scan, the audit, the publish step guarded by the secret, the suites as their own
