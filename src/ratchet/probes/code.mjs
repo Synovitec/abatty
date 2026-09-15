@@ -1,6 +1,6 @@
 /**
- * Code and boundaries: the context file's cap (AIR-1), type escapes (CODE-3), raw env reads
- * outside the env module (VALID-3), wide barrels (CODE-5).
+ * Code and boundaries: the context file's cap (AIR.1), type escapes (CODE.3), raw env reads
+ * outside the env module (VALID.3), wide barrels (CODE.5).
  */
 import { lines, matchesAny, regexes } from "./lib.mjs";
 
@@ -13,7 +13,7 @@ export const probes = [
   {
     metric: "context.overCap",
     kind: "ratchet",
-    standard: ["AIR-1"],
+    standard: ["AIR.1"],
     title: "Lines of the agent's context file over its cap",
     why: "The context file is read whole at the start of every session; past the cap the model stops holding it and confidently applies the wrong half. The excess is the number of lines to move into path-scoped rules.",
     axis: "navigability",
@@ -53,7 +53,7 @@ export const probes = [
   {
     metric: "types.escapes",
     kind: "ratchet",
-    standard: ["CODE-3"],
+    standard: ["CODE.3"],
     title: "any and ts-ignore escapes in the sources",
     why: "Every escape is a place the compiler was told to look away; the count is the honest measure of how strict the types are.",
     axis: "type-safety",
@@ -97,7 +97,7 @@ export const probes = [
   {
     metric: "valid.rawEnv",
     kind: "ratchet",
-    standard: ["VALID-3"],
+    standard: ["VALID.3"],
     title: "process.env reads outside the env module",
     why: "A raw process.env read fails at the line that reads it, in production; one module parsed at boot fails at start, on the developer's screen. The count is the number of reads to move.",
     axis: "boundary-clarity",
@@ -134,7 +134,7 @@ export const probes = [
   {
     metric: "code.barrels",
     kind: "ratchet",
-    standard: ["CODE-5"],
+    standard: ["CODE.5"],
     title: "Re-exports over the barrel width in index files",
     why: "A wide barrel hides who imports what, defeats tree-shaking and makes every import a potential cycle; the excess over the width is what to import from the defining file instead.",
     axis: "navigability",

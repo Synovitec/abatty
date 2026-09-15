@@ -1,7 +1,7 @@
 /**
  * Documents: the agent's context file, the path-scoped rules, the conventions, the progress
  * scoreboard, the changelog, the docs index, the decisions, front matter and freshness.
- * Standard §2.1, DOC-1..5, AIR-1, CHANGE-1, FLOW-4.
+ * Standard §2.1, DOC.1..5, AIR.1, CHANGE.1, FLOW.4.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -10,7 +10,7 @@ export const rules = [
     id: "DOC-CONTEXT",
     family: "Documents",
     title: "CLAUDE.md exists and stays under 200 lines",
-    standard: ["AIR-1"],
+    standard: ["AIR.1"],
     level: "must",
     enforcement: "prose",
     phase: "A.1 / status",
@@ -33,7 +33,7 @@ export const rules = [
     id: "DOC-CONTEXT-SECTIONS",
     family: "Documents",
     title: "CLAUDE.md carries delivery rules, skills table, autonomy contract, known gaps",
-    standard: ["AIR-1"],
+    standard: ["AIR.1"],
     level: "must",
     enforcement: "prose",
     phase: "A.1",
@@ -67,7 +67,7 @@ export const rules = [
     id: "DOC-RULES",
     family: "Documents",
     title: ".claude/rules/*.md path-scoped rules for stack and domain conventions",
-    standard: ["AIR-1"],
+    standard: ["AIR.1"],
     level: "should",
     enforcement: "prose",
     phase: "A.1",
@@ -100,7 +100,7 @@ export const rules = [
     id: "DOC-PROGRESS",
     family: "Documents",
     title: "A STANDARDS_PROGRESS.md under docs: numbers-only scoreboard and log",
-    standard: ["P-3"],
+    standard: ["P.3"],
     level: "must",
     enforcement: "review",
     phase: "0",
@@ -115,7 +115,7 @@ export const rules = [
     id: "DOC-CHANGELOG",
     family: "Documents",
     title: "CHANGELOG.md in Keep-a-Changelog shape with an [Unreleased] section",
-    standard: ["CHANGE-1"],
+    standard: ["CHANGE.1"],
     level: "must",
     enforcement: "hard",
     phase: "0 / 11",
@@ -141,7 +141,7 @@ export const rules = [
     id: "DOC-INDEX",
     family: "Documents",
     title: "docs index listing every document",
-    standard: ["DOC-3"],
+    standard: ["DOC.3"],
     level: "must",
     enforcement: "hard",
     phase: "11",
@@ -159,7 +159,7 @@ export const rules = [
     id: "DOC-ADR",
     family: "Documents",
     title: "A decisions record (MADR entries or a decision log)",
-    standard: ["FLOW-4"],
+    standard: ["FLOW.4"],
     level: "must",
     enforcement: "prose",
     phase: "A.1",
@@ -178,7 +178,7 @@ export const rules = [
     id: "DOC-FRONTMATTER",
     family: "Documents",
     title: "Every doc opens with front matter",
-    standard: ["DOC-2"],
+    standard: ["DOC.2"],
     level: "must",
     enforcement: "hard",
     phase: "11",
@@ -203,7 +203,7 @@ export const rules = [
     id: "DOC-FRESHNESS",
     family: "Documents",
     title: "Docs carry last_verified and source_truth so freshness is measured by the diff",
-    standard: ["DOC-5"],
+    standard: ["DOC.5"],
     level: "must",
     enforcement: "ratchet",
     phase: "11",

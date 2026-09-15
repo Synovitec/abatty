@@ -49,17 +49,17 @@ export async function measure(repoDir, o = {}) {
 }
 
 /**
- * The standard's rule IDs, written for a repository that checks its OWN rule citations: a
- * repository's docs check may claim every FAMILY-NN token under docs/ and refuse a generated
- * report that says "CODE-12" because its own rules file has no CODE-12 (the night of
- * 2026-09-14 filed the request). A space instead of the hyphen keeps the reference readable
- * and invisible to such a checker; the legend at the end says which standard the numbers
- * belong to. @param {string} text
+ * The standard's rule IDs in their namespaced form, `FAMILY.N` (a dot): a repository's own
+ * rules are `FAMILY-NAME` or `FAMILY-NN`, and a repository's citation check that claims every
+ * `FAMILY-NN` token under docs/ must never claim the standard's. The night of 2026-09-14
+ * found the collision; the standard retired the hyphen form on 2026-09-15. This rewrites any
+ * hyphen form left in a text. @param {string} text
  */
 export function stdIds(text) {
-  return String(text)
-    .replace(/\b([A-Z][A-Z0-9]*)-(\d{1,2})(?=(?:\.\.|\/)\d|\b)/g, "$1 $2")
-    .replace(/\b([A-Z][A-Z0-9]*) (\d{1,2})\/(\d{1,2})\b/g, "$1 $2/$3");
+  return text.replace(
+    /\b(P|AIR|CODE|VALID|DATA|SEC|FLOW|DOC|CHANGE|TEST|API|I18N|CACHE|UI|PWA|OBS|FLAG|CONFIG|AUTH|A11Y)-(\d{1,2})\b/g,
+    "$1.$2",
+  );
 }
 
 /** @param {string} p */

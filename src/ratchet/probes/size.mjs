@@ -1,5 +1,5 @@
 /**
- * Size (standard CODE-1): every file answers to the budget of its kind, excess is measured
+ * Size (standard CODE.1): every file answers to the budget of its kind, excess is measured
  * beside the count, and 800 raw lines is the cap for anything.
  */
 import { budgetOf, matchesAny, regexes } from "./lib.mjs";
@@ -13,7 +13,7 @@ export const probes = [
   {
     metric: "size.overBudget",
     kind: "ratchet",
-    standard: ["CODE-1"],
+    standard: ["CODE.1"],
     title: "Source files over the code-line budget of their kind",
     why: "Past its budget a file has more than one responsibility and no reader, human or model, holds it whole; the count is the number of files to split.",
     axis: "navigability",
@@ -57,7 +57,7 @@ export const probes = [
   {
     metric: "size.excessCode",
     kind: "ratchet",
-    standard: ["CODE-1"],
+    standard: ["CODE.1"],
     title: "Code lines over budget, summed",
     why: "Splitting one file into eight where one child lands over budget improves the count by one and the excess by hundreds; the excess says how far a file is from its budget, not only that it is.",
     axis: "navigability",
@@ -86,7 +86,7 @@ export const probes = [
   {
     metric: "size.overRaw",
     kind: "hard",
-    standard: ["CODE-1"],
+    standard: ["CODE.1"],
     title: "Source files over the 800-line cap, exempt kinds included",
     why: "800 raw lines is the cap for anything; moving a file into a laxer category instead of splitting it is gaming the metric, so the cap counts every file.",
     axis: "navigability",

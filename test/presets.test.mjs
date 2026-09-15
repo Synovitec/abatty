@@ -96,6 +96,6 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     const gate = cli(["gate", dir, "--fast"], dir);
     assert.equal(gate.code, 1, gate.out);
     assert.match(gate.out, /skipped format/);
-    assert.match(gate.out, /lint \(CODE-4\) failed/);
+    assert.match(gate.out, /lint \(CODE.4\) failed/);
   });
 }

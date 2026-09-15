@@ -1,6 +1,6 @@
 /**
  * The control cases: every probe proves itself on a throwaway repository where the answer is
- * known, in both directions (standard P-1). `abatty ratchet --controls` runs them for the
+ * known, in both directions (standard P.1). `abatty ratchet --controls` runs them for the
  * built-in probes and for a repository's own, and the package's test runs them on every push.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

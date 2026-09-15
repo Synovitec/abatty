@@ -228,26 +228,26 @@ SSRF defense for tenant-supplied URLs
 
 (a) Practices the standard contradicts or states more weakly than current practice
 
-- Tenant isolation: DATA-3 treats RLS as conditional ("where RLS is the guarantee") and relies on proven service-layer scoping as the default; current multi-tenant-Postgres practice treats RLS + FORCE + a non-owner role as a MUST for defense-in-depth beneath the service layer, not an alternative to it.
-- API-1's bespoke `{ error, code, details }` envelope is not RFC 9457 `application/problem+json` (no `type`/`title`/`instance`, different media type) - a considered deviation from the current IETF shape that the standard does not name as one.
-- DATA-1's claim that RLS "cannot be expressed by the tool" has gone stale for Drizzle specifically, which now supports policies as schema-as-code (`pgPolicy()`/`.enableRLS()`); still true for Prisma and Sequelize.
+- Tenant isolation: DATA.3 treats RLS as conditional ("where RLS is the guarantee") and relies on proven service-layer scoping as the default; current multi-tenant-Postgres practice treats RLS + FORCE + a non-owner role as a MUST for defense-in-depth beneath the service layer, not an alternative to it.
+- API.1's bespoke `{ error, code, details }` envelope is not RFC 9457 `application/problem+json` (no `type`/`title`/`instance`, different media type) - a considered deviation from the current IETF shape that the standard does not name as one.
+- DATA.1's claim that RLS "cannot be expressed by the tool" has gone stale for Drizzle specifically, which now supports policies as schema-as-code (`pgPolicy()`/`.enableRLS()`); still true for Prisma and Sequelize.
 - No REST versioning rule exists, and the two most-cited authoritative sources (Zalando vs. mainstream URL-path practice) directly disagree - the standard should pick one rather than leave it to default silently per repo.
 
 (b) Practices the standard lacks and should add
 
 - Atomic job claim as a single `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)` statement, promoted from ecomm's project doc to a DATA rule of the standard (paycore_dms and Task-Manager may grow the same need).
-- Transactional outbox: job/event row written in the same transaction as the business change - DATA-6 covers idempotency, not this half.
-- Dead-worker reclaim: stale-lock timeout plus attempt-counting at claim time, not only heartbeat/fallback (OBS-1 covers only the latter).
-- Outbound webhook signing scheme (HMAC + timestamp + replay-tolerance window, multi-signature rotation) - entirely absent; SEC-3/SEC-4 cover the SSRF and fire-and-forget half only.
+- Transactional outbox: job/event row written in the same transaction as the business change - DATA.6 covers idempotency, not this half.
+- Dead-worker reclaim: stale-lock timeout plus attempt-counting at claim time, not only heartbeat/fallback (OBS.1 covers only the latter).
+- Outbound webhook signing scheme (HMAC + timestamp + replay-tolerance window, multi-signature rotation) - entirely absent; SEC.3/SEC.4 cover the SSRF and fire-and-forget half only.
 - Outbound webhook retry schedule (exponential backoff, jitter, dead-letter after exhaustion) - absent.
 - Prisma's Decimal.js wire-serialization pitfall (trailing zeros drop silently) is a real, costly, already-paid-for lesson in ecomm not yet promoted to the lessons catalogue (§8), unlike its sibling PSP-token-cache and DataLoader lessons.
-- Sequelize's `Op.and`/`Op.or` scope-merge pitfall (a duplicate operator key across merged scopes is replaced, not ANDed) is distinct from the standard's existing JSON.stringify-symbol lesson and directly threatens DATA-3/AUTH-1's tenant-scoping guarantee on that stack.
-- Redis cache-stampede mitigation (single-flight lock, jittered/probabilistic TTLs) and an explicit "when NOT to cache" rule (never an authorization decision without a bound TTL and invalidation hook; never absolute-latest-write financial/stock data) - CACHE-1 covers key shape and invalidation-on-write, not whether a read belongs in cache at all.
-- Redis-backed vs in-memory rate limiting is documented only in ecomm's env-var table (REDIS_URL), not promoted to a CONFIG-1-style rule in the standard, despite being exactly the cross-repo config-precedence hazard that rule family exists for.
-- GraphQL-specific rules are entirely absent despite Task-Manager running Apollo/GraphQL in production: SDL-first schema review, single `input` object plus dedicated payload type per mutation (the GraphQL mirror of API-1's REST rule), `@deprecated` before removal, query depth/complexity limits, and no-stack-traces-in-error-extensions.
-- Client-facing `Idempotency-Key` request header for admin-API mutations - DATA-6 covers server-side event dedup only, not a request-scoped contract exposed to API callers retrying their own network failures.
-- Conditional requests (ETag/If-Match) for optimistic concurrency on PATCH/PUT - absent from API-1.
-- Backup verification should name the specific failure mode of a silently-empty/corrupted WAL segment passing its own `archive_command` exit code - sharpens DATA-5 rather than replacing it.
+- Sequelize's `Op.and`/`Op.or` scope-merge pitfall (a duplicate operator key across merged scopes is replaced, not ANDed) is distinct from the standard's existing JSON.stringify-symbol lesson and directly threatens DATA.3/AUTH.1's tenant-scoping guarantee on that stack.
+- Redis cache-stampede mitigation (single-flight lock, jittered/probabilistic TTLs) and an explicit "when NOT to cache" rule (never an authorization decision without a bound TTL and invalidation hook; never absolute-latest-write financial/stock data) - CACHE.1 covers key shape and invalidation-on-write, not whether a read belongs in cache at all.
+- Redis-backed vs in-memory rate limiting is documented only in ecomm's env-var table (REDIS_URL), not promoted to a CONFIG.1-style rule in the standard, despite being exactly the cross-repo config-precedence hazard that rule family exists for.
+- GraphQL-specific rules are entirely absent despite Task-Manager running Apollo/GraphQL in production: SDL-first schema review, single `input` object plus dedicated payload type per mutation (the GraphQL mirror of API.1's REST rule), `@deprecated` before removal, query depth/complexity limits, and no-stack-traces-in-error-extensions.
+- Client-facing `Idempotency-Key` request header for admin-API mutations - DATA.6 covers server-side event dedup only, not a request-scoped contract exposed to API callers retrying their own network failures.
+- Conditional requests (ETag/If-Match) for optimistic concurrency on PATCH/PUT - absent from API.1.
+- Backup verification should name the specific failure mode of a silently-empty/corrupted WAL segment passing its own `archive_command` exit code - sharpens DATA.5 rather than replacing it.
 
 (c) Practices the standard already covers
-DATA-1, DATA-2, DATA-3, DATA-4, DATA-5, DATA-6, API-1, API-2, CACHE-1, SEC-3, SEC-4, OBS-1, CONFIG-1
+DATA.1, DATA.2, DATA.3, DATA.4, DATA.5, DATA.6, API.1, API.2, CACHE.1, SEC.3, SEC.4, OBS.1, CONFIG.1

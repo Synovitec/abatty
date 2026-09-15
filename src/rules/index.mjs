@@ -36,7 +36,7 @@ import { rules as platform } from "./families/platform.mjs";
  * @property {string} id the check's ID, FAMILY-NAME, unique across the catalog
  * @property {string} family the family the reports group by
  * @property {string} title the rule in one line
- * @property {string[]} [standard] the standard's rule IDs this check holds (CODE-6, DOC-2 ...)
+ * @property {string[]} [standard] the standard's rule IDs this check holds (CODE.6, DOC.2 ...)
  * @property {Level} level must, or should
  * @property {Enforcement} enforcement what insures it once present: hard (a machine refuses), ratchet (a number that may only fall), review (a checklist item), prose
  * @property {string} phase the adoption plan phase that installs it ("0", "A.1", "-" for none)

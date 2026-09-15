@@ -63,7 +63,7 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
    a JavaScript repository `tsc --noEmit` over `checkJs` from day one so the count starts at
    zero.
 4. **ESLint flat config** at `--max-warnings=0` with: `max-lines` 300 code lines per kind
-   (the table in the standard, CODE-1) and 800 raw as the error cap, `max-lines-per-function:
+   (the table in the standard, CODE.1) and 800 raw as the error cap, `max-lines-per-function:
 60` (150 for component files), `complexity: 12`, `max-params: 4`,
    `jsx-a11y` recommended at error, `jsdoc/require-jsdoc` `publicOnly` at error with the
    fixer disabled and `jsdoc/no-types`, `no-restricted-imports` for the vendor SDKs that
@@ -73,10 +73,10 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
 5. **Zod at every boundary and one validated env module** (`src/lib/env.ts` or equivalent)
    before the first route exists.
    5b. **The import graph and dead code, from `templates/tooling/`:** `.dependency-cruiser.cjs`
-   with one rule per arrow of the boundary map (CODE-5) and `knip.jsonc` (CODE-6), both in the
+   with one rule per arrow of the boundary map (CODE.5) and `knip.jsonc` (CODE.6), both in the
    gate from day 0 with nothing to baseline; `scripts/codemods/` exists the first time a change
-   touches more than ten files (CODE-11); `jscpd` as `dup.*` in the ratchet when the first
-   duplicate shape appears (CODE-12).
+   touches more than ten files (CODE.11); `jscpd` as `dup.*` in the ratchet when the first
+   duplicate shape appears (CODE.12).
 6. **The ratchet script** (`scripts/ci/check-standards.*`), copied from the reference
    implementation named in `ADOPTION_STATUS.md` and stripped of its stack-specific checks,
    with its control-case test file. The package (`abatty`, item 0) does not
@@ -181,7 +181,7 @@ which is a legitimate phase outcome; "done" is not.
 7. **Do the work on a branch and merge deliberately.** A programme branch can end up
    hundreds of commits ahead of `main`; merging is its own step with its own risk, done
    hunk by hunk by intent (`resolving-merge-conflicts`), never by taking one side wholesale.
-8. **The same change in more than ten files is a codemod** (CODE-11): the transform is the
+8. **The same change in more than ten files is a codemod** (CODE.11): the transform is the
    step, dry-run first, one commit that touches nothing else, the count in the message. A
    phase that rewrites by hand what a transform would have done is reviewed as such.
 

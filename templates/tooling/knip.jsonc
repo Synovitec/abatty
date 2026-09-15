@@ -1,5 +1,5 @@
 {
-  // Dead code is a gate, not a review item (CODE-6). knip finds its entry points from the
+  // Dead code is a gate, not a review item (CODE.6). knip finds its entry points from the
   // framework plugins it detects (Next.js, Vite, Vitest, Playwright, ESLint, Prettier, Drizzle...);
   // add an `entry` only for a file run by name that no plugin knows. A false positive is an
   // ignoreIssues / ignoreDependencies entry with its reason in a comment beside it, never

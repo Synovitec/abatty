@@ -1,5 +1,5 @@
 /**
- * Delivery (standard CHANGE-1): over the pushed range, every commit that touches source is
+ * Delivery (standard CHANGE.1): over the pushed range, every commit that touches source is
  * followed or accompanied by a changelog touch. A rule about commits, so it reads the range
  * alone, never the tree; with no range there is nothing to judge and the probe says so.
  */
@@ -9,7 +9,7 @@ export const probes = [
   {
     metric: "change.changelogMissing",
     kind: "hard",
-    standard: ["CHANGE-1"],
+    standard: ["CHANGE.1"],
     title: "Source commits in the pushed range after the last changelog entry",
     why: "A change that is not written in the same push is lost to the next reader; the [Unreleased] section is where the push writes it, and the range is where the gate checks.",
     emptyScanOk: true,

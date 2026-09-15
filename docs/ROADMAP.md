@@ -53,12 +53,14 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 | #   | Change                                                               | Evidence                                                               | Size       |
 | --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
-| 14  | Rule-ID namespacing in the standard itself                           | The collision the first night found is structural                      | half a day |
 | 15  | Sandboxed nights under the guard                                     | The guard is a text match on commands; a sandbox is the layer below it | 1 day      |
 | 16  | Budget by allowance, a resumable runner state                        | A subscription makes the money cap a proxy                             | half a day |
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · rule-ID namespacing (#14): `FAMILY.N` with a dot across the standard, the
+  rules, the templates and the catalog; the hyphen form retired and kept out by a test.
 
 - 2026-09-15 · the secret scan and the audit in the gate (#13): one scanner for the hook, the
   gate and CI; the audit deferred loudly offline.

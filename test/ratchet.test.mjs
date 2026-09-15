@@ -22,7 +22,7 @@ const LONG = (n) =>
   Array.from({ length: n }, (_, i) => `export const v${i} = ${i};`).join("\n") + "\n";
 const PKG = JSON.stringify({ name: "fixture", version: "0.1.0", scripts: {} }) + "\n";
 
-// P-1: a probe with no failing control case is not added. Every built-in probe proves itself
+// P.1: a probe with no failing control case is not added. Every built-in probe proves itself
 // in both directions on a throwaway repository, here, on every push.
 for (const probe of BUILTIN_PROBES) {
   test(`probe ${probe.metric}: every control holds, both directions`, () => {

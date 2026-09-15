@@ -33,7 +33,7 @@ export function compare(measurements: Measurement[], baseline: Baseline | null, 
 /** True when the run must fail. @param {Verdict[]} verdicts */
 export function failed(verdicts: Verdict[]): boolean;
 /**
- * The readability score (standard AIR-2): each metric earns full marks at zero and nothing at
+ * The readability score (standard AIR.2): each metric earns full marks at zero and nothing at
  * the count where the property is lost (`lossAt`), averaged per axis, the axes averaged. A trend
  * to watch, never a gate: every term is already ratcheted on its own.
  * @param {Measurement[]} measurements

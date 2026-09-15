@@ -85,7 +85,7 @@ A step touches at most ten files and ends in a commit. For every step:
   (a TDD skill when the agent has one): red, then green, at a pre-agreed seam. A
   third-party skill that would ask a question is answered from the context file §9 or skipped with
   a decision; it never waits.
-- **The same change in more than ten files is a codemod** (CODE-11), not ten steps: write
+- **The same change in more than ten files is a codemod** (CODE.11), not ten steps: write
   `scripts/codemods/<what-it-does>.cjs` (the TDD skill applies to it too - a fixture
   in, the expected source out), dry-run it, say the count in the commit message, apply it in
   one commit that touches nothing else, format. Hand-editing the same shape file after file is
@@ -102,7 +102,7 @@ A step touches at most ten files and ends in a commit. For every step:
   refuses a baseline number that rose, a coverage threshold that fell, `--max-warnings=0`
   dropped, a strict flag turned off, a rule switched off, a path added to `ignores`, a CI step
   made non-blocking, a hook or gate file deleted. The first three are never allowed at night.
-  The others are allowed exactly as FLOW-3 says - with a written reason: a bullet in the
+  The others are allowed exactly as FLOW.3 says - with a written reason: a bullet in the
   decisions file that names the rule, the path or the flag (`no-await-in-loop` switched off
   under `server/`, ordered DDL). Write the bullet in the same step as the change, or the
   stop is refused until you do.
@@ -168,7 +168,7 @@ revert it, close the phase as `in_progress` with `numbersAfter` so far, commit, 
    gap-analysis score before and after the run, each phase's status and reason, every decision
    taken, what to review first in the morning, the commits (`git log --oneline main..HEAD`).
 5. Register every document you created under `docs/` (the report, the gap analysis, the state
-   and decisions files if new) in the repository's docs index in the SAME commit - DOC-3, and
+   and decisions files if new) in the repository's docs index in the SAME commit - DOC.3, and
    a ratchet that counts documents missing from the index turns the wrap-up red otherwise.
    Find the index by reading how `docs/README.md`, `docs/INDEX.md` or `SOMMAIRE.md` lists its
    neighbours, and follow that format; if the repository has no index, say so in the report.

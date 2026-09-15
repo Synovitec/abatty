@@ -126,3 +126,8 @@ The gate and CI are one list now, because one is generated from the other. Tests
 
 Built into the gate, shared with the pre-commit hook and CI; this repository's own gate runs
 both, and its pre-commit hook scans the staged files. Tests 98 -> 102.
+
+### 2026-09-15 - Rule-ID namespacing
+
+Every standard ID is `FAMILY.N` with a dot; the hyphen form is retired everywhere the package
+ships, and a test walks those files. Tests 102 -> 104.

@@ -35,13 +35,13 @@ export function ciSteps(preset, o = {}) {
       steps.push({ name: s.label, command: `npm run -s ${s.script}`, when: "always" });
   }
   steps.push({
-    name: "secret scan (SEC-1)",
+    name: "secret scan (SEC.1)",
     command: `git fetch --no-tags origin ${base} && npx abatty secrets --range origin/${base}..HEAD`,
     when: "always",
   });
-  steps.push({ name: "audit (SEC-1)", command: "npm audit --audit-level=high", when: "always" });
+  steps.push({ name: "audit (SEC.1)", command: "npm audit --audit-level=high", when: "always" });
   for (const suite of preset.gate.suites) {
-    const db = /database|DATA-4/i.test(suite.name);
+    const db = /database|DATA.4/i.test(suite.name);
     for (const s of suite.steps)
       if (s.script)
         steps.push({

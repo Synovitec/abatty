@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Rule-ID namespacing (roadmap #14): a standard ID is `FAMILY.N` with a dot (`CODE.6`,
+  `DOC.2`), a namespace of its own that no error code, hash name or third-party identifier
+  shares; the hyphen form of the first days is retired across the standard, the rules, the
+  templates, the presets and the catalog, `stdIds()` normalises any hyphen citation to the dot
+  form, and a test walks the shipped files so the old form cannot return.
 - The secret scan and the audit in the gate (roadmap #13): a built-in scanner with no
   dependency (a private key block, a cloud access key id, a provider token, a payment key, a
   chat token, a signed web token, a long literal on a secret-like name; placeholders refused;

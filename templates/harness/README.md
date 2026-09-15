@@ -72,7 +72,7 @@ that rose or a metric that vanished, the import graph's known violations grown o
 deleted, knip's `--max-issues` raised or `--no-exit-code` added, a coverage threshold that fell, `thresholds.autoUpdate`,
 `--max-warnings=0` dropped, a strict `tsconfig` flag turned off, a rule switched off or a path
 added to `ignores`, a CI step with `failure: ignore`, the gate, the pre-push hook or the baseline
-deleted. A rule off, an ignore added, a strict flag or a CI file are allowed as FLOW-3 allows
+deleted. A rule off, an ignore added, a strict flag or a CI file are allowed as FLOW.3 allows
 them - with a written reason, which here means a bullet in the decisions file that names the
 rule, path, flag or file. With one the check records the loosening for the morning instead of
 refusing it; a baseline number, a threshold and `--max-warnings=0` are refused regardless.

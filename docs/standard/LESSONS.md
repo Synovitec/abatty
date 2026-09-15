@@ -202,7 +202,7 @@ own enforcement map, 2026-09-14, before a paid night)
   A restore is a checkout WITH `--`; test the exception beside the rule.
 - A phase that legitimately switches a rule off (`no-await-in-loop` per directory, phase 1)
   and a worker that switches one off to go green produce the same diff. What tells them apart
-  is the written reason FLOW-3 already requires - so the check reads the decisions file for the
+  is the written reason FLOW.3 already requires - so the check reads the decisions file for the
   rule's name and records the loosening instead of refusing it. A floor, a threshold and
   `--max-warnings=0` have no legitimate night-time loosening and are refused regardless.
 - A session that ends with no commit and no decision is indistinguishable, in the state file,

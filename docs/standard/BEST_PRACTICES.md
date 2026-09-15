@@ -34,14 +34,14 @@ three places where the research corrected the standard.
 (the agent's own guidance, adherence measurably drops beyond it); the WCAG 2.2 target-size
 floor is **24x24 CSS px** (2.5.8), with 44px kept as the house rule on phone surfaces rather
 than claimed as the legal number; and a barrel file is a **bundler hazard even when it only
-re-exports** (Turbopack and Vite keep every re-exported module live), so CODE-5 now limits
+re-exports** (Turbopack and Vite keep every re-exported module live), so CODE.5 now limits
 barrels to small, leaf-level groups.
 
 **What no external source has.** The research looked for a published equivalent of three
 things the standard carries and found none: the six-axis agent-readability score computed from the
-ratchet's own metrics (AIR-2); "a guard nobody has watched fail is not a guard" as a
-verification-of-the-verifier principle (P-1, P-6); and a doc-freshness measure tied to the
-diff of cited files rather than the calendar (DOC-5). These are house-original and are
+ratchet's own metrics (AIR.2); "a guard nobody has watched fail is not a guard" as a
+verification-of-the-verifier principle (P.1, P.6); and a doc-freshness measure tied to the
+diff of cited files rather than the calendar (DOC.5). These are house-original and are
 stated as such.
 
 ---
@@ -50,38 +50,38 @@ stated as such.
 
 | Adopted                                                                                                                                     | Where   |
 | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `exactOptionalPropertyTypes` beside `noUncheckedIndexedAccess`; `import type` enforced; branded identifiers                                 | CODE-3  |
-| `tsc --noEmit` stays the net even where the runtime strips types                                                                            | CODE-3  |
-| `eslint-plugin-jsdoc` preset: `-typescript-flavor` on TS, plain `recommended` only on checkJs JS; `@example` as the one tag worth its lines | CODE-7  |
-| Env loaded by the runtime (`--env-file`, `loadEnvFile()`), not a dependency                                                                 | VALID-3 |
-| Graceful SIGTERM: fail health, stop accepting, drain, exit; redaction by field path at the logger                                           | OBS-1   |
-| `npm audit signatures`, release-age cooldown, install scripts off                                                                           | SEC-1   |
-| Next.js 16: `"use cache"` needs a `cacheLife`; `cookies()`/`headers()` outside the scope; `updateTag` vs `revalidateTag`                    | CACHE-2 |
-| Server Components default, smallest client leaf, `server-only`, provider wraps `{children}`                                                 | CODE-10 |
+| `exactOptionalPropertyTypes` beside `noUncheckedIndexedAccess`; `import type` enforced; branded identifiers                                 | CODE.3  |
+| `tsc --noEmit` stays the net even where the runtime strips types                                                                            | CODE.3  |
+| `eslint-plugin-jsdoc` preset: `-typescript-flavor` on TS, plain `recommended` only on checkJs JS; `@example` as the one tag worth its lines | CODE.7  |
+| Env loaded by the runtime (`--env-file`, `loadEnvFile()`), not a dependency                                                                 | VALID.3 |
+| Graceful SIGTERM: fail health, stop accepting, drain, exit; redaction by field path at the logger                                           | OBS.1   |
+| `npm audit signatures`, release-age cooldown, install scripts off                                                                           | SEC.1   |
+| Next.js 16: `"use cache"` needs a `cacheLife`; `cookies()`/`headers()` outside the scope; `updateTag` vs `revalidateTag`                    | CACHE.2 |
+| Server Components default, smallest client leaf, `server-only`, provider wraps `{children}`                                                 | CODE.10 |
 
 Not adopted: `node:test` for new suites (Vitest is load-bearing in all three repos, and one
 runner per repo beats two); `eslint-plugin-unicorn` (budget; revisit when the a11y and
-architecture rules have been at zero for a quarter). Already covered: CODE-1, CODE-2, CODE-4,
-VALID-1, AUTH-1, A11Y-1's `polymorphicPropName` nuance.
+architecture rules have been at zero for a quarter). Already covered: CODE.1, CODE.2, CODE.4,
+VALID.1, AUTH.1, A11Y.1's `polymorphicPropName` nuance.
 
 ## Data, API, caching → [research/02](./research/02-data-api-caching.md)
 
 | Adopted                                                                                                                                                               | Where           |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| RLS is `ENABLE` + `FORCE` + a non-owner, non-`BYPASSRLS` role + `SET LOCAL`, or it is decoration; a negative isolation test; tenant column leads the index            | DATA-3          |
-| Sequelize scope merge: `Op.and` after the builder, never a spread                                                                                                     | DATA-3, lessons |
-| Drizzle can declare policies as schema-as-code now; the `SET LOCAL` binding still cannot be                                                                           | DATA-1          |
-| Expand / migrate / contract; `CREATE INDEX CONCURRENTLY`; `migrate deploy` only outside a laptop                                                                      | DATA-1          |
-| A restore proves a backup; an archive exit code does not                                                                                                              | DATA-5          |
-| An external call inside a transaction carries its own idempotency key                                                                                                 | DATA-6          |
-| Atomic `FOR UPDATE SKIP LOCKED` claim, transactional outbox, attempts at claim time, stale-lock reclaim                                                               | DATA-7 (new)    |
-| Outbound webhook: Standard Webhooks signature, timestamp tolerance, multi-signature rotation, backoff with jitter, dead-letter                                        | SEC-5 (new)     |
-| `Idempotency-Key` semantics (stored result / 409 / 422 / published retention), `If-Match`, versioning as a written decision, RFC 9457 named as a deliberate deviation | API-1           |
-| OpenAPI 3.1 `type` arrays, stable `operationId`, documented `x-`, Spectral/Redocly                                                                                    | API-2           |
-| GraphQL family: SDL-first, Relay connections, `input` + payload + `userErrors`, nullable by default, depth AND complexity, DataLoader per request, `graphql-ws`       | API-3 (new)     |
-| Redis: TTL atomic with the value, jittered; tag Sets not keyspace scans; `KEYS` never                                                                                 | CACHE-1         |
-| Never cache an authz decision unbounded, never latest-write money or stock, single-flight recompute                                                                   | CACHE-2 (new)   |
-| In-memory rate limiting is a one-instance statement, written beside the switch                                                                                        | CONFIG-1        |
+| RLS is `ENABLE` + `FORCE` + a non-owner, non-`BYPASSRLS` role + `SET LOCAL`, or it is decoration; a negative isolation test; tenant column leads the index            | DATA.3          |
+| Sequelize scope merge: `Op.and` after the builder, never a spread                                                                                                     | DATA.3, lessons |
+| Drizzle can declare policies as schema-as-code now; the `SET LOCAL` binding still cannot be                                                                           | DATA.1          |
+| Expand / migrate / contract; `CREATE INDEX CONCURRENTLY`; `migrate deploy` only outside a laptop                                                                      | DATA.1          |
+| A restore proves a backup; an archive exit code does not                                                                                                              | DATA.5          |
+| An external call inside a transaction carries its own idempotency key                                                                                                 | DATA.6          |
+| Atomic `FOR UPDATE SKIP LOCKED` claim, transactional outbox, attempts at claim time, stale-lock reclaim                                                               | DATA.7 (new)    |
+| Outbound webhook: Standard Webhooks signature, timestamp tolerance, multi-signature rotation, backoff with jitter, dead-letter                                        | SEC.5 (new)     |
+| `Idempotency-Key` semantics (stored result / 409 / 422 / published retention), `If-Match`, versioning as a written decision, RFC 9457 named as a deliberate deviation | API.1           |
+| OpenAPI 3.1 `type` arrays, stable `operationId`, documented `x-`, Spectral/Redocly                                                                                    | API.2           |
+| GraphQL family: SDL-first, Relay connections, `input` + payload + `userErrors`, nullable by default, depth AND complexity, DataLoader per request, `graphql-ws`       | API.3 (new)     |
+| Redis: TTL atomic with the value, jittered; tag Sets not keyspace scans; `KEYS` never                                                                                 | CACHE.1         |
+| Never cache an authz decision unbounded, never latest-write money or stock, single-flight recompute                                                                   | CACHE.2 (new)   |
+| In-memory rate limiting is a one-instance statement, written beside the switch                                                                                        | CONFIG.1        |
 | Prisma `Decimal` trailing zeros                                                                                                                                       | lessons         |
 
 Not adopted: switching an existing REST error envelope to RFC 9457 (where clients and an
@@ -93,15 +93,15 @@ per process, a repo-level choice).
 
 | Adopted                                                                                                                                                                                                                                                                                    | Where         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
-| React 19 compiler: no default memoisation; hooks that call Hooks; stable keys never index; `server-only`; slot pattern                                                                                                                                                                     | CODE-10 (new) |
-| Feature-first organisation with a lint-held import direction; helpers stay beside the first caller; barrels only leaf-level                                                                                                                                                                | CODE-5        |
-| WCAG 2.2 named criteria: 2.4.11, 2.5.7, 2.5.8 (24px floor, 44px house), 3.3.7, 3.3.8 (TOTP accepts paste and a password manager); contrast 4.5:1 text and 3:1 non-text; `prefers-reduced-motion`; landmarks and heading outline; axe after a modal opens; a keyboard-only pass per release | A11Y-1        |
-| European Accessibility Act in force since 2025-06-28; storefront in scope, console not assumed exempt                                                                                                                                                                                      | A11Y-1        |
-| Tokens as OKLCH CSS variables with `.dark`, one `--radius`, `cn()`; MUI `sx` vs `styled()` vs theme `components`, `useFlexGap`, no bare system props; `100svh`/`100dvh`                                                                                                                    | UI-1          |
-| Per-component stylesheet ban narrowed: a theme-driven `styled()` is MUI's own pattern, not the defect                                                                                                                                                                                      | UI-1          |
-| ICU plurals with `other`, rich text through the library component, completeness check in CI                                                                                                                                                                                                | I18N-1        |
-| Best-fit locale matching; RTL readiness through logical properties and one `dir`                                                                                                                                                                                                           | I18N-2        |
-| Manifest `id`, maskable icon safe zone; Lighthouse PWA score no longer exists; permission is not subscription; VAPID never rotated; `410` means re-subscribe                                                                                                                               | PWA-1         |
+| React 19 compiler: no default memoisation; hooks that call Hooks; stable keys never index; `server-only`; slot pattern                                                                                                                                                                     | CODE.10 (new) |
+| Feature-first organisation with a lint-held import direction; helpers stay beside the first caller; barrels only leaf-level                                                                                                                                                                | CODE.5        |
+| WCAG 2.2 named criteria: 2.4.11, 2.5.7, 2.5.8 (24px floor, 44px house), 3.3.7, 3.3.8 (TOTP accepts paste and a password manager); contrast 4.5:1 text and 3:1 non-text; `prefers-reduced-motion`; landmarks and heading outline; axe after a modal opens; a keyboard-only pass per release | A11Y.1        |
+| European Accessibility Act in force since 2025-06-28; storefront in scope, console not assumed exempt                                                                                                                                                                                      | A11Y.1        |
+| Tokens as OKLCH CSS variables with `.dark`, one `--radius`, `cn()`; MUI `sx` vs `styled()` vs theme `components`, `useFlexGap`, no bare system props; `100svh`/`100dvh`                                                                                                                    | UI.1          |
+| Per-component stylesheet ban narrowed: a theme-driven `styled()` is MUI's own pattern, not the defect                                                                                                                                                                                      | UI.1          |
+| ICU plurals with `other`, rich text through the library component, completeness check in CI                                                                                                                                                                                                | I18N.1        |
+| Best-fit locale matching; RTL readiness through logical properties and one `dir`                                                                                                                                                                                                           | I18N.2        |
+| Manifest `id`, maskable icon safe zone; Lighthouse PWA score no longer exists; permission is not subscription; VAPID never rotated; `410` means re-subscribe                                                                                                                               | PWA.1         |
 
 Not adopted: Workbox as mandatory (a PWA that acts on money or stock caches nothing by design,
 and a hand-written worker under a contract test is smaller than the library; Serwist is the
@@ -112,18 +112,18 @@ react-i18next as a rule (the choice is per stack, §9).
 
 | Adopted                                                                                                                                                                                                                                                                                                                                                                         | Where           |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| A TEST family the standard did not have: colocated single-behaviour deterministic units; real-Postgres integration; tiered Playwright with `axe`, retries CI-only, trace on first retry; per-area floors with `reportOnFailure` and no `autoUpdate`; guard-breaking and Stryker at today's floor; quarantine with an owner and a date; contract tests against the live response | TEST-1..7 (new) |
+| A TEST family the standard did not have: colocated single-behaviour deterministic units; real-Postgres integration; tiered Playwright with `axe`, retries CI-only, trace on first retry; per-area floors with `reportOnFailure` and no `autoUpdate`; guard-breaking and Stryker at today's floor; quarantine with an owner and a date; contract tests against the live response | TEST.1..7 (new) |
 | Woodpecker: `$${SECRET}` in `commands:`, `depends_on` DAG, `when:` filters, `services:`, trusted repo for the Docker socket, webhook-only deploy                                                                                                                                                                                                                                | §2.4            |
-| Pre-commit holds seconds, pre-push holds the gate; `core.hooksPath` for one package, Lefthook for a monorepo; the list lives in the gate script                                                                                                                                                                                                                                 | FLOW-2          |
-| Branches live a day or two; larger work behind a flag                                                                                                                                                                                                                                                                                                                           | FLOW-2          |
-| `thresholds.autoUpdate` never                                                                                                                                                                                                                                                                                                                                                   | FLOW-3          |
-| MADR entries, superseded not edited, re-read after a month                                                                                                                                                                                                                                                                                                                      | FLOW-4 (new)    |
-| Gitleaks staged in the hook and full-history in CI from one config, baselined on a legacy repo; lockfile reviewed like code; Renovate cadence with security auto-merge after a green day; `.env*` out of the Docker context                                                                                                                                                     | SEC-1           |
+| Pre-commit holds seconds, pre-push holds the gate; `core.hooksPath` for one package, Lefthook for a monorepo; the list lives in the gate script                                                                                                                                                                                                                                 | FLOW.2          |
+| Branches live a day or two; larger work behind a flag                                                                                                                                                                                                                                                                                                                           | FLOW.2          |
+| `thresholds.autoUpdate` never                                                                                                                                                                                                                                                                                                                                                   | FLOW.3          |
+| MADR entries, superseded not edited, re-read after a month                                                                                                                                                                                                                                                                                                                      | FLOW.4 (new)    |
+| Gitleaks staged in the hook and full-history in CI from one config, baselined on a legacy repo; lockfile reviewed like code; Renovate cadence with security auto-merge after a green day; `.env*` out of the Docker context                                                                                                                                                     | SEC.1           |
 
 Not adopted: a CycloneDX SBOM as a rule (inventory without provenance proves nothing;
 `npm audit signatures` is the control that was adopted, an SBOM can follow when a client
 asks for one); Conventional Commits' note that only `feat`/`fix` are spec-defined (the house
-type list is already written in FLOW-1).
+type list is already written in FLOW.1).
 
 ## Agents, agent readability, documentation → [research/05](./research/05-agents-readability-docs.md)
 
@@ -134,7 +134,7 @@ type list is already written in FLOW-1).
 | `defaultMode` and `autoMode` are user-file only by design; night flags on the command line; deny/ask before everything, `ask` is a denial under `--permission-prompts none`; exit-2 events; the agent's own 8-block Stop cap; a Bash rule is a text match, the hook reads the command | §2.5, AUTONOMOUS_ADOPTION |
 | `disable-model-invocation` on a skill with side effects; `isolation: worktree` on a mechanical parallel subagent                                                                                                                                                                      | §2.5                      |
 | A classifier denial for an infrastructure reason is its own decision (`environment-gap`)                                                                                                                                                                                              | AUTONOMOUS_ADOPTION §4    |
-| Keep a Changelog groups and ISO dates; MADR shape                                                                                                                                                                                                                                     | CHANGE-1, FLOW-4          |
+| Keep a Changelog groups and ISO dates; MADR shape                                                                                                                                                                                                                                     | CHANGE.1, FLOW.4          |
 
 Not adopted: `--bare` for the night runner (it skips exactly the project hooks and skill the
 run depends on; revisit if the runner ever passes them explicitly); `llms.txt` (a website
@@ -152,10 +152,10 @@ verification box had two empty rows here (architecture, dead code) and one missi
 
 | Adopted                                                                                                                                                                                                                      | Where                                                                                                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| The import graph checked, not described: dependency-cruiser with one rule per arrow of the boundary map, a known-violations baseline that only shrinks, in the gate                                                          | CODE-5, `templates/tooling/.dependency-cruiser.cjs`, `check-direction.mjs`, plan phase 12, gap-analysis `CODE-ARCH-GRAPH` |
-| Dead code as a gate on every JS/TS repository, `--max-issues 0`, `dead.knipIssues` during the descent                                                                                                                        | CODE-6, `templates/tooling/knip.jsonc`, `check-direction.mjs`, gap-analysis `CODE-DEADCODE`                               |
-| A mechanical rewrite over ten files is a codemod, dry-run first, one commit, reviewed as a transform                                                                                                                         | CODE-11, `templates/tooling/codemods/`, skill §2, reviewer item 13, `CLAUDE.md` §9, plan B.1 rule 8                       |
-| Duplication measured (jscpd) as a ratchet metric                                                                                                                                                                             | CODE-12 (SHOULD), gap-analysis `CODE-DUP`                                                                                 |
+| The import graph checked, not described: dependency-cruiser with one rule per arrow of the boundary map, a known-violations baseline that only shrinks, in the gate                                                          | CODE.5, `templates/tooling/.dependency-cruiser.cjs`, `check-direction.mjs`, plan phase 12, gap-analysis `CODE-ARCH-GRAPH` |
+| Dead code as a gate on every JS/TS repository, `--max-issues 0`, `dead.knipIssues` during the descent                                                                                                                        | CODE.6, `templates/tooling/knip.jsonc`, `check-direction.mjs`, gap-analysis `CODE-DEADCODE`                               |
+| A mechanical rewrite over ten files is a codemod, dry-run first, one commit, reviewed as a transform                                                                                                                         | CODE.11, `templates/tooling/codemods/`, skill §2, reviewer item 13, `CLAUDE.md` §9, plan B.1 rule 8                       |
+| Duplication measured (jscpd) as a ratchet metric                                                                                                                                                                             | CODE.12 (SHOULD), gap-analysis `CODE-DUP`                                                                                 |
 | No MCP server at night but the declared ones; the hooks see `mcp__*`; the canary lists its tools                                                                                                                             | `templates/agent` (runner, `protect.mjs`, `mcp.night.json`, self-test), ENFORCEMENT_MAP harness rows, LESSONS             |
 | mattpocock-skills installed and addressed by resolved name; `code-review` as the night's second reader with its inputs given; the Fowler smells as reviewer item 12; the tight-loop completion criterion on a flipped switch | AUTONOMOUS_ADOPTION §5.1, `CLAUDE.md` §8, skill §3-§4, `standards-reviewer.md`                                            |
 

@@ -1,5 +1,5 @@
 /**
- * Documents (standard DOC-2..5): front matter, the index against the tree, citations that
+ * Documents (standard DOC.2..5): front matter, the index against the tree, citations that
  * resolve, freshness against the diff, and the dangling source_truth entry that switches a
  * doc's update trigger off.
  */
@@ -29,7 +29,7 @@ export const probes = [
   {
     metric: "docs.frontMatter",
     kind: "ratchet",
-    standard: ["DOC-2"],
+    standard: ["DOC.2"],
     title: "Documents without title, description and status in their front matter",
     why: "The front matter is what lets a machine list, date and index the documents; without it every doc check is a guess.",
     axis: "docs-freshness",
@@ -64,7 +64,7 @@ export const probes = [
   {
     metric: "docs.indexDrift",
     kind: "ratchet",
-    standard: ["DOC-3"],
+    standard: ["DOC.3"],
     title: "Documents under docs/ that the index does not name",
     why: "A document nobody can find is a document nobody reads; the index is the one entry point and it is equal to the tree or it is wrong.",
     axis: "docs-freshness",
@@ -106,7 +106,7 @@ export const probes = [
   {
     metric: "docs.citations",
     kind: "ratchet",
-    standard: ["DOC-4"],
+    standard: ["DOC.4"],
     title: "Path citations in documents that do not resolve",
     why: "A doc cites the code it describes; a citation that no longer resolves is the first sign the doc is behind, and a reader following it lands nowhere. A document that describes another repository (a standard, a guide) is exempt through citationsExempt.",
     axis: "docs-freshness",
@@ -159,7 +159,7 @@ export const probes = [
   {
     metric: "docs.behindCode",
     kind: "ratchet",
-    standard: ["DOC-5"],
+    standard: ["DOC.5"],
     title: "Documents whose source_truth moved after their last_verified date",
     why: "Freshness is measured against the diff, never the calendar: when the code a doc names was committed after the doc was verified, the doc is behind, and an agent reading it confidently does the wrong thing.",
     axis: "docs-freshness",
@@ -217,7 +217,7 @@ export const probes = [
   {
     metric: "docs.danglingSource",
     kind: "hard",
-    standard: ["DOC-5"],
+    standard: ["DOC.5"],
     title: "source_truth entries that name nothing in the tree",
     why: "A dangling source_truth entry is the doc's update trigger switched off: the code it watched is gone or renamed and the doc will never be marked behind again.",
     axis: "docs-freshness",

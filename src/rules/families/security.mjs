@@ -1,6 +1,6 @@
 /**
  * Security: the secret scan in the hook and in CI, the dependency audit, the frozen lockfile,
- * no env file tracked. Standard SEC-1.
+ * no env file tracked. Standard SEC.1.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -9,7 +9,7 @@ export const rules = [
     id: "SEC-SECRETS",
     family: "Security",
     title: "Secret scan in the hook and in CI from one config",
-    standard: ["SEC-1"],
+    standard: ["SEC.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -35,7 +35,7 @@ export const rules = [
     id: "SEC-AUDIT",
     family: "Security",
     title: "Dependency audit in CI",
-    standard: ["SEC-1"],
+    standard: ["SEC.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -54,7 +54,7 @@ export const rules = [
     id: "SEC-LOCKFILE",
     family: "Security",
     title: "Lockfile committed and frozen installs in CI",
-    standard: ["SEC-1"],
+    standard: ["SEC.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -78,7 +78,7 @@ export const rules = [
     id: "SEC-ENVFILES",
     family: "Security",
     title: "No .env file tracked in git",
-    standard: ["SEC-1"],
+    standard: ["SEC.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",

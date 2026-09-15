@@ -1,6 +1,6 @@
 ---
 title: "PWA - best practices (manifest, service worker, offline, push, a11y)"
-description: "Operational reference guide, independent of any project: the three non-negotiables of installability, the manifest and the fields that matter, the service-worker tool in 2026 (Serwist), one cache strategy per resource type and the purge at logout, offline and deferred writes, worker updates, installation (Android, desktop, iOS), the iOS constraints to tell a client, push and VAPID, security, the accessibility specific to installed mode, a checklist. Rule PWA-1 of the standard points here."
+description: "Operational reference guide, independent of any project: the three non-negotiables of installability, the manifest and the fields that matter, the service-worker tool in 2026 (Serwist), one cache strategy per resource type and the purge at logout, offline and deferred writes, worker updates, installation (Android, desktop, iOS), the iOS constraints to tell a client, push and VAPID, security, the accessibility specific to installed mode, a checklist. Rule PWA.1 of the standard points here."
 category: guide
 status: living
 audience: ["developer", "architect", "agent", "reviewer"]

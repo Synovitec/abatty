@@ -1,5 +1,5 @@
 /**
- * A codemod skeleton (CODE-11): the same change in more than ten files is written once, here,
+ * A codemod skeleton (CODE.11): the same change in more than ten files is written once, here,
  * and applied by jscodeshift - never hand-edited file by file. Copy to
  * `scripts/codemods/<what-it-does>.cjs` and name it after the change, not the tool.
  *

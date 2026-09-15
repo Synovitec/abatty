@@ -122,7 +122,7 @@ call is yours.
 |---|---|
 | A ratchet number must rise to land a step | Refuse the step; split differently; never raise a floor at night |
 | The seam of a split is unclear | Split by what a piece is FOR; if no seam is visible, leave the file and record `seam-unclear` |
-| The same change would touch more than ten files | A codemod under `scripts/codemods/`, dry-run first, one commit, the count in the message (CODE-11); never file by file |
+| The same change would touch more than ten files | A codemod under `scripts/codemods/`, dry-run first, one commit, the count in the message (CODE.11); never file by file |
 | A test would be needed on a presentational component | Do not write it; the standard exempts them; record `presentational-skipped` |
 | A refactor would change behaviour the tests do not cover | Stop it, restore the original, record `behaviour-risk` |
 | A migration is involved | Never edit an applied one; take the next number after checking `origin/main`; never run against a non-local database |

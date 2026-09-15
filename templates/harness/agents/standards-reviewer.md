@@ -21,33 +21,33 @@ Check, in this order, and report each as a finding or as "checked, clean":
    every `aria-*` attribute, every exported symbol and every guard condition present in the
    original is present in the replacement, with the same truth table. A `continue` that became
    a `return`, a guard moved from a column to a derived value, a De Morgan inversion, a
-   reordered validation that changes WHICH error the caller reads: name them. (CODE-8, P-6)
+   reordered validation that changes WHICH error the caller reads: name them. (CODE.8, P.6)
 2. **Relocation dressed as a fix.** A long function moved into a hook or helper without
    becoming shorter; a file moved into a laxer size category; three breaching functions where
-   there was one. (CODE-1, CODE-2)
+   there was one. (CODE.1, CODE.2)
 3. **The switch and its proof.** If the phase flips a rule to error, promotes a metric to HARD
    or pins a threshold: is it actually on, is the exemption generated from the baseline's
    `debt` rather than hand-listed, and does the progress log show the mutation test (red then
-   green)? (P-1, ADOPTION_PLAN §B.1)
+   green)? (P.1, ADOPTION_PLAN §B.1)
 4. **Tests.** New guards have a test that fails when the guard is removed; assertions can tell
    the two outcomes apart; no test reads a file it no longer owns; `Test Files` count matches
    `Tests` (a file that failed to collect). (TEST rules, lessons catalogue)
 5. **JSDoc says why**, not the signature; no `@param {type}` where TypeScript declares it;
-   exports that a reader could get wrong carry a block. (CODE-7)
+   exports that a reader could get wrong carry a block. (CODE.7)
 6. **No literal user-facing text**, every locale touched together, no markup in a value, no
-   em-dash anywhere in the diff. (I18N-1, FLOW-1)
+   em-dash anywhere in the diff. (I18N.1, FLOW.1)
 7. **No `eslint-disable` without a reason on the same line**; none added to pass a limit. No
-   `any`, no `@ts-ignore`, no `as never`. (CODE-3)
+   `any`, no `@ts-ignore`, no `as never`. (CODE.3)
 8. **Changelog** line under `[Unreleased]` for every source-touching commit in the range,
-   written for the reader. (CHANGE-1)
+   written for the reader. (CHANGE.1)
 9. **Docs**: any `last_verified` bumped in the range must be on a doc whose cited files were
    actually re-read (the diff to the doc body shows it); a dangling `source_truth` is a must.
-   (DOC-5)
+   (DOC.5)
 10. **Security and data**: no secret, no PII, no edit to an applied migration, no `.env`
-    touched, no tenant scoping removed, no fail-open default introduced. (SEC-1, DATA-1,
-    VALID-4)
+    touched, no tenant scoping removed, no fail-open default introduced. (SEC.1, DATA.1,
+    VALID.4)
 11. **Progress log honesty**: numbers before and after are present, historical numbers were
-    not rewritten, "improved" does not appear without a figure. (P-3)
+    not rewritten, "improved" does not appear without a figure. (P.3)
 12. **Smells in the new shape** (Fowler, _Refactoring_ ch. 3 - the baseline of
     `mattpocock-skills:code-review`), each a `should` with the smell named and the hunk
     quoted, never a `must`; a documented rule of the standard or of the repository overrides
@@ -58,11 +58,11 @@ Check, in this order, and report each as a finding or as "checked, clean":
     switch on the same type in two places; one change scattered across many files; one file
     edited for unrelated reasons; an abstraction, parameter or hook for a need the phase does
     not have; a long `a.b().c().d()` walk; a module that only delegates; a subclass that
-    ignores most of what it inherits. (CODE-2, CODE-4)
+    ignores most of what it inherits. (CODE.2, CODE.4)
 13. **A rewrite by hand that should have been a codemod.** More than ten files in the range
     carry the same mechanical change (an import moved, a call renamed, an env read rerouted)
     and no `scripts/codemods/` transform landed with them: a `must`, because the edits cannot
-    be reviewed for behaviour one by one and the transform could. (CODE-11)
+    be reviewed for behaviour one by one and the transform could. (CODE.11)
 
 Output format, nothing else:
 

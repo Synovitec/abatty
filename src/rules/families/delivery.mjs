@@ -1,6 +1,6 @@
 /**
  * Delivery: Conventional Commits, no authorship trailer, no em-dash, the changelog checked
- * over the pushed range, a version. Standard FLOW-1, CHANGE-1.
+ * over the pushed range, a version. Standard FLOW.1, CHANGE.1.
  */
 
 // The trailer's name, reversed so this file does not carry it (the vocabulary's own rule).
@@ -14,7 +14,7 @@ export const rules = [
     id: "FLOW-COMMITS",
     family: "Delivery",
     title: "Conventional Commits",
-    standard: ["FLOW-1"],
+    standard: ["FLOW.1"],
     level: "must",
     enforcement: "review",
     phase: "1",
@@ -45,7 +45,7 @@ export const rules = [
     id: "FLOW-TRAILER",
     family: "Delivery",
     title: "No authorship trailer, where the repository opted into the scrub",
-    standard: ["FLOW-1"],
+    standard: ["FLOW.1"],
     level: "must",
     enforcement: "hard",
     phase: "-",
@@ -69,7 +69,7 @@ export const rules = [
     id: "FLOW-EMDASH",
     family: "Delivery",
     title: "No em-dash in code, copy or docs",
-    standard: ["FLOW-1"],
+    standard: ["FLOW.1"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -91,7 +91,7 @@ export const rules = [
     id: "FLOW-CHANGELOG-GATE",
     family: "Delivery",
     title: "Changelog-touched check over the pushed range",
-    standard: ["CHANGE-1"],
+    standard: ["CHANGE.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -99,7 +99,7 @@ export const rules = [
     next: "Add changelog.missing to the ratchet with --range auto",
     check: (c) => {
       const text = [...c.files(/^scripts\/ci\//).map(c.read), c.ciText].join("\n");
-      const found = /CHANGE-2|changelog\.missing|changelog/i.test(text);
+      const found = /CHANGE.2|changelog\.missing|changelog/i.test(text);
       return {
         status: found ? "present" : "missing",
         evidence: found ? "a check mentions the changelog" : "none",

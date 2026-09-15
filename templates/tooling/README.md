@@ -13,8 +13,8 @@ last_verified: "2026-09-14"
 # Tooling templates
 
 The verification box of the pipeline, beyond lint, types and tests: what the import graph
-looks like (CODE-5), what nothing imports (CODE-6), what a change to many files is (CODE-11),
-what is written twice (CODE-12). Versions verified 2026-09-14: dependency-cruiser 18.3,
+looks like (CODE.5), what nothing imports (CODE.6), what a change to many files is (CODE.11),
+what is written twice (CODE.12). Versions verified 2026-09-14: dependency-cruiser 18.3,
 knip 6.35, jscodeshift 17.4, jscpd 5.2.
 
 | Template | Copy to | Wire |
@@ -31,7 +31,7 @@ still under the two-minute always-on budget of the standard §2.3.
 
 ## Prove each by breaking it
 
-A check nobody has watched fail is not a check (P-1). Once, on the day it is wired, and again
+A check nobody has watched fail is not a check (P.1). Once, on the day it is wired, and again
 after any change to its configuration:
 
 ```bash

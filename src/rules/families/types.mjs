@@ -1,6 +1,6 @@
 /**
  * Types: strict TypeScript, or checkJs over a JavaScript repository; a typecheck script; no
- * escapes. Standard CODE-3. Which side applies is read from the sources: a repository with
+ * escapes. Standard CODE.3. Which side applies is read from the sources: a repository with
  * more TypeScript than JavaScript is held to the strict flags, the other to checkJs.
  */
 
@@ -10,7 +10,7 @@ export const rules = [
     id: "TYPES-CHECKJS",
     family: "Types",
     title: "JavaScript repo runs tsc --noEmit over checkJs and ratchets the count",
-    standard: ["CODE-3"],
+    standard: ["CODE.3"],
     level: "must",
     enforcement: "ratchet",
     phase: "9",
@@ -38,7 +38,7 @@ export const rules = [
     id: "TYPES-STRICT",
     family: "Types",
     title: "strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes",
-    standard: ["CODE-3"],
+    standard: ["CODE.3"],
     level: "must",
     enforcement: "hard",
     phase: "9",
@@ -60,7 +60,7 @@ export const rules = [
     id: "TYPES-SCRIPT",
     family: "Types",
     title: "A typecheck script runs tsc --noEmit",
-    standard: ["CODE-3"],
+    standard: ["CODE.3"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -77,7 +77,7 @@ export const rules = [
     id: "TYPES-ESCAPES",
     family: "Types",
     title: "any and @ts-ignore absent from source",
-    standard: ["CODE-3"],
+    standard: ["CODE.3"],
     level: "must",
     enforcement: "ratchet",
     phase: "1 / 9",

@@ -67,32 +67,32 @@ export const astro = {
           "prettier.config.mjs",
         ],
       },
-      { label: "lint (CODE-4)", script: "lint" },
-      { label: "typecheck (CODE-3, astro check)", script: "typecheck" },
+      { label: "lint (CODE.4)", script: "lint" },
+      { label: "typecheck (CODE.3, astro check)", script: "typecheck" },
       {
-        label: "import graph (CODE-5)",
+        label: "import graph (CODE.5)",
         script: "graph",
         requires: [".dependency-cruiser.cjs", ".dependency-cruiser.js", ".dependency-cruiser.mjs"],
       },
       {
-        label: "dead code (CODE-6)",
+        label: "dead code (CODE.6)",
         script: "dead",
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
-      { label: "unit tests (TEST-1)", script: "test" },
+      { label: "unit tests (TEST.1)", script: "test" },
       {
-        label: "abatty ratchet + changelog range (CHANGE-2)",
+        label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",
         rangeArg: true,
       },
-      { label: "secret scan (SEC-1)", builtin: "secrets" },
-      { label: "audit (SEC-1)", builtin: "audit" },
+      { label: "secret scan (SEC.1)", builtin: "secrets" },
+      { label: "audit (SEC.1)", builtin: "audit" },
     ],
     // No database suite by default: a content site has none; a repository that adds one adds
     // the suite to its own gate. The browser suite serves the built output.
     suites: [
       {
-        name: "build + browser suite + axe (TEST-3, A11Y-1)",
+        name: "build + browser suite + axe (TEST.3, A11Y.1)",
         paths: /^(src\/(pages|layouts|components|content|i18n)\/|e2e\/|astro\.config)/,
         docker: false,
         steps: [

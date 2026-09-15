@@ -10,7 +10,7 @@ export const rules = [
     family: "Harness",
     title:
       "Guard, protect, stop-gate, check-direction, session-brief, self-test hooks present and wired",
-    standard: ["FLOW-2", "FLOW-3", "DATA-1"],
+    standard: ["FLOW.2", "FLOW.3", "DATA.1"],
     level: "must",
     enforcement: "hard",
     phase: "A.1 / 0",

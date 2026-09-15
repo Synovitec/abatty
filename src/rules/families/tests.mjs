@@ -1,6 +1,6 @@
 /**
  * Tests: a runner and tests, integration on a real database, coverage pinned, the browser suite
- * with axe and its retry policy, mutation testing. Standard TEST-1..5, DATA-4, A11Y-1.
+ * with axe and its retry policy, mutation testing. Standard TEST.1..5, DATA.4, A11Y.1.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -9,7 +9,7 @@ export const rules = [
     id: "TEST-UNIT",
     family: "Tests",
     title: "A unit test runner and tests",
-    standard: ["TEST-1"],
+    standard: ["TEST.1"],
     level: "must",
     enforcement: "hard",
     phase: "2 / 10",
@@ -28,7 +28,7 @@ export const rules = [
     id: "TEST-INTEGRATION",
     family: "Tests",
     title: "Integration tests against a real Postgres",
-    standard: ["TEST-2", "DATA-4"],
+    standard: ["TEST.2", "DATA.4"],
     level: "must",
     enforcement: "hard",
     phase: "10",
@@ -46,7 +46,7 @@ export const rules = [
     id: "TEST-COVERAGE",
     family: "Tests",
     title: "Coverage thresholds pinned, reportOnFailure on",
-    standard: ["TEST-4"],
+    standard: ["TEST.4"],
     level: "must",
     enforcement: "hard",
     phase: "2",
@@ -58,7 +58,7 @@ export const rules = [
         .map(c.read)
         .join("\n");
       const thresholds = /thresholds/.test(cfg);
-      // The flag may live in the config or on the CI script's command line; both hold TEST-4.
+      // The flag may live in the config or on the CI script's command line; both hold TEST.4.
       const rofScript = Object.entries(c.scripts).find(([, v]) => /reportOnFailure/.test(v));
       const rof = /reportOnFailure/.test(cfg)
         ? "config"
@@ -75,7 +75,7 @@ export const rules = [
     id: "TEST-E2E",
     family: "Tests",
     title: "Playwright with axe",
-    standard: ["TEST-3", "A11Y-1"],
+    standard: ["TEST.3", "A11Y.1"],
     level: "must",
     enforcement: "hard",
     phase: "3",
@@ -94,7 +94,7 @@ export const rules = [
     id: "TEST-E2E-CONFIG",
     family: "Tests",
     title: "retries CI-only and trace on-first-retry",
-    standard: ["TEST-3"],
+    standard: ["TEST.3"],
     level: "should",
     enforcement: "review",
     phase: "3",
@@ -122,7 +122,7 @@ export const rules = [
     id: "TEST-MUTATION",
     family: "Tests",
     title: "Mutation testing wired",
-    standard: ["TEST-5"],
+    standard: ["TEST.5"],
     level: "should",
     enforcement: "hard",
     phase: "10",

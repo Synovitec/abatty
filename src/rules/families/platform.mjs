@@ -1,7 +1,7 @@
 /**
  * i18n, a11y and PWA: the catalogues and their completeness, hardcoded text as a lint error,
  * the a11y plugin with its component mapping, contrast from the tokens, the service worker
- * under a contract test. Standard I18N-1, A11Y-1, PWA-1. Each is n/a where the stack has no
+ * under a contract test. Standard I18N.1, A11Y.1, PWA.1. Each is n/a where the stack has no
  * such surface.
  */
 
@@ -14,7 +14,7 @@ export const rules = [
     id: "I18N-CATALOGUE",
     family: "i18n",
     title: "Translation catalogues exist",
-    standard: ["I18N-1"],
+    standard: ["I18N.1"],
     level: "should",
     enforcement: "prose",
     phase: "-",
@@ -37,7 +37,7 @@ export const rules = [
     id: "I18N-LINT",
     family: "i18n",
     title: "Hardcoded JSX text is a lint error",
-    standard: ["I18N-1"],
+    standard: ["I18N.1"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -55,7 +55,7 @@ export const rules = [
     id: "I18N-PARITY",
     family: "i18n",
     title: "Locale completeness checked (every key in every locale)",
-    standard: ["I18N-1"],
+    standard: ["I18N.1"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -76,7 +76,7 @@ export const rules = [
     family: "a11y",
     title:
       "eslint-plugin-jsx-a11y at error, with component mapping when a component library is used",
-    standard: ["A11Y-1"],
+    standard: ["A11Y.1"],
     level: "must",
     enforcement: "hard",
     phase: "3",
@@ -98,7 +98,7 @@ export const rules = [
     id: "A11Y-CONTRAST",
     family: "a11y",
     title: "Contrast computed from the token file by a script",
-    standard: ["A11Y-1"],
+    standard: ["A11Y.1"],
     level: "should",
     enforcement: "hard",
     phase: "3",
@@ -113,7 +113,7 @@ export const rules = [
     id: "PWA-CONTRACT",
     family: "PWA",
     title: "Service worker under a contract test; assets resolve",
-    standard: ["PWA-1"],
+    standard: ["PWA.1"],
     level: "must",
     enforcement: "hard",
     phase: "-",

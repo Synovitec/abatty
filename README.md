@@ -293,14 +293,14 @@ file may improve, never worsen, and a file not on the list carries none. A metri
 promoted to hard by the baseline writer; a hard metric above zero is never recorded; a floor
 that rose is refused without `--reason`, and the reason belongs in `docs/STANDARDS_PROGRESS.md`
 too. A probe that scans zero files where the baseline saw some fails the run, so a moved path
-never reports green forever. The changelog check over the pushed range (CHANGE-1) is one probe
+never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
 among the others; the gate passes it the range.
 
-The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE-1, the budgets
-by kind of file and the 800 cap), `context.overCap` (AIR-1), `types.escapes` (CODE-3),
-`valid.rawEnv` (VALID-3), `code.barrels` (CODE-5), `docs.frontMatter`, `docs.indexDrift`,
-`docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC-2..5), `change.changelogMissing`
-(CHANGE-1). A readability score over the same numbers is printed as a trend, never a gate.
+The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE.1, the budgets
+by kind of file and the 800 cap), `context.overCap` (AIR.1), `types.escapes` (CODE.3),
+`valid.rawEnv` (VALID.3), `code.barrels` (CODE.5), `docs.frontMatter`, `docs.indexDrift`,
+`docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC.2..5), `change.changelogMissing`
+(CHANGE.1). A readability score over the same numbers is printed as a trend, never a gate.
 
 Every probe carries its **control cases in both directions**, and `abatty ratchet --controls`
 runs them on throwaway repositories; the package's own test runs them on every push, so a probe
@@ -315,7 +315,7 @@ the baseline through `files.baseline` (default `scripts/ci/standards-baseline.js
 
 The `update` command (a three-way merge that keeps a repository's own edits), `night-report`
 (the learning distillation), and the dashboard over every repository's report. The function-shape probe
-(CODE-2) is not here: ESLint holds it (`CODE-SHAPE`).
+(CODE.2) is not here: ESLint holds it (`CODE-SHAPE`).
 
 ## Development
 

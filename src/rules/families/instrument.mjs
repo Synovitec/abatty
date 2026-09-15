@@ -1,6 +1,6 @@
 /**
  * The instrument: the ratchet and its baseline, the per-file floors, the control cases, the
- * gate, the pre-commit hook, CI and its steps. Standard §2.2-2.4, P-1, P-2, SEC-1.
+ * gate, the pre-commit hook, CI and its steps. Standard §2.2-2.4, P.1, P.2, SEC.1.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -9,7 +9,7 @@ export const rules = [
     id: "INST-RATCHET",
     family: "Instrument",
     title: "A standards ratchet script with a committed baseline",
-    standard: ["P-2"],
+    standard: ["P.2"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -28,7 +28,7 @@ export const rules = [
     id: "INST-DEBT",
     family: "Instrument",
     title: "Per-file floors (debt) beside the totals",
-    standard: ["P-2"],
+    standard: ["P.2"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -51,7 +51,7 @@ export const rules = [
     id: "INST-CONTROLS",
     family: "Instrument",
     title: "Control cases for the probes, both directions",
-    standard: ["P-1"],
+    standard: ["P.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -70,7 +70,7 @@ export const rules = [
     id: "INST-GATE",
     family: "Instrument",
     title: "One gate script called by the pre-push hook and by npm",
-    standard: ["FLOW-2"],
+    standard: ["FLOW.2"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -92,7 +92,7 @@ export const rules = [
     id: "INST-PRECOMMIT",
     family: "Instrument",
     title: "Pre-commit hook: console.log, secrets, locale set",
-    standard: ["SEC-1", "I18N-1"],
+    standard: ["SEC.1", "I18N.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -123,7 +123,7 @@ export const rules = [
     id: "INST-CI-STEPS",
     family: "Instrument",
     title: "CI runs lint, typecheck, tests, standards, secret scan, audit",
-    standard: ["CODE-4", "CODE-3", "TEST-1", "P-2", "SEC-1"],
+    standard: ["CODE.4", "CODE.3", "TEST.1", "P.2", "SEC.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",

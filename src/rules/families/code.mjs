@@ -1,6 +1,6 @@
 /**
  * Code: lint at zero, the shape limits, JSDoc on the boundary, the import graph, dead code,
- * duplication, file size, barrels, format. Standard CODE-1..12.
+ * duplication, file size, barrels, format. Standard CODE.1..12.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -9,12 +9,12 @@ export const rules = [
     id: "CODE-ESLINT",
     family: "Code",
     title: "ESLint flat config exists",
-    standard: ["CODE-4"],
+    standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
     phase: "1",
     why: "The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them.",
-    next: "Add eslint.config.js with the day-0 block from CODE-1",
+    next: "Add eslint.config.js with the day-0 block from CODE.1",
     check: (c) => ({
       status: c.eslintFiles.length ? "present" : "missing",
       evidence: c.eslintFiles.join(", ") || "none",
@@ -24,7 +24,7 @@ export const rules = [
     id: "CODE-MAXWARN",
     family: "Code",
     title: "lint runs with --max-warnings=0",
-    standard: ["CODE-4"],
+    standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -58,14 +58,14 @@ export const rules = [
     id: "CODE-SHAPE",
     family: "Code",
     title: "max-lines, max-lines-per-function, complexity, max-params in ESLint or the ratchet",
-    standard: ["CODE-1", "CODE-2"],
+    standard: ["CODE.1", "CODE.2"],
     level: "must",
     enforcement: "hard",
     phase: "7 / 8",
     why: "An 800-line file and a 150-line function are what an agent cannot read whole, and what a reviewer cannot hold; the four limits are the shape a module keeps.",
     next: "Add the four rules at warn under --max-warnings=0, exemptions generated from the baseline debt",
     check: (c) => {
-      // CODE-1 is held by ESLint max-lines or by the ratchet's size metrics, so a baseline with a
+      // CODE.1 is held by ESLint max-lines or by the ratchet's size metrics, so a baseline with a
       // size family stands for max-lines.
       const sizeRatchet = Boolean(c.readJson(c.firstFile(/standards-baseline\.json$/) || "")?.size);
       /** @param {string} r */
@@ -88,7 +88,7 @@ export const rules = [
     id: "CODE-JSDOC",
     family: "Code",
     title: "jsdoc/require-jsdoc publicOnly on the exported surface",
-    standard: ["CODE-7"],
+    standard: ["CODE.7"],
     level: "must",
     enforcement: "hard",
     phase: "11",
@@ -107,7 +107,7 @@ export const rules = [
     id: "CODE-ARCH-IMPORTS",
     family: "Code",
     title: "no-restricted-imports / import boundaries hold the architecture",
-    standard: ["CODE-4", "CODE-5"],
+    standard: ["CODE.4", "CODE.5"],
     level: "must",
     enforcement: "hard",
     phase: "1",
@@ -123,7 +123,7 @@ export const rules = [
     family: "Code",
     title:
       "The import graph is checked: dependency-cruiser with no-circular, no-orphans and one rule per arrow of the boundary map, in the gate",
-    standard: ["CODE-5"],
+    standard: ["CODE.5"],
     level: "must",
     enforcement: "hard",
     phase: "12",
@@ -160,7 +160,7 @@ export const rules = [
     id: "CODE-DEADCODE",
     family: "Code",
     title: "Dead code is a gate: knip on files, dependencies, exports and types at --max-issues 0",
-    standard: ["CODE-6"],
+    standard: ["CODE.6"],
     level: "must",
     enforcement: "hard",
     phase: "12",
@@ -191,7 +191,7 @@ export const rules = [
     id: "CODE-DUP",
     family: "Code",
     title: "Duplication measured by jscpd as a ratchet metric",
-    standard: ["CODE-12"],
+    standard: ["CODE.12"],
     level: "should",
     enforcement: "ratchet",
     phase: "12",
@@ -219,7 +219,7 @@ export const rules = [
     id: "CODE-SIZE-800",
     family: "Code",
     title: "No source file over the 800-line cap",
-    standard: ["CODE-1"],
+    standard: ["CODE.1"],
     level: "must",
     enforcement: "hard",
     phase: "8",
@@ -238,7 +238,7 @@ export const rules = [
     family: "Code",
     title:
       "Source files over 300 code lines (the threshold where an agent stops reading a file whole)",
-    standard: ["CODE-1"],
+    standard: ["CODE.1"],
     level: "should",
     enforcement: "ratchet",
     phase: "8",
@@ -267,7 +267,7 @@ export const rules = [
     id: "CODE-BARRELS",
     family: "Code",
     title: "No wide barrel files",
-    standard: ["CODE-5"],
+    standard: ["CODE.5"],
     level: "must",
     enforcement: "ratchet",
     phase: "8",
@@ -289,7 +289,7 @@ export const rules = [
     id: "CODE-FORMAT",
     family: "Code",
     title: "Prettier config present and format checked",
-    standard: ["CODE-4"],
+    standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
     phase: "1",

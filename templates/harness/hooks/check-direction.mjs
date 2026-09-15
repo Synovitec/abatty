@@ -3,7 +3,7 @@
 // A gate that is green because a floor was raised, a threshold lowered, a rule switched off, a
 // path added to `ignores`, `--max-warnings=0` dropped or a hook deleted is the one way an
 // unattended run can "succeed" while lying. The Stop gate runs this after the gate and blocks on
-// it; the runner runs it before the push and keeps the branch local on red. FLOW-3 in the
+// it; the runner runs it before the push and keeps the branch local on red. FLOW.3 in the
 // standard ("never lower a gate to go green") moves from Review to Hard for the night with it.
 //
 // Two classes of finding. HARD ones block regardless: the harness (.claude/) differs from the
@@ -11,7 +11,7 @@
 // knip's --max-issues rose or --no-exit-code appeared, `--max-warnings=0` left a lint script, the
 // gate, the pre-push hook or the baseline was deleted, `thresholds.autoUpdate` appeared. The
 // others (a rule to off, an ignore added, a coverage floor lowered, a strict flag off, a CI file
-// removed) are what FLOW-3 allows "with a written reason": they block unless the decisions file
+// removed) are what FLOW.3 allows "with a written reason": they block unless the decisions file
 // names the rule, path, flag or file - the reason is then mechanically required, and the morning
 // sees it. The plan's own example is `no-await-in-loop` switched off per directory in phase 1.
 //
@@ -89,7 +89,7 @@ export function checkDirection({ base, config = loadConfig(), cwd = process.cwd(
 
   // B2. The import graph's known violations (dependency-cruiser --baseline): the file is the
   // tool's own debt list and may only shrink. Grown or deleted is a loosening like a baseline
-  // number that rose (CODE-5).
+  // number that rose (CODE.5).
   for (const file of baseFiles.filter((f) => /(^|\/)\.dependency-cruiser-known-violations\.json$/.test(f))) {
     const bText = atBase(file);
     const tText = inTree(file);
@@ -113,7 +113,7 @@ export function checkDirection({ base, config = loadConfig(), cwd = process.cwd(
     const tText = inTree(file);
     if (tText === null) continue;
     if (/autoUpdate\s*:\s*true/.test(tText) && !/autoUpdate\s*:\s*true/.test(bText)) {
-      add({ kind: "threshold", file, hard: true, detail: "thresholds.autoUpdate: true appeared", fix: "Remove it: a tool raising the floor erases who moved it and why (FLOW-3)." });
+      add({ kind: "threshold", file, hard: true, detail: "thresholds.autoUpdate: true appeared", fix: "Remove it: a tool raising the floor erases who moved it and why (FLOW.3)." });
     }
     for (const key of ["lines", "branches", "functions", "statements"]) {
       const bn = thresholdNumbers(bText, key);
@@ -161,17 +161,17 @@ export function checkDirection({ base, config = loadConfig(), cwd = process.cwd(
     }
     for (const [name, val] of Object.entries(b.scripts || {})) {
       const now = t.scripts?.[name];
-      if (/max-warnings[= ]0/.test(String(val)) && !/max-warnings[= ]0/.test(String(now || ""))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}" no longer runs with --max-warnings=0`, fix: "Put --max-warnings=0 back: a warning is a failure (CODE-4)." });
+      if (/max-warnings[= ]0/.test(String(val)) && !/max-warnings[= ]0/.test(String(now || ""))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}" no longer runs with --max-warnings=0`, fix: "Put --max-warnings=0 back: a warning is a failure (CODE.4)." });
       else if (GUARDED_SCRIPTS.includes(name) && now === undefined) add({ kind: "scripts", file, key: name, hard: true, detail: `script "${name}" was removed`, fix: "Restore it." });
-      // knip (CODE-6): --max-issues only falls, --no-exit-code never appears. depcruise (CODE-5):
+      // knip (CODE.6): --max-issues only falls, --no-exit-code never appears. depcruise (CODE.5):
       // --ignore-known is the intended flag, a dropped --output-type err is not.
       if (/\bknip\b/.test(String(val)) && now !== undefined) {
         const was = maxIssues(String(val));
         const is = maxIssues(String(now));
-        if (is > was) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": knip --max-issues rose ${was} → ${is}`, fix: "Dead code is removed, never allowed for. Delete the unused export or file (CODE-6)." });
-        if (!/--no-exit-code/.test(String(val)) && /--no-exit-code/.test(String(now))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": knip gained --no-exit-code`, fix: "Remove it: a dead-code finding is a failure (CODE-6)." });
+        if (is > was) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": knip --max-issues rose ${was} → ${is}`, fix: "Dead code is removed, never allowed for. Delete the unused export or file (CODE.6)." });
+        if (!/--no-exit-code/.test(String(val)) && /--no-exit-code/.test(String(now))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": knip gained --no-exit-code`, fix: "Remove it: a dead-code finding is a failure (CODE.6)." });
       }
-      if (/\bdepcruise\b/.test(String(val)) && now !== undefined && /--output-type err/.test(String(val)) && !/--output-type err/.test(String(now))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": depcruise no longer exits non-zero on a violation (--output-type err dropped)`, fix: "Put --output-type err back (CODE-5)." });
+      if (/\bdepcruise\b/.test(String(val)) && now !== undefined && /--output-type err/.test(String(val)) && !/--output-type err/.test(String(now))) add({ kind: "scripts", file, key: name, hard: true, detail: `"${name}": depcruise no longer exits non-zero on a violation (--output-type err dropped)`, fix: "Put --output-type err back (CODE.5)." });
     }
   }
 

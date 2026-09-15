@@ -1,6 +1,6 @@
 /**
  * Data: migrations as the source of truth, tenant isolation proven, a restore drill.
- * Standard DATA-1, DATA-3, DATA-5. Every check is n/a on a repository without an ORM.
+ * Standard DATA.1, DATA.3, DATA.5. Every check is n/a on a repository without an ORM.
  */
 
 const ORMS = ["prisma", "drizzle-orm", "sequelize", "typeorm", "kysely"];
@@ -16,7 +16,7 @@ export const rules = [
     id: "DATA-MIGRATIONS",
     family: "Data",
     title: "Migrations are the source of truth",
-    standard: ["DATA-1"],
+    standard: ["DATA.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -35,7 +35,7 @@ export const rules = [
     id: "DATA-TENANT",
     family: "Data",
     title: "Tenant isolation proven: RLS or a scoped service plus an isolation test",
-    standard: ["DATA-3"],
+    standard: ["DATA.3"],
     level: "must",
     enforcement: "hard",
     phase: "4 / 10",
@@ -69,7 +69,7 @@ export const rules = [
     id: "DATA-BACKUP",
     family: "Data",
     title: "A restore drill exists",
-    standard: ["DATA-5"],
+    standard: ["DATA.5"],
     level: "must",
     enforcement: "review",
     phase: "-",

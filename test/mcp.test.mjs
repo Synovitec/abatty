@@ -93,7 +93,7 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
     false,
     "the dependencies are named, never installed: lint fails",
   );
-  assert.match(r?.result.structuredContent.output, /lint \(CODE-4\) failed/);
+  assert.match(r?.result.structuredContent.output, /lint \(CODE.4\) failed/);
 });
 
 test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing else to stdout", () => {

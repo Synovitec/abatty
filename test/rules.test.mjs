@@ -97,7 +97,8 @@ test("the catalog is well-formed: 65 rules, unique IDs, every field, a reason on
   for (const r of RULES) {
     assert.ok(r.why.length > 40, `${r.id}: why is too short to be a reason`);
     assert.ok(r.title.length > 10, `${r.id}: title`);
-    for (const s of r.standard || []) assert.match(s, /^[A-Z0-9]+-\d+$/, `${r.id}: standard ${s}`);
+    for (const s of r.standard || [])
+      assert.match(s, /^[A-Z0-9]+\.\d{1,2}$/, `${r.id}: standard ${s}`);
   }
   assert.ok(RULES.filter((r) => r.level === "must").length > 40);
   assert.ok(RULES.some((r) => r.enforcement === "ratchet"));
@@ -154,7 +155,7 @@ test("analyze runs the catalog: one finding per rule, the score over the applica
   assert.equal(f?.status, "missing");
   assert.equal(f?.level, "must");
   assert.equal(f?.enforcement, "hard");
-  assert.deepEqual(f?.standard, ["CHANGE-1"]);
+  assert.deepEqual(f?.standard, ["CHANGE.1"]);
   // A TypeScript repository: the checkJs rule is n/a, the strict one applies.
   assert.equal(r.findings.find((x) => x.id === "TYPES-CHECKJS")?.status, "n/a");
   assert.notEqual(r.findings.find((x) => x.id === "TYPES-STRICT")?.status, "n/a");
@@ -267,7 +268,7 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   assert.equal(ex.code, 0, ex.out);
   assert.match(ex.out, /CODE-DEADCODE/);
   assert.match(ex.out, /insured by\s+hard/);
-  assert.match(ex.out, /CODE 6/, "the standard's id is spaced");
+  assert.match(ex.out, /CODE\.6/, "the standard's id is namespaced (FAMILY.N)");
   assert.match(ex.out, /status\s+missing/);
 });
 

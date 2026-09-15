@@ -77,32 +77,32 @@ export const next = {
           "prettier.config.mjs",
         ],
       },
-      { label: "lint (CODE-4)", script: "lint" },
-      { label: "typecheck (CODE-3)", script: "typecheck" },
+      { label: "lint (CODE.4)", script: "lint" },
+      { label: "typecheck (CODE.3)", script: "typecheck" },
       {
-        label: "import graph (CODE-5)",
+        label: "import graph (CODE.5)",
         script: "graph",
         requires: [".dependency-cruiser.cjs", ".dependency-cruiser.js", ".dependency-cruiser.mjs"],
       },
       {
-        label: "dead code (CODE-6)",
+        label: "dead code (CODE.6)",
         script: "dead",
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
-      { label: "unit tests (TEST-1)", script: "test" },
+      { label: "unit tests (TEST.1)", script: "test" },
       {
-        label: "abatty ratchet + changelog range (CHANGE-2)",
+        label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",
         rangeArg: true,
       },
-      { label: "secret scan (SEC-1)", builtin: "secrets" },
-      { label: "audit (SEC-1)", builtin: "audit" },
+      { label: "secret scan (SEC.1)", builtin: "secrets" },
+      { label: "audit (SEC.1)", builtin: "audit" },
     ],
     // Path-aware: run when the push or the working tree touches the paths; need Docker or are
     // deferred loudly to CI.
     suites: [
       {
-        name: "database suite + coverage (DATA-4, TEST-4)",
+        name: "database suite + coverage (DATA.4, TEST.4)",
         paths:
           /^(drizzle\/|prisma\/|migrations\/|src\/db\/|src\/server\/|tests\/(rls|integration|db)\/)/,
         docker: true,
@@ -112,11 +112,11 @@ export const next = {
             script: "test:integration",
             alternatives: ["test:rls", "test:db"],
           },
-          { label: "coverage gate (TEST-4)", script: "coverage" },
+          { label: "coverage gate (TEST.4)", script: "coverage" },
         ],
       },
       {
-        name: "build + browser suite + axe (TEST-3, A11Y-1)",
+        name: "build + browser suite + axe (TEST.3, A11Y.1)",
         paths: /^(src\/app\/|src\/components\/|src\/i18n\/|app\/|components\/|e2e\/)/,
         docker: true,
         steps: [

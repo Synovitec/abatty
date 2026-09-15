@@ -187,7 +187,7 @@ against `ops-hub/engineering/ENGINEERING_STANDARD.md` (last_verified 2026-09-13)
 ### (a) Practices the standard contradicts
 
 - `eslint-plugin-jsdoc`'s plain `recommended` preset requires `@param`/`@returns` tags with
-  descriptions on every documented function. CODE-7 explicitly says "`@param`/`@returns` are not
+  descriptions on every documented function. CODE.7 explicitly says "`@param`/`@returns` are not
   required" and prefers prose, and bans JSDoc types where TypeScript already declares them.
   Adopting the plugin's default `recommended` config as-is would flag every standard-compliant TS doc
   block as a violation. Not a disagreement about what good documentation is - a warning that the
@@ -203,40 +203,40 @@ against `ops-hub/engineering/ENGINEERING_STANDARD.md` (last_verified 2026-09-13)
 
 - A graceful-shutdown rule for any long-running Node process (the jobs worker is the concrete
   case): stop accepting new work and fail health checks on SIGTERM, drain in-flight work, then
-  exit; never call `process.exit(0)` immediately or ignore the signal. Nothing in §5 (OBS-1) or
+  exit; never call `process.exit(0)` immediately or ignore the signal. Nothing in §5 (OBS.1) or
   elsewhere addresses process lifecycle at all.
-- Supply-chain hardening beyond "npm audit runs in CI" (SEC-1 as written): verify registry
+- Supply-chain hardening beyond "npm audit runs in CI" (SEC.1 as written): verify registry
   signatures and provenance with `npm audit signatures`, pin a release-age cooldown so a
   just-published version is not installed sight-unseen, and disable install-time scripts by
   default. Plain `npm audit` only catches known CVEs, not a malicious-but-not-yet-CVE'd package or
   a compromised maintainer account - the exact gap the 2026 supply-chain sources are about.
-- VALID-3 ("the environment is one validated module") should add "loaded with the runtime's own
+- VALID.3 ("the environment is one validated module") should add "loaded with the runtime's own
   mechanism, not a third-party dependency for the same job" - Node's `--env-file` /
   `process.loadEnvFile()` make a `dotenv` dependency unnecessary as of Node 24.
-- CODE-3 names `noUncheckedIndexedAccess` but not `exactOptionalPropertyTypes`, which 2026 guidance
+- CODE.3 names `noUncheckedIndexedAccess` but not `exactOptionalPropertyTypes`, which 2026 guidance
   treats as the companion flag for exactly the shape of bug the standard's own settings-PATCH lessons
   describe (omission-clears-a-value vs explicit-undefined is precisely what this flag catches at
   compile time rather than by convention and review).
-- CODE-3/CODE-4 say nothing about type-only imports. Enforcing `import type`
+- CODE.3/CODE.4 say nothing about type-only imports. Enforcing `import type`
   (`consistent-type-imports` or `verbatimModuleSyntax`) stops a type-only import from dragging
   runtime code across a bundle or package boundary - relevant to a monorepo with `@ecomm/types`
   imported from both server and edge-adjacent code.
-- OBS-1 says "no PII" but names no mechanism. Add a concrete instrument (redaction by field path
-  at the logger configuration, not per call site) the way SEC-1 already gets a concrete
+- OBS.1 says "no PII" but names no mechanism. Add a concrete instrument (redaction by field path
+  at the logger configuration, not per call site) the way SEC.1 already gets a concrete
   instrument (`npm audit`) rather than a bare principle.
 - No rule addresses branded/nominal types for identifiers that must not be interchanged (a store
-  id is not a customer id, both being strings under `any`-ban). CODE-3 bans `any` but is silent on
+  id is not a customer id, both being strings under `any`-ban). CODE.3 bans `any` but is silent on
   this narrower, cheaper protection against a same-shape mixup.
 
 ### (c) Practices the standard already covers
 
-CODE-1, CODE-2 (thresholds intentionally stricter than any tool default - consistent, not a gap),
-CODE-3 (strict + `noUncheckedIndexedAccess` + any-ban + justified escapes), CODE-4 (flat config,
+CODE.1, CODE.2 (thresholds intentionally stricter than any tool default - consistent, not a gap),
+CODE.3 (strict + `noUncheckedIndexedAccess` + any-ban + justified escapes), CODE.4 (flat config,
 `--max-warnings=0`, `jsx-a11y` at error, `no-restricted-imports` for architecture, `.gitignore`
-blind spot), CODE-7 (JSDoc scoped to exported/public surface, no fixer, no restated TS types),
-VALID-1 (schema at every boundary including Server Action arguments), VALID-3 (env in one
-validated module), AUTH-1 (deny by default per resource, UI gate never the only gate - matches
-Next's own Server Actions security guidance almost verbatim), SEC-1 (lockfile + `npm ci` + audit,
-partial - see gap above), OBS-1 (structured logs, no PII, partial - see gap above), CACHE-1 (cache
+blind spot), CODE.7 (JSDoc scoped to exported/public surface, no fixer, no restated TS types),
+VALID.1 (schema at every boundary including Server Action arguments), VALID.3 (env in one
+validated module), AUTH.1 (deny by default per resource, UI gate never the only gate - matches
+Next's own Server Actions security guidance almost verbatim), SEC.1 (lockfile + `npm ci` + audit,
+partial - see gap above), OBS.1 (structured logs, no PII, partial - see gap above), CACHE.1 (cache
 key must carry every parameter including tenant/user - matches Next 16's `"use cache"` closure-
-capture model exactly), A11Y-1 (the `jsx-a11y` `polymorphicPropName` nuance is already named).
+capture model exactly), A11Y.1 (the `jsx-a11y` `polymorphicPropName` nuance is already named).

@@ -421,7 +421,7 @@ try {
   expectDirection("thresholds.autoUpdate appearing blocks", () => write(dir, "vitest.config.ts", `export default { test: { coverage: { thresholds: { lines: 80.5, branches: 70, autoUpdate: true } } } };\n`), 2, /autoUpdate/);
   expectDirection("--max-warnings=0 dropped from the lint script blocks", () => write(dir, "package.json", pkgWith({ lint: "eslint ." })), 2, /no longer runs with --max-warnings=0/);
   expectDirection("the gate script removed from package.json blocks", () => write(dir, "package.json", JSON.stringify({ scripts: { ...basePkg.scripts, gate: undefined } })), 2, /"gate" was removed/);
-  // the import graph and dead code (CODE-5, CODE-6): the tool's own debt only shrinks
+  // the import graph and dead code (CODE.5, CODE.6): the tool's own debt only shrinks
   expectDirection("known import-graph violations that grew block", () => write(dir, ".dependency-cruiser-known-violations.json", JSON.stringify([{ from: "src/a.ts", to: "src/b.ts", rule: { severity: "error", name: "no-circular" } }, { from: "src/b.ts", to: "src/a.ts", rule: { severity: "error", name: "no-circular" } }, { from: "src/c.ts", to: "src/d.ts", rule: { severity: "error", name: "no-orphans" } }])), 2, /known import-graph violations rose 2 → 3/);
   expectDirection("known import-graph violations that shrank are clean", () => write(dir, ".dependency-cruiser-known-violations.json", JSON.stringify([{ from: "src/a.ts", to: "src/b.ts", rule: { severity: "error", name: "no-circular" } }])), 0);
   expectDirection("the known-violations file deleted blocks", () => rmSync(join(dir, ".dependency-cruiser-known-violations.json")), 2, /known-violations file of the import graph was deleted/);

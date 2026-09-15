@@ -1,5 +1,5 @@
 /**
- * Boundaries: every input parsed by a schema, one validated env module. Standard VALID-1..3.
+ * Boundaries: every input parsed by a schema, one validated env module. Standard VALID.1..3.
  */
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -8,7 +8,7 @@ export const rules = [
     id: "VALID-ZOD",
     family: "Boundaries",
     title: "A schema library validates every boundary",
-    standard: ["VALID-1"],
+    standard: ["VALID.1"],
     level: "must",
     enforcement: "hard",
     phase: "4",
@@ -23,7 +23,7 @@ export const rules = [
     id: "VALID-ENV",
     family: "Boundaries",
     title: "One validated env module; no raw process.env elsewhere",
-    standard: ["VALID-3"],
+    standard: ["VALID.3"],
     level: "must",
     enforcement: "ratchet",
     phase: "4",
