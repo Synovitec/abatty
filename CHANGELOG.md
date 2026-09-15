@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- `abatty night-report` (roadmap #9): the learning distillation over a night's evidence - the
+  sessions, the Stop gate's receipts and its block log, the guards' denials, the direction
+  check, the state file, the decisions, the commits - into proposed lessons in the catalogue's
+  shape (a recurring block, a repeated refusal, a crash, a denial storm, a blocked phase, a
+  recurring decision, a loosening refused, a failed canary), each with its evidence and the
+  check that would catch it; Markdown with front matter, `--json`, `--out`. The Stop gate now
+  appends every block to `.claude/night/stop-blocks.jsonl`, since a receipt keeps only the last
+  decision and a cured block left no trace by morning.
 - The MCP server (roadmap #8): `abatty mcp [dir]`, the Model Context Protocol over stdio,
   hand-written (initialize, ping, tools/list, tools/call; one JSON-RPC message per line), six
   tools scoped to one repository and taking no path - `measure`, `ratchet`, `gate`, `scrub`,

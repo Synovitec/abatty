@@ -31,8 +31,8 @@ hooks, which is why a night runs on the primary only.
 | `rules/*.md` (graphql, sequelize, mui, testing, i18n, a11y, pwa, size-limits) | `<repo>/.claude/rules/` | Path-scoped by `paths:` front matter, loaded only when a matching file is read. Take the ones the stack uses; a rule file is under 60 lines and points at the guide for depth |
 | `examples/CLAUDE.md.react-vite-apollo-sequelize-mui` | reference only | A complete stack `CLAUDE.md` under 200 lines; its stack sections are what the `rules/` files were cut from |
 
-Add `.claude/night/` to the repository's `.gitignore` (session counters, receipts, denial log and
-transcripts). If the repository's Prettier would reformat the hooks, format them once on the
+Add `.claude/night/` to the repository's `.gitignore` (session counters, receipts, the Stop gate's
+block log, the denial log and transcripts; `abatty night-report` reads them in the morning). If the repository's Prettier would reformat the hooks, format them once on the
 base branch or add `.claude/` to `.prettierignore`: the runner refuses a night where `.claude/`
 differs from the base, whatever moved it.
 

@@ -103,3 +103,8 @@ one file placed by every adapter. Tests 80 -> 82.
 ### 2026-09-15 - The MCP server
 
 A typed call instead of a parsed shell; no runtime dependency added. Tests 82 -> 86.
+
+### 2026-09-15 - night-report
+
+The learning box is files plus a human; the distillation step exists now, and proposes, never
+decides. Tests 86 -> 89.

@@ -26,7 +26,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { checkDirection, formatDirection } from "./check-direction.mjs";
 import { join } from "node:path";
-import { NIGHT, NIGHT_DIR, counter, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, tail, writeReceipt } from "./lib.mjs";
+import { NIGHT, NIGHT_DIR, appendLog, counter, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, tail, writeReceipt } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -62,6 +62,8 @@ function block(check, reason) {
   receipt.reason = reason.split("\n")[0].slice(0, 300);
   receipt.blockNumber = n;
   writeReceipt(receiptName, receipt);
+  // The receipt is overwritten by the next attempt; the log keeps every block for the morning.
+  appendLog("stop-blocks", { sessionId: event.session_id || null, phase: phase ?? null, check, reason: receipt.reason, block: n });
   process.stderr.write(`[stop-gate] block ${n}/${config.maxStopBlocks || 6}\n${reason}\n`);
   process.exit(2);
 }

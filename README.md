@@ -18,6 +18,7 @@ npx abatty baseline              # today's numbers as the floor; zeros promoted 
 npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
+npx abatty night-report          # the morning after: the night's facts and the lessons they propose
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
 npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
@@ -182,6 +183,15 @@ branch is pushed only when nothing was loosened against the base without a decis
 it. The agent's executable comes from `--agent`, `ABATTY_AGENT` or `~/.abatty/config.json`,
 never from the repository. `templates/harness/testing/stub-agent.*` stands in for the agent;
 the package's test runs the whole runner with it, every abort path included.
+
+**The morning after**, `abatty night-report [--date] [--json] [--out docs/NIGHT_REPORT_<date>.md]`
+reads what the night left (the sessions' results, the Stop gate's receipts and its log of
+every block, the guards' denial log, the direction check's findings, the state file, the
+decisions, the commits) and proposes **lessons** in the lessons catalogue's shape: a block
+recurring on the same check, a command the guard refused more than once, a crash, a denial
+storm, a phase blocked, a decision recorded twice, a loosening refused, a failed canary. Each
+proposal carries its evidence and the check that would catch it next time. A proposal is a
+human's to accept into `docs/standard/LESSONS.md`; a quiet night proposes nothing.
 
 ## Presets
 
