@@ -35,7 +35,6 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 | #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                              | Tier      | Size   |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
-| 24  | **Every gate step proves it can go red**: `INST-CONTROLS` extended from the ratchet's probes to each gate step, language-neutral; `doctor` runs the failing control and reports a step that stays green as absent                                                                                                             | The lessons catalogue: prove a check in both directions on a tree where the answer is known; today only the probes have controls      | structure | 1 day  |
 | 25  | **Language packs beyond JavaScript**: the extensions, the formatter, the linter, the typecheck and the dead-code tool come from a pack; the rules keep the same words                                                                                                                                                         | Source files are found by extension, `isTs` is a count of two extensions, `lintExtensions` is a fixed list                            | structure | 2 days |
 | 27  | **Distribution**: a license, a registry publish (item 17), a version pinned per repository and recorded in the config, a README a stranger can act on in two minutes; `scrub` moves to an opt-in package with its purpose stated; then one repository outside the company, and its reading published beside the internal ones | `UNLICENSED`, a git-URL install, a README that assumes `ops-hub` was read; proven on two repositories of one company since 2026-09-14 | reach     | 2 days |
 
@@ -50,6 +49,9 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 | --- | ------ | -------- | ---- |
 
 ## Done
+
+- 2026-09-15 · every gate step proves it can go red (#24): a planted violation per step,
+  `doctor --controls`, a step that stays green reported as absent.
 
 - 2026-09-15 · coupled paths (#23): pairs of paths judged per commit over the range by the
   ratchet and the Stop hook; the changelog rule on the same mechanism.

@@ -11,6 +11,7 @@ import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
 import { configFiles, configProblems } from "./config.mjs";
+import { runStepControls } from "./step-controls.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -90,10 +91,12 @@ export function selfTest(repoDir) {
 }
 
 /**
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void }} o
  */
 export function doctor(o) {
   const { repoDir, preset } = o;
+  // Every gate step proves it can go red: planted, run, removed; a step that stays green is absent.
+  const controls = o.controls && preset ? runStepControls({ repoDir, preset, log: o.log }) : null;
   const st = o.skipSelfTest ? { code: 0, output: "self-test skipped\n" } : selfTest(repoDir);
   const d = drift(repoDir);
   const missing = d.filter((x) => x.state === "missing");
@@ -104,6 +107,7 @@ export function doctor(o) {
     st.code === 0 &&
     missing.length === 0 &&
     problems.length === 0 &&
+    (!controls || controls.absent.length === 0) &&
     (!o.strict || differs.length === 0);
   const lock = readLock(repoDir);
   return {
@@ -116,5 +120,6 @@ export function doctor(o) {
     installed: lock?.abatty || null,
     packageVersion: packageVersion(),
     config: { files: configFiles(repoDir), problems },
+    controls,
   };
 }

@@ -23,13 +23,15 @@ export function selfTest(repoDir: string): {
     output: string;
 };
 /**
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void }} o
  */
 export function doctor(o: {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset | null;
     strict?: boolean;
     skipSelfTest?: boolean;
+    controls?: boolean;
+    log?: (line: string) => void;
 }): {
     ok: boolean;
     selfTest: {
@@ -46,6 +48,11 @@ export function doctor(o: {
         files: string[];
         problems: string[];
     };
+    controls: {
+        at: string;
+        steps: StepOutcome[];
+        absent: string[];
+    } | null;
 };
 export type DriftEvent = {
     file: string;

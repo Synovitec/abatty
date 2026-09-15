@@ -171,3 +171,8 @@ Tests 122 -> 126.
 
 One mechanism for "when this changes, that changes in the same push"; this repository couples
 the rule families to the catalog. Tests 126 -> 130.
+
+### 2026-09-15 - Controls for the gate steps
+
+A step that never went red may be checking nothing; the doctor plants the violation and says
+which step stayed green. Tests 130 -> 132.

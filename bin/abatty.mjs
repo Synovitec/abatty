@@ -13,7 +13,7 @@
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
- *   abatty doctor [dir] [--strict] [--skip-self-test]
+ *   abatty doctor [dir] [--strict] [--skip-self-test] [--controls]      the harness in step; --controls plants a violation per gate step and reports a step that stays green as absent
  *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
  *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
@@ -428,8 +428,18 @@ switch (command) {
       preset,
       strict: flag("--strict"),
       skipSelfTest: flag("--skip-self-test"),
+      controls: flag("--controls"),
     });
     out(`\n${t.banner(VERSION)}  ${t.bold("doctor")} ${t.gray("·")} ${dir}\n\n`);
+    if (r.controls) {
+      out(t.heading("Controls", "every gate step planted a violation and must have gone red"));
+      for (const s of r.controls.steps)
+        out(
+          `  ${s.outcome === "red" ? t.glyph.ok : s.outcome === "green" ? t.glyph.fail : t.glyph.skip} ${s.outcome === "green" ? t.red(s.label) : s.outcome === "red" ? s.label : t.gray(s.label)}${t.gray("  · " + s.detail)}${s.ms ? t.gray("  " + t.duration(s.ms)) : ""}\n`,
+        );
+      out("\n");
+    } else if (flag("--controls"))
+      out(`  ${t.glyph.warn} --controls needs a preset (--stack, or stack in the config)\n`);
     for (const l of r.selfTest.output
       .split("\n")
       .filter((x) => /FAIL|harness ok|failure|skipped/.test(x))) {

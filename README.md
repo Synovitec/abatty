@@ -232,6 +232,15 @@ is unreachable, never red and never silently green. A step whose script the
 repository does not have yet is reported as skipped, so a fresh repository can run the gate
 before everything exists; the gap analysis names what is missing.
 
+**Every gate step proves it can go red.** The ratchet's probes carry their controls; the
+gate steps are scripts a repository owns, and one that never went red may be checking
+nothing. `abatty doctor --controls` plants a violation per step (an unformatted file, a
+debugger statement, a type error, a test that throws, an unused export, a file over the cap,
+a cloud key), runs the step, removes the file whatever happened, and reports a step that
+stays green as **absent**; the outcome is written to `.abatty/controls.json` and the
+INST-CONTROLS rule reads it: partial until the controls ran, partial naming the absent step,
+present once every step went red.
+
 ## The night
 
 `abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]`

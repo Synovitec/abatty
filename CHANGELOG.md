@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Every gate step proves it can go red (roadmap #24): `abatty doctor --controls` plants a
+  language-neutral violation per always-on step (an unformatted file, a debugger statement,
+  a type error, a failing test, an unused export, an oversized file, a planted key), runs the
+  step, removes the file, and reports a step that stays green as absent; the outcome is
+  written to `.abatty/controls.json`, and INST-CONTROLS reads it beside the probes' controls.
 - Coupled paths as one mechanism (roadmap #23): pairs of paths (`coupled` in the config: a
   prefix or a glob, a `why`) judged per commit over the pushed range, an offender cured only
   by a later commit touching the counterpart; the ratchet's `change.coupledMissing` probe

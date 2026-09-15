@@ -52,20 +52,28 @@ export const rules = [
   {
     id: "INST-CONTROLS",
     family: "Instrument",
-    title: "Control cases for the probes, both directions",
+    title: "Control cases both directions: for the probes, and for every gate step",
     standard: ["P.1"],
     level: "must",
     enforcement: "hard",
     phase: "0",
     stages: ["build", "run"],
-    why: "A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added.",
-    next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), or add a standards-probe.test file with a violation, a clean case and each regression",
+    why: "A probe that has never reported a planted violation may be reporting nothing, and a gate step that never went red may be checking nothing; a check with no failing control is not a check.",
+    next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), then `abatty doctor --controls`: it plants a violation per gate step and reports a step that stays green as absent",
     check: (c) => {
       const t = c.firstFile(/standards-probe\.test\.|check-standards\.test\.|check-limits\.test\./);
-      const packaged = c.script(/abatty ratchet/);
+      const packaged = c.script(/abatty(\.mjs"?)? ratchet/);
+      const probes = t || (packaged ? "the package's probes, each with controls both ways" : "");
+      if (!probes) return { status: "missing", evidence: "none" };
+      // The gate steps: the last `doctor --controls` run, a step that stayed green is absent.
+      const last = c.readJson(".abatty/controls.json");
+      const absent = Array.isArray(last?.absent) ? last.absent.map(String) : [];
+      const ran = Array.isArray(last?.steps)
+        ? last.steps.filter((/** @type {any} */ s) => s.outcome === "red").length
+        : 0;
       return {
-        status: t || packaged ? "present" : "missing",
-        evidence: t || (packaged ? "the package's probes, each with controls both ways" : "none"),
+        status: !last ? "partial" : absent.length ? "partial" : "present",
+        evidence: `${probes}; gate steps: ${!last ? "controls not run yet (abatty doctor --controls)" : absent.length ? `${absent.join(", ")} stayed green on a planted violation (absent)` : `${ran} step(s) went red on a planted violation (${String(last.at).slice(0, 10)})`}`,
       };
     },
   },

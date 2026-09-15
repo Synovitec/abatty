@@ -6,6 +6,7 @@ export { STAGES, stageOf } from "./rules/stage.mjs";
 export { buildReport, latestReport, allReports } from "./core/report.mjs";
 export { initRepo, TEMPLATES } from "./core/init.mjs";
 export { doctor, drift, selfTest } from "./core/doctor.mjs";
+export { runStepControls, STEP_CONTROLS, CONTROLS_FILE } from "./core/step-controls.mjs";
 export { runGate, pushRange, pendingPaths } from "./core/gate.mjs";
 export { presets, presetById, detectPreset } from "./presets/index.mjs";
 export { detectWorkspaces, workspaceFolders, workspaceGlobs } from "./presets/workspaces.mjs";
