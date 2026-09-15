@@ -30,6 +30,11 @@ export function validate(list) {
         problems.push(`${where}: applies must be a function`);
       if (r.when !== undefined && typeof r.when !== "string")
         problems.push(`${where}: when must be a sentence`);
+      if (
+        r.stages !== undefined &&
+        (!Array.isArray(r.stages) || !r.stages.every((s) => ["design", "build", "run"].includes(s)))
+      )
+        problems.push(`${where}: stages must be an array of design, build, run`);
       if (r.standard && !Array.isArray(r.standard))
         problems.push(`${where}: standard must be an array`);
     }

@@ -33,11 +33,13 @@ export function loadProfiles(repoDir: string, config: any): Promise<{
  * @param {Profile[]} profiles @returns {Rule[]}
  */
 export function catalogOf(profiles: Profile[]): Rule[];
+/** The phases of the loaded profiles that belong to a stage. @param {Profile[]} profiles @param {string} stage */
+export function phasesFor(profiles: Profile[], stage: string): Phase[];
 /** The phases of the loaded profiles, in order, the first profile's id winning a clash. @param {Profile[]} profiles */
 export function phasesOf(profiles: Profile[]): Phase[];
 /**
  * @typedef {import("../rules/index.mjs").Rule} Rule
- * @typedef {{ id: string, title: string, size?: string, blocksOn?: string[], exit?: string }} Phase
+ * @typedef {{ id: string, title: string, size?: string, blocksOn?: string[], exit?: string, stages?: import("../rules/stage.mjs").Stage[] }} Phase
  * @typedef {{
  *   id: string,
  *   name: string,
@@ -61,6 +63,7 @@ export type Phase = {
     size?: string;
     blocksOn?: string[];
     exit?: string;
+    stages?: import("../rules/stage.mjs").Stage[];
 };
 /**
  * a profile's `tools` name what its rules leave unnamed: the CI providers, the database, the schema library, the browser runner.

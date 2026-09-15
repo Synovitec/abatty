@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- A stage for the repository (roadmap #21): design, build or run, named in the config
+  (`stage`, `init --stage`) or read from the tree (documents alone are design, a deploy
+  surface is run); a rule belongs to stages (`stages`) and is n/a at another with the stage
+  named; the profile's phases carry their stages (day 0 alone at design, `phasesFor`); the
+  report, the gap analysis, the status screen and `explain` carry the stage.
 - Rules say where they apply (roadmap #20): `applies`, a predicate over the repository's
   facts (`c.stack`: package, sources, browser application, server, database, catalogues,
   service worker), and `when`, the sentence the catalog prints; where a rule does not apply

@@ -13,7 +13,7 @@ import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf } from "../rules/in
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[] }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string }} GapResult
  */
 
 /**
@@ -37,6 +37,8 @@ export function analyze(repoDir, o = {}) {
     waived: findings.filter((f) => f.status === "waived").length,
     problems: o.problems || [],
     profiles: o.profiles || ["synovitec"],
+    stage: ctx.stage,
+    stageFrom: ctx.stageFrom,
   };
 }
 
@@ -110,7 +112,7 @@ export function renderMarkdown(result) {
   md.push(`# Gap analysis - ${name} - ${date}`);
   md.push("");
   md.push(
-    `**Score ${score}/100** over ${applicable.length} applicable checks of the ${result.profiles.join(", ")} profile${result.profiles.length > 1 ? "s" : ""}. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
+    `**Score ${score}/100** over ${applicable.length} applicable checks of the ${result.profiles.join(", ")} profile${result.profiles.length > 1 ? "s" : ""}, the repository at the ${result.stage} stage${result.stageFrom === "tree" ? " (read from the tree)" : ""}. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
     "",
     enforcedLine(result),
   );

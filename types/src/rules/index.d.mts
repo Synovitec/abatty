@@ -28,9 +28,9 @@ export function loadCatalog(repoDir: string, o?: {
     profiles: string[];
 }>;
 /**
- * Run a catalog against a context: one finding per rule, in catalog order. A rule that says
- * where it applies is asked first: where it does not, the finding is n/a with the reason and
- * the check does not run. A check that throws is a finding too (status missing, the error as
+ * Run a catalog against a context: one finding per rule, in catalog order. A rule of another
+ * stage is n/a with the stage named; a rule that says where it applies is asked next: where it
+ * does not, the finding is n/a with the reason and the check does not run. A check that throws is a finding too (status missing, the error as
  * evidence), never a crash of the measurement.
  * @param {RepoContext} ctx @param {CatalogRule[]} [catalog]
  * @returns {Finding[]}
@@ -78,11 +78,12 @@ export { validate };
  * @property {string} next what to do when the finding is not present
  * @property {string} [when] where the rule applies, as a sentence for the catalog ("a repository with a database"); absent means always
  * @property {(ctx: RepoContext) => boolean | string} [applies] true where the rule applies; a string is the reason it does not (the finding is n/a with it), false a bare n/a
+ * @property {import("./stage.mjs").Stage[]} [stages] the stages the rule belongs to (design, build, run); absent means every stage
  * @property {(ctx: RepoContext) => Verdict} check the finding for a repository
  * @property {string} [source] "abatty" for the built-in rules, the file path for a repository's own
  *
  * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string }} Finding
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[] }} Finding
  */
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
 export const RULES: Rule[];
@@ -143,6 +144,10 @@ export type Rule = {
      */
     applies?: ((ctx: RepoContext) => boolean | string) | undefined;
     /**
+     * the stages the rule belongs to (design, build, run); absent means every stage
+     */
+    stages?: import("./stage.mjs").Stage[] | undefined;
+    /**
      * the finding for a repository
      */
     check: (ctx: RepoContext) => Verdict;
@@ -169,5 +174,6 @@ export type Finding = {
     enforcement: Enforcement;
     standard: string[];
     when?: string;
+    stages?: string[];
 };
 import { validate } from "./validate.mjs";

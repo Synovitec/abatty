@@ -10,7 +10,7 @@ related: ["./README.md", "./ROADMAP.md"]
 
 # Rule catalog
 
-65 rules in 13 families; 54 must, 11 should. A rule is a check with a reason: `abatty measure` runs every one, `abatty explain <ID>` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. The standard's rule IDs are `FAMILY.N` (`CODE.6`), a namespace of their own that a repository's citation check never claims. **Applies** says where a rule concerns a repository at all: elsewhere its finding is n/a with the reason, never missing.
+65 rules in 13 families; 54 must, 11 should. A rule is a check with a reason: `abatty measure` runs every one, `abatty explain <ID>` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. The standard's rule IDs are `FAMILY.N` (`CODE.6`), a namespace of their own that a repository's citation check never claims. **Applies** says where a rule concerns a repository at all, and at which stage (design, build, run): elsewhere its finding is n/a with the reason, never missing.
 
 The rules come from profiles: the built-in `synovitec` profile is the standard the package was built on; a repository names the profiles it follows in its config (`profiles`), a file or a package exporting a profile of its own among them. A repository adds rules of its own in `abatty.rules.mjs` at its root (the same shape, `export const rules = [...]`) and waives one with a reason in its config (`rules.waived`); a waived rule is listed, not scored.
 
@@ -34,14 +34,14 @@ The rules come from profiles: the built-in `synovitec` profile is the standard t
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| INST-RATCHET | A standards ratchet script with a committed baseline | must | hard | 0 | always | P.2 | A rule with a number is enforced the day the number is committed: existing debt is allowed, a new violation is refused, and a number that must go up is a decision written in the same commit. |
-| INST-DEBT | Per-file floors (debt) beside the totals | must | hard | 0 | always | P.2 | A total can hide a relocation: one file cleaned, another made worse, the sum unchanged. The floor per file refuses the new violation wherever it lands. |
-| INST-CONTROLS | Control cases for the probes, both directions | must | hard | 0 | always | P.1 | A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added. |
-| INST-GATE | One gate script called by the pre-push hook and by npm | must | hard | 0 | always | FLOW.2 | One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart. |
+| INST-RATCHET | A standards ratchet script with a committed baseline | must | hard | 0 | always; at build, run | P.2 | A rule with a number is enforced the day the number is committed: existing debt is allowed, a new violation is refused, and a number that must go up is a decision written in the same commit. |
+| INST-DEBT | Per-file floors (debt) beside the totals | must | hard | 0 | always; at build, run | P.2 | A total can hide a relocation: one file cleaned, another made worse, the sum unchanged. The floor per file refuses the new violation wherever it lands. |
+| INST-CONTROLS | Control cases for the probes, both directions | must | hard | 0 | always; at build, run | P.1 | A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added. |
+| INST-GATE | One gate script called by the pre-push hook and by npm | must | hard | 0 | always; at build, run | FLOW.2 | One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart. |
 | INST-PRECOMMIT | Pre-commit hook: console.log, secrets, locale set | must | hard | 0 | always | SEC.1, I18N.1 | The cheapest moment to refuse a secret or a stray console.log is before it is in a commit; after that it is in the history. |
 | INST-CI | CI with the same gates | must | hard | 0 | always | - | The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. |
-| INST-CI-STEPS | CI runs lint, typecheck, tests, standards, secret scan, audit | must | hard | 0 | always | CODE.4, CODE.3, TEST.1, P.2, SEC.1 | A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. |
-| INST-DEAD-CI | No dead CI workflow posting meaningless red checks | should | prose | 0 | always | - | A red check nobody reads teaches everyone to ignore red checks. |
+| INST-CI-STEPS | CI runs lint, typecheck, tests, standards, secret scan, audit | must | hard | 0 | always; at build, run | CODE.4, CODE.3, TEST.1, P.2, SEC.1 | A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. |
+| INST-DEAD-CI | No dead CI workflow posting meaningless red checks | should | prose | 0 | always; at build, run | - | A red check nobody reads teaches everyone to ignore red checks. |
 
 ## Harness
 
@@ -56,61 +56,61 @@ The rules come from profiles: the built-in `synovitec` profile is the standard t
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| CODE-ESLINT | A linter with a flat config exists | must | hard | 1 | a repository with JavaScript or TypeScript sources | CODE.4 | The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them. |
-| CODE-MAXWARN | lint runs with --max-warnings=0 | must | hard | 1 | a repository with JavaScript or TypeScript sources | CODE.4 | A warning nobody has to fix is a rule nobody follows; at zero, a warning is an error with a softer name. |
-| CODE-SHAPE | Function shape held: max-lines, max-lines-per-function, complexity, max-params in the linter or the ratchet | must | hard | 7 / 8 | a repository with JavaScript or TypeScript sources | CODE.1, CODE.2 | An 800-line file and a 150-line function are what an agent cannot read whole, and what a reviewer cannot hold; the four limits are the shape a module keeps. |
-| CODE-JSDOC | jsdoc/require-jsdoc publicOnly on the exported surface | must | hard | 11 | a repository with JavaScript or TypeScript sources | CODE.7 | An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say. |
-| CODE-ARCH-IMPORTS | no-restricted-imports / import boundaries hold the architecture | must | hard | 1 | a repository with JavaScript or TypeScript sources | CODE.4, CODE.5 | A vendor SDK imported outside its provider home, or a component reaching the database, is the architecture eroding one import at a time; the linter refuses the import. |
-| CODE-ARCH-GRAPH | The import graph is checked: dependency-cruiser with no-circular, no-orphans and one rule per arrow of the boundary map, in the gate | must | hard | 12 | a repository with JavaScript or TypeScript sources | CODE.5 | The boundary map in the context file is a wish until the graph is checked: a cycle, an orphan and a forbidden arrow are then refused by the gate, not hoped against. |
-| CODE-DEADCODE | Dead code is a gate: files, dependencies, exports and types at zero issues | must | hard | 12 | a repository with JavaScript or TypeScript sources | CODE.6 | Dead code is read, maintained and reasoned about for nothing; an unused dependency is an attack surface. knip at zero makes both a refusal instead of a cleanup. |
-| CODE-DUP | Duplication measured by jscpd as a ratchet metric | should | ratchet | 12 | a repository with JavaScript or TypeScript sources | CODE.12 | Two copies of a block fix one bug twice, or once; the count of clones is a number that may only fall. |
-| CODE-SIZE-800 | No source file over the 800-line cap | must | hard | 8 | a repository with JavaScript or TypeScript sources | CODE.1 | Past 800 lines a file has more than one responsibility, and no reader, human or model, holds it whole. |
-| CODE-SIZE-300 | Source files over 300 code lines (the threshold where an agent stops reading a file whole) | should | ratchet | 8 | a repository with JavaScript or TypeScript sources | CODE.1 | Three hundred code lines is where an agent starts reading a file in pieces and editing what it did not read; per-kind budgets keep modules under it. |
-| CODE-BARRELS | No wide barrel files | must | ratchet | 8 | a repository with JavaScript or TypeScript sources | CODE.5 | A wide barrel hides who imports what, defeats tree-shaking and makes every import a potential cycle; import from the defining file. |
-| CODE-FORMAT | A formatter configured and the format checked | must | hard | 1 | a repository with JavaScript or TypeScript sources | CODE.4 | Formatting argued in review is attention taken from the change; one formatter, checked, ends the argument. |
+| CODE-ESLINT | A linter with a flat config exists | must | hard | 1 | a repository with JavaScript or TypeScript sources; at build, run | CODE.4 | The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them. |
+| CODE-MAXWARN | lint runs with --max-warnings=0 | must | hard | 1 | a repository with JavaScript or TypeScript sources; at build, run | CODE.4 | A warning nobody has to fix is a rule nobody follows; at zero, a warning is an error with a softer name. |
+| CODE-SHAPE | Function shape held: max-lines, max-lines-per-function, complexity, max-params in the linter or the ratchet | must | hard | 7 / 8 | a repository with JavaScript or TypeScript sources; at build, run | CODE.1, CODE.2 | An 800-line file and a 150-line function are what an agent cannot read whole, and what a reviewer cannot hold; the four limits are the shape a module keeps. |
+| CODE-JSDOC | jsdoc/require-jsdoc publicOnly on the exported surface | must | hard | 11 | a repository with JavaScript or TypeScript sources; at build, run | CODE.7 | An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say. |
+| CODE-ARCH-IMPORTS | no-restricted-imports / import boundaries hold the architecture | must | hard | 1 | a repository with JavaScript or TypeScript sources; at build, run | CODE.4, CODE.5 | A vendor SDK imported outside its provider home, or a component reaching the database, is the architecture eroding one import at a time; the linter refuses the import. |
+| CODE-ARCH-GRAPH | The import graph is checked: dependency-cruiser with no-circular, no-orphans and one rule per arrow of the boundary map, in the gate | must | hard | 12 | a repository with JavaScript or TypeScript sources; at build, run | CODE.5 | The boundary map in the context file is a wish until the graph is checked: a cycle, an orphan and a forbidden arrow are then refused by the gate, not hoped against. |
+| CODE-DEADCODE | Dead code is a gate: files, dependencies, exports and types at zero issues | must | hard | 12 | a repository with JavaScript or TypeScript sources; at build, run | CODE.6 | Dead code is read, maintained and reasoned about for nothing; an unused dependency is an attack surface. knip at zero makes both a refusal instead of a cleanup. |
+| CODE-DUP | Duplication measured by jscpd as a ratchet metric | should | ratchet | 12 | a repository with JavaScript or TypeScript sources; at build, run | CODE.12 | Two copies of a block fix one bug twice, or once; the count of clones is a number that may only fall. |
+| CODE-SIZE-800 | No source file over the 800-line cap | must | hard | 8 | a repository with JavaScript or TypeScript sources; at build, run | CODE.1 | Past 800 lines a file has more than one responsibility, and no reader, human or model, holds it whole. |
+| CODE-SIZE-300 | Source files over 300 code lines (the threshold where an agent stops reading a file whole) | should | ratchet | 8 | a repository with JavaScript or TypeScript sources; at build, run | CODE.1 | Three hundred code lines is where an agent starts reading a file in pieces and editing what it did not read; per-kind budgets keep modules under it. |
+| CODE-BARRELS | No wide barrel files | must | ratchet | 8 | a repository with JavaScript or TypeScript sources; at build, run | CODE.5 | A wide barrel hides who imports what, defeats tree-shaking and makes every import a potential cycle; import from the defining file. |
+| CODE-FORMAT | A formatter configured and the format checked | must | hard | 1 | a repository with JavaScript or TypeScript sources; at build, run | CODE.4 | Formatting argued in review is attention taken from the change; one formatter, checked, ends the argument. |
 
 ## Types
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| TYPES-CHECKJS | A JavaScript repository typechecks over checkJs and ratchets the count | must | ratchet | 9 | a repository with JavaScript or TypeScript sources | CODE.3 | A JavaScript repository still has types, in the JSDoc and in the shapes it passes around; checkJs reads them and the count of errors is a number that may only fall. |
-| TYPES-STRICT | strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes | must | hard | 9 | a repository with JavaScript or TypeScript sources | CODE.3 | strict alone lets an index read return undefined unnoticed and an optional property be set to undefined; the two extra flags close the holes the runtime finds first. |
-| TYPES-SCRIPT | A typecheck script runs the compiler without emitting | must | hard | 1 | a repository with JavaScript or TypeScript sources | CODE.3 | The build may skip the type errors a bundler tolerates; tsc --noEmit is the one command that reads them all, and the gate needs its name. |
-| TYPES-ESCAPES | any and @ts-ignore absent from source | must | ratchet | 1 / 9 | a repository with JavaScript or TypeScript sources | CODE.3 | Every any is a place the compiler was told to look away; the count is the honest measure of how strict the types are. |
+| TYPES-CHECKJS | A JavaScript repository typechecks over checkJs and ratchets the count | must | ratchet | 9 | a repository with JavaScript or TypeScript sources; at build, run | CODE.3 | A JavaScript repository still has types, in the JSDoc and in the shapes it passes around; checkJs reads them and the count of errors is a number that may only fall. |
+| TYPES-STRICT | strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes | must | hard | 9 | a repository with JavaScript or TypeScript sources; at build, run | CODE.3 | strict alone lets an index read return undefined unnoticed and an optional property be set to undefined; the two extra flags close the holes the runtime finds first. |
+| TYPES-SCRIPT | A typecheck script runs the compiler without emitting | must | hard | 1 | a repository with JavaScript or TypeScript sources; at build, run | CODE.3 | The build may skip the type errors a bundler tolerates; tsc --noEmit is the one command that reads them all, and the gate needs its name. |
+| TYPES-ESCAPES | any and @ts-ignore absent from source | must | ratchet | 1 / 9 | a repository with JavaScript or TypeScript sources; at build, run | CODE.3 | Every any is a place the compiler was told to look away; the count is the honest measure of how strict the types are. |
 
 ## Boundaries
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| VALID-ZOD | A schema library validates every boundary | must | hard | 4 | a repository with a server, an API or a browser application | VALID.1 | A request, a form, a webhook, an env: everything that crosses into the program is parsed once at the edge or trusted everywhere inside. The schema is the type the runtime checks. |
-| VALID-ENV | One validated env module; no raw process.env elsewhere | must | ratchet | 4 | a repository with a server, an API or a browser application | VALID.3 | A raw process.env read fails at the line that reads it, in production, at 3 a.m.; one module parsed at boot fails at start, on the developer's screen. |
+| VALID-ZOD | A schema library validates every boundary | must | hard | 4 | a repository with a server, an API or a browser application; at build, run | VALID.1 | A request, a form, a webhook, an env: everything that crosses into the program is parsed once at the edge or trusted everywhere inside. The schema is the type the runtime checks. |
+| VALID-ENV | One validated env module; no raw process.env elsewhere | must | ratchet | 4 | a repository with a server, an API or a browser application; at build, run | VALID.3 | A raw process.env read fails at the line that reads it, in production, at 3 a.m.; one module parsed at boot fails at start, on the developer's screen. |
 
 ## Data
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| DATA-MIGRATIONS | Migrations are the source of truth | must | hard | 0 | a repository with a database | DATA.1 | A schema that lives only in the database cannot be reviewed, replayed or rolled back; an applied migration edited afterwards is a schema that differs per environment. |
-| DATA-TENANT | Tenant isolation proven: RLS or a scoped service plus an isolation test | must | hard | 4 / 10 | a repository with a database | DATA.3 | One tenant reading another's rows is the failure a multi-tenant product does not survive; it is proven by a negative test on a real database, not by the presence of a column. |
-| DATA-BACKUP | A restore drill exists | must | review | - | a repository with a database | DATA.5 | A backup that has never been restored is a hope; the drill, dated, is the proof, and a human runs it. |
+| DATA-MIGRATIONS | Migrations are the source of truth | must | hard | 0 | a repository with a database; at build, run | DATA.1 | A schema that lives only in the database cannot be reviewed, replayed or rolled back; an applied migration edited afterwards is a schema that differs per environment. |
+| DATA-TENANT | Tenant isolation proven: RLS or a scoped service plus an isolation test | must | hard | 4 / 10 | a repository with a database; at build, run | DATA.3 | One tenant reading another's rows is the failure a multi-tenant product does not survive; it is proven by a negative test on a real database, not by the presence of a column. |
+| DATA-BACKUP | A restore drill exists | must | review | - | a repository with a database; at run | DATA.5 | A backup that has never been restored is a hope; the drill, dated, is the proof, and a human runs it. |
 
 ## Tests
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| TEST-UNIT | A unit test runner and tests | must | hard | 2 / 10 | a repository with JavaScript or TypeScript sources | TEST.1 | A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has. |
-| TEST-INTEGRATION | Integration tests against a real database | must | hard | 10 | a repository with a database | TEST.2, DATA.4 | A mocked database proves the mock; constraints, row-level policies and transactions only fail on the real engine. |
-| TEST-COVERAGE | Coverage thresholds pinned, reportOnFailure on | must | hard | 2 | a repository with JavaScript or TypeScript sources | TEST.4 | A threshold pinned at today's figure is a floor coverage cannot fall below unnoticed; reportOnFailure keeps the report when the suite is red, which is when it is read. |
-| TEST-E2E | A browser suite with an accessibility scan on the same run | must | hard | 3 | a browser application | TEST.3, A11Y.1 | The critical journeys are proven in a browser, and the accessibility violations axe can count are refused on the same run. |
-| TEST-E2E-CONFIG | retries CI-only and trace on-first-retry | should | review | 3 | a browser application | TEST.3 | Retries on a developer's machine hide flakiness; a trace on the first retry is the evidence when CI fails. |
-| TEST-MUTATION | Mutation testing wired | should | hard | 10 | a repository with JavaScript or TypeScript sources | TEST.5 | A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code. |
+| TEST-UNIT | A unit test runner and tests | must | hard | 2 / 10 | a repository with JavaScript or TypeScript sources; at build, run | TEST.1 | A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has. |
+| TEST-INTEGRATION | Integration tests against a real database | must | hard | 10 | a repository with a database; at build, run | TEST.2, DATA.4 | A mocked database proves the mock; constraints, row-level policies and transactions only fail on the real engine. |
+| TEST-COVERAGE | Coverage thresholds pinned, reportOnFailure on | must | hard | 2 | a repository with JavaScript or TypeScript sources; at build, run | TEST.4 | A threshold pinned at today's figure is a floor coverage cannot fall below unnoticed; reportOnFailure keeps the report when the suite is red, which is when it is read. |
+| TEST-E2E | A browser suite with an accessibility scan on the same run | must | hard | 3 | a browser application; at build, run | TEST.3, A11Y.1 | The critical journeys are proven in a browser, and the accessibility violations axe can count are refused on the same run. |
+| TEST-E2E-CONFIG | retries CI-only and trace on-first-retry | should | review | 3 | a browser application; at build, run | TEST.3 | Retries on a developer's machine hide flakiness; a trace on the first retry is the evidence when CI fails. |
+| TEST-MUTATION | Mutation testing wired | should | hard | 10 | a repository with JavaScript or TypeScript sources; at build, run | TEST.5 | A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code. |
 
 ## Security
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
 | SEC-SECRETS | Secret scan in the hook and in CI from one config | must | hard | 0 | always | SEC.1 | A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree. |
-| SEC-AUDIT | Dependency audit in CI | must | hard | 0 | a repository with a package manifest | SEC.1 | The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident. |
-| SEC-LOCKFILE | Lockfile committed and frozen installs in CI | must | hard | 0 | a repository with a package manifest | SEC.1 | An install that resolves versions at build time builds a different product each time; the lockfile, frozen, is the one that was tested. |
+| SEC-AUDIT | Dependency audit in CI | must | hard | 0 | a repository with a package manifest; at build, run | SEC.1 | The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident. |
+| SEC-LOCKFILE | Lockfile committed and frozen installs in CI | must | hard | 0 | a repository with a package manifest; at build, run | SEC.1 | An install that resolves versions at build time builds a different product each time; the lockfile, frozen, is the one that was tested. |
 | SEC-ENVFILES | No .env file tracked in git | must | hard | 0 | always | SEC.1 | A tracked env file is every secret in it, in the history, on every clone. |
 
 ## Delivery
@@ -127,19 +127,19 @@ The rules come from profiles: the built-in `synovitec` profile is the standard t
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| I18N-CATALOGUE | Translation catalogues exist | should | prose | - | a browser application, or a repository with translation catalogues | I18N.1 | Copy in a catalogue can be translated, reviewed and checked for completeness; copy in the components can only be found by reading them. |
-| I18N-LINT | Hardcoded component text is a lint error | must | hard | 1 | a browser application, or a repository with translation catalogues | I18N.1 | One string typed into a component is one string the translators never see; the linter refuses it at the line. |
-| I18N-PARITY | Locale completeness checked (every key in every locale) | must | hard | 1 | a browser application, or a repository with translation catalogues | I18N.1 | A key missing in one locale is a raw identifier on a customer's screen; a test over the set refuses the commit that forgot one. |
+| I18N-CATALOGUE | Translation catalogues exist | should | prose | - | a browser application, or a repository with translation catalogues; at build, run | I18N.1 | Copy in a catalogue can be translated, reviewed and checked for completeness; copy in the components can only be found by reading them. |
+| I18N-LINT | Hardcoded component text is a lint error | must | hard | 1 | a browser application, or a repository with translation catalogues; at build, run | I18N.1 | One string typed into a component is one string the translators never see; the linter refuses it at the line. |
+| I18N-PARITY | Locale completeness checked (every key in every locale) | must | hard | 1 | a browser application, or a repository with translation catalogues; at build, run | I18N.1 | A key missing in one locale is a raw identifier on a customer's screen; a test over the set refuses the commit that forgot one. |
 
 ## a11y
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| A11Y-LINT | eslint-plugin-jsx-a11y at error, with component mapping when a component library is used | must | hard | 3 | a browser application | A11Y.1 | The countable part of WCAG (a label, an alt, a role) is refused by the linter at the line; a component library needs the mapping or the plugin sees nothing. |
-| A11Y-CONTRAST | Contrast computed from the token file by a script | should | hard | 3 | a browser application | A11Y.1 | Contrast is arithmetic over the tokens, both themes; a script computes what a reviewer estimates. |
+| A11Y-LINT | eslint-plugin-jsx-a11y at error, with component mapping when a component library is used | must | hard | 3 | a browser application; at build, run | A11Y.1 | The countable part of WCAG (a label, an alt, a role) is refused by the linter at the line; a component library needs the mapping or the plugin sees nothing. |
+| A11Y-CONTRAST | Contrast computed from the token file by a script | should | hard | 3 | a browser application; at build, run | A11Y.1 | Contrast is arithmetic over the tokens, both themes; a script computes what a reviewer estimates. |
 
 ## PWA
 
 | ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |
 |---|---|---|---|---|---|---|---|
-| PWA-CONTRACT | Service worker under a contract test; assets resolve | must | hard | - | a repository with a service worker or a web manifest | PWA.1 | A service worker that serves a stale shell serves it to every user until they clear the site; the contract test is the one thing that catches it before them. |
+| PWA-CONTRACT | Service worker under a contract test; assets resolve | must | hard | - | a repository with a service worker or a web manifest; at build, run | PWA.1 | A service worker that serves a stale shell serves it to every user until they clear the site; the contract test is the one thing that catches it before them. |

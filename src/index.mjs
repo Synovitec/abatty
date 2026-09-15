@@ -26,7 +26,9 @@ export {
   validateProfile,
   catalogOf,
   phasesOf,
+  phasesFor,
 } from "./profiles/index.mjs";
+export { STAGES, stageOf } from "./rules/stage.mjs";
 export { buildReport, latestReport, allReports } from "./core/report.mjs";
 export { initRepo, TEMPLATES } from "./core/init.mjs";
 export { doctor, drift, selfTest } from "./core/doctor.mjs";

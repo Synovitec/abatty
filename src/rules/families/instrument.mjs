@@ -13,6 +13,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    stages: ["build", "run"],
     why: "A rule with a number is enforced the day the number is committed: existing debt is allowed, a new violation is refused, and a number that must go up is a decision written in the same commit.",
     next: "Add `standards: abatty ratchet` (init writes it) and run `abatty baseline` to record the floor",
     check: (c) => {
@@ -32,6 +33,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    stages: ["build", "run"],
     why: "A total can hide a relocation: one file cleaned, another made worse, the sum unchanged. The floor per file refuses the new violation wherever it lands.",
     next: "Record debt per file so a total cannot hide a relocation",
     check: (c) => {
@@ -55,6 +57,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    stages: ["build", "run"],
     why: "A probe that has never reported a planted violation may be reporting nothing; a probe with no failing control case is not added.",
     next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), or add a standards-probe.test file with a violation, a clean case and each regression",
     check: (c) => {
@@ -74,6 +77,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    stages: ["build", "run"],
     why: "One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart.",
     next: "Add a gate.mjs under scripts/ci and a .githooks/pre-push calling it (npm run hooks:install)",
     check: (c) => {
@@ -129,6 +133,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    stages: ["build", "run"],
     why: "A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less.",
     next: "Add the missing steps; a secret scan and an audit are one step each",
     check: (c) => {
@@ -156,6 +161,7 @@ export const rules = [
     level: "should",
     enforcement: "prose",
     phase: "0",
+    stages: ["build", "run"],
     why: "A red check nobody reads teaches everyone to ignore red checks.",
     next: "Reduce GitHub workflows to workflow_dispatch or delete them",
     check: (c) => ({

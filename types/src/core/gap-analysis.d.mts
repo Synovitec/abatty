@@ -1,7 +1,7 @@
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[] }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string }} GapResult
  */
 /**
  * Run a catalog (the built-in rules by default) over a repository, synchronously.
@@ -52,5 +52,7 @@ export type GapResult = {
     waived: number;
     problems: string[];
     profiles: string[];
+    stage: string;
+    stageFrom: string;
 };
 import { enforcedOf } from "../rules/index.mjs";

@@ -3,7 +3,7 @@
  * abatty - the engineering standard as a command.
  *
  *   abatty [status] [dir] [--fresh]                                    the repository at a glance
- *   abatty init [dir] --stack <next|astro|vite-react|node> [--agent <id,id>] [--force] [--dry-run]
+ *   abatty init [dir] --stack <next|astro|vite-react|node> [--stage design|build|run] [--agent <id,id>] [--force] [--dry-run]
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
@@ -244,6 +244,14 @@ switch (command) {
     );
     out(
       t.kv(
+        "stage",
+        r.stage
+          ? `${r.stage}${r.stageFrom === "config" ? "" : t.gray(" · read from the tree; name it in the config → stage")}`
+          : t.gray("not in this reading · --fresh"),
+      ) + "\n",
+    );
+    out(
+      t.kv(
         "hooks",
         r.harness.present
           ? r.harness.drift || r.harness.missing
@@ -295,6 +303,7 @@ switch (command) {
       preset,
       force: flag("--force"),
       dryRun: flag("--dry-run"),
+      stage: opt("--stage") || undefined,
       agents: opt("--agent")
         ? opt("--agent")
             .split(/[\s,]+/)
@@ -713,7 +722,12 @@ switch (command) {
     );
     if (rule.standard?.length) out(t.kv("standard", stdIds(rule.standard.join(", "))) + "\n");
     out(t.kv("phase", rule.phase) + "\n");
-    out(t.kv("applies", rule.when || "always") + "\n");
+    out(
+      t.kv(
+        "applies",
+        `${rule.when || "always"}${rule.stages ? " · at " + rule.stages.join(", ") : ""}`,
+      ) + "\n",
+    );
     if (rule.source && rule.source !== "abatty") out(t.kv("source", rule.source) + "\n");
     out(t.heading("Why"));
     out(`  ${rule.why}\n`);

@@ -71,6 +71,14 @@ finding is n/a with the reason, never missing, so a documents-only repository is
 what it is and a service without a database is not scored on migrations. The rule states the
 practice; the profile names the tool it chose for it (`tools`).
 
+A repository has a **stage**: design (documents, decisions, a schema, a mockup; no application
+yet), build, or run (serving users, a deploy surface). The config names it (`stage`, `abatty
+init --stage design`); otherwise it is read from the tree. A rule belongs to stages (`stages`;
+the instrument's build-stage rules, every code surface, the restore drill at run) and is n/a
+at another with the stage named, so a repository under design is read on the documents
+family, the changelog, a decisions log and a CI that can fail, not on a dead-code gate; the
+plan per stage is `phasesFor` (day 0 alone at design).
+
 A repository extends the catalog with its own rules in `abatty.rules.mjs` at its root, the same
 shape:
 

@@ -156,3 +156,8 @@ carry its own. Tests 114 -> 116.
 
 A documents-only repository reads on the rules that concern it; a service without a database
 is not scored on migrations. Tests 116 -> 119.
+
+### 2026-09-15 - The stage
+
+Design, build, run: a rule of another stage is n/a with the stage named; the plan per stage.
+Tests 119 -> 122.

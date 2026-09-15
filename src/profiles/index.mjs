@@ -16,7 +16,7 @@ import { synovitec } from "./synovitec.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Rule} Rule
- * @typedef {{ id: string, title: string, size?: string, blocksOn?: string[], exit?: string }} Phase
+ * @typedef {{ id: string, title: string, size?: string, blocksOn?: string[], exit?: string, stages?: import("../rules/stage.mjs").Stage[] }} Phase
  * @typedef {{
  *   id: string,
  *   name: string,
@@ -154,6 +154,13 @@ export async function loadProfiles(repoDir, config) {
 export function catalogOf(profiles) {
   return profiles.flatMap((p) =>
     p.rules.map((r) => ({ source: p.source === "abatty" ? "abatty" : `profile:${p.id}`, ...r })),
+  );
+}
+
+/** The phases of the loaded profiles that belong to a stage. @param {Profile[]} profiles @param {string} stage */
+export function phasesFor(profiles, stage) {
+  return phasesOf(profiles).filter(
+    (p) => !p.stages || p.stages.includes(/** @type {any} */ (stage)),
   );
 }
 

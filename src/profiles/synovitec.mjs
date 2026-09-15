@@ -20,11 +20,21 @@ import { rules as platform } from "../rules/families/platform.mjs";
 /** The adoption plan's phases (ADOPTION_PLAN.md §B.2), as data. @type {import("./index.mjs").Phase[]} */
 export const PHASES = [
   {
+    id: "A.1",
+    title:
+      "Day 0: the context file, the changelog, a decisions log, the harness, a CI that can fail",
+    size: "S",
+    blocksOn: [],
+    exit: "the documents family present; the changelog gate and a CI step that can go red",
+    stages: ["design", "build", "run"],
+  },
+  {
     id: "0",
     title: "The instrument: ratchet with per-file floors, gate + hook, CI step, control cases",
     size: "S",
     blocksOn: [],
     exit: "`standards` blocking in CI; verified by lowering a baseline number and watching the step go red",
+    stages: ["build", "run"],
   },
   {
     id: "1",
@@ -32,6 +42,7 @@ export const PHASES = [
     size: "M",
     blocksOn: ["0"],
     exit: "`--max-warnings=0` in the lint script; the step blocking",
+    stages: ["build", "run"],
   },
   {
     id: "2",
@@ -39,6 +50,7 @@ export const PHASES = [
     size: "S",
     blocksOn: ["0"],
     exit: "thresholds in the test config at the measured figure; CI fails on a drop",
+    stages: ["build", "run"],
   },
   {
     id: "3",
@@ -46,6 +58,7 @@ export const PHASES = [
     size: "M",
     blocksOn: [],
     exit: "`jsx-a11y` at error with component mapping; icon-name, clickable-non-interactive and inline-style metrics HARD",
+    stages: ["build", "run"],
   },
   {
     id: "4",
@@ -53,6 +66,7 @@ export const PHASES = [
     size: "M",
     blocksOn: [],
     exit: "`valid.unparsedBoundary` HARD; `valid.rawEnv` at its documented floor",
+    stages: ["build", "run"],
   },
   {
     id: "5",
@@ -60,6 +74,7 @@ export const PHASES = [
     size: "M",
     blocksOn: [],
     exit: "every cache key carries every parameter; every write invalidates; metrics HARD - or not applicable with the reason",
+    stages: ["build", "run"],
   },
   {
     id: "6",
@@ -68,6 +83,7 @@ export const PHASES = [
     size: "L",
     blocksOn: ["5"],
     exit: "metrics HARD; growth lists have a paginated twin, migrated, old field deprecated one release",
+    stages: ["build", "run"],
   },
   {
     id: "7",
@@ -75,6 +91,7 @@ export const PHASES = [
     size: "L",
     blocksOn: ["5", "6"],
     exit: "the three rules unconditional in eslint at error; the exemption list empty",
+    stages: ["build", "run"],
   },
   {
     id: "8",
@@ -82,6 +99,7 @@ export const PHASES = [
     size: "XL",
     blocksOn: ["7"],
     exit: "per-kind budgets enforced; `size.overBudget` HARD; `size.overRaw` at zero",
+    stages: ["build", "run"],
   },
   {
     id: "9",
@@ -89,6 +107,7 @@ export const PHASES = [
     size: "L",
     blocksOn: ["8"],
     exit: "`tsc --noEmit` blocking in CI",
+    stages: ["build", "run"],
   },
   {
     id: "10",
@@ -96,6 +115,7 @@ export const PHASES = [
     size: "L",
     blocksOn: ["8"],
     exit: "floors at target; integration suite against a real database in a rolled-back transaction",
+    stages: ["build", "run"],
   },
   {
     id: "11",
@@ -104,6 +124,7 @@ export const PHASES = [
     size: "M",
     blocksOn: [],
     exit: "`docs.*` metrics HARD; freshness step blocking; JSDoc rule at error on the named surfaces",
+    stages: ["build", "run"],
   },
   {
     id: "12",
@@ -112,6 +133,7 @@ export const PHASES = [
     size: "M",
     blocksOn: ["0"],
     exit: "`depcruise --ignore-known --output-type err` and `knip --max-issues 0` in the gate, both proven red on a scratch violation",
+    stages: ["build", "run"],
   },
 ];
 

@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";
 import { readAdoption } from "../core/repo.mjs";
+import { stageOf } from "./stage.mjs";
 
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -65,6 +66,8 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
  * @property {string | null} contextFile the agent's context file at the root or in its folder
  * @property {Record<string, any> | null} adoption the repository's adoption config
  * @property {StackFacts} stack what the repository is, for a rule's `applies`
+ * @property {import("./stage.mjs").Stage} stage design, build or run: the config's, else read from the tree
+ * @property {"config" | "tree"} stageFrom where the stage came from
  */
 
 /**
@@ -226,6 +229,8 @@ export function buildContext(repoDir, o = {}) {
   // The agent's context file: the primary's at the root or in its folder, else the open
   // AGENTS.md convention another adapter reads.
   const stack = stackFacts({ has, deps, files, sourceFiles, tsSources, exists });
+  const adoption = readAdoption(REPO);
+  const staged = stageOf(adoption, stack, files, scripts);
   const contextName = "CLAUDE.md";
   const contextFile = exists(contextName)
     ? contextName
@@ -267,8 +272,10 @@ export function buildContext(repoDir, o = {}) {
     jsSources,
     isTs: tsSources.length > jsSources.length,
     contextFile,
-    adoption: readAdoption(REPO),
+    adoption,
     stack,
+    stage: staged.stage,
+    stageFrom: staged.from,
   };
 }
 

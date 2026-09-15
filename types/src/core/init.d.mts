@@ -6,6 +6,7 @@
  * @param {boolean} [o.dryRun]
  * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
  * @param {string[]} [o.ci] the CI providers to generate for (the config's `ci.providers` when absent)
+ * @param {string} [o.stage] the stage to record in the config (design, build, run)
  */
 export function initRepo(o: {
     repoDir: string;
@@ -14,6 +15,7 @@ export function initRepo(o: {
     dryRun?: boolean | undefined;
     agents?: string[] | undefined;
     ci?: string[] | undefined;
+    stage?: string | undefined;
 }): {
     events: InitEvent[];
     missingDeps: string[];

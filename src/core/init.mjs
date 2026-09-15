@@ -39,6 +39,7 @@ function walk(dir, base = dir, acc = []) {
  * @param {boolean} [o.dryRun]
  * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
  * @param {string[]} [o.ci] the CI providers to generate for (the config's `ci.providers` when absent)
+ * @param {string} [o.stage] the stage to record in the config (design, build, run)
  */
 export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
@@ -98,6 +99,7 @@ export function initRepo(o) {
     ...base,
     ...preset.adoption,
     stack: preset.id,
+    ...(o.stage ? { stage: o.stage } : {}),
     ...(existing || {}),
     commands: {
       ...base.commands,

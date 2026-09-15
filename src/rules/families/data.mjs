@@ -77,6 +77,7 @@ export const rules = [
     enforcement: "review",
     phase: "-",
     ...DATABASE,
+    stages: ["run"],
     why: "A backup that has never been restored is a hope; the drill, dated, is the proof, and a human runs it.",
     next: "Add a restore drill script and date each run in OPERATIONS.md",
     check: (c) => {

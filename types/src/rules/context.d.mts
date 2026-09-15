@@ -31,6 +31,8 @@
  * @property {string | null} contextFile the agent's context file at the root or in its folder
  * @property {Record<string, any> | null} adoption the repository's adoption config
  * @property {StackFacts} stack what the repository is, for a rule's `applies`
+ * @property {import("./stage.mjs").Stage} stage design, build or run: the config's, else read from the tree
+ * @property {"config" | "tree"} stageFrom where the stage came from
  */
 /**
  * The facts a rule's `applies` reads: booleans, each read once. A rule that needs one of them
@@ -172,6 +174,14 @@ export type RepoContext = {
      * what the repository is, for a rule's `applies`
      */
     stack: StackFacts;
+    /**
+     * design, build or run: the config's, else read from the tree
+     */
+    stage: import("./stage.mjs").Stage;
+    /**
+     * where the stage came from
+     */
+    stageFrom: "config" | "tree";
 };
 /**
  * The facts a rule's `applies` reads: booleans, each read once. A rule that needs one of them

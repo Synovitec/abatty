@@ -12,6 +12,11 @@
       "items": { "type": "string" },
       "description": "The profiles this repository follows, in order: a built-in id (synovitec), a file (./profiles/acme.mjs) or an installed package exporting a profile (rules, phases, presets, harness rule files as one package). [\"synovitec\"] when absent; a client project names only its own."
     },
+    "stage": {
+      "type": "string",
+      "enum": ["design", "build", "run"],
+      "description": "Where the repository is: design (documents, decisions, a schema, a mockup; no application yet), build, or run (serving users, a deploy surface). Read from the tree when absent; a rule of another stage is n/a with the stage named."
+    },
     "stack": {
       "type": "string",
       "description": "The preset this repository runs: next, vite-react, node."

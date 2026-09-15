@@ -52,18 +52,12 @@ test("a documents-only repository is read for what it is: the documents, the ins
     assert.equal(x.status, "n/a", `${id} on a documents-only repository`);
     assert.match(x.evidence, /^does not apply: /, id);
   }
-  for (const id of [
-    "DOC-CHANGELOG",
-    "DOC-ADR",
-    "INST-CI",
-    "INST-GATE",
-    "FLOW-CHANGELOG-GATE",
-    "SEC-SECRETS",
-  ])
+  for (const id of ["DOC-CHANGELOG", "DOC-ADR", "INST-CI", "FLOW-CHANGELOG-GATE", "SEC-SECRETS"])
     assert.notEqual(of(f, id).status, "n/a", `${id} applies to a documents-only repository`);
   assert.equal(
     of(f, "CODE-ESLINT").evidence,
-    "does not apply: no JavaScript or TypeScript sources",
+    "does not apply: not at this stage: design (a rule of the build and run stages)",
+    "the stage is asked before the facts",
   );
 });
 
@@ -92,7 +86,7 @@ test("the facts decide: a database dependency makes the data rules apply, a brow
   const d = findings(db);
   assert.equal(of(d, "DATA-MIGRATIONS").status, "missing", "a driver is a database");
   assert.equal(of(d, "TEST-INTEGRATION").status, "missing");
-  assert.equal(of(d, "DATA-BACKUP").status, "missing");
+  assert.match(of(d, "DATA-BACKUP").evidence, /not at this stage: build/, "a run-stage rule");
 
   const ui = tempRepo("applies-ui", {
     "package.json": NEXT_PKG,
