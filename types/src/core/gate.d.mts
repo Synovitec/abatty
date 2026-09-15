@@ -1,6 +1,7 @@
 /**
  * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void }} GateOptions
+ * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 /**
  * Run an npm script and return its exit code; output goes straight to the terminal.
@@ -40,6 +41,13 @@ export type GateEvent = {
     detail?: string;
     ms?: number;
 };
+export type GateEventW = {
+    label: string;
+    outcome: "ok" | "failed" | "skipped" | "deferred";
+    detail?: string;
+    ms?: number;
+    workspace?: string;
+};
 export type GateOptions = {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;
@@ -49,4 +57,8 @@ export type GateOptions = {
     run?: typeof runScript;
     dockerUp?: () => boolean;
     log?: (line: string) => void;
+    workspaces?: {
+        path: string;
+        preset: import("../presets/index.mjs").Preset | null;
+    }[];
 };

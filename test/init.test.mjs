@@ -67,7 +67,7 @@ test("init without a detectable stack refuses and names the presets", () => {
   });
   const r = cli(["init", dir], dir);
   assert.equal(r.code, 2);
-  assert.match(r.out, /--stack <next\|astro\|vite-react\|node>/);
+  assert.match(r.out, /--stack <next\|astro\|vite-react\|node\|docs>/);
 });
 
 test("init --dry-run writes nothing", () => {

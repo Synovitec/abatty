@@ -11,6 +11,8 @@ export const presets: Preset[];
 /**
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
  * implementation); one that no repository has run is marked `proven: false` and `init` says so.
+ * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
+ * its own folder, the repository-level steps once.
  */
 export type GateStep = {
     label: string;
@@ -24,6 +26,8 @@ export type GateStep = {
 /**
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
  * implementation); one that no repository has run is marked `proven: false` and `init` says so.
+ * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
+ * its own folder, the repository-level steps once.
  */
 export type GateSuite = {
     name: string;
@@ -34,6 +38,8 @@ export type GateSuite = {
 /**
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
  * implementation); one that no repository has run is marked `proven: false` and `init` says so.
+ * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
+ * its own folder, the repository-level steps once.
  */
 export type Preset = {
     id: string;

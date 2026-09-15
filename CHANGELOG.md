@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Presets per workspace, composed (roadmap #22): the workspaces of a monorepo read from the
+  root's `workspaces` field, a pnpm workspace file or the conventional folders, each detected
+  from its own dependencies or named in the config (`workspaces`), gated in its own folder by
+  its own preset's steps after the root's, the built-in steps and the ratchet once at the
+  root; `init` writes each workspace's preset scripts in its own package; the status screen
+  and the report list them. The `docs` preset for a repository at the design stage or
+  documents alone, chosen when there is no package and no sources. The status screen moved
+  to its own CLI module.
 - A stage for the repository (roadmap #21): design, build or run, named in the config
   (`stage`, `init --stage`) or read from the tree (documents alone are design, a deploy
   surface is run); a rule belongs to stages (`stages`) and is n/a at another with the stage

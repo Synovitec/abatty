@@ -161,3 +161,8 @@ is not scored on migrations. Tests 116 -> 119.
 
 Design, build, run: a rule of another stage is n/a with the stage named; the plan per stage.
 Tests 119 -> 122.
+
+### 2026-09-15 - Workspaces
+
+A monorepo composes presets, each gated in its own folder; documents alone have a preset.
+Tests 122 -> 126.

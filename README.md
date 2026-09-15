@@ -287,12 +287,23 @@ human's to accept into `docs/standard/LESSONS.md`; a quiet night proposes nothin
 A preset says what a stack's repository looks like (paths, scripts, gate steps and suites, the
 rules files); the standard says what must hold. A preset is real when a repository has run it:
 
-| Preset       | Proven by                                                                                                            |
-| ------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `next`       | paycore_dms, 2026-09-14: instrument, harness, graph and dead code in the gate, first unattended night closed a phase |
-| `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                |
-| `astro`      | nobody yet - `init` says so; the fixture in the tests proves init, measure, doctor and the gate's order on the shape |
-| `node`       | nobody yet - `init` says so                                                                                          |
+| Preset       | Proven by                                                                                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `next`       | paycore_dms, 2026-09-14: instrument, harness, graph and dead code in the gate, first unattended night closed a phase                                                     |
+| `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                                                                    |
+| `astro`      | nobody yet - `init` says so; the fixture in the tests proves init, measure, doctor and the gate's order on the shape                                                     |
+| `node`       | nobody yet - `init` says so                                                                                                                                              |
+| `docs`       | nobody yet - a repository at the design stage or documents alone: the format check, the document probes, the secret scan; chosen when there is no package and no sources |
+
+**Presets per workspace, composed.** A monorepo is several stacks in one tree: the root's
+`workspaces` field (npm, yarn), a pnpm workspace file or the conventional `apps/*`, `packages/*`
+and `services/*` name the folders; each with a package of its own is detected from its own
+dependencies (or named in the config → `workspaces`), `init` writes its preset's scripts into
+its own `package.json`, and the gate runs that preset's steps in its own folder with its suites
+path-aware under it, after the root's steps; the built-in steps (the secret scan, the audit)
+and the ratchet run once at the root, and the rules read the repository once. A workspace
+without a preset is listed by `abatty` and not gated. `sql`, `python`, `expo` and `tauri` are
+not here: each is real only when a named repository has run it.
 
 ## Provenance, and the scrub as an option
 

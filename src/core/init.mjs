@@ -9,7 +9,7 @@
  * Dependencies are named, never installed: a dependency change is a decision.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
@@ -40,6 +40,7 @@ function walk(dir, base = dir, acc = []) {
  * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
  * @param {string[]} [o.ci] the CI providers to generate for (the config's `ci.providers` when absent)
  * @param {string} [o.stage] the stage to record in the config (design, build, run)
+ * @param {{ path: string, preset: import("../presets/index.mjs").Preset | null }[]} [o.workspaces] the workspaces with a preset: each gets its preset's scripts in its own package.json
  */
 export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
@@ -132,6 +133,17 @@ export function initRepo(o) {
     ".githooks/pre-push",
     "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`. Installed by `npm run hooks:install`.\nnpm run -s gate\n",
   );
+  // A repository without a package (documents alone) gets a private one: `npm run gate` and
+  // `npm run hooks:install` are how the instrument is called, whatever the stack.
+  if (!existsSync(join(repoDir, "package.json"))) {
+    if (!dryRun)
+      writeJsonFile(repoDir, "package.json", {
+        name: basename(repoDir),
+        private: true,
+        scripts: { ...preset.scripts },
+      });
+    events.push({ file: "package.json", action: "written" });
+  }
   const pkg = readPackage(repoDir);
   if (existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
@@ -145,6 +157,27 @@ export function initRepo(o) {
       if (!dryRun) writeJsonFile(repoDir, "package.json", { ...pkg, scripts });
       events.push({ file: "package.json", action: "merged" });
     } else events.push({ file: "package.json", action: "kept" });
+  }
+
+  // 4b. A workspace with a preset of its own gets that preset's scripts in its own package.json,
+  //     the gate's steps running there; the gate, the ratchet and the hooks stay at the root.
+  for (const w of o.workspaces || []) {
+    if (!w.preset) continue;
+    const wp = readPackage(join(repoDir, w.path));
+    const ws = { ...(wp.scripts || {}) };
+    let n = 0;
+    for (const [k, v] of Object.entries(w.preset.scripts))
+      if (
+        !["gate", "gate:fast", "standards", "standards:baseline", "hooks:install"].includes(k) &&
+        (!(k in ws) || force)
+      ) {
+        ws[k] = v;
+        n++;
+      }
+    if (n) {
+      if (!dryRun) writeJsonFile(join(repoDir, w.path), "package.json", { ...wp, scripts: ws });
+      events.push({ file: `${w.path}/package.json`, action: "merged" });
+    } else events.push({ file: `${w.path}/package.json`, action: "kept" });
   }
 
   // 5. The ignore files.

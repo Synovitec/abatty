@@ -27,7 +27,7 @@
  *   abatty profiles [dir] [--json]                                    the profiles this repository follows: rules, phases, presets as one package
  *   abatty presets · abatty version
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -54,6 +54,7 @@ import {
 import { runGate } from "../src/core/gate.mjs";
 import { dependencyNames, readAdoption, readJsonFile, repoRoot } from "../src/core/repo.mjs";
 import { detectPreset, presetById, presets } from "../src/presets/index.mjs";
+import { detectWorkspaces } from "../src/presets/workspaces.mjs";
 import {
   allowList,
   fixFiles,
@@ -68,6 +69,7 @@ import { renderDashboard } from "../src/ui/dashboard.mjs";
 import { ratchetCommand } from "../src/cli/ratchet.mjs";
 import { nightCommand, nightReportCommand } from "../src/cli/night.mjs";
 import { profilesCommand } from "../src/cli/catalog.mjs";
+import { enforcedLine, nextSteps, statusCommand } from "../src/cli/status.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -152,7 +154,14 @@ const VERSION = String(
 /** The preset: --stack, else the one adoption.json names, else detected from the dependencies. @param {boolean} required */
 function choosePreset(required) {
   const id = opt("--stack") || readAdoption(dir)?.stack;
-  const p = id ? presetById(id) : detectPreset(dependencyNames(dir));
+  // A repository with no package and no sources is documents: the docs preset, never detected
+  // from dependencies since there are none.
+  const p = id
+    ? presetById(id)
+    : detectPreset(dependencyNames(dir)) ||
+      (!existsSync(join(dir, "package.json")) && buildContext(dir).stack.docsOnly
+        ? presetById("docs")
+        : null);
   if (!p && required) {
     err(
       `${t.glyph.fail} no preset: pass --stack <${presets.map((x) => x.id).join("|")}> (none detected from ${join(dir, "package.json")})\n`,
@@ -173,126 +182,9 @@ function openFile(file) {
   else spawnSync(process.platform === "darwin" ? "open" : "xdg-open", [file], { stdio: "ignore" });
 }
 
-/**
- * The enforced share for a screen: how much of what the repository has is held by a machine.
- * @param {import("../src/core/gap-analysis.mjs").Enforced | undefined} e
- */
-function enforcedLine(e) {
-  if (!e || e.share === null) return `  ${t.gray("enforced: nothing present yet")}`;
-  const colour = e.share >= 90 ? t.green : e.share >= 70 ? t.yellow : t.red;
-  return `  ${t.bar(e.share)}  ${t.bold(colour(e.share + "%"))} ${t.gray(`of ${e.total} present rules held by a machine · ${e.hard} hard · ${e.ratchet} ratchet · ${e.review} review · ${e.prose} prose${e.promotable.length ? " · next up a level: " + e.promotable.slice(0, 3).join(", ") : ""}`)}`;
-}
-
-/** Phase "0" sorts first, "A.1 / 0" by its number, "-" last. @param {string} p */
-const phaseOrder = (p) => {
-  const m = String(p).match(/\d+/);
-  return m ? Number(m[0]) : 99;
-};
-/** The next steps of a report, in plan order. @param {import("../src/core/report.mjs").Report} r @param {number} n */
-const nextSteps = (r, n) =>
-  r.findings
-    .filter((f) => f.status === "missing" || f.status === "partial")
-    // Plan order, and within a phase the must rules before the should ones.
-    .sort(
-      (a, b) =>
-        phaseOrder(a.phase) - phaseOrder(b.phase) ||
-        (a.level === "should" ? 1 : 0) - (b.level === "should" ? 1 : 0),
-    )
-    .slice(0, n);
-
 switch (command) {
   case "status": {
-    // The repository at a glance: the newest report (measured now when there is none, or on
-    // --fresh), the harness, the nights, what to do next.
-    const known = latestReport(dir);
-    const fresh = flag("--fresh") || !known;
-    const r = fresh || !known ? await buildReport(dir, { abattyVersion: VERSION }) : known;
-    const present = r.findings.filter((f) => f.status === "present").length;
-    const partial = r.findings.filter((f) => f.status === "partial").length;
-    const missing = r.findings.filter((f) => f.status === "missing").length;
-    const preset = choosePreset(false);
-    out(
-      `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(fresh ? "measured now" : `reading of ${r.date} · --fresh to measure`)}\n\n`,
-    );
-    out(
-      `  ${t.bar(r.score)}  ${t.bold(String(r.score))}${t.gray("/100")}  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
-    );
-    out(enforcedLine(r.enforced) + "\n\n");
-    out(
-      t.table(
-        [
-          ["family", "", "present", "partial", "missing"],
-          ...r.families.map((f) => [
-            f.name,
-            t.stacked(f.present, f.partial, f.missing, 16),
-            String(f.present),
-            String(f.partial),
-            String(f.missing),
-          ]),
-        ],
-        { align: ["l", "l", "r", "r", "r"] },
-      ) + "\n",
-    );
-    out(t.heading("Harness"));
-    out(
-      t.kv(
-        "stack",
-        preset
-          ? `${preset.name}${preset.proven ? "" : t.yellow(" (unproven preset)")}`
-          : t.yellow("none detected"),
-      ) + "\n",
-    );
-    out(
-      t.kv(
-        "stage",
-        r.stage
-          ? `${r.stage}${r.stageFrom === "config" ? "" : t.gray(" · read from the tree; name it in the config → stage")}`
-          : t.gray("not in this reading · --fresh"),
-      ) + "\n",
-    );
-    out(
-      t.kv(
-        "hooks",
-        r.harness.present
-          ? r.harness.drift || r.harness.missing
-            ? t.status("differs") +
-              t.gray(` · ${r.harness.drift} differ, ${r.harness.missing} missing`)
-            : t.status("in step")
-          : t.status("missing") + t.gray(" · abatty init"),
-      ) + "\n",
-    );
-    out(
-      r.scrub.enabled
-        ? t.kv(
-            "no trace",
-            r.scrub.lines === 0
-              ? t.green("clean")
-              : t.red(`${r.scrub.lines} line(s) name a tool`) + t.gray(" · abatty scrub"),
-          ) + "\n"
-        : t.kv("provenance", t.green("kept") + t.gray(" · the scrub is off (scrub.enabled)")) +
-            "\n",
-    );
-    const state = /** @type {{ phases?: { status?: string }[] } | null} */ (r.night.state);
-    const phases = Array.isArray(state?.phases) ? state.phases : [];
-    out(
-      t.kv(
-        "nights",
-        phases.length
-          ? `${phases.filter((p) => p.status === "done").length}/${phases.length} phases done · ${r.night.decisions} decision(s)${r.night.lastReport ? " · " + r.night.lastReport : ""}`
-          : t.gray("none yet"),
-      ) + "\n",
-    );
-    if (r.waived) out(t.kv("waived", `${r.waived} rule(s) set aside with a reason`) + "\n");
-    for (const p of r.problems || []) out(`  ${t.glyph.warn} ${t.yellow(p)}\n`);
-    const next = nextSteps(r, 5);
-    if (next.length) {
-      out(t.heading("Next", "in plan order, must before should · abatty explain <ID>"));
-      for (const f of next)
-        out(
-          `  ${t.gray("phase " + String(f.phase).padEnd(4))} ${t.bold(f.id)} ${t.gray((f.level || "").padEnd(6))} ${t.gray(f.next.slice(0, 84))}\n`,
-        );
-    }
-    out(`\n${t.gray("abatty measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
+    await statusCommand({ dir, opt, flag, out, err, VERSION }, choosePreset(false));
     break;
   }
   case "init": {
@@ -304,6 +196,7 @@ switch (command) {
       force: flag("--force"),
       dryRun: flag("--dry-run"),
       stage: opt("--stage") || undefined,
+      workspaces: detectWorkspaces(dir, readAdoption(dir)),
       agents: opt("--agent")
         ? opt("--agent")
             .split(/[\s,]+/)
@@ -502,6 +395,7 @@ switch (command) {
     const r = runGate({
       repoDir: dir,
       preset,
+      workspaces: detectWorkspaces(dir, readAdoption(dir)),
       fast: flag("--fast"),
       range: opt("--range"),
       base,

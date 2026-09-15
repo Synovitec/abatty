@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { measure } from "./gap-analysis.mjs";
 import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
+import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
 
 /**
@@ -23,6 +24,7 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
  *   problems: string[],
  *   profiles: string[],
  *   stage: string, stageFrom: string,
+ *   workspaces: { path: string, name: string, preset: string, from: string }[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
@@ -95,6 +97,12 @@ export async function buildReport(repoDir, o = {}) {
     profiles: gap.profiles,
     stage: gap.stage,
     stageFrom: gap.stageFrom,
+    workspaces: detectWorkspaces(repoDir, readAdoption(repoDir)).map((w) => ({
+      path: w.path,
+      name: w.name,
+      preset: w.presetId,
+      from: w.from,
+    })),
     harness: {
       present: harnessPresent,
       drift: d.filter((x) => x.state === "differs").length,

@@ -1,6 +1,8 @@
 /**
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
  * implementation); one that no repository has run is marked `proven: false` and `init` says so.
+ * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
+ * its own folder, the repository-level steps once.
  *
  * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
  * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
@@ -21,9 +23,10 @@ import { next } from "./next.mjs";
 import { viteReact } from "./vite-react.mjs";
 import { node } from "./node.mjs";
 import { astro } from "./astro.mjs";
+import { docs } from "./docs.mjs";
 
 /** @type {Preset[]} */
-export const presets = [next, astro, viteReact, node];
+export const presets = [next, astro, viteReact, node, docs];
 
 /** @param {string} id */
 export function presetById(id) {
