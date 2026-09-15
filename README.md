@@ -64,6 +64,13 @@ installed package exporting `profile`; a client project that names only its own 
 its own standard with the same instrument. `abatty profiles` lists what is loaded and what
 each brings; a rule two profiles define is a problem, the later one loses it.
 
+A rule says **where it applies**: `applies` is a predicate over the repository's facts
+(`c.stack`: a package, sources, a browser application, a server, a database, catalogues, a
+service worker) and `when` the sentence the catalog prints; where a rule does not apply its
+finding is n/a with the reason, never missing, so a documents-only repository is read for
+what it is and a service without a database is not scored on migrations. The rule states the
+practice; the profile names the tool it chose for it (`tools`).
+
 A repository extends the catalog with its own rules in `abatty.rules.mjs` at its root, the same
 shape:
 
@@ -88,8 +95,8 @@ export const rules = [
 
 The context `c` gives a rule the repository as git keeps it (`files`, `firstFile`, `read`,
 `readJson`, `exists`, `git`), its package (`pkg`, `scripts`, `script`, `deps`, `has`), its
-configs (`eslintText`, `tsconfigText`, `ciText`) and its sources (`sourceFiles`, `docFiles`,
-`isTs`); nothing of the repository is executed. A rule is waived with a reason in
+configs (`eslintText`, `tsconfigText`, `ciText`), its sources (`sourceFiles`, `docFiles`,
+`isTs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
 `.claude/adoption.json` → `rules.waived` (`"CODE-DUP": "not measured on a prototype"`, or
 `{ "reason": ..., "until": "2026-12-31" }`): listed, not scored, and since that file is
 read-only to the night's worker, a waiver is a human's decision.

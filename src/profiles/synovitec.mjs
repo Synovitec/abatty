@@ -8,6 +8,7 @@ import { rules as documents } from "../rules/families/documents.mjs";
 import { rules as instrument } from "../rules/families/instrument.mjs";
 import { rules as harness } from "../rules/families/harness.mjs";
 import { rules as code } from "../rules/families/code.mjs";
+import { rules as codeStructure } from "../rules/families/code-structure.mjs";
 import { rules as types } from "../rules/families/types.mjs";
 import { rules as boundaries } from "../rules/families/boundaries.mjs";
 import { rules as data } from "../rules/families/data.mjs";
@@ -125,6 +126,7 @@ export const synovitec = {
     ...instrument,
     ...harness,
     ...code,
+    ...codeStructure,
     ...types,
     ...boundaries,
     ...data,
@@ -148,5 +150,18 @@ export const synovitec = {
   standard: {
     document: "docs/standard/ENGINEERING_STANDARD.md",
     plan: "docs/standard/ADOPTION_PLAN.md",
+  },
+  // The rules say the practice; the profile names the tools the company chose for it.
+  tools: {
+    ci: "Woodpecker or GitHub Actions",
+    database: "Postgres",
+    schema: "Zod",
+    browser: "Playwright with axe",
+    unit: "Vitest",
+    linter: "ESLint (flat config)",
+    formatter: "Prettier",
+    deadCode: "knip",
+    importGraph: "dependency-cruiser",
+    mutation: "StrykerJS",
   },
 };

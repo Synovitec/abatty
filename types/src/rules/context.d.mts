@@ -30,6 +30,21 @@
  * @property {boolean} isTs more TypeScript than JavaScript sources
  * @property {string | null} contextFile the agent's context file at the root or in its folder
  * @property {Record<string, any> | null} adoption the repository's adoption config
+ * @property {StackFacts} stack what the repository is, for a rule's `applies`
+ */
+/**
+ * The facts a rule's `applies` reads: booleans, each read once. A rule that needs one of them
+ * returns n/a with the reason instead of missing on a repository that has no such surface.
+ * @typedef {object} StackFacts
+ * @property {boolean} package a package.json at the root
+ * @property {boolean} js JavaScript or TypeScript sources
+ * @property {boolean} ts TypeScript sources
+ * @property {boolean} ui a browser application: a UI framework dependency or component sources
+ * @property {boolean} server an HTTP server or API surface
+ * @property {boolean} database an ORM, a query builder or a database driver
+ * @property {boolean} i18n translation catalogues or an i18n library
+ * @property {boolean} pwa a service worker or a web manifest
+ * @property {boolean} docsOnly no sources and no package: documents, decisions, a schema, a mockup
  */
 /**
  * Build the context of a repository. @param {string} repoDir @param {{ today?: string }} [o]
@@ -38,6 +53,18 @@
 export function buildContext(repoDir: string, o?: {
     today?: string;
 }): RepoContext;
+/**
+ * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], exists: (p: string) => boolean }} c
+ * @returns {StackFacts}
+ */
+export function stackFacts(c: {
+    has: (d: string) => boolean;
+    deps: Set<string>;
+    files: (re: RegExp) => string[];
+    sourceFiles: string[];
+    tsSources: string[];
+    exists: (p: string) => boolean;
+}): StackFacts;
 export type RepoContext = {
     /**
      * the absolute root
@@ -141,4 +168,50 @@ export type RepoContext = {
      * the repository's adoption config
      */
     adoption: Record<string, any> | null;
+    /**
+     * what the repository is, for a rule's `applies`
+     */
+    stack: StackFacts;
+};
+/**
+ * The facts a rule's `applies` reads: booleans, each read once. A rule that needs one of them
+ * returns n/a with the reason instead of missing on a repository that has no such surface.
+ */
+export type StackFacts = {
+    /**
+     * a package.json at the root
+     */
+    package: boolean;
+    /**
+     * JavaScript or TypeScript sources
+     */
+    js: boolean;
+    /**
+     * TypeScript sources
+     */
+    ts: boolean;
+    /**
+     * a browser application: a UI framework dependency or component sources
+     */
+    ui: boolean;
+    /**
+     * an HTTP server or API surface
+     */
+    server: boolean;
+    /**
+     * an ORM, a query builder or a database driver
+     */
+    database: boolean;
+    /**
+     * translation catalogues or an i18n library
+     */
+    i18n: boolean;
+    /**
+     * a service worker or a web manifest
+     */
+    pwa: boolean;
+    /**
+     * no sources and no package: documents, decisions, a schema, a mockup
+     */
+    docsOnly: boolean;
 };

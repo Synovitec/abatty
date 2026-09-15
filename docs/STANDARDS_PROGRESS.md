@@ -151,3 +151,8 @@ project and runs `init` from it. Tests 113 -> 114.
 
 The rules, phases and presets as one package, the built-in one named; a client project can
 carry its own. Tests 114 -> 116.
+
+### 2026-09-15 - Where a rule applies
+
+A documents-only repository reads on the rules that concern it; a service without a database
+is not scored on migrations. Tests 116 -> 119.

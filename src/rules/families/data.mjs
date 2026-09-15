@@ -1,6 +1,7 @@
 /**
  * Data: migrations as the source of truth, tenant isolation proven, a restore drill.
- * Standard DATA.1, DATA.3, DATA.5. Every check is n/a on a repository without an ORM.
+ * Standard DATA.1, DATA.3, DATA.5. The family applies to a repository with a database (an ORM,
+ * a query builder, a driver or migration files); tenant isolation is n/a without a tenant column.
  */
 
 const ORMS = ["prisma", "drizzle-orm", "sequelize", "typeorm", "kysely"];
@@ -9,6 +10,8 @@ const ORMS = ["prisma", "drizzle-orm", "sequelize", "typeorm", "kysely"];
 const orm = (c) => ORMS.filter(c.has);
 /** @param {import("../index.mjs").RepoContext} c */
 const migrations = (c) => c.files(/(^|\/)(migrations|drizzle)\/.*\.(sql|js|cjs|ts)$/);
+
+import { DATABASE } from "../applies.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -20,14 +23,15 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    ...DATABASE,
     why: "A schema that lives only in the database cannot be reviewed, replayed or rolled back; an applied migration edited afterwards is a schema that differs per environment.",
     next: "Generate or hand-write migrations; never edit an applied one",
     check: (c) => {
       const o = orm(c);
       const m = migrations(c);
       return {
-        status: o.length === 0 ? "n/a" : m.length > 0 ? "present" : "missing",
-        evidence: `${o.join(", ") || "no ORM"}; ${m.length} migration file(s)`,
+        status: m.length > 0 ? "present" : "missing",
+        evidence: `${o.join(", ") || "no ORM (a driver or migration files)"}; ${m.length} migration file(s)`,
       };
     },
   },
@@ -39,10 +43,10 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "4 / 10",
+    ...DATABASE,
     why: "One tenant reading another's rows is the failure a multi-tenant product does not survive; it is proven by a negative test on a real database, not by the presence of a column.",
     next: "Add a negative isolation integration test (tenant A cannot read B)",
     check: (c) => {
-      const o = orm(c);
       const m = migrations(c);
       const rls = m.some((f) => /ROW LEVEL SECURITY/i.test(c.read(f)));
       // A column is a word on its own, not the tail of another name: `ms_tenant_id` (a settings
@@ -59,8 +63,7 @@ export const rules = [
         .files(/(isolation|tenant|rls|visibility|scope).*\.test\.|\/rls\//i)
         .some((f) => /^tests\/(db|integration|rls)\//.test(f));
       return {
-        status:
-          o.length === 0 ? "n/a" : rls || isolationTest ? "present" : tenantCol ? "partial" : "n/a",
+        status: rls || isolationTest ? "present" : tenantCol ? "partial" : "n/a",
         evidence: `${rls ? "RLS in migrations" : tenantCol ? "tenant column, no RLS" : "no tenant column found"}${isolationTest ? "; isolation test present" : "; no isolation test"}`,
       };
     },
@@ -73,6 +76,7 @@ export const rules = [
     level: "must",
     enforcement: "review",
     phase: "-",
+    ...DATABASE,
     why: "A backup that has never been restored is a hope; the drill, dated, is the proof, and a human runs it.",
     next: "Add a restore drill script and date each run in OPERATIONS.md",
     check: (c) => {

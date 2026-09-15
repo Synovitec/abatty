@@ -108,7 +108,7 @@ export const rules = [
   {
     id: "INST-CI",
     family: "Instrument",
-    title: "CI (Woodpecker or GitHub Actions) with the same gates",
+    title: "CI with the same gates",
     level: "must",
     enforcement: "hard",
     phase: "0",
@@ -116,7 +116,9 @@ export const rules = [
     next: "abatty ci generates the pipeline from the gate (Woodpecker, GitHub Actions)",
     check: (c) => ({
       status: c.ciFiles.length > 0 ? "present" : "missing",
-      evidence: c.ciFiles.join(", ") || "no .woodpecker/ nor .github/workflows/",
+      evidence:
+        c.ciFiles.join(", ") ||
+        "no CI pipeline found (the providers the package reads: Woodpecker, GitHub Actions)",
     }),
   },
   {

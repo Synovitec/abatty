@@ -26,6 +26,10 @@ export function validate(list) {
       if (!["hard", "ratchet", "review", "prose"].includes(r.enforcement))
         problems.push(`${where}: enforcement must be hard|ratchet|review|prose`);
       if (typeof r.check !== "function") problems.push(`${where}: check must be a function`);
+      if (r.applies !== undefined && typeof r.applies !== "function")
+        problems.push(`${where}: applies must be a function`);
+      if (r.when !== undefined && typeof r.when !== "string")
+        problems.push(`${where}: when must be a sentence`);
       if (r.standard && !Array.isArray(r.standard))
         problems.push(`${where}: standard must be an array`);
     }

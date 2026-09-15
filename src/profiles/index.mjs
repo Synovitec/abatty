@@ -26,8 +26,9 @@ import { synovitec } from "./synovitec.mjs";
  *   presets?: string[],
  *   harnessRules?: string[],
  *   standard?: { document?: string, plan?: string },
+ *   tools?: Record<string, string>,
  *   source?: string,
- * }} Profile
+ * }} Profile a profile's `tools` name what its rules leave unnamed: the CI providers, the database, the schema library, the browser runner.
  */
 
 /** The built-in profiles. @type {Profile[]} */

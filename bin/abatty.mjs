@@ -713,6 +713,7 @@ switch (command) {
     );
     if (rule.standard?.length) out(t.kv("standard", stdIds(rule.standard.join(", "))) + "\n");
     out(t.kv("phase", rule.phase) + "\n");
+    out(t.kv("applies", rule.when || "always") + "\n");
     if (rule.source && rule.source !== "abatty") out(t.kv("source", rule.source) + "\n");
     out(t.heading("Why"));
     out(`  ${rule.why}\n`);

@@ -238,7 +238,10 @@ test("a repository adds its own rules from abatty.rules.mjs; a built-in id is re
 });
 
 test("abatty rules lists the catalog, filters it, and explain refuses an unknown id", () => {
-  const dir = tempRepo("rules-cli", { "package.json": NEXT_PKG });
+  const dir = tempRepo("rules-cli", {
+    "package.json": NEXT_PKG,
+    "src/index.ts": "export const x = 1;\n",
+  });
   const all = cli(["rules", dir], dir);
   assert.equal(all.code, 0, all.out);
   assert.match(all.out, /65 of 65/);

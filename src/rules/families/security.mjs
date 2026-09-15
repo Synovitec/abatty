@@ -3,6 +3,8 @@
  * no env file tracked. Standard SEC.1.
  */
 
+import { PACKAGE } from "../applies.mjs";
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -39,6 +41,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    ...PACKAGE,
     why: "The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident.",
     next: "Add npm/pnpm audit on the shipped tree and audit signatures",
     check: (c) => {
@@ -58,6 +61,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
+    ...PACKAGE,
     why: "An install that resolves versions at build time builds a different product each time; the lockfile, frozen, is the one that was tested.",
     next: "Use npm ci / pnpm install --frozen-lockfile in CI",
     check: (c) => {

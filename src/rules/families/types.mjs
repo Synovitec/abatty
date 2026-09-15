@@ -4,16 +4,19 @@
  * more TypeScript than JavaScript is held to the strict flags, the other to checkJs.
  */
 
+import { SOURCES } from "../applies.mjs";
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
     id: "TYPES-CHECKJS",
     family: "Types",
-    title: "JavaScript repo runs tsc --noEmit over checkJs and ratchets the count",
+    title: "A JavaScript repository typechecks over checkJs and ratchets the count",
     standard: ["CODE.3"],
     level: "must",
     enforcement: "ratchet",
     phase: "9",
+    ...SOURCES,
     why: "A JavaScript repository still has types, in the JSDoc and in the shapes it passes around; checkJs reads them and the count of errors is a number that may only fall.",
     next: "Add tsconfig with allowJs/checkJs and a typecheck script",
     check: (c) => {
@@ -42,6 +45,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "9",
+    ...SOURCES,
     why: "strict alone lets an index read return undefined unnoticed and an optional property be set to undefined; the two extra flags close the holes the runtime finds first.",
     next: "Enable the missing flags; migrate in the order strictNullChecks, noImplicitAny, strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes",
     check: (c) => {
@@ -59,11 +63,12 @@ export const rules = [
   {
     id: "TYPES-SCRIPT",
     family: "Types",
-    title: "A typecheck script runs tsc --noEmit",
+    title: "A typecheck script runs the compiler without emitting",
     standard: ["CODE.3"],
     level: "must",
     enforcement: "hard",
     phase: "1",
+    ...SOURCES,
     why: "The build may skip the type errors a bundler tolerates; tsc --noEmit is the one command that reads them all, and the gate needs its name.",
     next: "Add typecheck: tsc --noEmit and put it in the gate",
     check: (c) => {
@@ -81,6 +86,7 @@ export const rules = [
     level: "must",
     enforcement: "ratchet",
     phase: "1 / 9",
+    ...SOURCES,
     why: "Every any is a place the compiler was told to look away; the count is the honest measure of how strict the types are.",
     next: "Ban any with no-explicit-any; ratchet the count",
     check: (c) => {

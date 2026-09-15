@@ -64,6 +64,22 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
  * @property {boolean} isTs more TypeScript than JavaScript sources
  * @property {string | null} contextFile the agent's context file at the root or in its folder
  * @property {Record<string, any> | null} adoption the repository's adoption config
+ * @property {StackFacts} stack what the repository is, for a rule's `applies`
+ */
+
+/**
+ * The facts a rule's `applies` reads: booleans, each read once. A rule that needs one of them
+ * returns n/a with the reason instead of missing on a repository that has no such surface.
+ * @typedef {object} StackFacts
+ * @property {boolean} package a package.json at the root
+ * @property {boolean} js JavaScript or TypeScript sources
+ * @property {boolean} ts TypeScript sources
+ * @property {boolean} ui a browser application: a UI framework dependency or component sources
+ * @property {boolean} server an HTTP server or API surface
+ * @property {boolean} database an ORM, a query builder or a database driver
+ * @property {boolean} i18n translation catalogues or an i18n library
+ * @property {boolean} pwa a service worker or a web manifest
+ * @property {boolean} docsOnly no sources and no package: documents, decisions, a schema, a mockup
  */
 
 /**
@@ -209,6 +225,7 @@ export function buildContext(repoDir, o = {}) {
   const jsSources = sourceFiles.filter((f) => /\.(js|jsx|mjs|cjs)$/.test(f));
   // The agent's context file: the primary's at the root or in its folder, else the open
   // AGENTS.md convention another adapter reads.
+  const stack = stackFacts({ has, deps, files, sourceFiles, tsSources, exists });
   const contextName = "CLAUDE.md";
   const contextFile = exists(contextName)
     ? contextName
@@ -251,5 +268,97 @@ export function buildContext(repoDir, o = {}) {
     isTs: tsSources.length > jsSources.length,
     contextFile,
     adoption: readAdoption(REPO),
+    stack,
+  };
+}
+
+const UI_DEPS = [
+  "react",
+  "next",
+  "astro",
+  "vue",
+  "svelte",
+  "solid-js",
+  "preact",
+  "@angular/core",
+  "lit",
+  "@remix-run/react",
+  "nuxt",
+  "@sveltejs/kit",
+];
+const SERVER_DEPS = [
+  "express",
+  "fastify",
+  "koa",
+  "hono",
+  "@nestjs/core",
+  "next",
+  "@hapi/hapi",
+  "@trpc/server",
+  "graphql",
+  "@apollo/server",
+  "astro",
+  "nuxt",
+  "@sveltejs/kit",
+  "@remix-run/node",
+];
+const DATABASE_DEPS = [
+  "prisma",
+  "@prisma/client",
+  "drizzle-orm",
+  "sequelize",
+  "typeorm",
+  "kysely",
+  "knex",
+  "mongoose",
+  "pg",
+  "postgres",
+  "mysql2",
+  "better-sqlite3",
+  "sqlite3",
+  "@libsql/client",
+  "mongodb",
+  "ioredis",
+];
+const I18N_DEPS = [
+  "i18next",
+  "react-i18next",
+  "next-intl",
+  "react-intl",
+  "@lingui/core",
+  "vue-i18n",
+  "@formatjs/intl",
+  "astro-i18next",
+];
+
+/**
+ * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], exists: (p: string) => boolean }} c
+ * @returns {StackFacts}
+ */
+export function stackFacts(c) {
+  const pkg = c.exists("package.json");
+  const js = c.sourceFiles.length > 0;
+  const ui =
+    UI_DEPS.some(c.has) || c.sourceFiles.some((f) => /\.(tsx|jsx|vue|svelte|astro)$/.test(f));
+  return {
+    package: pkg,
+    js,
+    ts: c.tsSources.length > 0,
+    ui,
+    server:
+      SERVER_DEPS.some(c.has) || c.files(/^(src\/)?(app\/api|api|server|routes)\//).length > 0,
+    database:
+      DATABASE_DEPS.some(c.has) ||
+      c.files(/(^|\/)(migrations|drizzle|prisma)\/.*\.(sql|js|cjs|ts|prisma)$/).length > 0,
+    i18n:
+      I18N_DEPS.some(c.has) ||
+      c.files(
+        /(^|\/)(locales|messages|i18n)\/[^/]+\.json$|(^|\/)(locales|messages|i18n)\/[^/]+\/.*\.json$/,
+      ).length > 0,
+    pwa:
+      c.files(
+        /(^|\/)(sw|service-worker)\.(js|ts)$|(^|\/)manifest\.(json|webmanifest)$|manifest\.webmanifest\/route\.ts$/,
+      ).length > 0 || [...c.deps].some((d) => /workbox|next-pwa|vite-plugin-pwa/.test(d)),
+    docsOnly: !pkg && !js,
   };
 }

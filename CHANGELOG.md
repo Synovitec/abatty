@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- Rules say where they apply (roadmap #20): `applies`, a predicate over the repository's
+  facts (`c.stack`: package, sources, browser application, server, database, catalogues,
+  service worker), and `when`, the sentence the catalog prints; where a rule does not apply
+  its finding is n/a with the reason, never missing. Thirty-five rules carry one; a
+  documents-only repository is read on the documents, the instrument, the harness and
+  delivery alone. The rule statements name the practice, the profile names the tools
+  (`tools`): the linter, the formatter, the database, the browser suite, CI.
 - Profiles (roadmap #19): a standard as a package of rules, phases, presets and harness rule
   files. The 65 rules, the thirteen phases and the four presets become the built-in
   `synovitec` profile; a repository names the profiles it follows (`profiles` in the config: a

@@ -1,12 +1,14 @@
 /**
  * i18n, a11y and PWA: the catalogues and their completeness, hardcoded text as a lint error,
  * the a11y plugin with its component mapping, contrast from the tokens, the service worker
- * under a contract test. Standard I18N.1, A11Y.1, PWA.1. Each is n/a where the stack has no
- * such surface.
+ * under a contract test. Standard I18N.1, A11Y.1, PWA.1. Each applies where the stack has the
+ * surface (a browser application, catalogues, a service worker) and is n/a elsewhere.
  */
 
 const LOCALES =
   /(^|\/)(locales|messages|i18n)\/[^/]+\/.*\.json$|(^|\/)(locales|messages|i18n)\/[a-z]{2}(-[A-Z]{2})?\.json$|(^|\/)i18n\/(dict|messages|catalog|translations)\.(ts|js)$/;
+
+import { BROWSER, PWA, TEXT } from "../applies.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -18,6 +20,7 @@ export const rules = [
     level: "should",
     enforcement: "prose",
     phase: "-",
+    ...TEXT,
     why: "Copy in a catalogue can be translated, reviewed and checked for completeness; copy in the components can only be found by reading them.",
     next: "-",
     check: (c) => {
@@ -26,7 +29,7 @@ export const rules = [
         locales.map((f) => (f.includes("/") ? f.slice(0, f.lastIndexOf("/")) : ".")),
       );
       return {
-        status: locales.length > 0 ? "present" : "n/a",
+        status: locales.length > 0 ? "present" : "missing",
         evidence: locales.length
           ? `${locales.length} file(s) in ${dirs.size} folder(s)`
           : "no catalogue found",
@@ -36,17 +39,18 @@ export const rules = [
   {
     id: "I18N-LINT",
     family: "i18n",
-    title: "Hardcoded JSX text is a lint error",
+    title: "Hardcoded component text is a lint error",
     standard: ["I18N.1"],
     level: "must",
     enforcement: "hard",
     phase: "1",
+    ...TEXT,
     why: "One string typed into a component is one string the translators never see; the linter refuses it at the line.",
     next: "Add react/jsx-no-literals or eslint-plugin-i18next at error",
     check: (c) => {
       const rule = /jsx-no-literals|no-literal-string/.test(c.eslintText);
       return {
-        status: rule ? "present" : c.files(LOCALES).length ? "missing" : "n/a",
+        status: rule ? "present" : "missing",
         evidence: rule ? "rule present" : "none",
       };
     },
@@ -59,6 +63,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "1",
+    ...TEXT,
     why: "A key missing in one locale is a raw identifier on a customer's screen; a test over the set refuses the commit that forgot one.",
     next: "Add a completeness test and the pre-commit locale-set check",
     check: (c) => {
@@ -80,6 +85,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "3",
+    ...BROWSER,
     why: "The countable part of WCAG (a label, an alt, a role) is refused by the linter at the line; a component library needs the mapping or the plugin sees nothing.",
     next: "Add the plugin at error and map the component library (settings + polymorphicPropName)",
     check: (c) => {
@@ -102,6 +108,7 @@ export const rules = [
     level: "should",
     enforcement: "hard",
     phase: "3",
+    ...BROWSER,
     why: "Contrast is arithmetic over the tokens, both themes; a script computes what a reviewer estimates.",
     next: "Add a contrast script over the token file, both themes",
     check: (c) => {
@@ -117,6 +124,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "-",
+    ...PWA,
     why: "A service worker that serves a stale shell serves it to every user until they clear the site; the contract test is the one thing that catches it before them.",
     next: "Add the never-stale-shell contract test and the broken-asset metric",
     check: (c) => {

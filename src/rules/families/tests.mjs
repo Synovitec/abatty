@@ -3,6 +3,8 @@
  * with axe and its retry policy, mutation testing. Standard TEST.1..5, DATA.4, A11Y.1.
  */
 
+import { BROWSER, DATABASE, SOURCES } from "../applies.mjs";
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -13,6 +15,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "2 / 10",
+    ...SOURCES,
     why: "A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has.",
     next: "Add vitest and colocated tests for services and guards",
     check: (c) => {
@@ -27,12 +30,13 @@ export const rules = [
   {
     id: "TEST-INTEGRATION",
     family: "Tests",
-    title: "Integration tests against a real Postgres",
+    title: "Integration tests against a real database",
     standard: ["TEST.2", "DATA.4"],
     level: "must",
     enforcement: "hard",
     phase: "10",
-    why: "A mocked database proves the mock; constraints, RLS and transactions only fail on the real engine.",
+    ...DATABASE,
+    why: "A mocked database proves the mock; constraints, row-level policies and transactions only fail on the real engine.",
     next: "Stand up Testcontainers or the local dev DB; rolled-back transaction per test; no ORM mocking",
     check: (c) => {
       const integ =
@@ -50,6 +54,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "2",
+    ...SOURCES,
     why: "A threshold pinned at today's figure is a floor coverage cannot fall below unnoticed; reportOnFailure keeps the report when the suite is red, which is when it is read.",
     next: "Pin thresholds at today's measured figure per area; set reportOnFailure: true",
     check: (c) => {
@@ -74,18 +79,19 @@ export const rules = [
   {
     id: "TEST-E2E",
     family: "Tests",
-    title: "Playwright with axe",
+    title: "A browser suite with an accessibility scan on the same run",
     standard: ["TEST.3", "A11Y.1"],
     level: "must",
     enforcement: "hard",
     phase: "3",
+    ...BROWSER,
     why: "The critical journeys are proven in a browser, and the accessibility violations axe can count are refused on the same run.",
     next: "Add @axe-core/playwright on the critical journeys, blocking",
     check: (c) => {
       const pw = c.has("@playwright/test");
       const axe = c.has("@axe-core/playwright") || c.has("axe-playwright");
       return {
-        status: pw && axe ? "present" : pw ? "partial" : "n/a",
+        status: pw && axe ? "present" : pw ? "partial" : "missing",
         evidence: `${pw ? "playwright" : "no playwright"}${axe ? " + axe" : ""}`,
       };
     },
@@ -98,6 +104,7 @@ export const rules = [
     level: "should",
     enforcement: "review",
     phase: "3",
+    ...BROWSER,
     why: "Retries on a developer's machine hide flakiness; a trace on the first retry is the evidence when CI fails.",
     next: "Set retries: process.env.CI ? 2 : 0 and trace: 'on-first-retry'",
     check: (c) => {
@@ -126,6 +133,7 @@ export const rules = [
     level: "should",
     enforcement: "hard",
     phase: "10",
+    ...SOURCES,
     why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code.",
     next: "Add StrykerJS on changed files per PR with break at today's floor",
     check: (c) => {
