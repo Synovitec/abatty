@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- `docs/ROADMAP.md`: the "any project" section - the four facts in the code that stop a
+  stranger's repository from a meaningful score, and items 18 to 27 (a root config with nothing
+  outside the repository, profiles, an `applies` predicate, a stage, presets per workspace,
+  coupled paths, gate steps that prove they can go red, language packs, CI from the gate,
+  distribution), each with its evidence and its tier.
 - The rule catalog (`src/rules/`): every check as data - ID, family, statement, the standard's
   IDs, must or should, what insures it (hard, ratchet, review, prose), the phase, the reason,
   the check as a pure function of a typed repository context. `abatty measure` runs it; the
