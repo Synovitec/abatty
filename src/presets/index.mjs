@@ -20,9 +20,10 @@
 import { next } from "./next.mjs";
 import { viteReact } from "./vite-react.mjs";
 import { node } from "./node.mjs";
+import { astro } from "./astro.mjs";
 
 /** @type {Preset[]} */
-export const presets = [next, viteReact, node];
+export const presets = [next, astro, viteReact, node];
 
 /** @param {string} id */
 export function presetById(id) {

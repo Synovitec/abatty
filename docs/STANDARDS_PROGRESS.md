@@ -84,3 +84,8 @@ repository's harness was synced by hand three times in one day before it. Tests 
 `abatty.config.json` at the root, validated against the schema the package ships, read first
 by every hook and every command; this repository's own config carries the `$schema` line and
 validates. Tests 70 -> 74.
+
+### 2026-09-15 - Fixtures per preset
+
+The `astro` preset and its fixture; four presets, four fixtures, two of them also proven by a
+repository. Tests 74 -> 75.

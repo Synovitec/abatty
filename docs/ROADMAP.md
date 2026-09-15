@@ -15,9 +15,8 @@ to the changelog; the order here is the order of the evidence.
 
 ## Now - the gaps that hurt every day
 
-| #   | Change                                                                                                                                                                                                           | Evidence                                                                                                                      | Size       |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 5   | **Fixture repositories per preset** in the tests (`astro`, `express` next; `next`, `vite-react`, `node` have one since 2026-09-14, the fixture proves init, measure, doctor and the gate's order, not the stack) | "A preset is real when a repository proved it" - one repository proves one preset; fixtures prove the others without a client | 1 day each |
+| #   | Change | Evidence | Size |
+| --- | ------ | -------- | ---- |
 
 ## Any project - what stops a stranger's repository from a meaningful score
 
@@ -69,6 +68,10 @@ repositories. Items 6, 11 and 17 above are part of this list and are not repeate
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · fixture repositories per preset (#5): `astro` added with its fixture; `express`
+  is the `node` preset's own fixture (it detects Express, Fastify, Hono and Koa), so no preset
+  of its own. Every preset now has a fixture; `next` and `vite-react` also have a repository.
 
 - 2026-09-15 · the root config (#4, and #18 with it): `abatty.config.json` with its schema,
   `abatty config`, the hooks and the package reading it first, read-only at night; nothing of

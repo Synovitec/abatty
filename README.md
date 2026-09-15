@@ -152,6 +152,7 @@ rules files); the standard says what must hold. A preset is real when a reposito
 | ------------ | -------------------------------------------------------------------------------------------------------------------- |
 | `next`       | paycore_dms, 2026-09-14: instrument, harness, graph and dead code in the gate, first unattended night closed a phase |
 | `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                |
+| `astro`      | nobody yet - `init` says so; the fixture in the tests proves init, measure, doctor and the gate's order on the shape |
 | `node`       | nobody yet - `init` says so                                                                                          |
 
 ## Provenance, and the scrub as an option

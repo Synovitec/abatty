@@ -26,6 +26,23 @@ const FIXTURES = {
     },
     rule: "a11y.md",
   },
+  astro: {
+    pkg: {
+      name: "fixture-astro",
+      version: "0.1.0",
+      private: true,
+      scripts: { test: "node -e process.exit(0)", build: "astro build", dev: "astro dev" },
+      dependencies: { astro: "5.0.0" },
+      devDependencies: { "@astrojs/check": "0.9.0", typescript: "5.6.0" },
+    },
+    files: {
+      "src/pages/index.astro": "---\nconst title = 'Home';\n---\n<h1>{title}</h1>\n",
+      "src/layouts/Base.astro": "---\n---\n<html><body><slot /></body></html>\n",
+      "src/components/Hello.ts": "export const hello = () => 'hello';\n",
+      "astro.config.mjs": "export default {};\n",
+    },
+    rule: "i18n.md",
+  },
   node: {
     pkg: {
       name: "fixture-node",

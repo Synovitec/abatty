@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The `astro` preset (roadmap #5), unproven and saying so: pages, layouts, components and
+  content under `src/`, `astro check` as the typecheck, the browser suite with axe over the
+  built output, no database suite by default; its fixture repository in the tests proves
+  detection, init, measure, doctor and the gate's order. Express needs no preset of its own:
+  the `node` preset detects it and its fixture already runs on it.
 - The root config (roadmap #4): `abatty.config.json` at the repository root is the one config,
   with a JSON Schema the package ships (`schema/abatty.config.schema.json`) and a `$schema` line;
   `abatty config` lists the files, the resolved values and the problems against the schema
