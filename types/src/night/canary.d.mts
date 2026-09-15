@@ -6,7 +6,7 @@
  */
 export function judgeMcp(answer: string, declared: string[], cfgPath: string): string[];
 /**
- * Run the canary and judge it. Returns the findings (empty is green) and the cost.
+ * Run the canary and judge it. Returns the findings (empty is green), the cost and the tokens.
  * @param {{ repoDir: string, branch: string, base: string, until: string, date: string, nightDir: string, mcpServers: string[], mcpConfig: string }} c
  * @param {import("./session.mjs").SessionOptions} o
  */
@@ -22,6 +22,7 @@ export function runCanary(c: {
 }, o: import("./session.mjs").SessionOptions): {
     failed: string[];
     cost: number;
+    tokens: number;
     json: string;
     stderr: string;
 };

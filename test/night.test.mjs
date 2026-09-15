@@ -229,3 +229,53 @@ test("under the sandbox the tamper cannot happen: the filesystem refuses the wri
     .join("\n");
   assert.match(stderr, /tamper refused by the filesystem: EROFS/);
 });
+
+test("the allowance: sessions or tokens end the night, said, with no wrap-up; the spend is in run.json", () => {
+  const dir = nightRepo("night-allowance");
+  const r = night(dir, { maxSessions: 1 });
+  assert.equal(r.ok, true, r.out);
+  assert.match(r.out, /allowance: 1 session\(s\), 10 USD/);
+  assert.match(r.out, /the allowance is spent: 1 of 1 session\(s\); the wrap-up is not run/);
+  assert.doesNotMatch(r.out, /adopt-wrap-up/);
+  assert.equal(r.sessions, 1);
+  assert.equal(r.tokens, 350 + 1300, "the canary's tokens and the phase's");
+  const run = JSON.parse(readFileSync(join(dir, ".claude/night/run.json"), "utf8"));
+  assert.equal(run.status, "done");
+  assert.deepEqual(run.spent, { usd: r.spent, sessions: 1, tokens: 1650 });
+  assert.deepEqual(run.allowance, { usd: 10, sessions: 1, tokens: 0 });
+
+  const dir2 = nightRepo("night-tokens");
+  const r2 = night(dir2, { maxTokens: 400, skipCanary: true });
+  assert.equal(r2.ok, true, r2.out);
+  assert.match(r2.out, /the allowance is spent: 1300 of 400 tokens/);
+  assert.equal(r2.sessions, 1);
+});
+
+test("resume: an interrupted night continues counting what it spent, the canary of that night standing; nothing to resume is refused", () => {
+  const dir = nightRepo("night-resume");
+  const first = night(dir, { maxSessions: 1 });
+  assert.equal(first.ok, true, first.out);
+  // The interruption: the run file still says running, as a killed process leaves it.
+  const runFile = join(dir, ".claude/night/run.json");
+  const run = JSON.parse(readFileSync(runFile, "utf8"));
+  writeFileSync(runFile, JSON.stringify({ ...run, status: "running" }, null, 2) + "\n");
+  const r = night(dir, { resume: true, maxSessions: 2 });
+  assert.equal(r.ok, true, r.out);
+  assert.match(r.out, /resumed: the run of .* stopped after 1 session\(s\)/);
+  assert.doesNotMatch(r.out, /adopt-canary/, "the canary of that night stands");
+  assert.match(r.out, /no phase left to run/);
+  assert.match(r.out, /adopt-wrap-up/, "the allowance had one session left: the wrap-up");
+  assert.equal(r.sessions, 2, "one counted from the interrupted run, the wrap-up");
+  const after = JSON.parse(readFileSync(runFile, "utf8"));
+  assert.equal(after.status, "done");
+  assert.equal(after.resumed, true);
+  assert.equal(after.startedAt, run.startedAt, "the night keeps its start");
+
+  const fresh = nightRepo("night-resume-none");
+  const none = night(fresh, { resume: true });
+  assert.equal(none.ok, false);
+  assert.match(none.out, /nothing to resume: no run of today/);
+  // A finished run is not resumable either.
+  const again = night(dir, { resume: true });
+  assert.match(again.out, /nothing to resume/);
+});

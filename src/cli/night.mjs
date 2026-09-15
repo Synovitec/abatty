@@ -29,7 +29,7 @@ export function nightCommand(c) {
       const r = runNight({
         repoDir: dir,
         until: opt("--until") || "07:00",
-        maxCostUsd: opt("--max-cost") ? Number(opt("--max-cost")) : 60,
+        maxCostUsd: opt("--max-cost") ? Number(opt("--max-cost")) : undefined,
         phases: opt("--phases")
           ? opt("--phases")
               .split(/[\s,]+/)
@@ -43,10 +43,13 @@ export function nightCommand(c) {
         canaryOnly: flag("--canary-only"),
         agent: opt("--agent"),
         sandbox: /** @type {"auto" | "required" | "off" | undefined} */ (sandbox || undefined),
+        maxSessions: opt("--max-sessions") ? Number(opt("--max-sessions")) : undefined,
+        maxTokens: opt("--max-tokens") ? Number(opt("--max-tokens")) : undefined,
+        resume: flag("--resume"),
         log: (line) => {
           for (const l of line.split("\n")) {
             if (
-              /ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree|does not hold|could not start/.test(
+              /ABORTED|failed|refused|red on|incomplete|no agent command|dirty tree|does not hold|could not start|nothing to resume/.test(
                 l,
               )
             )

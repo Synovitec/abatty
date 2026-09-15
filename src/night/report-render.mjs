@@ -22,7 +22,7 @@ export function renderNightReport(r) {
     "",
     `# Night report ${r.date}`,
     "",
-    `Branch \`${r.branch}\` from \`${r.base}\` · ${r.sessions.length} session(s) · ${spent.toFixed(2)} USD · ${r.commits.length} commit(s) · ${done} phase(s) done, ${blocked} blocked · sandbox ${r.run?.sandbox || "none"}.`,
+    `Branch \`${r.branch}\` from \`${r.base}\` · ${r.sessions.length} session(s) · ${spent.toFixed(2)} USD · ${r.commits.length} commit(s) · ${done} phase(s) done, ${blocked} blocked · sandbox ${r.run?.sandbox || "none"}${r.run?.spent ? ` · ${r.run.spent.sessions} session(s) and ${r.run.spent.tokens} tokens against the allowance` : ""}${r.run?.status && r.run.status !== "done" ? ` · run ${r.run.status}` : ""}.`,
     "",
     "## Sessions",
     "",

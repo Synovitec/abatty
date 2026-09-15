@@ -23,7 +23,7 @@
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
- *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off]
+ *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]
  *   abatty presets · abatty version
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

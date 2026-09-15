@@ -12,6 +12,7 @@ import { git, parseJson, readAdoption } from "../core/repo.mjs";
 import { agentCommand, clock } from "./session.mjs";
 import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
 import { prepareSandbox } from "./sandbox.mjs";
+import { capsOf, describeCaps, nothingSpent, spentOf } from "./allowance.mjs";
 
 export const HARNESS_FILES = [
   ".claude/settings.json",
@@ -31,6 +32,14 @@ export function writeJson(p, v) {
 export function readJson(p) {
   return parseJson(readFileSync(p, "utf8"));
 }
+/** @param {string} p @returns {any} */
+function readJsonOrNull(p) {
+  try {
+    return readJson(p);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * @typedef {import("./runner.mjs").NightOptions} NightOptions
@@ -42,6 +51,7 @@ export function readJson(p) {
  *   harnessMoved: (when: string) => string,
  *   adapter: import("../agents/index.mjs").Adapter,
  *   sandbox: import("./sandbox-drivers.mjs").Sandbox | null, sandboxDriver: string,
+ *   caps: import("./allowance.mjs").Caps, resumed: { spent: import("./allowance.mjs").Spent, counters: Record<string, { sessions: number, noops: number }> } | null,
  * }} Preflight
  */
 
@@ -151,14 +161,56 @@ export function preflight(o, c) {
   if (sb.refuse) return refuse(sb.refuse);
   log(sb.note);
 
-  const startedAt = new Date().toISOString();
-  writeJson(join(repoDir, ".claude/night/run.json"), {
+  // The allowance, and the run of today this one may resume: the run file says what a night
+  // spent before it was interrupted; a resume counts it, keeps the canary of that night and
+  // starts from the phase the state file says. Without --resume such a run is only mentioned.
+  const caps = capsOf(config, {
+    maxCostUsd: o.maxCostUsd,
+    maxSessions: o.maxSessions,
+    maxTokens: o.maxTokens,
+  });
+  const runFile = join(repoDir, ".claude/night/run.json");
+  const previous = existsSync(runFile) ? readJsonOrNull(runFile) : null;
+  const interrupted =
+    previous && previous.status === "running" && previous.branch === branch && spentOf(previous);
+  /** @type {Preflight["resumed"]} */
+  let resumed = null;
+  if (o.resume) {
+    if (!interrupted)
+      return refuse(
+        previous && previous.branch && previous.branch !== branch
+          ? `nothing to resume: the last run was on ${previous.branch}, not ${branch}`
+          : "nothing to resume: no run of today stopped before it finished (.claude/night/run.json)",
+      );
+    const spent = spentOf(previous) || nothingSpent();
+    resumed = {
+      spent,
+      counters: previous.counters && typeof previous.counters === "object" ? previous.counters : {},
+    };
+    log(
+      `resumed: the run of ${date} stopped after ${spent.sessions} session(s) (${spent.usd.toFixed(2)} USD, ${spent.tokens} tokens); they count, and the canary of that night stands`,
+    );
+  } else if (interrupted) {
+    log(
+      `a run of today stopped after ${interrupted.sessions} session(s) without finishing; --resume continues it counting what it spent. This night starts afresh.`,
+    );
+  }
+  log(`allowance: ${describeCaps(caps)}, until ${until}`);
+
+  const startedAt =
+    resumed && previous.startedAt ? String(previous.startedAt) : new Date().toISOString();
+  writeJson(runFile, {
     startedAt,
     branch,
     base,
     until,
     maxCostUsd: maxCost,
+    allowance: caps,
     sandbox: sb.driver,
+    status: "running",
+    spent: resumed ? resumed.spent : nothingSpent(),
+    counters: resumed ? resumed.counters : {},
+    resumed: Boolean(resumed),
   });
 
   // The MCP servers a session may have at all: the committed mcp.night.json, else none.
@@ -215,5 +267,7 @@ export function preflight(o, c) {
     adapter,
     sandbox: sb.sandbox,
     sandboxDriver: sb.driver,
+    caps,
+    resumed,
   };
 }

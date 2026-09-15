@@ -190,6 +190,16 @@
       "items": { "type": ["integer", "string"] },
       "description": "The phases a night walks, in order."
     },
+    "allowance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What a night may spend, in the unit the account is billed in: dollars for metered access; sessions or tokens under a subscription, where the dollar figure is a proxy. Any cap reached ends the night. Without one, 60 USD.",
+      "properties": {
+        "usd": { "type": "number", "minimum": 0 },
+        "sessions": { "type": "integer", "minimum": 1 },
+        "tokens": { "type": "integer", "minimum": 1 }
+      }
+    },
     "sandbox": {
       "type": "object",
       "additionalProperties": false,

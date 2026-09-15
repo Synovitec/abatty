@@ -66,7 +66,7 @@ function guardDenied(repoDir, sinceEpochSec) {
 }
 
 /**
- * Run the canary and judge it. Returns the findings (empty is green) and the cost.
+ * Run the canary and judge it. Returns the findings (empty is green), the cost and the tokens.
  * @param {{ repoDir: string, branch: string, base: string, until: string, date: string, nightDir: string, mcpServers: string[], mcpConfig: string }} c
  * @param {import("./session.mjs").SessionOptions} o
  */
@@ -137,5 +137,5 @@ export function runCanary(c, o) {
       .filter((l) => l && !l.includes(".claude/night/"));
     if (dirty.length) failed.push("the canary left the tree dirty");
   }
-  return { failed, cost: r.cost, json: r.json, stderr: r.stderr };
+  return { failed, cost: r.cost, tokens: r.tokens, json: r.json, stderr: r.stderr };
 }

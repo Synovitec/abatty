@@ -1,5 +1,5 @@
 /**
- * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
+ * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, tokens: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
  * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void, adapter?: import("../agents/index.mjs").Adapter, sandbox?: import("./sandbox-drivers.mjs").Sandbox | null }} SessionOptions
  */
 /**
@@ -39,6 +39,7 @@ export type SessionResult = {
     crashed: boolean;
     parsed: boolean;
     cost: number;
+    tokens: number;
     denials: number;
     sessionId: string;
     isError: boolean;

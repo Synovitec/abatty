@@ -136,3 +136,8 @@ ships, and a test walks those files. Tests 102 -> 104.
 
 The boundary under the guard, proven before it is trusted; the package's own night test runs
 under bubblewrap where one is found. Tests 104 -> 111.
+
+### 2026-09-15 - The allowance
+
+Sessions or tokens as the cap where dollars are a proxy; the spend written after every session
+and a night resumable. Tests 111 -> 113.

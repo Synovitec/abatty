@@ -210,9 +210,9 @@ before everything exists; the gap analysis names what is missing.
 
 ## The night
 
-`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off]`
+`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]`
 drives the adoption programme unattended: one headless session per phase on
-`adopt/standards-<date>`, until the hour or the budget. Before the first phase, four things or
+`adopt/standards-<date>`, until the hour or the allowance. Before the first phase, four things or
 no night: the harness self-test green, `.claude/` identical to the base branch, the gate green
 on the branch as it starts, and the canary (a real session that proves a command runs without
 a prompt, the guard fires, the Stop hook fires and reads the base, and no MCP server but the
@@ -238,6 +238,16 @@ hold refuses the night, because a night claiming a boundary it lacks is worse th
 it has none. The network is not cut (the model is on it): pushes, deploys and publishing stay
 the guard's to refuse. The package's test runs a night under bubblewrap where the stub tampers
 with the config and the filesystem refuses it.
+
+**The allowance, and a night resumed.** What a night may spend is in the unit the account is
+billed in: dollars for metered access (`--max-cost`, 60 by default); under a subscription the
+dollar figure is a proxy, so the cap is sessions or tokens (`--max-sessions`, `--max-tokens`,
+or `allowance` in the config), with the hour as the outer bound either way. Any cap reached
+ends the night, said, and the wrap-up is not run on a spent allowance. The runner writes its
+spend to `.claude/night/run.json` after every session; a night interrupted (a laptop closed, a
+process killed) continues with `--resume`: it counts what was spent, keeps the canary of that
+night, and starts from the phase the state file says. Without `--resume` an interrupted run is
+only mentioned and the night starts afresh.
 
 **The morning after**, `abatty night-report [--date] [--json] [--out docs/NIGHT_REPORT_<date>.md]`
 reads what the night left (the sessions' results, the Stop gate's receipts and its log of

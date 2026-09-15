@@ -12,9 +12,10 @@ import { join } from "node:path";
 import { parseJson } from "../core/repo.mjs";
 import { agentFromEnv } from "../core/env.mjs";
 import { PRIMARY, sessionArgs } from "../agents/index.mjs";
+import { tokensOf } from "./allowance.mjs";
 
 /**
- * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
+ * @typedef {{ exit: number, crashed: boolean, parsed: boolean, cost: number, tokens: number, denials: number, sessionId: string, isError: boolean, result: string, json: string, stderr: string }} SessionResult
  * @typedef {{ agent: string, mode: string, model: string, effort: string, mcpConfig: string, log: (line: string) => void, adapter?: import("../agents/index.mjs").Adapter, sandbox?: import("./sandbox-drivers.mjs").Sandbox | null }} SessionOptions
  */
 
@@ -119,6 +120,7 @@ export function runSession(run, o) {
     parsed: Boolean(parsed),
     cost,
     denials,
+    tokens: tokensOf(parsed),
     sessionId: parsed?.session_id ? String(parsed.session_id) : "",
     isError: parsed?.is_error === true,
     result: parsed?.result === undefined || parsed?.result === null ? "" : String(parsed.result),

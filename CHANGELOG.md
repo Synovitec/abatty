@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The allowance and the resumable night (roadmap #16): a night's cap in the unit the account
+  is billed in, dollars, sessions or tokens (`allowance` in the config, `--max-sessions`,
+  `--max-tokens`), any one reached ending the night with the wrap-up not run; the spend
+  written to `run.json` after every session, and `--resume` continuing an interrupted night
+  counting what it spent, with the canary of that night standing.
 - Sandboxed nights (roadmap #15): the OS boundary under the guard, the layer below its text
   match. The runner builds it from `sandbox` in the config (bubblewrap on Linux, `sandbox-exec`
   on macOS, a container image anywhere; `mode` auto, required or off; `--sandbox` for one

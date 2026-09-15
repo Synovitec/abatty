@@ -12,6 +12,7 @@ export function readJson(p: string): any;
  *   harnessMoved: (when: string) => string,
  *   adapter: import("../agents/index.mjs").Adapter,
  *   sandbox: import("./sandbox-drivers.mjs").Sandbox | null, sandboxDriver: string,
+ *   caps: import("./allowance.mjs").Caps, resumed: { spent: import("./allowance.mjs").Spent, counters: Record<string, { sessions: number, noops: number }> } | null,
  * }} Preflight
  */
 /**
@@ -48,4 +49,12 @@ export type Preflight = {
     adapter: import("../agents/index.mjs").Adapter;
     sandbox: import("./sandbox-drivers.mjs").Sandbox | null;
     sandboxDriver: string;
+    caps: import("./allowance.mjs").Caps;
+    resumed: {
+        spent: import("./allowance.mjs").Spent;
+        counters: Record<string, {
+            sessions: number;
+            noops: number;
+        }>;
+    } | null;
 };

@@ -53,10 +53,12 @@ repositories. Item 17 above is part of this list and is not repeated; 1 to 11 ar
 
 | #   | Change                                                               | Evidence                                                   | Size       |
 | --- | -------------------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
-| 16  | Budget by allowance, a resumable runner state                        | A subscription makes the money cap a proxy                 | half a day |
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties | half a day |
 
 ## Done
+
+- 2026-09-15 · the allowance and the resumable night (#16): sessions or tokens as the cap under a
+  subscription; the spend in `run.json` after every session; `--resume`.
 
 - 2026-09-15 · sandboxed nights (#15): an OS boundary under the guard (bubblewrap, sandbox-exec,
   a container), built by the runner and proven by a probe before the first session.

@@ -8,10 +8,13 @@
  * Before the first phase, four things or no night: the harness self-test green, `.claude/`
  * identical to the base branch, the gate green on the branch as it starts, and the canary; the
  * sandbox under the guard is built and proven between them, and every session runs inside it.
- * Then the loop: the next pending phase, at most `maxSessionsPerPhase` sessions each, a crash
- * retried once and a second crash in a row an abort, fifteen denials an abort (auto mode did
- * not take), the harness checked before every session, the wrap-up, and a push only when the
- * harness is untouched and nothing was loosened against the base without a decision naming it.
+ * Then the loop, until the hour or the allowance (dollars, sessions or tokens: a subscription
+ * makes the dollar figure a proxy): the next pending phase, at most `maxSessionsPerPhase`
+ * sessions each, a crash retried once and a second crash in a row an abort, fifteen denials an
+ * abort (auto mode did not take), the harness checked before every session, the spend written
+ * to run.json after every session so an interrupted night resumes counting it, the wrap-up,
+ * and a push only when the harness is untouched and nothing was loosened against the base
+ * without a decision naming it.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -20,6 +23,7 @@ import { git } from "../core/repo.mjs";
 import { runCanary } from "./canary.mjs";
 import { preflight, readJson, writeJson } from "./preflight.mjs";
 import { deadlineOf, runSession } from "./session.mjs";
+import { describeSpent, exhausted } from "./allowance.mjs";
 
 /**
  * @typedef {{
@@ -35,9 +39,12 @@ import { deadlineOf, runSession } from "./session.mjs";
  *   canaryOnly?: boolean,
  *   agent?: string,
  *   sandbox?: "auto" | "required" | "off",
+ *   maxSessions?: number,
+ *   maxTokens?: number,
+ *   resume?: boolean,
  *   log?: (line: string) => void,
  * }} NightOptions
- * @typedef {{ ok: boolean, code: number, abort: string, spent: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
+ * @typedef {{ ok: boolean, code: number, abort: string, spent: number, sessions: number, tokens: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
  */
 
 /**
@@ -55,7 +62,16 @@ export function runNight(o) {
   /** @param {string} why @param {number} [code] */
   const refuse = (why, code = 1) => {
     log(why);
-    return { ok: false, code, abort: why, spent: 0, branch: "", pushed: false };
+    return {
+      ok: false,
+      code,
+      abort: why,
+      spent: 0,
+      sessions: 0,
+      tokens: 0,
+      branch: "",
+      pushed: false,
+    };
   };
   const pf = preflight(o, { repoDir, log, until, maxCost, refuse });
   if ("code" in pf) return pf;
@@ -76,6 +92,8 @@ export function runNight(o) {
     adapter,
     sandbox,
     sandboxDriver,
+    caps,
+    resumed,
   } = pf;
   const session = {
     adapter,
@@ -87,20 +105,43 @@ export function runNight(o) {
     mcpConfig,
     log,
   };
-  let spent = 0;
-  if (!o.skipCanary) {
+  const spent = resumed ? { ...resumed.spent } : { usd: 0, sessions: 0, tokens: 0 };
+  /** @type {Record<string, { sessions: number, noops: number }>} */
+  const counters = resumed ? { ...resumed.counters } : {};
+  const runFile = join(repoDir, ".claude/night/run.json");
+  /** The run file carries the spend after every session: what a resume counts. @param {string} status */
+  const saveRun = (status) => {
+    const run = readJson(runFile);
+    writeJson(runFile, { ...run, status, spent, counters, updatedAt: new Date().toISOString() });
+  };
+  /** @param {string} why */
+  const failed = (why, code = 1) => {
+    saveRun("aborted");
+    return {
+      ok: false,
+      code,
+      abort: why,
+      spent: spent.usd,
+      sessions: spent.sessions,
+      tokens: spent.tokens,
+      branch,
+      pushed: false,
+    };
+  };
+  if (!o.skipCanary && !resumed) {
     const c = runCanary(
       { repoDir, branch, base, until, date, nightDir, mcpServers, mcpConfig },
       session,
     );
-    spent += c.cost;
+    spent.usd += c.cost;
+    spent.tokens += c.tokens;
     if (c.failed.length) {
       log(
         `canary failed - the night would not have been what it claims. ${c.failed.length} finding(s):`,
       );
       for (const f of c.failed) log(`- ${f}`);
       log(`read ${c.json} and ${c.stderr}`);
-      return { ok: false, code: 1, abort: "canary failed", spent, branch, pushed: false };
+      return failed("canary failed");
     }
     log(
       `  canary ok: a command ran without a prompt, the guard refused --no-verify, the Stop hook allowed the stop reading adoption.json from ${base}, MCP servers declared: ${mcpServers.join(" ") || "none"} (${c.cost.toFixed(2)} USD)`,
@@ -113,9 +154,19 @@ export function runNight(o) {
       /* nothing to remove */
     }
     log(
-      `pre-flight done on ${branch}: self-test green, harness identical to ${base}, gate green, canary green, sandbox ${sandboxDriver}. ${spent.toFixed(2)} USD.`,
+      `pre-flight done on ${branch}: self-test green, harness identical to ${base}, gate green, canary green, sandbox ${sandboxDriver}. ${spent.usd.toFixed(2)} USD.`,
     );
-    return { ok: true, code: 0, abort: "", spent, branch, pushed: false, canaryOnly: true };
+    return {
+      ok: true,
+      code: 0,
+      abort: "",
+      spent: spent.usd,
+      sessions: spent.sessions,
+      tokens: spent.tokens,
+      branch,
+      pushed: false,
+      canaryOnly: true,
+    };
   }
 
   const statePath = join(repoDir, stateFile);
@@ -127,7 +178,7 @@ export function runNight(o) {
     });
     const back = readJson(statePath);
     if (!Array.isArray(back.phases) || !back.phases.length || !back.startedAt)
-      return refuse("state file: phases must be a non-empty array with startedAt");
+      return failed("state file: phases must be a non-empty array with startedAt");
     git(repoDir, "add", stateFile);
     git(repoDir, "commit", "-q", "-m", `chore(standards): open the adoption state for ${date}`);
   }
@@ -156,7 +207,7 @@ export function runNight(o) {
   };
   const decisionsMark = () =>
     existsSync(join(repoDir, decisionsFile)) ? git(repoDir, "hash-object", decisionsFile) : "none";
-  /** A phase session: its cost, or "CRASH", or "NOOP" with the cost. @param {string} phase @param {number} budget */
+  /** A phase session: its cost and tokens, or a crash, or a no-op with the cost. @param {string} phase @param {number} budget */
   const runPhase = (phase, budget) => {
     const prompt =
       phase === "wrap-up" ? "/adopt-standards --wrap-up" : `/adopt-standards --phase ${phase}`;
@@ -180,20 +231,28 @@ export function runNight(o) {
       },
       session,
     );
-    if (r.crashed) return { kind: "crash", cost: 0 };
-    if (r.denials >= 15) return { kind: "denials", cost: r.cost, denials: r.denials };
+    if (r.crashed) return { kind: "crash", cost: 0, tokens: 0 };
+    if (r.denials >= 15)
+      return { kind: "denials", cost: r.cost, tokens: r.tokens, denials: r.denials };
     const noop = git(repoDir, "rev-parse", "HEAD") === headBefore && decisionsMark() === markBefore;
     if (noop) log("  no-op session: no commit and no decision recorded");
-    return { kind: noop ? "noop" : "ok", cost: r.cost };
+    return { kind: noop ? "noop" : "ok", cost: r.cost, tokens: r.tokens };
+  };
+  /** Every session that produced a result counts against the allowance. @param {{ cost: number, tokens: number }} r */
+  const account = (r) => {
+    spent.usd += r.cost;
+    spent.tokens += r.tokens;
+    spent.sessions++;
+    log(`  spent so far: ${describeSpent(spent)}`);
+    saveRun("running");
   };
 
   const deadline = deadlineOf(until);
   let crashes = 0;
   let abort = "";
   let code = 2;
-  /** @type {Record<string, { sessions: number, noops: number }>} */
-  const counters = {};
-  while (Date.now() < deadline && spent < maxCost) {
+  let out = "";
+  while (Date.now() < deadline && !(out = exhausted(caps, spent))) {
     const next = phases.find((id) => ["pending", "in_progress"].includes(statusOf(id)));
     if (!next) {
       log("no phase left to run");
@@ -211,7 +270,7 @@ export function runNight(o) {
       abort = `harness moved before phase ${next}`;
       break;
     }
-    const budget = Math.max(5, maxCost - spent);
+    const budget = Math.max(5, (caps.usd || maxCost) - spent.usd);
     const r = runPhase(next, budget);
     if (r.kind === "crash") {
       crashes++;
@@ -230,15 +289,15 @@ export function runNight(o) {
     crashes = 0;
     c.sessions++;
     if (r.kind === "noop") c.noops++;
-    spent += r.cost;
-    log(`  spent so far: ${spent.toFixed(2)} USD`);
+    account(r);
   }
+  if (out) log(`${out}; the wrap-up is not run on a spent allowance`);
 
-  if (!abort && spent < maxCost) {
+  if (!abort && !out) {
     if (harnessMoved("before the wrap-up")) abort = "harness moved before the wrap-up";
     else {
-      const r = runPhase("wrap-up", Math.max(5, maxCost - spent));
-      spent += r.cost;
+      const r = runPhase("wrap-up", Math.max(5, (caps.usd || maxCost) - spent.usd));
+      if (r.kind !== "crash") account(r);
     }
   }
 
@@ -266,12 +325,22 @@ export function runNight(o) {
       if (!pushed) log(`push failed: ${(p.stderr || "").trim()}`);
     }
   }
+  saveRun(abort ? "aborted" : "done");
   log(
     abort
-      ? `night-run ABORTED: ${spent.toFixed(2)} USD on ${branch} (not pushed) - ${abort}`
-      : `night-run done: ${spent.toFixed(2)} USD on ${branch}${pushed ? " (pushed)" : ""}, sandbox ${sandboxDriver}`,
+      ? `night-run ABORTED: ${describeSpent(spent)} on ${branch} (not pushed) - ${abort}`
+      : `night-run done: ${describeSpent(spent)} on ${branch}${pushed ? " (pushed)" : ""}, sandbox ${sandboxDriver}`,
   );
   log(`read: docs/ADOPTION_REPORT_${date}.md, ${decisionsFile}, ${stateFile}, ${nightDir}/`);
   log(git(repoDir, "log", "--oneline", `${base}..${branch}`));
-  return { ok: !abort, code: abort ? code : 0, abort, spent, branch, pushed };
+  return {
+    ok: !abort,
+    code: abort ? code : 0,
+    abort,
+    spent: spent.usd,
+    sessions: spent.sessions,
+    tokens: spent.tokens,
+    branch,
+    pushed,
+  };
 }

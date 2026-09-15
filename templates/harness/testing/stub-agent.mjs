@@ -4,7 +4,7 @@
 // plays the agent's Stop loop: run the stop-gate hook, and if it blocks, act on the reason
 // (commit what is uncommitted) and try again, up to the agent's own cap of 8.
 //
-// It prints the same JSON shape the runner parses (total_cost_usd, permission_denials, is_error).
+// It prints the same JSON shape the runner parses (total_cost_usd, usage, permission_denials, is_error).
 //
 //   ABATTY_AGENT=<path>/stub-agent.sh npx abatty night . --until +10min --max-cost 10 --no-push
 
@@ -79,7 +79,7 @@ if (/^Canary for the night harness/.test(prompt)) {
   // The MCP part of the answer: "none" as a real session under --strict-mcp-config with an empty
   // config answers, or a Slack tool when STUB_CANARY_MCP=1 says the flag did not take.
   const mcp = process.env.STUB_CANARY_MCP === "1" ? "mcp__mail_example__send_message" : "none";
-  process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: `${head} ${mcp}`, total_cost_usd: 0.31, permission_denials: denials, session_id: sessionId }) + "\n");
+  process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: `${head} ${mcp}`, total_cost_usd: 0.31, usage: { input_tokens: 300, output_tokens: 50 }, permission_denials: denials, session_id: sessionId }) + "\n");
   process.exit(0);
 }
 
@@ -138,4 +138,4 @@ for (let attempt = 1; attempt <= 8; attempt++) {
   }
 }
 
-process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: `stub finished ${wrapUp ? "wrap-up" : "phase " + phase}`, total_cost_usd: 1.25, permission_denials: [], session_id: sessionId }) + "\n");
+process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: `stub finished ${wrapUp ? "wrap-up" : "phase " + phase}`, total_cost_usd: 1.25, usage: { input_tokens: 1000, cache_read_input_tokens: 100, output_tokens: 200 }, permission_denials: [], session_id: sessionId }) + "\n");

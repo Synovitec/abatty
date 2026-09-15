@@ -12,9 +12,12 @@
  *   canaryOnly?: boolean,
  *   agent?: string,
  *   sandbox?: "auto" | "required" | "off",
+ *   maxSessions?: number,
+ *   maxTokens?: number,
+ *   resume?: boolean,
  *   log?: (line: string) => void,
  * }} NightOptions
- * @typedef {{ ok: boolean, code: number, abort: string, spent: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
+ * @typedef {{ ok: boolean, code: number, abort: string, spent: number, sessions: number, tokens: number, branch: string, pushed: boolean, canaryOnly?: boolean }} NightResult
  */
 /**
  * Run a night. Never throws for a refused night: the result carries the reason and the exit
@@ -36,6 +39,9 @@ export type NightOptions = {
     canaryOnly?: boolean;
     agent?: string;
     sandbox?: "auto" | "required" | "off";
+    maxSessions?: number;
+    maxTokens?: number;
+    resume?: boolean;
     log?: (line: string) => void;
 };
 export type NightResult = {
@@ -43,6 +49,8 @@ export type NightResult = {
     code: number;
     abort: string;
     spent: number;
+    sessions: number;
+    tokens: number;
     branch: string;
     pushed: boolean;
     canaryOnly?: boolean;
