@@ -17,7 +17,7 @@ npx abatty ratchet --range auto  # the ratchet: every probe against the committe
 npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty presets               # the stacks, and which repository proved each
-npx abatty scrub                 # no trace of the tools: files (--fix), commit messages (--commits), pull requests (--prs)
+npx abatty scrub                 # opt-in: no trace of the tools in files (--fix), commit messages (--commits), pull requests (--prs)
 npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
 npx abatty rules                 # the rule catalog: what must hold, why, what insures it, when the plan installs it
 npx abatty explain CODE-DEADCODE # one rule, its reason, and its finding in this repository
@@ -110,10 +110,18 @@ rules files); the standard says what must hold. A preset is real when a reposito
 | `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                |
 | `node`       | nobody yet - `init` says so                                                                                          |
 
-## No trace of the tools
+## Provenance, and the scrub as an option
 
-A repository built with abatty names no tool, no vendor, no model - not in its files, not in
-its commit messages, not in its pull requests or issues. Four layers hold it:
+**Provenance is the default.** A tool that audits an agent's runs does not erase them: the
+agent's trailer on the commits it made is the audit trail, and nothing in the harness refuses a
+commit for naming it. A repository may ask for more: `provenance.trailer` in its config names a
+disclosure line every unattended commit carries, and the guard refuses a night commit written
+without it.
+
+**The scrub is opt-in** (`scrub.enabled: true` in the adoption config or in
+`abatty.config.json`), for white-label work where the client's history names no tool, no
+vendor, no model, with the reason in the repository's decisions file. Once on, four layers hold
+it:
 
 - `abatty scrub` scans the tracked files, a commit range (`--commits`, `--range`) and the
   pull requests (`--prs`); `--fix` rewrites files by the word map; `--history` prints the
@@ -123,16 +131,17 @@ its commit messages, not in its pull requests or issues. Four layers hold it:
 - The guard (`.claude/hooks/guard.mjs`) refuses a `git commit`, `git tag -m`, `gh pr create`,
   `gh pr edit` or `gh issue create` whose text names one, day and night: a commit is the one
   thing a night cannot rewrite.
-- A `commit-msg` hook for humans (`abatty scrub --message`), and the gate's scan of the files
-  before a push.
+- A `commit-msg` hook for humans (`abatty scrub --message`, a no-op where the scrub is off),
+  and the gate's scan of the files before a push where the repository wired it.
 - The agent's executable is never in the repository: `ABATTY_AGENT` or `agent.command` in
   `~/.abatty/config.json`, on the machine that runs the night.
 
-The words live in `src/core/vocabulary.mjs`, stored reversed so the file does not name them;
-the hooks carry a copy. Two names cannot go because the agent itself requires them to read its
-settings and its context: the `.claude/` folder and `CLAUDE.md`. A line that mentions only
-those is not a finding. A repository allows its own product terms through
-`adoption.json` → `scrub.allow` (path substrings), with the reason in its decisions file.
+The words live in `src/core/vocabulary.mjs`, stored reversed so that the file passes the scan
+it defines; the hooks carry a copy. Two names cannot go because the agent itself requires them
+to read its settings and its context: the `.claude/` folder and `CLAUDE.md`. A line that
+mentions only those is not a finding. A repository allows its own product terms through
+`scrub.allow` (path substrings), with the reason in its decisions file. This package opted in
+on its first day and keeps it (`abatty.config.json`).
 
 ## Roadmap
 

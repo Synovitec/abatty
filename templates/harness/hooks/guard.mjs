@@ -45,13 +45,22 @@ if (has(/\bgit push\b.*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+[\w/])/)) 
 if (has(/--no-verify\b|\bgit commit\b.*\s-n\b/)) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
 }
-// A commit message or a pull request that names the tools: refused day and night, before it
-// lands, because a commit is the one thing a night cannot rewrite and a pull request body is
-// public to the repository. The words are in vocabulary.mjs; a line that only mentions the
-// agent's own paths is not a mention.
-if (/\bgit commit\b|\bgh pr (create|edit|merge)\b|\bgit tag\b.*-m|\bgh (issue|release) create\b/.test(cmd)) {
+// Provenance is the default: nothing here refuses a commit for naming the agent. A repository
+// that opted into the scrub (adoption.json → scrub.enabled, white-label work) has a commit, a
+// tag, a pull request or an issue that names the tools refused day and night, before it lands,
+// because a commit is the one thing a night cannot rewrite. The words are in vocabulary.mjs; a
+// line that only mentions the agent's own paths is not a mention.
+const isCommitText = /\bgit commit\b|\bgh pr (create|edit|merge)\b|\bgit tag\b.*-m|\bgh (issue|release) create\b/.test(cmd);
+if (config.scrub?.enabled === true && isCommitText) {
   const said = cmd.split(/\r?\n/).find((line) => FORBIDDEN.test(line) && !onlyRequiredPaths(line));
-  if (said) deny(`No trace of the tools in a commit, a tag, a pull request or an issue: the text names one (${said.trim().slice(0, 80)}). Say it again without the name.`);
+  if (said) deny(`No trace of the tools in a commit, a tag, a pull request or an issue (scrub.enabled): the text names one (${said.trim().slice(0, 80)}). Say it again without the name.`);
+}
+// The opposite option: a repository that asks for a disclosure trailer (adoption.json →
+// provenance.trailer) has every unattended commit carry it; a night commit written without it
+// is refused, by day a human decides.
+const trailer = typeof config.provenance?.trailer === "string" ? config.provenance.trailer.trim() : "";
+if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trailer)) {
+  deny(`Unattended commits carry the disclosure trailer this repository asks for (provenance.trailer): add "${trailer}" as the last line of the message.`);
 }
 // Pushing to the base branch is a per-repository policy (adoption.json → directPushToBase):
 // an internal platform may push to main after the gate, a client project with an IP transfer

@@ -33,6 +33,7 @@ test("a report is written under .abatty/reports and read back as the latest read
   assert.equal(allReports(dir).length, 1);
   assert.equal(r.harness.present, false);
   assert.equal(r.scrub.lines, 0);
+  assert.equal(r.scrub.enabled, false, "provenance is the default");
   assert.equal(typeof r.enforced.total, "number");
   assert.ok(r.enforced.share === null || (r.enforced.share >= 0 && r.enforced.share <= 100));
   assert.equal(

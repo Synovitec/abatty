@@ -133,6 +133,34 @@ function keyPattern(key) {
     : new RegExp(escaped, "g");
 }
 
+/**
+ * The scrub's configuration: OFF unless the repository opted in (`scrub.enabled: true` in the
+ * adoption config or in `abatty.config.json` at the root, the root winning), with its allow
+ * list, its word map and the provenance trailer the repository asks for on unattended commits.
+ * Provenance is the default: a tool that audits an agent's runs does not erase them; the
+ * scrub is white-label hygiene a repository chooses, with the reason in its decisions file.
+ * @param {string} repoDir
+ * @returns {{ enabled: boolean, allow: string[], map: Record<string, string>, trailer: string }}
+ */
+export function scrubConfig(repoDir) {
+  const a = readAdoption(repoDir) || {};
+  /** @type {any} */
+  let root = null;
+  try {
+    root = readJsonFile(repoDir, "abatty.config.json");
+  } catch {
+    root = null;
+  }
+  const scrub = { ...(a.scrub || {}), ...(root?.scrub || {}) };
+  const provenance = { ...(a.provenance || {}), ...(root?.provenance || {}) };
+  return {
+    enabled: scrub.enabled === true,
+    allow: [...(a.scrub?.allow || []), ...(root?.scrub?.allow || [])].map(String),
+    map: scrub.map && typeof scrub.map === "object" ? scrub.map : {},
+    trailer: typeof provenance.trailer === "string" ? provenance.trailer : "",
+  };
+}
+
 /** The per-repository allow-list: `scrub.allow` of the adoption config and of `abatty.config.json` at the root. @param {string} repoDir */
 export function allowList(repoDir) {
   const a = readAdoption(repoDir);

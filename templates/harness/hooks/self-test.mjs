@@ -182,14 +182,28 @@ try {
   writeFileSync(corruptCfg, "{ not json");
   cases.push(["night: a corrupt adoption.json still denies a harness write", bash("echo x > .claude/adoption.json"), { ...night, ADOPTION_CONFIG: corruptCfg }, "deny"]);
   cases.push(["night: a corrupt adoption.json still allows an ordinary command", bash("npm test"), { ...night, ADOPTION_CONFIG: corruptCfg }, "none"]);
-  // The vocabulary: a commit, a pull request or an issue that names the tools is refused day and
-  // night; the samples are built at runtime so this file names none of them.
-  cases.push(["night: a commit whose message carries the authorship trailer", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), night, "deny"]);
-  cases.push(["day: the same commit is refused by day too", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), {}, "deny"]);
-  cases.push(["day: a pull request body that names the tool", bash(`gh pr create --title "feat: x" --body "${sampleTrailer()}"`), {}, "deny"]);
-  cases.push(["night: a commit without a trailer", bash('git commit -m "feat: x\n\nwhy it changed"'), night, "none"]);
-  cases.push(["day: a commit that names the agent's own paths only", bash('git commit -m "chore: restore .claude/adoption.json and CLAUDE.md from main"'), {}, "none"]);
-  cases.push(["day: an ordinary command that names the tool is not a commit", bash(`echo "${sampleTrailer()}"`), {}, "none"]);
+  // Provenance is the default: with the scrub off (the template's default) a commit that carries
+  // the agent's trailer passes. The vocabulary, under a config that opted in: a commit, a pull
+  // request or an issue that names the tools is refused day and night; the samples are built at
+  // runtime so this file names none of them.
+  const scrubCfg = join(tmp, "scrub-on.json");
+  writeFileSync(scrubCfg, JSON.stringify({ ...readJson(ADOPTION), scrub: { enabled: true } }));
+  const scrubOn = { ADOPTION_CONFIG: scrubCfg };
+  cases.push(["default: a commit whose message carries the authorship trailer passes (provenance kept)", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), {}, "none"]);
+  cases.push(["default, night: the same commit passes", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), night, "none"]);
+  cases.push(["scrub on, night: a commit whose message carries the authorship trailer", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), { ...night, ...scrubOn }, "deny"]);
+  cases.push(["scrub on, day: the same commit is refused by day too", bash(`git commit -m "feat: x\n\n${sampleTrailer()}"`), scrubOn, "deny"]);
+  cases.push(["scrub on, day: a pull request body that names the tool", bash(`gh pr create --title "feat: x" --body "${sampleTrailer()}"`), scrubOn, "deny"]);
+  cases.push(["scrub on, night: a commit without a trailer", bash('git commit -m "feat: x\n\nwhy it changed"'), { ...night, ...scrubOn }, "none"]);
+  cases.push(["scrub on, day: a commit that names the agent's own paths only", bash('git commit -m "chore: restore .claude/adoption.json and CLAUDE.md from main"'), scrubOn, "none"]);
+  cases.push(["scrub on, day: an ordinary command that names the tool is not a commit", bash(`echo "${sampleTrailer()}"`), scrubOn, "none"]);
+  // The opposite option: a disclosure trailer the repository asks for on unattended commits.
+  const provCfg = join(tmp, "provenance.json");
+  writeFileSync(provCfg, JSON.stringify({ ...readJson(ADOPTION), provenance: { trailer: "Assisted-by: an unattended run" } }));
+  const provOn = { ADOPTION_CONFIG: provCfg };
+  cases.push(["provenance, night: a commit without the disclosure trailer is refused", bash('git commit -m "feat: x\n\nwhy"'), { ...night, ...provOn }, "deny"]);
+  cases.push(["provenance, night: a commit with the disclosure trailer passes", bash('git commit -m "feat: x\n\nwhy\n\nAssisted-by: an unattended run"'), { ...night, ...provOn }, "none"]);
+  cases.push(["provenance, day: a human commit without the trailer is the human's decision", bash('git commit -m "feat: x"'), provOn, "none"]);
   for (const [name, event, env, expected] of cases) {
     const r = hook("guard.mjs", event, env);
     const got = decisionOf(r);
@@ -428,12 +442,17 @@ try {
 // to "" (settings.user.json carries it; a merge nobody verified left nine trailers on the first real
 // night). The guard refuses the commit at night; this says why before a night is spent on refusals.
 try {
+  const scrubOnHere = readJson(ADOPTION)?.scrub?.enabled === true;
+  if (!scrubOnHere) {
+    check("user settings: attribution left to the agent (provenance is the default; scrub.enabled is off)", true);
+    throw null;
+  }
   const userSettings = join(homedir(), ".claude", "settings.json");
   const us = existsSync(userSettings) ? readJson(userSettings) : null;
   const commitAttr = us?.attribution?.commit;
   check("user settings: attribution.commit is empty (no trailer on the night's commits)", commitAttr === "", us ? (commitAttr === undefined ? "attribution not set: merge the attribution block of templates/harness/settings.user.json into ~/.claude/settings.json" : `attribution.commit=${JSON.stringify(commitAttr)}`) : "no ~/.claude/settings.json");
 } catch (e) {
-  check("user settings: attribution.commit is empty (no trailer on the night's commits)", false, e.message);
+  if (e !== null) check("user settings: attribution.commit is empty (no trailer on the night's commits)", false, e.message);
 }
 
 // ---- 5. the agent version --------------------------------------------------------------------

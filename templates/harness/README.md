@@ -76,7 +76,7 @@ refusing it; a baseline number, a threshold and `--max-warnings=0` are refused r
 ## Verify before trusting a night with it
 
 `hooks/self-test.mjs` does it for you, and the runner refuses to start unless it is green:
-124 checks - every hook present and wired (including `protect.mjs` on `Edit|Write` and on
+every hook present and wired (including `protect.mjs` on `Edit|Write` and on
 `mcp__.*`), the Stop timeout long enough for a gate, `maxStopBlocks` under the agent's own cap
 of 8, the gate command resolving to a real npm script or file, `mcp.night.json` and
 `adoption.json` → `mcpServers` naming the same servers; thirty-six guard decisions in both modes

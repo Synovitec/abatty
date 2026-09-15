@@ -82,8 +82,10 @@ A step touches at most ten files and ends in a commit. For every step:
   one commit that touches nothing else, format. Hand-editing the same shape file after file is
   what the reviewer's item 13 names.
 - Run `commands.lintFile` on each touched file and the tests that cover them.
-- Commit: Conventional Commit, one behaviour, message written for the reader, no em-dash, no
-  trailer. Add a line under `## [Unreleased]` in the changelog in the same commit when the
+- Commit: Conventional Commit, one behaviour, message written for the reader, no em-dash; the
+  disclosure trailer `provenance.trailer` names as the last line when the repository sets one
+  (the guard refuses a night commit without it), no trailer naming a tool when the repository
+  opted into the scrub (`scrub.enabled`). Add a line under `## [Unreleased]` in the changelog in the same commit when the
   step touches source, tests, scripts, CI or docs.
 - If a step cannot land without a ratchet number rising: do not raise it. Undo the step,
   record `decision: seam-unclear` or `decision: behaviour-risk`, choose another step.

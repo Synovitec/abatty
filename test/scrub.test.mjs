@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { git, tempRepo } from "./helpers.mjs";
+import { tmpdir } from "node:os";
+import { cli, git, tempRepo } from "./helpers.mjs";
 import {
   FORBIDDEN,
   REQUIRED_PATHS,
@@ -79,4 +80,20 @@ test("scanCommits finds a planted commit message", () => {
   assert.equal(found.length, 1);
   assert.match(found[0]?.text || "", /noreply@example\.com/);
   assert.equal(scanCommits(dir, "HEAD~1..HEAD~1").length, 0);
+});
+
+test("the scrub is opt-in: --message is a no-op where the repository did not opt in, and refuses the trailer where it did", () => {
+  const msg = join(tmpdir(), `abatty-msg-${Date.now()}.txt`);
+  writeFileSync(msg, `feat: x\n\n${sampleTrailer()}\n`);
+  const off = tempRepo("scrub-off", { "package.json": "{}" });
+  assert.equal(cli(["scrub", off, "--message", msg], off).code, 0, "provenance is the default");
+  const on = tempRepo("scrub-on", {
+    "package.json": "{}",
+    "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
+  });
+  const r = cli(["scrub", on, "--message", msg], on);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /commit message names a tool/);
+  const scan = cli(["scrub", off], off);
+  assert.match(scan.out, /off in this repository \(scrub\.enabled\)/);
 });

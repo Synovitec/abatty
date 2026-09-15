@@ -18,7 +18,8 @@
     "citationsExempt": ["^docs/standard/"]
   },
   "scrub": {
-    "$comment": "The research notes under docs/standard/research quote their sources verbatim, the vendor's own documentation among them; a rewritten citation would be a false one.",
+    "$comment": "This repository opted into the scrub (the decision of its first day: the package names no tool, no vendor, no model in its files or its history). Provenance is the default for a repository that did not opt in. The research notes under docs/standard/research quote their sources verbatim, the vendor's own documentation among them; a rewritten citation would be a false one.",
+    "enabled": true,
     "allow": ["docs/standard/research/"]
   }
 }

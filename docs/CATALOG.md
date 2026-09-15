@@ -118,7 +118,7 @@ A repository adds rules of its own in `abatty.rules.mjs` at its root (the same s
 | ID | Rule | Level | Insured by | Phase | Standard | Why |
 |---|---|---|---|---|---|---|
 | FLOW-COMMITS | Conventional Commits | must | review | 1 | FLOW 1 | A commit subject with a type and a scope is a changelog line and a filter; without the format the history is prose nobody searches. |
-| FLOW-TRAILER | No authorship trailer | must | hard | - | FLOW 1 | The trailer names a tool in every commit it touched; the history is the product's, and the commit-msg hook refuses the line before it lands. |
+| FLOW-TRAILER | No authorship trailer, where the repository opted into the scrub | must | hard | - | FLOW 1 | Provenance is the default: an agent's trailer on the commits it made is the audit trail. A repository that opted into the scrub (white-label work, scrub.enabled) keeps its history free of the name, and the commit-msg hook refuses the line before it lands. |
 | FLOW-EMDASH | No em-dash in code, copy or docs | must | hard | 1 | FLOW 1 | The character is the signature of generated text and a locale problem in copy; a hyphen says the same. |
 | FLOW-CHANGELOG-GATE | Changelog-touched check over the pushed range | must | hard | 0 | CHANGE 1 | The rule 'changelog in the same push' is prose until the gate reads the pushed range and refuses a source change without its line. |
 | FLOW-VERSION | A version the release process bumps (SemVer) | should | prose | - | - | A release without a number cannot be named in a bug report or pinned by a consumer. |

@@ -59,6 +59,8 @@ function withDefaults(fromFile) {
     lintExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs"],
     maxStopBlocks: 6,
     ...fromFile,
+    scrub: { enabled: false, ...(fromFile.scrub || {}) },
+    provenance: { trailer: "", ...(fromFile.provenance || {}) },
     commands: { ...(fromFile.commands || {}) },
     files: { ...(fromFile.files || {}) },
   };

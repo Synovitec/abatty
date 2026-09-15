@@ -58,3 +58,10 @@ zero, citations exempt for the standard's documents because they cite the paths 
 repository that adopts it (`ratchet.citationsExempt`), and the two research notes that quote
 the vendor's own documentation allowed through `scrub.allow` with the reason in
 `abatty.config.json` - a rewritten citation would be a false one.
+
+### 2026-09-15 - Provenance by default
+
+The scrub became opt-in for every repository; this one keeps it on (`abatty.config.json` →
+`scrub.enabled`), the decision of its first day. A repository that does not opt in keeps the
+agent's trailer as its audit trail and may ask for a disclosure trailer of its own
+(`provenance.trailer`), which the guard holds on unattended commits.

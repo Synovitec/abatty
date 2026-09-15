@@ -5,6 +5,17 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- Provenance is the default; the scrub is opt-in (roadmap #30). `scrub.enabled` (off unless
+  set) in the adoption config or `abatty.config.json`: the guard refuses a commit, a tag, a
+  pull request or an issue that names a tool only where the repository opted in; `abatty scrub
+  --message` is a no-op otherwise; the report, the status screen and the dashboard show the
+  no-trace figure only where it is on; `FLOW-TRAILER` is n/a otherwise. The opposite option,
+  `provenance.trailer`: a disclosure line every unattended commit carries, the guard refusing a
+  night commit written without it; the skill writes it. The self-test proves both (default,
+  scrub on, provenance on). This package keeps the scrub on for itself.
+
 ### Added
 
 - The enforced share (roadmap #29): of the rules a repository has, the part held by a machine

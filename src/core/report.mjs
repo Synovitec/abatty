@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { measure } from "./gap-analysis.mjs";
 import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
-import { scanFiles, allowList } from "./scrub.mjs";
+import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
 
 /**
  * @typedef {{
@@ -22,7 +22,7 @@ import { scanFiles, allowList } from "./scrub.mjs";
  *   findings: import("../rules/index.mjs").Finding[],
  *   problems: string[],
  *   harness: { present: boolean, drift: number, missing: number },
- *   scrub: { lines: number },
+ *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  * }} Report
  */
@@ -95,7 +95,12 @@ export async function buildReport(repoDir, o = {}) {
       drift: d.filter((x) => x.state === "differs").length,
       missing: d.filter((x) => x.state === "missing").length,
     },
-    scrub: { lines: scanFiles(repoDir, { allow: allowList(repoDir) }).length },
+    scrub: {
+      enabled: scrubConfig(repoDir).enabled,
+      lines: scrubConfig(repoDir).enabled
+        ? scanFiles(repoDir, { allow: allowList(repoDir) }).length
+        : 0,
+    },
     night: nightFacts(repoDir),
   };
   if (o.write !== false) {

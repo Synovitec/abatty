@@ -44,14 +44,19 @@ export const rules = [
   {
     id: "FLOW-TRAILER",
     family: "Delivery",
-    title: "No authorship trailer",
+    title: "No authorship trailer, where the repository opted into the scrub",
     standard: ["FLOW-1"],
     level: "must",
     enforcement: "hard",
     phase: "-",
-    why: "The trailer names a tool in every commit it touched; the history is the product's, and the commit-msg hook refuses the line before it lands.",
+    why: "Provenance is the default: an agent's trailer on the commits it made is the audit trail. A repository that opted into the scrub (white-label work, scrub.enabled) keeps its history free of the name, and the commit-msg hook refuses the line before it lands.",
     next: 'Set attribution.commit to "" in the user settings; install the commit-msg hook (abatty scrub --message)',
     check: (c) => {
+      const enabled =
+        c.adoption?.scrub?.enabled === true ||
+        c.readJson("abatty.config.json")?.scrub?.enabled === true;
+      if (!enabled)
+        return { status: "n/a", evidence: "provenance kept; the scrub is off (scrub.enabled)" };
       const trailers = c
         .git("log", "-50", "--format=%b")
         .split("\n")

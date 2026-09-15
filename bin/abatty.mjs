@@ -35,6 +35,7 @@ import {
   scanCommits,
   scanFiles,
   scanPullRequests,
+  scrubConfig,
 } from "../src/core/scrub.mjs";
 import { DEFAULT_MAP } from "../src/core/scrub-map.mjs";
 import { allReports, buildReport, latestReport } from "../src/core/report.mjs";
@@ -211,12 +212,15 @@ switch (command) {
       ) + "\n",
     );
     out(
-      t.kv(
-        "no trace",
-        r.scrub.lines === 0
-          ? t.green("clean")
-          : t.red(`${r.scrub.lines} line(s) name a tool`) + t.gray(" · abatty scrub"),
-      ) + "\n",
+      r.scrub.enabled
+        ? t.kv(
+            "no trace",
+            r.scrub.lines === 0
+              ? t.green("clean")
+              : t.red(`${r.scrub.lines} line(s) name a tool`) + t.gray(" · abatty scrub"),
+          ) + "\n"
+        : t.kv("provenance", t.green("kept") + t.gray(" · the scrub is off (scrub.enabled)")) +
+            "\n",
     );
     const state = /** @type {{ phases?: { status?: string }[] } | null} */ (r.night.state);
     const phases = Array.isArray(state?.phases) ? state.phases : [];
@@ -376,6 +380,8 @@ switch (command) {
   }
   case "scrub": {
     if (opt("--message")) {
+      // The commit-msg hook: a no-op unless the repository opted into the scrub.
+      if (!scrubConfig(dir).enabled) process.exit(0);
       const { FORBIDDEN, onlyRequiredPaths } = await import("../src/core/vocabulary.mjs");
       const text = readFileSync(opt("--message"), "utf8");
       const said = text
@@ -390,10 +396,12 @@ switch (command) {
       process.exit(0);
     }
     const allow = allowList(dir);
-    out(`\n${t.banner(VERSION)}  ${t.bold("scrub")} ${t.gray("· no trace of the tools")}\n\n`);
+    const sc = scrubConfig(dir);
+    out(
+      `\n${t.banner(VERSION)}  ${t.bold("scrub")} ${t.gray("· no trace of the tools")}${sc.enabled ? "" : t.yellow("  · off in this repository (scrub.enabled): provenance is the default; the scan runs because you asked")}\n\n`,
+    );
     if (flag("--fix")) {
-      const adoption = readAdoption(dir);
-      const map = { ...DEFAULT_MAP, ...(adoption?.scrub?.map || {}) };
+      const map = { ...DEFAULT_MAP, ...sc.map };
       const changed = fixFiles(dir, map, { allow, dryRun: flag("--dry-run") });
       out(
         `  ${t.glyph.ok} --fix: ${changed.length} file(s) rewritten by the word map${flag("--dry-run") ? t.gray(" (dry run)") : ""}\n`,
@@ -685,7 +693,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--quiet]           the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run
   ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test]                  the harness self-test and the drift against the package
-  ${t.bold("abatty scrub")} [dir] [--fix] [--commits|--range <r>] [--prs] [--history]  no trace of the tools: files, commit messages, pull requests
+  ${t.bold("abatty scrub")} [dir] [--fix] [--commits|--range <r>] [--prs] [--history]  no trace of the tools (opt-in, scrub.enabled): files, commit messages, pull requests
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
