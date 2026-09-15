@@ -19,6 +19,8 @@ npx abatty night --canary-only   # the unattended night (one implementation, Win
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
 npx abatty night-report          # the morning after: the night's facts and the lessons they propose
+npx abatty serve --token <t>     # the dashboard hosted: CI posts each report, one page over every repository, a badge
+npx abatty publish --to <url>    # the CI step: post this repository's newest report to a service
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
 npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
@@ -116,6 +118,19 @@ an agent without a hook protocol gets the context, the rules, the gate and CI, a
 guard, the file guard, the Stop gate, the canary and the night itself. `abatty night` refuses
 a repository whose adapters have no hooks and names what is lost. The runner builds every
 session's flags from the adapter, never from a hard-coded list.
+
+## The dashboard, hosted
+
+`abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]` is a small self-hosted
+service with no dependency: CI posts each repository's report to it and it serves the same
+dashboard page over every repository. `POST /reports` takes the report `abatty measure` writes
+(a bearer token; the service refuses to start without one unless `--no-auth`, for a machine
+nobody else reaches); `GET /` is the page; `GET /api/reports` the index of repositories with
+their newest score and enforced share; `GET /api/reports/<name>` one repository's readings;
+`GET /badge/<name>.svg` the score as a badge for a README; `GET /healthz`. Reports are files
+under the data folder, one per repository and day. `abatty publish --to <url> [--token <t>]`
+(or `ABATTY_DASHBOARD` and `ABATTY_TOKEN`) is the CI step: it posts the newest report, measuring
+first when there is none.
 
 ## The MCP server
 

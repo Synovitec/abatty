@@ -108,3 +108,8 @@ A typed call instead of a parsed shell; no runtime dependency added. Tests 82 ->
 
 The learning box is files plus a human; the distillation step exists now, and proposes, never
 decides. Tests 86 -> 89.
+
+### 2026-09-15 - The dashboard hosted
+
+One place over every repository, and the badge the outside reviews asked for, from the same
+renderer the local page uses. Tests 89 -> 92.

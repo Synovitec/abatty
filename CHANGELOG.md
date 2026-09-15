@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The dashboard hosted (roadmap #10): `abatty serve`, a self-hosted service with no dependency
+  that stores the reports CI posts (`POST /reports`, bearer token, or `--no-auth` for a machine
+  nobody else reaches) and serves the dashboard over every repository, an index, one
+  repository's readings, a health route and the score as a badge (`/badge/<name>.svg`);
+  `abatty publish --to <url>` is the CI step, posting the newest report and measuring first
+  when there is none.
 - `abatty night-report` (roadmap #9): the learning distillation over a night's evidence - the
   sessions, the Stop gate's receipts and its block log, the guards' denials, the direction
   check, the state file, the decisions, the commits - into proposed lessons in the catalogue's

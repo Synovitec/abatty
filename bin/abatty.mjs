@@ -7,6 +7,8 @@
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
+ *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
+ *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
  *   abatty doctor [dir] [--strict] [--skip-self-test]
@@ -35,7 +37,7 @@ import { doctor } from "../src/core/doctor.mjs";
 import { updateRepo } from "../src/core/update.mjs";
 import { ADAPTERS, configuredAdapters, lostGuarantees } from "../src/agents/index.mjs";
 import { serve } from "../src/mcp/server.mjs";
-import { gatherNight, nightDates, renderNightReport } from "../src/night/report.mjs";
+import { hostedCommand } from "../src/cli/hosted.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -59,7 +61,7 @@ import { DEFAULT_MAP } from "../src/core/scrub-map.mjs";
 import { allReports, buildReport, latestReport } from "../src/core/report.mjs";
 import { renderDashboard } from "../src/ui/dashboard.mjs";
 import { ratchetCommand } from "../src/cli/ratchet.mjs";
-import { nightCommand } from "../src/cli/night.mjs";
+import { nightCommand, nightReportCommand } from "../src/cli/night.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -74,6 +76,8 @@ const KNOWN = [
   "agents",
   "mcp",
   "night-report",
+  "serve",
+  "publish",
   "scrub",
   "report",
   "dashboard",
@@ -116,6 +120,10 @@ const VALUE_FLAGS = [
   "--mode",
   "--agent",
   "--date",
+  "--port",
+  "--data",
+  "--token",
+  "--to",
 ];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
@@ -392,29 +400,12 @@ switch (command) {
     break;
   }
   case "night-report": {
-    // The learning distillation: the night's facts and the lessons they propose.
-    const r = gatherNight(dir, opt("--date"));
-    if (!r) {
-      err(
-        `${t.glyph.fail} no night to report on${opt("--date") ? ` for ${opt("--date")}` : ""}: ${nightDates(dir).length ? "nights: " + nightDates(dir).join(", ") : "no .claude/night/<date> folder (abatty night writes it)"}\n`,
-      );
-      process.exit(2);
-    }
-    if (flag("--json")) {
-      out(JSON.stringify(r, null, 2) + "\n");
-      break;
-    }
-    const md = renderNightReport(r);
-    if (opt("--out")) {
-      const target = resolve(dir, opt("--out"));
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, md);
-      out(
-        `\n${t.banner(VERSION)}  ${t.bold("night-report")} ${t.gray(`· ${r.date} · ${r.lessons.length} lesson(s) proposed · ${relative(dir, target)}`)}\n\n`,
-      );
-      break;
-    }
-    out(md);
+    await nightReportCommand({ dir, opt, flag, out, err, VERSION });
+    break;
+  }
+  case "serve":
+  case "publish": {
+    await hostedCommand(command, { dir, opt, flag, out, err, VERSION });
     break;
   }
   case "measure": {

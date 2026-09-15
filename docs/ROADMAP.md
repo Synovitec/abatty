@@ -31,7 +31,7 @@ in `abatty.rules.mjs`, dated waivers with a reason, an `n/a` status the catalog 
 preset that is real only when a named repository proved it, and a `doctor` that sees drift.
 
 The four blockers come first; without them the rest is polish on a tool for three
-repositories. Items 11 and 17 above are part of this list and are not repeated; 1 to 9 are done.
+repositories. Items 11 and 17 above are part of this list and are not repeated; 1 to 10 are done.
 
 | #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                                                    | Tier      | Size   |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
@@ -47,10 +47,9 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 
 ## Next - the shape of a framework
 
-| #   | Change                                                                                                                              | Evidence                                                                                            | Size     |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
-| 10  | **The dashboard hosted**: a small self-hosted service that CI posts each report to, serving the same page over every repository     | The local page exists (`abatty dashboard`); monitoring across repositories needs one place          | 1-2 days |
-| 11  | **CI templates per preset**, a pull-request template, an organisation ruleset that blocks tool-named branches and requires the gate | The night's controls stop at the push; CI is hand-written per repository; branch names were a trace | 1 day    |
+| #   | Change                                                                                                                              | Evidence                                                                                            | Size  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----- |
+| 11  | **CI templates per preset**, a pull-request template, an organisation ruleset that blocks tool-named branches and requires the gate | The night's controls stop at the push; CI is hand-written per repository; branch names were a trace | 1 day |
 
 ## Later - hardening and reach
 
@@ -64,6 +63,9 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · the dashboard hosted (#10): `abatty serve` and `abatty publish`, the reports of
+  every repository in one place, the score as a badge, no dependency added.
 
 - 2026-09-15 · `night-report` (#9): the distillation of a night's evidence into proposed
   lessons with their evidence and their check; the Stop gate logs every block so the morning

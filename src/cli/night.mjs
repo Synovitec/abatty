@@ -2,7 +2,10 @@
  * The `night` command: the screen over src/night, kept out of the dispatcher so the dispatcher
  * stays under the cap it enforces.
  */
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { runNight } from "../night/runner.mjs";
+import { gatherNight, nightDates, renderNightReport } from "../night/report.mjs";
 import * as t from "../ui/term.mjs";
 
 /** @param {import("./ratchet.mjs").CliContext} c */
@@ -47,6 +50,39 @@ export function nightCommand(c) {
       });
       out("\n");
       process.exit(r.code);
+    }
+  }
+}
+
+/** The `night-report` command: the night's facts and the lessons they propose. @param {import("./ratchet.mjs").CliContext} c */
+export async function nightReportCommand(c) {
+  const { dir, opt, flag, out, err, VERSION } = c;
+  switch ("night-report") {
+    case "night-report": {
+      // The learning distillation: the night's facts and the lessons they propose.
+      const r = gatherNight(dir, opt("--date"));
+      if (!r) {
+        err(
+          `${t.glyph.fail} no night to report on${opt("--date") ? ` for ${opt("--date")}` : ""}: ${nightDates(dir).length ? "nights: " + nightDates(dir).join(", ") : "no .claude/night/<date> folder (abatty night writes it)"}\n`,
+        );
+        process.exit(2);
+      }
+      if (flag("--json")) {
+        out(JSON.stringify(r, null, 2) + "\n");
+        break;
+      }
+      const md = renderNightReport(r);
+      if (opt("--out")) {
+        const target = resolve(dir, opt("--out"));
+        mkdirSync(dirname(target), { recursive: true });
+        writeFileSync(target, md);
+        out(
+          `\n${t.banner(VERSION)}  ${t.bold("night-report")} ${t.gray(`· ${r.date} · ${r.lessons.length} lesson(s) proposed · ${relative(dir, target)}`)}\n\n`,
+        );
+        break;
+      }
+      out(md);
+      break;
     }
   }
 }

@@ -8,3 +8,18 @@
 export function agentFromEnv() {
   return process.env.ABATTY_AGENT || "";
 }
+
+/** The hosted dashboard's bearer token, or "". */
+export function tokenFromEnv() {
+  return process.env.ABATTY_TOKEN || "";
+}
+
+/** The hosted dashboard's URL for `publish`, or "". */
+export function dashboardFromEnv() {
+  return process.env.ABATTY_DASHBOARD || "";
+}
+
+/** The port the service listens on when none is given, or "". */
+export function portFromEnv() {
+  return process.env.PORT || "";
+}
