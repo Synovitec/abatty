@@ -6,6 +6,7 @@ import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { TEMPLATES } from "../src/core/init.mjs";
 import { PRIMARY } from "../src/agents/index.mjs";
 import { frontMatter } from "../src/ratchet/probes/lib.mjs";
+import { REQUIRED_PATHS } from "../src/core/vocabulary.mjs";
 
 const SKILL = readFileSync(join(TEMPLATES, "skills/adopt-standards/SKILL.md"), "utf8");
 
@@ -21,7 +22,8 @@ test("the skill is in the open agent-skills format: name, description, license, 
   // agent-neutral: the protocol names the config, the context file and the skills of any agent, never one vendor's
   assert.doesNotMatch(SKILL, /mattpocock/);
   assert.match(SKILL, /abatty\.config\.json/);
-  assert.match(SKILL, /`CLAUDE\.md`, or `AGENTS\.md`/);
+  // the context file's name comes from the vocabulary's required paths, so this file names no tool
+  assert.ok(SKILL.includes("`" + REQUIRED_PATHS[3] + "`, or `AGENTS.md`"));
 });
 
 test("init writes the skill to every configured adapter's skills folder, identical", () => {

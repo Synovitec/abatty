@@ -54,6 +54,9 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- `abatty scrub` scans untracked files too (tracked and untracked-but-not-ignored): a new file
+  that names a tool is a finding before it is committed, not after; a test that spelled the
+  context file's name with an escaped dot now takes it from the vocabulary's required paths.
 - The night runner is one implementation in Node, `abatty night` (roadmap #2), replacing
   `night-run.ps1` and `night-run.sh`: the same pre-flight (self-test, harness identical to the
   base, gate green, canary), the same loop (sessions per phase, a crash retried once, fifteen

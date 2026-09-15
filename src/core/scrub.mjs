@@ -21,7 +21,19 @@ const TEXT_EXT =
 
 /** Tracked text files, minus the allow-list and the vocabulary itself. @param {string} repoDir @param {string[]} allow */
 export function scannableFiles(repoDir, allow = []) {
-  const out = git(repoDir, "ls-files", "-z").split("\0").filter(Boolean);
+  // Tracked AND untracked-but-not-ignored: a new file is a finding before it is committed, not
+  // after, or the scan a hook runs before a commit reports green on the file the commit adds.
+  const out = git(
+    repoDir,
+    "ls-files",
+    "-z",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "--deduplicate",
+  )
+    .split("\0")
+    .filter(Boolean);
   const skip = [
     ...allow,
     "vocabulary.mjs",
