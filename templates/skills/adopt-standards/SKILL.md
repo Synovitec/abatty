@@ -51,7 +51,9 @@ table in the context file (`CLAUDE.md`, or `AGENTS.md`) §9, write the decision 
 ## 1. Measure before
 
 Run `commands.standards` (and `commands.typecheck`, and the coverage command if the phase is
-2 or 10). Write the relevant numbers into `phases[N].numbersBefore`. If the ratchet script
+2 or 10). When the abatty MCP server is declared for the night (`abatty` in
+`mcp.night.json` and `mcpServers`), call its `measure`, `ratchet` and `gate` tools instead of
+parsing the shell: the result is data. Write the relevant numbers into `phases[N].numbersBefore`. If the ratchet script
 does not exist yet (phase 0 is what creates it), record `"none"`.
 
 The phase's checks are rules of the catalog: `npx abatty rules --phase N` lists them by family

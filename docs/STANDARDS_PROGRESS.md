@@ -99,3 +99,7 @@ night refused without hooks. Tests 75 -> 80.
 
 The protocol of a night is no longer agent-shaped: the open front matter, a neutral body,
 one file placed by every adapter. Tests 80 -> 82.
+
+### 2026-09-15 - The MCP server
+
+A typed call instead of a parsed shell; no runtime dependency added. Tests 82 -> 86.

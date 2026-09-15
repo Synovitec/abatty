@@ -5,6 +5,7 @@
  *   abatty [status] [dir] [--fresh]                                    the repository at a glance
  *   abatty init [dir] --stack <next|astro|vite-react|node> [--agent <id,id>] [--force] [--dry-run]
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
+ *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
  *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
  *   abatty doctor [dir] [--strict] [--skip-self-test]
@@ -32,6 +33,7 @@ import { initRepo } from "../src/core/init.mjs";
 import { doctor } from "../src/core/doctor.mjs";
 import { updateRepo } from "../src/core/update.mjs";
 import { ADAPTERS, configuredAdapters, lostGuarantees } from "../src/agents/index.mjs";
+import { serve } from "../src/mcp/server.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -68,6 +70,7 @@ const KNOWN = [
   "update",
   "config",
   "agents",
+  "mcp",
   "scrub",
   "report",
   "dashboard",
@@ -377,6 +380,12 @@ switch (command) {
       `\n  ${t.gray(`this repository: ${adapters.map((a) => a.id).join(", ") || "none"} (config → agents)${adapters.some((a) => a.guarantees.night) ? "" : " · no adapter with hooks: no night, the gate and CI by day"}`)}\n\n`,
     );
     process.exit(unknown.length ? 1 : 0);
+  }
+  case "mcp": {
+    // The MCP server over stdio, scoped to this repository; it returns only when stdin closes.
+    serve(dir);
+    await new Promise(() => {});
+    break;
   }
   case "measure": {
     const r = await buildReport(dir, { abattyVersion: VERSION });

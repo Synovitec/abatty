@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- The MCP server (roadmap #8): `abatty mcp [dir]`, the Model Context Protocol over stdio,
+  hand-written (initialize, ping, tools/list, tools/call; one JSON-RPC message per line), six
+  tools scoped to one repository and taking no path - `measure`, `ratchet`, `gate`, `scrub`,
+  `report`, `explain` - each returning data, a failing gate or ratchet saying why in its
+  result; declared for a night in `.claude/mcp.night.json` and named in `mcpServers` like any
+  server; the skill calls the tools when the server is declared.
 - The skill in the open agent-skills format (roadmap #7): `templates/skills/adopt-standards/SKILL.md`
   carries name, description, license, compatibility and metadata, and a body that names the
   config, the context file (`CLAUDE.md`, or `AGENTS.md`) and "a skill the agent has" rather

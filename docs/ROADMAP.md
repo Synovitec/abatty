@@ -31,7 +31,7 @@ in `abatty.rules.mjs`, dated waivers with a reason, an `n/a` status the catalog 
 preset that is real only when a named repository proved it, and a `doctor` that sees drift.
 
 The four blockers come first; without them the rest is polish on a tool for three
-repositories. Items 11 and 17 above are part of this list and are not repeated; 1 to 7 are done.
+repositories. Items 11 and 17 above are part of this list and are not repeated; 1 to 8 are done.
 
 | #   | Change                                                                                                                                                                                                                                                                                                                        | Evidence                                                                                                                                                    | Tier      | Size   |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------ |
@@ -47,12 +47,11 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 
 ## Next - the shape of a framework
 
-| #   | Change                                                                                                                              | Evidence                                                                                                                       | Size     |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| 8   | **An MCP server** exposing `measure`, `gate`, `scrub`, `report` as tools                                                            | An agent then verifies through a typed call rather than by parsing a shell; declared in the night's MCP config like any server | 1 day    |
-| 9   | **`night-report`**: the learning distillation over the night's receipts, decisions and denials into proposed lessons                | The learning box is files plus a human; the distillation step is missing                                                       | 1-2 days |
-| 10  | **The dashboard hosted**: a small self-hosted service that CI posts each report to, serving the same page over every repository     | The local page exists (`abatty dashboard`); monitoring across repositories needs one place                                     | 1-2 days |
-| 11  | **CI templates per preset**, a pull-request template, an organisation ruleset that blocks tool-named branches and requires the gate | The night's controls stop at the push; CI is hand-written per repository; branch names were a trace                            | 1 day    |
+| #   | Change                                                                                                                              | Evidence                                                                                            | Size     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
+| 9   | **`night-report`**: the learning distillation over the night's receipts, decisions and denials into proposed lessons                | The learning box is files plus a human; the distillation step is missing                            | 1-2 days |
+| 10  | **The dashboard hosted**: a small self-hosted service that CI posts each report to, serving the same page over every repository     | The local page exists (`abatty dashboard`); monitoring across repositories needs one place          | 1-2 days |
+| 11  | **CI templates per preset**, a pull-request template, an organisation ruleset that blocks tool-named branches and requires the gate | The night's controls stop at the push; CI is hand-written per repository; branch names were a trace | 1 day    |
 
 ## Later - hardening and reach
 
@@ -66,6 +65,9 @@ repositories. Items 11 and 17 above are part of this list and are not repeated; 
 | 17  | Publish to the registry once the ratchet is in and the API is stable | The git-URL install works; a registry is for third parties             | half a day |
 
 ## Done
+
+- 2026-09-15 · the MCP server (#8): six typed tools over stdio, scoped to one repository,
+  declared for a night like any server; the skill calls them when declared.
 
 - 2026-09-15 · the skill in the open format (#7): the skill's front matter and body are the
   format's and agent-neutral, placed by each adapter; the rules layout the adapter maps came

@@ -17,6 +17,7 @@ npx abatty ratchet --range auto  # the ratchet: every probe against the committe
 npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
 npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
+npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
 npx abatty doctor                # the harness self-test and the drift against the package
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
 npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
@@ -114,6 +115,23 @@ an agent without a hook protocol gets the context, the rules, the gate and CI, a
 guard, the file guard, the Stop gate, the canary and the night itself. `abatty night` refuses
 a repository whose adapters have no hooks and names what is lost. The runner builds every
 session's flags from the adapter, never from a hard-coded list.
+
+## The MCP server
+
+`abatty mcp [dir]` speaks the Model Context Protocol over stdio and exposes the package as
+typed tools scoped to one repository: `measure`, `ratchet`, `gate`, `scrub`, `report`,
+`explain`. An agent then verifies through a call whose result is data (the score, the
+verdicts, the findings, the gate's outcome) instead of parsing a terminal, and no tool takes
+a path, so nothing outside the repository is reachable through it. Declared for a night in
+`.claude/mcp.night.json` and named in the config's `mcpServers` like any server:
+
+```json
+{ "mcpServers": { "abatty": { "command": "npx", "args": ["abatty", "mcp"] } } }
+```
+
+Hand-written, because the package has no runtime dependency and a tool server needs a small
+subset of the protocol: `initialize`, `ping`, `tools/list`, `tools/call`, one JSON-RPC message
+per line.
 
 ## Configuration
 
