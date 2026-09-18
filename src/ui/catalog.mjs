@@ -43,11 +43,14 @@ export function renderCatalogMarkdown(rules, o = {}) {
     const list = rules.filter((r) => r.family === fam);
     md.push(`## ${fam}`);
     md.push("");
-    md.push("| ID | Rule | Level | Insured by | Phase | Applies | Standard | Why |");
-    md.push("|---|---|---|---|---|---|---|---|");
+    // `next` is part of a rule as data and it is the line a reader acts on, so the catalog
+    // carries it: without it a rule could change its advice and the generated catalog stay
+    // byte-identical, which made the coupled pair between the rules and this file untrue.
+    md.push("| ID | Rule | Level | Insured by | Phase | Applies | Standard | Why | Next step |");
+    md.push("|---|---|---|---|---|---|---|---|---|");
     for (const r of list)
       md.push(
-        `| ${r.id} | ${cell(r.title)} | ${r.level} | ${r.enforcement} | ${r.phase} | ${cell(r.when || "always")}${r.stages ? cell("; at " + r.stages.join(", ")) : ""} | ${cell((r.standard || []).join(", ")) || "-"} | ${cell(r.why)} |`,
+        `| ${r.id} | ${cell(r.title)} | ${r.level} | ${r.enforcement} | ${r.phase} | ${cell(r.when || "always")}${r.stages ? cell("; at " + r.stages.join(", ")) : ""} | ${cell((r.standard || []).join(", ")) || "-"} | ${cell(r.why)} | ${cell(r.next) || "-"} |`,
       );
     md.push("");
   }

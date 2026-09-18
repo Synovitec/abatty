@@ -7,6 +7,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The rule catalog carries each rule's next step.** Without it a rule could change the advice
+  it gives and the generated catalog stay byte-identical, so the coupled pair between
+  `src/rules/families/` and `docs/CATALOG.md` was refusing a push it could never be cured of.
 - **The push guard reads the branch a push targets, not a word in the command.** `-` and `/`
   are word boundaries, so `\bmain\b` matched inside `fix/merge-to-main-1` and `main-nav-rework`
   and the guard refused them as pushes to the base branch. It now takes the last non-flag
