@@ -54,8 +54,8 @@ test("packs are detected from the tree, and a tool is found by config, script or
 test("the rules keep the same words: the linter, the formatter, the typecheck and the tests read per pack; a JavaScript-only rule is n/a on Python", () => {
   const py = tempRepo("packs-rules", PY);
   const f = runCatalog(buildContext(py), RULES);
-  assert.equal(of(f, "CODE-ESLINT").status, "present");
-  assert.equal(of(f, "CODE-ESLINT").evidence, "python: pyproject.toml");
+  assert.equal(of(f, "CODE-LINTER").status, "present");
+  assert.equal(of(f, "CODE-LINTER").evidence, "python: pyproject.toml");
   assert.equal(of(f, "TYPES-SCRIPT").status, "present");
   assert.equal(of(f, "TEST-UNIT").status, "present");
   assert.match(of(f, "TEST-UNIT").evidence, /python: pyproject\.toml, 1 test file\(s\)/);
@@ -71,8 +71,8 @@ test("the rules keep the same words: the linter, the formatter, the typecheck an
     "src/index.ts": "export const x = 1;\n",
   });
   const g = runCatalog(buildContext(both), RULES);
-  assert.equal(of(g, "CODE-ESLINT").status, "partial");
-  assert.equal(of(g, "CODE-ESLINT").evidence, "javascript: no eslint; python: pyproject.toml");
+  assert.equal(of(g, "CODE-LINTER").status, "partial");
+  assert.equal(of(g, "CODE-LINTER").evidence, "javascript: no eslint; python: pyproject.toml");
   assert.equal(of(g, "CODE-SHAPE").status, "missing", "the JavaScript rule applies again");
 });
 

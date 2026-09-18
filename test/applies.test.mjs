@@ -40,7 +40,7 @@ test("a documents-only repository is read for what it is: the documents, the ins
   assert.ok(na.length >= 35, `${na.length} n/a`);
   assert.ok(applicable.length >= 20 && applicable.length <= 30, `${applicable.length} applicable`);
   for (const id of [
-    "CODE-ESLINT",
+    "CODE-LINTER",
     "TYPES-STRICT",
     "TEST-UNIT",
     "DATA-MIGRATIONS",
@@ -55,7 +55,7 @@ test("a documents-only repository is read for what it is: the documents, the ins
   for (const id of ["DOC-CHANGELOG", "DOC-ADR", "INST-CI", "FLOW-CHANGELOG-GATE", "SEC-SECRETS"])
     assert.notEqual(of(f, id).status, "n/a", `${id} applies to a documents-only repository`);
   assert.equal(
-    of(f, "CODE-ESLINT").evidence,
+    of(f, "CODE-LINTER").evidence,
     "does not apply: not at this stage: design (a rule of the build and run stages)",
     "the stage is asked before the facts",
   );
@@ -72,7 +72,7 @@ test("the facts decide: a database dependency makes the data rules apply, a brow
   assert.equal(of(p, "TEST-E2E").status, "n/a");
   assert.equal(of(p, "TEST-E2E").evidence, "does not apply: no browser application");
   assert.equal(of(p, "VALID-ZOD").status, "missing", "a server is a boundary");
-  assert.equal(of(p, "CODE-ESLINT").status, "missing");
+  assert.equal(of(p, "CODE-LINTER").status, "missing");
 
   const db = tempRepo("applies-db", {
     "package.json":

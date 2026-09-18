@@ -1,6 +1,6 @@
 {
   "name": "abatty",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
   "license": "Apache-2.0",
   "repository": {
