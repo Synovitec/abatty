@@ -218,6 +218,13 @@ try {
   cases.push([`the bypass flag is refused`, bash(`git commit ${bypass} -m "x"`), {}, "deny"]);
   cases.push([`the bypass flag quoted is still argv and still refused`, bash(`git commit "${bypass}" -m "x"`), {}, "deny"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
+  // The push target, not a word in the command: both directions, because a guard that refuses a
+  // branch for carrying the base's name in it is a guard a team switches off.
+  cases.push(["a push to the base branch is refused", bash("git push origin main"), {}, "deny"]);
+  cases.push(["a push to the base by refspec is refused", bash("git push origin HEAD:main"), {}, "deny"]);
+  cases.push(["deleting the base branch is refused", bash("git push origin :main"), {}, "deny"]);
+  cases.push(["a branch whose name carries the base's is not the base", bash("git push -u origin fix/merge-to-main-1"), {}, "none"]);
+  cases.push(["nor is one that starts with it", bash("git push -u origin main-nav-rework"), {}, "none"]);
   cases.push([`a heredoc that documents the bypass flag is a file being written`, bash(`cat > docs/RULES.md <<'EOF'\n${bypass} is not a workflow.\ngit push --force is never allowed.\nEOF`), {}, "none"]);
   // Provenance is the default: with the scrub off (the template's default) a commit that carries
   // the agent's trailer passes. The vocabulary, under a config that opted in: a commit, a pull

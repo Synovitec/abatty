@@ -75,9 +75,22 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
 // Pushing to the base branch is a per-repository policy (adoption.json → directPushToBase):
 // an internal platform may push to main after the gate, a client project with an IP transfer
 // is PR-only. Unattended runs never push to it, whatever the policy.
-const pushesBase =
-  has(new RegExp(`\\bgit push\\b.*\\b(${base}|master)\\b`)) ||
-  (has(/\bgit push\b/) && !has(/\bgit push\b\s+\S+\s+\S/) && branch === base);
+// The branch a push TARGETS, not a word that appears in the command: `git push -u origin
+// feature/main-nav` pushes nothing to main, and a guard reading the substring refuses a branch
+// for its name. `-` and `/` are word boundaries, so \bmain\b matched half the branch names a
+// team uses. The target is the last non-flag argument, its destination side when it is a
+// refspec (`HEAD:main`, `:main` for a delete); with no refspec the push goes to the current
+// branch's upstream, which is the current branch.
+function pushTarget() {
+  const m = argv.match(/\bgit push\b([^;&|]*)/);
+  if (!m) return null;
+  const args = m[1].trim().split(/\s+/).filter((w) => w && !w.startsWith("-"));
+  if (args.length < 2) return branch;
+  const spec = args[args.length - 1];
+  return (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
+}
+const target = hasFlag(/\bgit push\b/) ? pushTarget() : null;
+const pushesBase = target === base || target === "master";
 if (pushesBase && (NIGHT || config.directPushToBase !== true)) {
   deny(
     NIGHT

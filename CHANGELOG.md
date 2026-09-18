@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The push guard reads the branch a push targets, not a word in the command.** `-` and `/`
+  are word boundaries, so `\bmain\b` matched inside `fix/merge-to-main-1` and `main-nav-rework`
+  and the guard refused them as pushes to the base branch. It now takes the last non-flag
+  argument and the destination side of a refspec (`HEAD:main`, `:main`), with control cases in
+  both directions.
 - **git can run the hooks it is given.** `init` wrote `.githooks/pre-commit`, `pre-push` and
   (now) `commit-msg` without the executable bit, and git skips a hook it cannot execute with
   nothing but a hint. The pre-push hook is the gate: on this repository it never ran, which is
