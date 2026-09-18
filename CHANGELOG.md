@@ -5,6 +5,19 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A preset's rule files obey `applies` like the catalog's rules do.** `init` wrote every file
+  the preset listed whatever the repository depended on, so a React project with no ORM, no
+  GraphQL and no component library still received `sequelize.md`, `graphql.md` and `mui.md`:
+  one proving repository's stack arriving in every stranger's repository on day one. A rule
+  file is now either a practice every repository of that stack owes, which always applies, or
+  `{ file, needs }`, which applies only where one of `needs` is a dependency. A skip is reported
+  as `n/a` with the dependencies it looked for, never silent.
+- `managedFiles` takes the same verdict, so the harness agrees with itself: a rule file that does
+  not apply is not managed, `update` does not add it back and `doctor` does not call it missing.
+  That was the same leak seen from the other side.
+
 ### Added
 
 - **Two more research rounds and the competitive picture.**

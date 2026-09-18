@@ -7,8 +7,15 @@
 export function packageVersion(): string;
 /** Formatting-blind hash of a text. @param {string} text */
 export function hashOf(text: string): string;
-/** The files the package installs and keeps in step: the shipped pairs plus the preset's rules. @param {import("../presets/index.mjs").Preset | null} preset @returns {[string, string][]} */
-export function managedFiles(preset: import("../presets/index.mjs").Preset | null): [string, string][];
+/**
+ * The files the package installs and keeps in step: the shipped pairs plus the preset's rules
+ * THAT APPLY to this repository. A rule file about a library the repository does not use is not
+ * installed, so it is not managed either: without `deps` this listed it, `update` added it back
+ * and `doctor` called it missing, which is the leak seen from the other side.
+ * @param {import("../presets/index.mjs").Preset | null} preset @param {Set<string>} [deps]
+ * @returns {[string, string][]}
+ */
+export function managedFiles(preset: import("../presets/index.mjs").Preset | null, deps?: Set<string>): [string, string][];
 /** The lock as the repository has it, or null. @param {string} repoDir @returns {Lock | null} */
 export function readLock(repoDir: string): Lock | null;
 /**

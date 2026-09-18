@@ -19,7 +19,15 @@ import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { TEMPLATES } from "./init.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
-import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import {
+  CONFIG_FILE,
+  LEGACY_CONFIG,
+  dependencyNames,
+  readJsonFile,
+  readPackage,
+  writeJsonFile,
+} from "./repo.mjs";
+import { presetRules } from "../presets/index.mjs";
 
 export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
@@ -40,12 +48,19 @@ export function hashOf(text) {
   return createHash("sha256").update(normalise(text)).digest("hex");
 }
 
-/** The files the package installs and keeps in step: the shipped pairs plus the preset's rules. @param {import("../presets/index.mjs").Preset | null} preset @returns {[string, string][]} */
-export function managedFiles(preset) {
+/**
+ * The files the package installs and keeps in step: the shipped pairs plus the preset's rules
+ * THAT APPLY to this repository. A rule file about a library the repository does not use is not
+ * installed, so it is not managed either: without `deps` this listed it, `update` added it back
+ * and `doctor` called it missing, which is the leak seen from the other side.
+ * @param {import("../presets/index.mjs").Preset | null} preset @param {Set<string>} [deps]
+ * @returns {[string, string][]}
+ */
+export function managedFiles(preset, deps = new Set()) {
   const pairs = shippedFiles();
-  for (const r of preset?.rules || [])
-    if (existsSync(join(TEMPLATES, "harness", "rules", r)))
-      pairs.push([`harness/rules/${r}`, `.claude/rules/${r}`]);
+  for (const r of presetRules(preset, deps))
+    if (r.applies && existsSync(join(TEMPLATES, "harness", "rules", r.file)))
+      pairs.push([`harness/rules/${r.file}`, `.claude/rules/${r.file}`]);
   return pairs;
 }
 
@@ -75,7 +90,7 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
   /** @type {Record<string, string>} */
   const files = {};
   const previous = readLock(repoDir);
-  for (const [tpl, rel] of managedFiles(preset)) {
+  for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {
     const text = readFileSync(join(TEMPLATES, tpl), "utf8");
     const target = join(repoDir, rel);
     const installed = existsSync(target) && hashOf(readFileSync(target, "utf8")) === hashOf(text);
@@ -179,7 +194,7 @@ export function updateRepo(o) {
     writeFileSync(join(repoDir, rel), text);
   };
 
-  for (const [tpl, rel] of managedFiles(preset)) {
+  for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {
     const theirs = readFileSync(join(TEMPLATES, tpl), "utf8");
     const target = join(repoDir, rel);
     if (!existsSync(target)) {
