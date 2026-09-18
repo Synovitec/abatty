@@ -8,9 +8,10 @@ the adoption plan, the lessons, the research - ships with the package under
 
 ## In two minutes
 
-1. `npm i -D abatty` (the registry, from the first tagged release; `github:Synovitec/abatty`
-   for the branch), in any repository: a Next, Astro, Vite, Node or Python one, a monorepo, or
-   documents alone.
+1. `npm i -D github:Synovitec/abatty`, in any repository: a Next, Astro, Vite, Node or Python
+   one, a monorepo, or documents alone. That is the install that works today: the registry
+   package is not published yet, and `npm i -D abatty` is what this line becomes on the day it
+   is. A first command that fails is worse than a README that says where the package is.
 2. `npx abatty init` installs the instrument for the stack it detects (`--stack` names one,
    `--stage design` says there is no application yet): the gate, the pre-push hook that runs it,
    the ratchet with today's numbers as the floor, the harness the agent works under, CI from the
@@ -33,7 +34,7 @@ Everything else below is the same instrument in more depth.
 
 ```sh
 # the four that do the work
-npm i -D abatty                  # the registry, from the first tagged release; github:Synovitec/abatty for the branch
+npm i -D github:Synovitec/abatty # the install that works today; the registry package is not published yet
 npx abatty init --stack next     # the instrument, from the templates and the preset
 npx abatty gate --fast           # THE gate: the pre-push hook and the night run this same one
 npx abatty ratchet --range auto  # every probe against the committed baseline, per total and per file

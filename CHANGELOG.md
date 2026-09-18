@@ -5,6 +5,28 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A rule states the practice; the linter is the repository's choice.** Seven checks read
+  `eslint.config.js` and nothing else, so a repository that forbids bare console output with
+  oxlint or Biome failed a rule it satisfies, and the instrument said it had not done work it
+  had done. The context now reads every linter configuration in the tree (flat and legacy
+  ESLint, oxlint, Biome) as one text, and each check knows the names the same rule goes by:
+  `no-console` and `suspicious/noConsole` (`OBS-CONSOLE`), the four shape limits against
+  `noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `noExcessiveCognitiveComplexity` and
+  `useMaxParams` (`CODE-SHAPE`), `no-restricted-imports` and `noRestrictedImports`
+  (`CODE-ARCH-IMPORTS`), the a11y plugin and Biome's port of it (`A11Y-LINT`). `CODE-MAXWARN`
+  accepts a lint script that runs any of the three, and the flag each one spells differently
+  (`--max-warnings=0`, `--error-on-warnings`). Four control cases run the same repository under
+  each linter and were watched failing against the old reader before the fix landed.
+
+### Changed
+
+- **The first command on the front page is one that works.** The README opened with
+  `npm i -D abatty` from "the first tagged release" against a registry that answers 404. It now
+  installs from the branch, says the registry package is not published yet, and says what the
+  line becomes on the day it is. The publish item in the position document records why.
+
 ### Added
 
 - **Observability is a family of rules, not a sentence.** The standard has carried the OBS.1

@@ -19,7 +19,8 @@ export const rules = [
     why: "A vendor SDK imported outside its provider home, or a component reaching the database, is the architecture eroding one import at a time; the linter refuses the import.",
     next: "Ban vendor SDKs outside their provider home and enforce the import direction",
     check: (c) => {
-      const ok = /no-restricted-imports|no-restricted-paths/.test(c.eslintText);
+      // Biome renamed the first of them; nothing of its own answers the second.
+      const ok = /no-restricted-imports|noRestrictedImports|no-restricted-paths/.test(c.lintText);
       return { status: ok ? "present" : "missing", evidence: ok ? "rule present" : "none" };
     },
   },

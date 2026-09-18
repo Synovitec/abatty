@@ -48,7 +48,7 @@ export const rules = [
     why: "One string typed into a component is one string the translators never see; the linter refuses it at the line.",
     next: "Add react/jsx-no-literals or eslint-plugin-i18next at error",
     check: (c) => {
-      const rule = /jsx-no-literals|no-literal-string/.test(c.eslintText);
+      const rule = /jsx-no-literals|no-literal-string/.test(c.lintText);
       return {
         status: rule ? "present" : "missing",
         evidence: rule ? "rule present" : "none",
@@ -89,8 +89,10 @@ export const rules = [
     why: "The countable part of WCAG (a label, an alt, a role) is refused by the linter at the line; a component library needs the mapping or the plugin sees nothing.",
     next: "Add the plugin at error and map the component library (settings + polymorphicPropName)",
     check: (c) => {
-      const plugin = /jsx-a11y/.test(c.eslintText);
-      const mapped = /polymorphicPropName/.test(c.eslintText);
+      // The plugin, or Biome's own port of it, which carries the same rules under its a11y group
+      // and its own names (useAltText, noAccessKey) rather than the plugin's.
+      const plugin = /jsx-a11y|["']a11y["']\s*:/.test(c.lintText);
+      const mapped = /polymorphicPropName/.test(c.lintText);
       const lib = c.has("@mui/material") || [...c.deps].some((d) => d.startsWith("@radix-ui/"));
       const jsx = c.sourceFiles.some((f) => /\.(tsx|jsx)$/.test(f));
       return {

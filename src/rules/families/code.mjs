@@ -25,21 +25,21 @@ export const rules = [
   {
     id: "CODE-MAXWARN",
     family: "Code",
-    title: "lint runs with --max-warnings=0",
+    title: "lint runs with a warning as an error (--max-warnings=0, --error-on-warnings)",
     standard: ["CODE.4"],
     level: "must",
     enforcement: "hard",
     phase: "1",
     ...JS_SOURCES,
     why: "A warning nobody has to fix is a rule nobody follows; at zero, a warning is an error with a softer name.",
-    next: "Add --max-warnings=0 to the lint script",
+    next: "Make a warning fail the lint script: --max-warnings=0 (ESLint, oxlint) or --error-on-warnings (Biome)",
     check: (c) => {
       const lintScripts = [
         ["package.json", c.scripts.lint],
         ...c
           .files(/^(apps|packages|services)\/[^/]+\/package\.json$/)
           .map((q) => [q, c.readJson(q)?.scripts?.lint]),
-      ].filter(([, v]) => v && /eslint/.test(String(v)));
+      ].filter(([, v]) => v && /eslint|oxlint|biome/.test(String(v)));
       const first = lintScripts[0];
       const lint = first
         ? [String(first[0]), String(first[1])]
@@ -48,7 +48,7 @@ export const rules = [
           : null;
       return {
         status:
-          lint && /max-warnings[= ]0/.test(lint[1] || "")
+          lint && /max-warnings[= ]0|--error-on-warnings/.test(lint[1] || "")
             ? "present"
             : lint
               ? "partial"
@@ -73,11 +73,20 @@ export const rules = [
       // CODE.1 is held by ESLint max-lines or by the ratchet's size metrics, so a baseline with a
       // size family stands for max-lines.
       const sizeRatchet = Boolean(c.readJson(c.firstFile(/standards-baseline\.json$/) || "")?.size);
+      // The same four limits under whichever name the repository's linter gives them: ESLint and
+      // oxlint share the kebab names, Biome renamed every one of them.
+      const ALSO = {
+        "max-lines": "noExcessiveLinesPerFile",
+        "max-lines-per-function": "noExcessiveLinesPerFunction",
+        complexity: "noExcessiveCognitiveComplexity",
+        "max-params": "useMaxParams",
+      };
       /** @param {string} r */
-      const inEslint = (r) => new RegExp(`['"]?${r}['"]?\\s*:`).test(c.eslintText);
+      const inLint = (r) =>
+        new RegExp(`['"]?(${r}|${ALSO[/** @type {keyof ALSO} */ (r)]})['"]?\\s*:`).test(c.lintText);
       const shape = ["max-lines", "max-lines-per-function", "complexity", "max-params"].map((r) => [
         r,
-        inEslint(r) ? "ok" : r === "max-lines" && sizeRatchet ? "ok (ratchet size)" : "MISSING",
+        inLint(r) ? "ok" : r === "max-lines" && sizeRatchet ? "ok (ratchet size)" : "MISSING",
       ]);
       return {
         status: shape.every(([, v]) => v !== "MISSING")
@@ -101,11 +110,11 @@ export const rules = [
     why: "An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say.",
     next: "Add eslint-plugin-jsdoc (typescript-flavor on TS) with the fixer disabled",
     check: (c) => {
-      const rule = /jsdoc\/require-jsdoc/.test(c.eslintText);
+      const rule = /jsdoc\/require-jsdoc/.test(c.lintText);
       const probe = c.script(/jsdoc|check-limits/);
       return {
         status: rule ? "present" : probe ? "partial" : "missing",
-        evidence: rule ? "eslint rule" : probe ? "probe script only (" + probe[0] + ")" : "none",
+        evidence: rule ? "a linter rule" : probe ? "probe script only (" + probe[0] + ")" : "none",
       };
     },
   },
