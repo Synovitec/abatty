@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The front page leads with the gate, not the reading** (evidence base C1). The two-minute path
+  was install, read, init, gate: it put the report first and the thing that refuses the work
+  fourth. It is now install, `init`, **`npm run gate` before every push**, `doctor --controls`,
+  and only then the reading, with the reason stated and sourced: the same analysis at the same
+  precision reached a near-zero fix rate as a report and above seventy per cent on the change
+  under review, so placement beats precision. The hero says what the package does rather than
+  what it is, in 54 words against the 150 the position document targets, and the command block
+  leads with the four that do the work before the reading and the rest.
+
+### Changed
+
 - **The headline is the phase the repository is on, not a percentage of the whole catalog.**
   `abatty` and `abatty measure` lead with the earliest phase of the plan that has unfinished
   work and its standing (`phase A.1 · 7 of 9 held`), with the phase's own title under it; the
