@@ -16,6 +16,7 @@ import { rules as tests } from "../rules/families/tests.mjs";
 import { rules as security } from "../rules/families/security.mjs";
 import { rules as delivery } from "../rules/families/delivery.mjs";
 import { rules as platform } from "../rules/families/platform.mjs";
+import { rules as observability } from "../rules/families/observability.mjs";
 
 /** The adoption plan's phases (ADOPTION_PLAN.md §B.2), as data. @type {import("./index.mjs").Phase[]} */
 export const PHASES = [
@@ -135,6 +136,18 @@ export const PHASES = [
     exit: "`depcruise --ignore-known --output-type err` and `knip --max-issues 0` in the gate, both proven red on a scratch violation",
     stages: ["build", "run"],
   },
+  {
+    // OBS.1 was in the standard from the first day and the plan scheduled nothing for it, so a
+    // repository could finish every phase with logs nobody can query and a stop that drops the
+    // work in flight. A service's own phase, at the run stage, where the surface exists.
+    id: "13",
+    title:
+      "Observability: a structured logger with redaction at the logger, no bare console from the server, a health endpoint, and a SIGTERM that drains",
+    size: "M",
+    blocksOn: ["0"],
+    exit: "the redaction list covers the named fields and a test proves one is masked; `no-console` at error on the server's paths; the health endpoint answers and the SIGTERM handler fails it before draining, both proven by a test that watches them",
+    stages: ["run"],
+  },
 ];
 
 /** @type {import("./index.mjs").Profile} */
@@ -142,7 +155,7 @@ export const synovitec = {
   id: "synovitec",
   name: "The Synovitec engineering standard",
   description:
-    "The standard the package was built on and proved on two repositories: thirteen phases, the rules of eleven families, four stack presets, the harness rule files per stack topic.",
+    "The standard the package was built on and proved on two repositories: fifteen phases, the rules of fourteen families, four stack presets, the harness rule files per stack topic.",
   rules: [
     ...documents,
     ...instrument,
@@ -156,6 +169,7 @@ export const synovitec = {
     ...security,
     ...delivery,
     ...platform,
+    ...observability,
   ],
   phases: PHASES,
   presets: ["next", "astro", "vite-react", "node"],

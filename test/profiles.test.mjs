@@ -56,7 +56,7 @@ test("the built-in profile is the catalog: its rules are RULES, its phases the p
   );
   assert.deepEqual(
     phasesOf([synovitec]).map((p) => p.id),
-    ["A.1", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+    ["A.1", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
   );
   for (const r of RULES) {
     const phases = r.phase.split(/\s*\/\s*/);

@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **Observability is a family of rules, not a sentence.** The standard has carried the OBS.1
+  pillar since it was written and the catalog held nothing for it, so a repository could be
+  measured, gated and ratcheted from end to end without anyone ever asking whether its logs
+  could be read, whether a secret reached them, or whether the process stopped without dropping
+  the work in flight. Six rules close it: a structured logger (`OBS-STRUCTURED`), redaction by
+  field path at the logger rather than at the call sites (`OBS-REDACTION`), `no-console` on the
+  server's paths (`OBS-CONSOLE`), a SIGTERM that drains instead of exiting on the spot
+  (`OBS-SIGTERM`), a health endpoint the deploy and the load balancer can read (`OBS-HEALTH`),
+  and an error tracker configured from the environment (`OBS-TRACKER`). Each is a service's, so
+  a library or a browser application reads `n/a` with the reason rather than `missing`, through
+  a new `SERVICE` predicate. The enforcement levels are the honest ones: one `hard`, the rest
+  `review` and `prose`, which the enforced share shows and a night can promote. Phase 13 of the
+  plan carries them, with its exit condition and the enforcement map updated to name them.
+
 ### Changed
 
 - **The front page leads with the gate, not the reading** (evidence base C1). The two-minute path
