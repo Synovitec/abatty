@@ -5,27 +5,7 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-### Fixed
-
-- **A rule states the practice; the linter is the repository's choice.** Seven checks read
-  `eslint.config.js` and nothing else, so a repository that forbids bare console output with
-  oxlint or Biome failed a rule it satisfies, and the instrument said it had not done work it
-  had done. The context now reads every linter configuration in the tree (flat and legacy
-  ESLint, oxlint, Biome) as one text, and each check knows the names the same rule goes by:
-  `no-console` and `suspicious/noConsole` (`OBS-CONSOLE`), the four shape limits against
-  `noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `noExcessiveCognitiveComplexity` and
-  `useMaxParams` (`CODE-SHAPE`), `no-restricted-imports` and `noRestrictedImports`
-  (`CODE-ARCH-IMPORTS`), the a11y plugin and Biome's port of it (`A11Y-LINT`). `CODE-MAXWARN`
-  accepts a lint script that runs any of the three, and the flag each one spells differently
-  (`--max-warnings=0`, `--error-on-warnings`). Four control cases run the same repository under
-  each linter and were watched failing against the old reader before the fix landed.
-
-### Changed
-
-- **The first command on the front page is one that works.** The README opened with
-  `npm i -D abatty` from "the first tagged release" against a registry that answers 404. It now
-  installs from the branch, says the registry package is not published yet, and says what the
-  line becomes on the day it is. The publish item in the position document records why.
+## [0.2.0] - 2026-09-18
 
 ### Added
 
@@ -42,53 +22,6 @@ under Unreleased in the same commit.
   a new `SERVICE` predicate. The enforcement levels are the honest ones: one `hard`, the rest
   `review` and `prose`, which the enforced share shows and a night can promote. Phase 13 of the
   plan carries them, with its exit condition and the enforcement map updated to name them.
-
-### Changed
-
-- **The front page leads with the gate, not the reading** (evidence base C1). The two-minute path
-  was install, read, init, gate: it put the report first and the thing that refuses the work
-  fourth. It is now install, `init`, **`npm run gate` before every push**, `doctor --controls`,
-  and only then the reading, with the reason stated and sourced: the same analysis at the same
-  precision reached a near-zero fix rate as a report and above seventy per cent on the change
-  under review, so placement beats precision. The hero says what the package does rather than
-  what it is, in 54 words against the 150 the position document targets, and the command block
-  leads with the four that do the work before the reading and the rest.
-
-### Changed
-
-- **The headline is the phase the repository is on, not a percentage of the whole catalog.**
-  `abatty` and `abatty measure` lead with the earliest phase of the plan that has unfinished
-  work and its standing (`phase A.1 · 7 of 9 held`), with the phase's own title under it; the
-  score over everything follows as a trend, labelled as one. A fresh application is missing the
-  later phases by design: of the rules one was missing on 2026-09-18, six were phase 0 and
-  seventeen were phases the plan schedules after it, so the old headline read as a verdict on
-  work nobody had been asked to do yet and a healthy day-one project scored 16/100. The report
-  JSON and the Markdown report carry the standing per phase, so the dashboard and a reader see
-  the same number.
-
-### Fixed
-
-- **One plan order, the plan's own.** Three places read the phase by taking the first number out
-  of it, so `A.1` (day 0) sorted as 1 and the whole of phase 0 was listed ahead of the day-0
-  work that blocks it. The order now comes from the profile's declared phases, a rule that names
-  two phases (`2 / 10`: installed at 2, driven to target at 10) belongs to the earlier, and a
-  phase the plan does not carry sorts last instead of in the middle.
-
-### Fixed
-
-- **A preset's rule files obey `applies` like the catalog's rules do.** `init` wrote every file
-  the preset listed whatever the repository depended on, so a React project with no ORM, no
-  GraphQL and no component library still received `sequelize.md`, `graphql.md` and `mui.md`:
-  one proving repository's stack arriving in every stranger's repository on day one. A rule
-  file is now either a practice every repository of that stack owes, which always applies, or
-  `{ file, needs }`, which applies only where one of `needs` is a dependency. A skip is reported
-  as `n/a` with the dependencies it looked for, never silent.
-- `managedFiles` takes the same verdict, so the harness agrees with itself: a rule file that does
-  not apply is not managed, `update` does not add it back and `doctor` does not call it missing.
-  That was the same leak seen from the other side.
-
-### Added
-
 - **Two more research rounds and the competitive picture.**
   `docs/standard/research/08-security-compliance-tooling.md` (agent security and the hostile
   repository, the Cyber Resilience Act as a deadline, the tooling landscape, the command-line
@@ -100,48 +33,6 @@ under Unreleased in the same commit.
   computational half of a harness, proves its sensors can fail, and signs the record. Ring 5,
   compliance automation, is the one with budget and a gap that matches what the package already
   computes and currently discards.
-
-### Changed
-
-- `docs/POSITION.md`'s scorecard is re-measured after the gate switch: Reliability moves from
-  Qualified back to Strong now that `abatty gate` is green on its own package with every step it
-  ships, and §2.1 records the defect as fixed rather than open. The Latency row stays a Risk and
-  gains the reason: 3 min 22 s is a gate a team learns to start and walk away from.
-- Corrected before landing, as with the two documents before it: research 08 claimed two commands
-  carry `--json`. Eight document it and seven were verified to emit it; `--plain`, which the
-  command-line guide it cites expects, exists nowhere.
-
-### Changed
-
-- **The ratchet is bidirectional (evidence base C7).** A floor above the value it measures is a
-  finding, not a silent pass: the run is red until `abatty baseline` records what was earned, in
-  the change that earned it. A one-sided ratchet accepts for free, and for ever, findings that no
-  longer exist, and this repository was carrying a floor of 9 on `size.excessCode` against a
-  value of 0. `improved` now fails the run and prints as `FLOOR UNLOCKED`. Locking this
-  repository's floors in promoted `size.excessCode` and `size.overBudget` to HARD, which is the
-  baseline writer's documented behaviour and a deliberate tightening.
-- **The package runs its own gate.** `gate` and `gate:fast` were a hand-written chain that ran a
-  different list from `abatty gate`, the command the package ships; the chain was green and the
-  product was red. They now call `abatty gate`, the vestigial `lint` script for a linter this
-  repository has not adopted is gone so the step reports as skipped, and three steps the chain
-  never ran are on: the import graph, dead code and the audit. `README.md`'s "one implementation,
-  three callers" is true here for the first time.
-- **The scrub is a built-in gate step**, skipped where `scrub.enabled` is off and emitted into
-  generated CI as well, so the gate and CI cannot list different steps and a repository that
-  opted in keeps it whichever way the gate is called. Control cases in all three directions:
-  opted out skips, opted in with a trace is red and names the file and line, opted in and clean
-  is green.
-
-### Removed
-
-- Ten unused exports the dead-code step named once it ran: six re-exports in
-  `src/ratchet/index.mjs` that nothing imported, `countMatches` in `src/core/scrub.mjs`, and the
-  `dim`, `italic` and `blue` helpers in `src/ui/term.mjs`. Two knip patterns that matched nothing
-  are corrected: a pattern with no matches is the `0 findings across 0 files` this standard
-  refuses everywhere else.
-
-### Added
-
 - **`docs/POSITION.md`**: where the package stands against the adoption evidence rather than
   against taste. A scorecard graded on the repository at `583f9ce`, the wedge the survey found
   unoccupied, a ninety-day order and what would kill it. Checked before landing: the package
@@ -150,83 +41,6 @@ under Unreleased in the same commit.
   suite is 143 tests and not 136, the first dogfood found nine defects and not six, and the
   latency row claimed a 6.7 s gate where the gate this repository runs before a push takes
   196 s.
-
-### Fixed
-
-- **The scrub's vocabulary check reads the command per line again.** The guard collapses every
-  newline into a space before splitting the result on newlines, so the split returned the whole
-  command as one line and `onlyRequiredPaths`, which exists to excuse a line whose only mention
-  is the agent's own folder, could never excuse anything. A multi-line commit message was judged
-  as a single line and refused for the prose around its one allowed mention. It now splits the
-  raw command, with control cases for a multi-line message that is clean and one that names a
-  tool on a later line. The single-line case was the only one ever tested.
-- **A finding the check turned up: this repository does not run its own gate.** `npm run gate`
-  is a hand-written chain, while `abatty gate --fast`, the command the package ships and the
-  README calls "one implementation, three callers", goes red here in 3.9 s at the lint step,
-  because `init` wrote a `lint` script for eslint and this repository has consciously not
-  adopted it. Recorded in `CLAUDE.md` §10 and `docs/POSITION.md` §2.1 as the open decision it
-  is: the cure changes what the gate checks, so it is not a correction to make silently.
-
-### Fixed
-
-- **The rule catalog carries each rule's next step.** Without it a rule could change the advice
-  it gives and the generated catalog stay byte-identical, so the coupled pair between
-  `src/rules/families/` and `docs/CATALOG.md` was refusing a push it could never be cured of.
-- **The push guard reads the branch a push targets, not a word in the command.** `-` and `/`
-  are word boundaries, so `\bmain\b` matched inside `fix/merge-to-main-1` and `main-nav-rework`
-  and the guard refused them as pushes to the base branch. It now takes the last non-flag
-  argument and the destination side of a refspec (`HEAD:main`, `:main`), with control cases in
-  both directions.
-- **git can run the hooks it is given.** `init` wrote `.githooks/pre-commit`, `pre-push` and
-  (now) `commit-msg` without the executable bit, and git skips a hook it cannot execute with
-  nothing but a hint. The pre-push hook is the gate: on this repository it never ran, which is
-  how `origin/main` came to be red on `docs.behindCode` while every push looked clean. `init`
-  now sets the bit on disk and in the index, repairs it on a hook it keeps, and the self-test
-  refuses a wired hook whose index mode is not 100755.
-- **The hooks read the repository's config again.** `init` writes `abatty.config.json` at the
-  root and also wired `ADOPTION_CONFIG` at the older place, which `init` does not write, so
-  every hook fell back to the template's defaults: the scrub off where the repository had opted
-  in, no coupled pairs for the Stop gate, the repository's protected paths replaced by the
-  template's, and nothing said so. The pin is gone, `configPath()` decides as it always
-  documented, and the self-test now refuses a settings file that pins a path that is not there
-  and checks that the hooks read the config it reads.
-- **The harness lock records what is installed, not what the package ships.** A file `init`
-  kept (the repository already had its own) was recorded at the package's hash, so `update`
-  read it as "your edit; the package did not change this file" and never delivered a change to
-  it again. A kept file now carries no ancestor, `update` writes the package's version beside
-  it, and a file that really was installed keeps its ancestor across a re-run of `init`.
-- **The config merges at every depth.** A repository that had set one key of a block lost the
-  rest of it, and the harness self-test then failed on the state file it could no longer find.
-- **A repository that opted into the scrub passes its own self-test.** The case for the default
-  read the repository's config instead of a default one, so opting in failed the harness on the
-  night it was installed for.
-- **The guard reads flags from argv, not from a heredoc body.** Writing a rule, a README or a
-  fixture that names the bypass flags is not an attempt to use them; a quoted argument is still
-  argv and is still refused. Both directions are control cases in the self-test.
-- **A unit runner is a practice, not a product.** `node --test` ships with Node and needs no
-  dependency and no config file; TEST-UNIT read only vitest and jest, so a repository with its
-  tests in the tree and green scored missing on having them.
-- The test suite is hermetic: it no longer inherits `ADOPTION_CONFIG` from the harness a
-  developer installed in this repository, which pointed the fixtures' hooks at a file that was
-  not there.
-
-### Changed
-
-- **The five standard documents are re-read against the code and dated again.** They carried
-  `last_verified: 2026-09-14` while citing sources that moved on 2026-09-15, so `docs.behindCode`
-  was red on `origin/main` and the gate could not pass on a push. The read found and corrected:
-  five references to the older config path where the root config is what the hooks now resolve;
-  a `verify-change` skill the plan listed as installed and `init` has never shipped; and the
-  preset rule files being described as "take the ones that apply" where `init` writes every one
-  the preset lists whatever the repository depends on, so a project with no ORM receives the ORM
-  rules. `AUTONOMOUS_ADOPTION.md` documented the `ADOPTION_CONFIG` pin as a feature; that entry
-  now records it as the defect it was. `ENFORCEMENT_MAP.md` records that FLOW.2 claimed Hard
-  while the pre-push hook was not executable and nothing ran, and the standard gains the
-  invariant that reading found missing: a hook that is wired is not thereby running, which is
-  P.1 applied one level up.
-
-### Added
-
 - **The evidence base for the instrument** (`docs/standard/research/07-evidence-base.md`): what
   the published research, the industrial reports and the competing repositories say about the
   parts this package is made of, each finding graded and mapped to the rule, probe or command it
@@ -391,35 +205,6 @@ under Unreleased in the same commit.
   `adoption.json` gains the template's new keys and keeps every value set here; the absent
   scripts are added; `--dry-run`, `--force`. `doctor` names the installed version when it is
   not the package's.
-
-### Changed
-
-- `abatty scrub` scans untracked files too (tracked and untracked-but-not-ignored): a new file
-  that names a tool is a finding before it is committed, not after; a test that spelled the
-  context file's name with an escaped dot now takes it from the vocabulary's required paths.
-- The night runner is one implementation in Node, `abatty night` (roadmap #2), replacing
-  `night-run.ps1` and `night-run.sh`: the same pre-flight (self-test, harness identical to the
-  base, gate green, canary), the same loop (sessions per phase, a crash retried once, fifteen
-  denials an abort, the harness checked before every session, the wrap-up, the push only when
-  nothing was loosened), the same files under `.claude/night/`, the same exit codes; JSON in
-  and out (no BOM, no locale), the agent called directly (no shell rewriting the prompt).
-  `test/night.test.mjs` runs the whole runner with the stub: the happy path, canary only, six
-  abort paths, three refusals.
-- The harness self-test spelled its no-op gate `node -e process.exit(0)`, which a POSIX shell
-  rejects (a subshell in the argument); quoted now, so the self-test and `doctor` are green on
-  Linux and macOS. The stub agent answers `--version` with the version the harness requires,
-  and the tests hand it to the self-test as the agent on PATH.
-- Provenance is the default; the scrub is opt-in (roadmap #30). `scrub.enabled` (off unless
-  set) in the adoption config or `abatty.config.json`: the guard refuses a commit, a tag, a
-  pull request or an issue that names a tool only where the repository opted in; `abatty scrub
-  --message` is a no-op otherwise; the report, the status screen and the dashboard show the
-  no-trace figure only where it is on; `FLOW-TRAILER` is n/a otherwise. The opposite option,
-  `provenance.trailer`: a disclosure line every unattended commit carries, the guard refusing a
-  night commit written without it; the skill writes it. The self-test proves both (default,
-  scrub on, provenance on). This package keeps the scrub on for itself.
-
-### Added
-
 - The enforced share (roadmap #29): of the rules a repository has, the part held by a machine
   (hard, ratchet) against the part held by a reviewer or a sentence (review, prose), on the
   status and measure screens, in the report and its JSON, in the dated gap analysis and on the
@@ -472,14 +257,103 @@ under Unreleased in the same commit.
   the dependencies, `init`, `measure`, `doctor` in step, the gate skeleton stopping at the
   first missing tool by name. A preset is still proven only by a repository that ran it.
 
-### Fixed
+### Changed
 
-- The next steps of `status` and of the dashboard sorted phase 0 last (a zero read as "no
-  phase"); they now sort by the phase's number, must before should within a phase, and the
-  status screen names the waived rules and the catalog problems.
+- **The first command on the front page is one that works.** The README opened with
+  `npm i -D abatty` from "the first tagged release" against a registry that answers 404. It now
+  installs from the branch, says the registry package is not published yet, and says what the
+  line becomes on the day it is. The publish item in the position document records why.
+- **The front page leads with the gate, not the reading** (evidence base C1). The two-minute path
+  was install, read, init, gate: it put the report first and the thing that refuses the work
+  fourth. It is now install, `init`, **`npm run gate` before every push**, `doctor --controls`,
+  and only then the reading, with the reason stated and sourced: the same analysis at the same
+  precision reached a near-zero fix rate as a report and above seventy per cent on the change
+  under review, so placement beats precision. The hero says what the package does rather than
+  what it is, in 54 words against the 150 the position document targets, and the command block
+  leads with the four that do the work before the reading and the rest.
+- **The headline is the phase the repository is on, not a percentage of the whole catalog.**
+  `abatty` and `abatty measure` lead with the earliest phase of the plan that has unfinished
+  work and its standing (`phase A.1 · 7 of 9 held`), with the phase's own title under it; the
+  score over everything follows as a trend, labelled as one. A fresh application is missing the
+  later phases by design: of the rules one was missing on 2026-09-18, six were phase 0 and
+  seventeen were phases the plan schedules after it, so the old headline read as a verdict on
+  work nobody had been asked to do yet and a healthy day-one project scored 16/100. The report
+  JSON and the Markdown report carry the standing per phase, so the dashboard and a reader see
+  the same number.
+- `docs/POSITION.md`'s scorecard is re-measured after the gate switch: Reliability moves from
+  Qualified back to Strong now that `abatty gate` is green on its own package with every step it
+  ships, and §2.1 records the defect as fixed rather than open. The Latency row stays a Risk and
+  gains the reason: 3 min 22 s is a gate a team learns to start and walk away from.
+- Corrected before landing, as with the two documents before it: research 08 claimed two commands
+  carry `--json`. Eight document it and seven were verified to emit it; `--plain`, which the
+  command-line guide it cites expects, exists nowhere.
+- **The ratchet is bidirectional (evidence base C7).** A floor above the value it measures is a
+  finding, not a silent pass: the run is red until `abatty baseline` records what was earned, in
+  the change that earned it. A one-sided ratchet accepts for free, and for ever, findings that no
+  longer exist, and this repository was carrying a floor of 9 on `size.excessCode` against a
+  value of 0. `improved` now fails the run and prints as `FLOOR UNLOCKED`. Locking this
+  repository's floors in promoted `size.excessCode` and `size.overBudget` to HARD, which is the
+  baseline writer's documented behaviour and a deliberate tightening.
+- **The package runs its own gate.** `gate` and `gate:fast` were a hand-written chain that ran a
+  different list from `abatty gate`, the command the package ships; the chain was green and the
+  product was red. They now call `abatty gate`, the vestigial `lint` script for a linter this
+  repository has not adopted is gone so the step reports as skipped, and three steps the chain
+  never ran are on: the import graph, dead code and the audit. `README.md`'s "one implementation,
+  three callers" is true here for the first time.
+- **The scrub is a built-in gate step**, skipped where `scrub.enabled` is off and emitted into
+  generated CI as well, so the gate and CI cannot list different steps and a repository that
+  opted in keeps it whichever way the gate is called. Control cases in all three directions:
+  opted out skips, opted in with a trace is red and names the file and line, opted in and clean
+  is green.
+- **The five standard documents are re-read against the code and dated again.** They carried
+  `last_verified: 2026-09-14` while citing sources that moved on 2026-09-15, so `docs.behindCode`
+  was red on `origin/main` and the gate could not pass on a push. The read found and corrected:
+  five references to the older config path where the root config is what the hooks now resolve;
+  a `verify-change` skill the plan listed as installed and `init` has never shipped; and the
+  preset rule files being described as "take the ones that apply" where `init` writes every one
+  the preset lists whatever the repository depends on, so a project with no ORM receives the ORM
+  rules. `AUTONOMOUS_ADOPTION.md` documented the `ADOPTION_CONFIG` pin as a feature; that entry
+  now records it as the defect it was. `ENFORCEMENT_MAP.md` records that FLOW.2 claimed Hard
+  while the pre-push hook was not executable and nothing ran, and the standard gains the
+  invariant that reading found missing: a hook that is wired is not thereby running, which is
+  P.1 applied one level up.
+- `abatty scrub` scans untracked files too (tracked and untracked-but-not-ignored): a new file
+  that names a tool is a finding before it is committed, not after; a test that spelled the
+  context file's name with an escaped dot now takes it from the vocabulary's required paths.
+- The night runner is one implementation in Node, `abatty night` (roadmap #2), replacing
+  `night-run.ps1` and `night-run.sh`: the same pre-flight (self-test, harness identical to the
+  base, gate green, canary), the same loop (sessions per phase, a crash retried once, fifteen
+  denials an abort, the harness checked before every session, the wrap-up, the push only when
+  nothing was loosened), the same files under `.claude/night/`, the same exit codes; JSON in
+  and out (no BOM, no locale), the agent called directly (no shell rewriting the prompt).
+  `test/night.test.mjs` runs the whole runner with the stub: the happy path, canary only, six
+  abort paths, three refusals.
+- The harness self-test spelled its no-op gate `node -e process.exit(0)`, which a POSIX shell
+  rejects (a subshell in the argument); quoted now, so the self-test and `doctor` are green on
+  Linux and macOS. The stub agent answers `--version` with the version the harness requires,
+  and the tests hand it to the self-test as the agent on PATH.
+- Provenance is the default; the scrub is opt-in (roadmap #30). `scrub.enabled` (off unless
+  set) in the adoption config or `abatty.config.json`: the guard refuses a commit, a tag, a
+  pull request or an issue that names a tool only where the repository opted in; `abatty scrub
+  --message` is a no-op otherwise; the report, the status screen and the dashboard show the
+  no-trace figure only where it is on; `FLOW-TRAILER` is n/a otherwise. The opposite option,
+  `provenance.trailer`: a disclosure line every unattended commit carries, the guard refusing a
+  night commit written without it; the skill writes it. The self-test proves both (default,
+  scrub on, provenance on). This package keeps the scrub on for itself.
+- The template folder is `templates/harness` and is owned here (no sync from ops-hub any more);
+  the context-file template is `agent-context.md.template`; the stub is `stub-agent.*`.
+- Every mention of the tools in the package's files was rewritten by the map or by hand (the
+  runner's identifiers, the fixtures' server names, the docs' audience values).
+
+- The package, the command and the repository are named **abatty** (`npm i -D github:Synovitec/abatty`, `npx abatty ...`); `@synovitec/standards` and the `standards` command were the working names of the first day.
 
 ### Removed
 
+- Ten unused exports the dead-code step named once it ran: six re-exports in
+  `src/ratchet/index.mjs` that nothing imported, `countMatches` in `src/core/scrub.mjs`, and the
+  `dim`, `italic` and `blue` helpers in `src/ui/term.mjs`. Two knip patterns that matched nothing
+  are corrected: a pattern with no matches is the `0 findings across 0 files` this standard
+  refuses everywhere else.
 - The generated gap analysis and its port script: the checks live here, typed; the one
   `@ts-nocheck` is gone.
 
@@ -502,14 +376,91 @@ under Unreleased in the same commit.
   agent's executable is read from `ABATTY_AGENT` or `~/.abatty/config.json`, never from the
   repository. This repository is scanned by its own gate and its own hooks.
 
-### Changed
+### Fixed
 
-- The template folder is `templates/harness` and is owned here (no sync from ops-hub any more);
-  the context-file template is `agent-context.md.template`; the stub is `stub-agent.*`.
-- Every mention of the tools in the package's files was rewritten by the map or by hand (the
-  runner's identifiers, the fixtures' server names, the docs' audience values).
-
-- The package, the command and the repository are named **abatty** (`npm i -D github:Synovitec/abatty`, `npx abatty ...`); `@synovitec/standards` and the `standards` command were the working names of the first day.
+- **A rule states the practice; the linter is the repository's choice.** Seven checks read
+  `eslint.config.js` and nothing else, so a repository that forbids bare console output with
+  oxlint or Biome failed a rule it satisfies, and the instrument said it had not done work it
+  had done. The context now reads every linter configuration in the tree (flat and legacy
+  ESLint, oxlint, Biome) as one text, and each check knows the names the same rule goes by:
+  `no-console` and `suspicious/noConsole` (`OBS-CONSOLE`), the four shape limits against
+  `noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `noExcessiveCognitiveComplexity` and
+  `useMaxParams` (`CODE-SHAPE`), `no-restricted-imports` and `noRestrictedImports`
+  (`CODE-ARCH-IMPORTS`), the a11y plugin and Biome's port of it (`A11Y-LINT`). `CODE-MAXWARN`
+  accepts a lint script that runs any of the three, and the flag each one spells differently
+  (`--max-warnings=0`, `--error-on-warnings`). Four control cases run the same repository under
+  each linter and were watched failing against the old reader before the fix landed.
+- **One plan order, the plan's own.** Three places read the phase by taking the first number out
+  of it, so `A.1` (day 0) sorted as 1 and the whole of phase 0 was listed ahead of the day-0
+  work that blocks it. The order now comes from the profile's declared phases, a rule that names
+  two phases (`2 / 10`: installed at 2, driven to target at 10) belongs to the earlier, and a
+  phase the plan does not carry sorts last instead of in the middle.
+- **A preset's rule files obey `applies` like the catalog's rules do.** `init` wrote every file
+  the preset listed whatever the repository depended on, so a React project with no ORM, no
+  GraphQL and no component library still received `sequelize.md`, `graphql.md` and `mui.md`:
+  one proving repository's stack arriving in every stranger's repository on day one. A rule
+  file is now either a practice every repository of that stack owes, which always applies, or
+  `{ file, needs }`, which applies only where one of `needs` is a dependency. A skip is reported
+  as `n/a` with the dependencies it looked for, never silent.
+- `managedFiles` takes the same verdict, so the harness agrees with itself: a rule file that does
+  not apply is not managed, `update` does not add it back and `doctor` does not call it missing.
+  That was the same leak seen from the other side.
+- **The scrub's vocabulary check reads the command per line again.** The guard collapses every
+  newline into a space before splitting the result on newlines, so the split returned the whole
+  command as one line and `onlyRequiredPaths`, which exists to excuse a line whose only mention
+  is the agent's own folder, could never excuse anything. A multi-line commit message was judged
+  as a single line and refused for the prose around its one allowed mention. It now splits the
+  raw command, with control cases for a multi-line message that is clean and one that names a
+  tool on a later line. The single-line case was the only one ever tested.
+- **A finding the check turned up: this repository does not run its own gate.** `npm run gate`
+  is a hand-written chain, while `abatty gate --fast`, the command the package ships and the
+  README calls "one implementation, three callers", goes red here in 3.9 s at the lint step,
+  because `init` wrote a `lint` script for eslint and this repository has consciously not
+  adopted it. Recorded in `CLAUDE.md` §10 and `docs/POSITION.md` §2.1 as the open decision it
+  is: the cure changes what the gate checks, so it is not a correction to make silently.
+- **The rule catalog carries each rule's next step.** Without it a rule could change the advice
+  it gives and the generated catalog stay byte-identical, so the coupled pair between
+  `src/rules/families/` and `docs/CATALOG.md` was refusing a push it could never be cured of.
+- **The push guard reads the branch a push targets, not a word in the command.** `-` and `/`
+  are word boundaries, so `\bmain\b` matched inside `fix/merge-to-main-1` and `main-nav-rework`
+  and the guard refused them as pushes to the base branch. It now takes the last non-flag
+  argument and the destination side of a refspec (`HEAD:main`, `:main`), with control cases in
+  both directions.
+- **git can run the hooks it is given.** `init` wrote `.githooks/pre-commit`, `pre-push` and
+  (now) `commit-msg` without the executable bit, and git skips a hook it cannot execute with
+  nothing but a hint. The pre-push hook is the gate: on this repository it never ran, which is
+  how `origin/main` came to be red on `docs.behindCode` while every push looked clean. `init`
+  now sets the bit on disk and in the index, repairs it on a hook it keeps, and the self-test
+  refuses a wired hook whose index mode is not 100755.
+- **The hooks read the repository's config again.** `init` writes `abatty.config.json` at the
+  root and also wired `ADOPTION_CONFIG` at the older place, which `init` does not write, so
+  every hook fell back to the template's defaults: the scrub off where the repository had opted
+  in, no coupled pairs for the Stop gate, the repository's protected paths replaced by the
+  template's, and nothing said so. The pin is gone, `configPath()` decides as it always
+  documented, and the self-test now refuses a settings file that pins a path that is not there
+  and checks that the hooks read the config it reads.
+- **The harness lock records what is installed, not what the package ships.** A file `init`
+  kept (the repository already had its own) was recorded at the package's hash, so `update`
+  read it as "your edit; the package did not change this file" and never delivered a change to
+  it again. A kept file now carries no ancestor, `update` writes the package's version beside
+  it, and a file that really was installed keeps its ancestor across a re-run of `init`.
+- **The config merges at every depth.** A repository that had set one key of a block lost the
+  rest of it, and the harness self-test then failed on the state file it could no longer find.
+- **A repository that opted into the scrub passes its own self-test.** The case for the default
+  read the repository's config instead of a default one, so opting in failed the harness on the
+  night it was installed for.
+- **The guard reads flags from argv, not from a heredoc body.** Writing a rule, a README or a
+  fixture that names the bypass flags is not an attempt to use them; a quoted argument is still
+  argv and is still refused. Both directions are control cases in the self-test.
+- **A unit runner is a practice, not a product.** `node --test` ships with Node and needs no
+  dependency and no config file; TEST-UNIT read only vitest and jest, so a repository with its
+  tests in the tree and green scored missing on having them.
+- The test suite is hermetic: it no longer inherits `ADOPTION_CONFIG` from the harness a
+  developer installed in this repository, which pointed the fixtures' hooks at a file that was
+  not there.
+- The next steps of `status` and of the dashboard sorted phase 0 last (a zero read as "no
+  phase"); they now sort by the phase's number, must before should within a phase, and the
+  status screen names the waived rules and the catalog problems.
 
 ## [0.1.0] - 2026-09-14
 
