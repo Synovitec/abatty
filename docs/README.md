@@ -34,3 +34,4 @@ related: ["../README.md"]
 | `standard/research/04-testing-ci-delivery-supply-chain.md`   | Research 2026-09: testing, CI, delivery, supply chain                                      | reference  | stable |
 | `standard/research/05-agents-readability-docs.md`            | Research 2026-09: agents, readability, documentation                                       | reference  | stable |
 | `standard/research/06-analysis-pipeline-and-agent-skills.md` | Research 2026-09: the analysis pipeline and agent skills                                   | reference  | stable |
+| `standard/research/07-evidence-base.md`                      | Research 2026-09: the evidence base for the instrument                                     | reference  | stable |

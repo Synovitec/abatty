@@ -50,6 +50,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The evidence base for the instrument** (`docs/standard/research/07-evidence-base.md`): what
+  the published research, the industrial reports and the competing repositories say about the
+  parts this package is made of, each finding graded and mapped to the rule, probe or command it
+  bears on, with twenty consequent changes. It is the first research file about the instrument
+  rather than about a technology cluster, and it records what is genuinely unclaimed: a measured
+  false-positive rate for a tool's own rules, a catalog validated against the defect history of
+  the repository it runs in, a harness that proves its gate can go red, and a human-owned,
+  schema-versioned baseline.
 - **abatty runs its own instrument** (roadmap #27): the harness, the gate, the hooks, the
   import graph and the dead-code check are installed here, `doctor` is green on a machine set
   up for a night, and `CLAUDE.md` is this repository's own rather than the template's. The
