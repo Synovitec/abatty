@@ -193,7 +193,10 @@ human-owned justified baseline with schema-versioned metric definitions.
 
 Order matters more than content here. Items 1 to 3 are days of work, not weeks.
 
-1. **Publish.** Tag and release. Claim the name. Nothing else moves until this is done.
+1. **Publish.** Tag and release. Claim the name. Nothing else moves until this is done. Until it
+   is, the README installs from the branch and says so: on 2026-09-18 the first command on the
+   front page was `npm i -D abatty` against a registry that answers 404, which is the one kind of
+   error a reader meets before anything else the page claims.
 2. **Cut the front page to four commands**: `init`, `gate`, `ratchet`, `doctor`. The rest move behind
    a help flag. Target a hero section under 150 words and a terminal recording under 30 seconds.
    Partly done 2026-09-18 (evidence base C1): the hero is 54 words and says what the package does
