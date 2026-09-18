@@ -12,8 +12,15 @@ export function managedFiles(preset: import("../presets/index.mjs").Preset | nul
 /** The lock as the repository has it, or null. @param {string} repoDir @returns {Lock | null} */
 export function readLock(repoDir: string): Lock | null;
 /**
- * Record the package's version and the hash of every managed file as the package ships it,
- * and keep the shipped copies as the base of the next merge.
+ * Record the package's version and, per managed file, the copy that is actually installed here -
+ * the base of the next three-way merge. A file whose copy in the repository is the package's is
+ * recorded at that hash, with the shipped text kept beside it as the base. A file that differs
+ * (init keeps an existing file, and a repository edits its hooks) was NOT installed at this
+ * version, so its earlier entry and its earlier base are carried over untouched; a file with no
+ * earlier entry is left out, and `update` then has no ancestor to merge from and writes the
+ * package's version beside it rather than over it. Recording the package's hash for every file
+ * was the bug: a file the repository kept read as its own edit that the package never changed,
+ * and `update` refused to deliver a real change to it for as long as the repository lived.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset | null} preset @param {string} [version]
  */
 export function writeLock(repoDir: string, preset: import("../presets/index.mjs").Preset | null, version?: string): Lock;

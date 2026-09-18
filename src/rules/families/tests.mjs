@@ -18,7 +18,7 @@ export const rules = [
     phase: "2 / 10",
     ...SOURCES,
     why: "A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has.",
-    next: "Add vitest and colocated tests for services and guards",
+    next: "Add a unit runner (vitest, jest or node --test) and colocated tests for services and guards",
     check: (c) => {
       const others = perPack(c, "test", (p) => p.id !== "javascript");
       const testFiles = c.files(/\.(test|spec)\.(ts|tsx|js|jsx|mjs)$/);
@@ -26,7 +26,16 @@ export const rules = [
         const py = c.files(/(^|\/)(test_[^/]*\.py|[^/]*_test\.py)$/).length;
         return { ...others, evidence: `${others.evidence}, ${py} test file(s)` };
       }
-      const runner = c.has("vitest") ? "vitest" : c.has("jest") ? "jest" : "";
+      // The rule states the practice - a runner and tests - and the platform's own runner is one:
+      // `node --test` ships with Node and carries no dependency and no config file to look for.
+      const platform = Boolean(c.script(/\bnode\b[^&|]*--test|(^|\W)node:test(\W|$)/));
+      const runner = c.has("vitest")
+        ? "vitest"
+        : c.has("jest")
+          ? "jest"
+          : platform
+            ? "node --test"
+            : "";
       const js = runner && testFiles.length > 0 ? "present" : runner ? "partial" : "missing";
       return {
         status:

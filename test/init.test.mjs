@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
+import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 
 test("init --stack next writes the harness, the tooling, the scripts and the day-0 documents", () => {
   const dir = tempRepo("init", {
@@ -75,4 +76,58 @@ test("init --dry-run writes nothing", () => {
   const r = cli(["init", dir, "--stack", "next", "--dry-run"], dir);
   assert.equal(r.code, 0, r.out);
   assert.equal(existsSync(join(dir, ".claude")), false);
+});
+
+test("init merges the config at every depth: a repository that set one key of a block keeps the rest", () => {
+  const dir = tempRepo("init5", {
+    "package.json": NEXT_PKG,
+    // A repository that named its own baseline and nothing else of `files`. Shallow was the bug:
+    // the five keys the template names went missing and the harness self-test then failed on the
+    // state file it could no longer find.
+    "abatty.config.json": JSON.stringify({
+      files: { baseline: "ci/floor.json" },
+      commands: { gate: "make gate" },
+      scrub: { enabled: true },
+    }),
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(r.code, 0, r.out);
+  const cfg = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
+  assert.equal(cfg.files.baseline, "ci/floor.json", "the value the repository set wins");
+  assert.equal(cfg.files.state, "docs/ADOPTION_STATE.json", "the keys it never set are added");
+  assert.equal(cfg.files.changelog, "CHANGELOG.md");
+  assert.equal(cfg.files.decisions, "docs/ADOPTION_DECISIONS.md");
+  assert.equal(cfg.files.progress, "docs/STANDARDS_PROGRESS.md");
+  assert.equal(cfg.commands.gate, "make gate", "the same one block deeper");
+  assert.equal(typeof cfg.commands.typecheck, "string");
+  assert.equal(cfg.scrub.enabled, true);
+  // And it settles: a second run over the merged file changes nothing.
+  const again = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(again.code, 0, again.out);
+  assert.match(again.out, /kept\s+abatty\.config\.json/);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")), cfg);
+});
+
+test("the git hooks init writes are executable, in the filesystem and in the index", () => {
+  // git skips a hook that is not executable and says so only as a hint, so a pre-push hook
+  // written 644 means the gate never runs on a push and a red tree reads as a green one. This
+  // repository pushed past its own red gate for days that way.
+  const dir = tempRepo("init-hook-mode", { "package.json": NEXT_PKG });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(r.code, 0, r.out);
+  git(dir, "add", "-A");
+  for (const hook of ["pre-commit", "pre-push", "commit-msg"]) {
+    const rel = `.githooks/${hook}`;
+    assert.ok(existsSync(join(dir, rel)), `init writes ${rel}`);
+    if (process.platform !== "win32")
+      assert.ok(statSync(join(dir, rel)).mode & 0o111, `${rel} is executable on disk`);
+    const entry = git(dir, "ls-files", "-s", "--", rel);
+    assert.match(entry, /^100755 /, `${rel} is executable in the index: ${entry}`);
+  }
+  // A repository that already has one keeps its content, and the mode is repaired anyway.
+  writeFileSync(join(dir, ".githooks/pre-push"), "#!/bin/sh\nnpm run -s gate\n# ours\n");
+  spawnSync("git", ["update-index", "--chmod=-x", "--", ".githooks/pre-push"], { cwd: dir });
+  cli(["init", dir, "--stack", "next"], dir);
+  assert.match(readFileSync(join(dir, ".githooks/pre-push"), "utf8"), /# ours/, "content kept");
+  assert.match(git(dir, "ls-files", "-s", "--", ".githooks/pre-push"), /^100755 /, "mode repaired");
 });

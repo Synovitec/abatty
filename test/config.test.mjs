@@ -77,6 +77,7 @@ test("init writes the one config at the root with the schema line; the hooks and
         encoding: "utf8",
         env: {
           ...process.env,
+          ADOPTION_CONFIG: "",
           ADOPTION_RUN: night ? "1" : "",
           ADOPTION_BRANCH: "adopt/standards-x",
         },
@@ -89,7 +90,7 @@ test("init writes the one config at the root with the schema line; the hooks and
   const st = spawnSync(process.execPath, [".claude/hooks/self-test.mjs"], {
     cwd: dir,
     encoding: "utf8",
-    env: { ...process.env, ABATTY_AGENT: process.env.ABATTY_AGENT || "" },
+    env: { ...process.env, ADOPTION_CONFIG: "", ABATTY_AGENT: process.env.ABATTY_AGENT || "" },
   });
   assert.match(st.stdout + st.stderr, /adoption parse: abatty\.config\.json/);
 });
@@ -124,4 +125,42 @@ test("abatty config: the files, the problems, --migrate moves the older place to
   assert.deepEqual(json.files, [CONFIG_FILE]);
   assert.deepEqual(json.problems, []);
   git(dir, "status");
+});
+
+test("the hooks read the repository's config, not a path settings.json pinned", () => {
+  // init writes abatty.config.json at the root. settings.json pinning ADOPTION_CONFIG at the
+  // older place, which init does not write, made every hook fall back to the template's defaults:
+  // the scrub off where the repository opted in, no coupled pairs, the repository's protected
+  // paths replaced. Nothing said so, because the self-test resolved the config its own way.
+  const dir = tempRepo("config-wiring", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  const settings = JSON.parse(readFileSync(join(dir, ".claude/settings.json"), "utf8"));
+  const pinned = settings.env?.ADOPTION_CONFIG;
+  assert.ok(
+    !pinned || existsSync(join(dir, pinned)),
+    `settings pins ${pinned}, which init does not write`,
+  );
+  const cfgPath = join(dir, "abatty.config.json");
+  const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+  cfg.scrub = { enabled: true };
+  cfg.coupled = [{ when: "src/", then: "docs/", why: "x" }];
+  cfg.protectedPaths = ["sacred/"];
+  writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
+  const read = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      "import {loadConfig} from './.claude/hooks/lib.mjs'; const c = loadConfig(); process.stdout.write(JSON.stringify({scrub:c.scrub?.enabled, coupled:(c.coupled||[]).length, protected:c.protectedPaths}));",
+    ],
+    { cwd: dir, encoding: "utf8", env: { ...process.env, ADOPTION_CONFIG: "" } },
+  );
+  const seen = JSON.parse(read.stdout || "{}");
+  assert.equal(
+    seen.scrub,
+    true,
+    `the hooks read the repository's scrub setting: ${read.stdout}${read.stderr}`,
+  );
+  assert.equal(seen.coupled, 1, "and its coupled pairs");
+  assert.deepEqual(seen.protected, ["sacred/"], "and its protected paths, not the template's");
 });

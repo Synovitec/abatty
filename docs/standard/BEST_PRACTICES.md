@@ -16,7 +16,7 @@ related:
     "./research/06-analysis-pipeline-and-agent-skills.md",
   ]
 scope: synovitec
-last_verified: "2026-09-14"
+last_verified: "2026-09-18"
 source_truth:
   - "./research/*.md"
   - "./ENGINEERING_STANDARD.md"
@@ -25,7 +25,12 @@ source_truth:
 # Best practices digest
 
 Five research passes on 2026-09-13, each against official documentation and recognised
-sources, each read against the standard as it stood that morning. The full sourced reports are
+sources, each read against the standard as it stood that morning. A sixth pass covers the
+analysis pipeline and agent skills. A seventh, [`research/07-evidence-base.md`](./research/07-evidence-base.md)
+on 2026-09-18, is different in kind and is deliberately NOT digested here: it collects the
+evidence for and against the shape of the instrument rather than sourced practice for a
+technology cluster, and its twenty consequent changes are carried in
+[`../ROADMAP.md`](../ROADMAP.md), not in this digest. The full sourced reports are
 under [`research/`](./research/); every line there carries its URL. This digest records the
 outcome: what was absorbed into the standard (by rule ID), what was refused and why, and the
 three places where the research corrected the standard.

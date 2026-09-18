@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
@@ -18,6 +19,27 @@ test("doctor after init: the repository's self-test runs and every shipped file 
   assert.match(r.out, /harness ok/);
   assert.match(r.out, /drift: 0 file\(s\) differ/);
   assert.match(r.out, /doctor: ok/);
+});
+
+test("the harness self-test holds for a repository that opted into the scrub", () => {
+  const dir = tempRepo("doctor-scrub", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  const cfg = join(dir, "abatty.config.json");
+  const config = JSON.parse(readFileSync(cfg, "utf8"));
+  writeFileSync(cfg, JSON.stringify({ ...config, scrub: { enabled: true } }, null, 2) + "\n");
+  // The scrub's own case is proven elsewhere; what this holds is that the case for the DEFAULT
+  // reads a default config and not the repository's. Pointing it at the repository's own config
+  // was the bug: a repository that opted in then failed its harness on the default's case, and
+  // the night it refused was the night it was installed for.
+  const home = mkdtempSync(join(tmpdir(), "abatty-home-"));
+  mkdirSync(join(home, ".claude"), { recursive: true });
+  writeFileSync(
+    join(home, ".claude/settings.json"),
+    JSON.stringify({ attribution: { commit: "" } }),
+  );
+  const r = cli(["doctor", dir], dir, { HOME: home, USERPROFILE: home });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /harness ok/);
 });
 
 test("doctor names a hook edited beyond formatting, and a missing one", () => {

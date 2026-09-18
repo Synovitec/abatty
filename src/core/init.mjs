@@ -8,7 +8,16 @@
  * (the repository's own edits are the point of `doctor`'s drift check), unless --force.
  * Dependencies are named, never installed: a dependency change is a decision.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
@@ -20,6 +29,59 @@ import { LOCK, packageVersion, writeLock } from "./update.mjs";
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
 /** @typedef {{ file: string, action: "written" | "kept" | "overwritten" | "merged" }} InitEvent */
+
+/** @param {unknown} v true for a JSON object, which merges; an array is a value and is kept whole. */
+const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * The defaults under the repository's own values, at every depth: a key the repository set wins,
+ * a key it never set is added. Shallow was the bug - a repository that had written one key of
+ * `files` lost the five the template names, and the harness self-test then failed on the state
+ * file it could no longer find.
+ * @param {any} base @param {any} own
+ */
+function mergeConfig(base, own) {
+  if (own === undefined) return base;
+  if (!isObject(base) || !isObject(own)) return own;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(own)) out[k] = k in base ? mergeConfig(base[k], v) : v;
+  return out;
+}
+
+/** @param {any} v @returns {any} the same object with its keys in one order, so equality does not read as a change. */
+const ordered = (v) =>
+  Array.isArray(v)
+    ? v.map(ordered)
+    : isObject(v)
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map((k) => [k, ordered(v[k])]),
+        )
+      : v;
+
+/** @param {any} a @param {any} b the two configs carry the same values, whatever order they are written in. */
+const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b));
+
+/**
+ * The executable bit on a file git must be able to run. git skips a hook that is not executable
+ * and says so only as a hint, so a pre-push hook written 644 means the gate never runs and a red
+ * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
+ * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
+ * the file may not be tracked yet.
+ * @param {string} target
+ */
+function makeExecutable(target) {
+  try {
+    chmodSync(target, 0o755);
+  } catch {
+    /* a filesystem without modes; the index below is what git reads */
+  }
+  spawnSync("git", ["update-index", "--chmod=+x", "--", relative(dirname(target), target)], {
+    cwd: dirname(target),
+    stdio: "ignore",
+  });
+}
 
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */
 function walk(dir, base = dir, acc = []) {
@@ -49,17 +111,21 @@ export function initRepo(o) {
   const put = (
     /** @type {string} */ rel,
     /** @type {string} */ content,
-    { merge } = { merge: false },
+    { merge, executable } = { merge: false, executable: false },
   ) => {
     const target = join(repoDir, rel);
     const exists = existsSync(target);
     if (exists && !force) {
+      // A git hook that is not executable is silently skipped by git, so the mode is repaired
+      // even on a file that is kept: that is how a repository pushed past a red gate for days.
+      if (executable && !dryRun) makeExecutable(target);
       events.push({ file: rel, action: "kept" });
       return false;
     }
     if (!dryRun) {
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
+      if (executable) makeExecutable(target);
     }
     events.push({ file: rel, action: exists ? "overwritten" : merge ? "merged" : "written" });
     return true;
@@ -95,31 +161,24 @@ export function initRepo(o) {
   const legacy = readJsonFile(repoDir, LEGACY_CONFIG);
   const configRel = legacy && !readJsonFile(repoDir, CONFIG_FILE) ? LEGACY_CONFIG : CONFIG_FILE;
   const existing = readJsonFile(repoDir, configRel);
-  const merged = {
-    ...(configRel === CONFIG_FILE ? { $schema: SCHEMA_URL } : {}),
-    ...base,
-    ...preset.adoption,
+  const defaults = {
+    ...mergeConfig(
+      { ...(configRel === CONFIG_FILE ? { $schema: SCHEMA_URL } : {}), ...base },
+      preset.adoption,
+    ),
     stack: preset.id,
     // The version this repository follows, recorded where a human reads it; update moves it.
     abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
-    ...(existing || {}),
-    commands: {
-      ...base.commands,
-      ...(preset.adoption.commands || {}),
-      ...(existing?.commands || {}),
-    },
   };
+  const merged = mergeConfig(defaults, existing || {});
   if (!existing || force) {
     if (!dryRun) writeJsonFile(repoDir, configRel, { ...merged, stack: preset.id });
     events.push({ file: configRel, action: existing ? "overwritten" : "written" });
-  } else {
-    const keys = Object.keys(merged).filter((k) => !(k in existing));
-    if (keys.length) {
-      if (!dryRun) writeJsonFile(repoDir, configRel, merged);
-      events.push({ file: configRel, action: "merged" });
-    } else events.push({ file: configRel, action: "kept" });
-  }
+  } else if (!sameConfig(merged, existing)) {
+    if (!dryRun) writeJsonFile(repoDir, configRel, merged);
+    events.push({ file: configRel, action: "merged" });
+  } else events.push({ file: configRel, action: "kept" });
 
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)
@@ -130,10 +189,19 @@ export function initRepo(o) {
   put(
     ".githooks/pre-commit",
     "#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. Installed by `npm run hooks:install`.\nnpx abatty secrets --staged\n",
+    { merge: false, executable: true },
   );
   put(
     ".githooks/pre-push",
     "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`. Installed by `npm run hooks:install`.\nnpm run -s gate\n",
+    { merge: false, executable: true },
+  );
+  // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
+  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides.
+  put(
+    ".githooks/commit-msg",
+    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on; a no-op otherwise.\nnpx abatty scrub --message "$1"\n',
+    { merge: false, executable: true },
   );
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
   // `npm run hooks:install` are how the instrument is called, whatever the stack.

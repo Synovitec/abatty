@@ -139,6 +139,7 @@ test("the Stop hook refuses a night's stop while a coupled path changed without 
       encoding: "utf8",
       env: {
         ...process.env,
+        ADOPTION_CONFIG: "",
         ADOPTION_RUN: "1",
         ADOPTION_BASE: "main",
         ADOPTION_BRANCH: "adopt/standards-test",

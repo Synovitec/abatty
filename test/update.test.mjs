@@ -191,3 +191,46 @@ test("the version pin: init records the version in the config, update moves it, 
   );
   assert.match(up.out, /abatty\.config\.json.*abatty \d+\.\d+\.\d+/);
 });
+
+test("the lock records the copy that is installed, so a file init kept still takes the package's change", () => {
+  const dir = tempRepo("update-kept", { "package.json": NEXT_PKG });
+  // The repository already had its own hook when the instrument arrived: init keeps it, and the
+  // lock must not claim the package's version was installed over it. Recording the package's
+  // hash for every managed file was the bug - the file then read as "your edit; the package did
+  // not change this file" for as long as the repository lived, and update never delivered a
+  // change to it again.
+  const own = "// this repository's own session brief\n";
+  mkdirSync(dirname(join(dir, HOOK)), { recursive: true });
+  writeFileSync(join(dir, HOOK), own);
+  cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(readFileSync(join(dir, HOOK), "utf8"), own, "init kept the repository's file");
+  const lock = readLock(dir);
+  assert.ok(lock);
+  assert.notEqual(lock.files[HOOK], hashOf(NEW), "the lock does not claim the package's version");
+  assert.equal(lock.files[HOOK], undefined, "a file never installed here has no ancestor");
+  // With no ancestor to merge from, update writes the package's version beside it and touches
+  // nothing: the repository's file is never silently replaced, and never silently frozen either.
+  const r = updateRepo({ repoDir: dir, preset });
+  const ev = r.events.find((e) => e.file === HOOK);
+  assert.equal(ev?.action, "conflict", JSON.stringify(r.events.slice(0, 5)));
+  assert.equal(readFileSync(join(dir, HOOK), "utf8"), own);
+  assert.equal(readFileSync(join(dir, `${HOOK}.abatty-new`), "utf8"), NEW);
+});
+
+test("a file the package really installed keeps its ancestor across a re-run of init", () => {
+  const dir = tempRepo("update-ancestor", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  const installed = readFileSync(join(dir, HOOK), "utf8");
+  assert.equal(readLock(dir)?.files[HOOK], hashOf(installed));
+  // The repository edits it, then runs init again: the ancestor stays the version that was
+  // installed, so a later package change still merges against the right base.
+  writeFileSync(join(dir, HOOK), installed + "\n// a local note\n");
+  cli(["init", dir, "--stack", "next"], dir);
+  const lock = readLock(dir);
+  assert.equal(lock?.files[HOOK], hashOf(installed), "the ancestor is not moved to the edit");
+  assert.equal(
+    readFileSync(join(dir, BASE_DIR, lock.abatty, HOOK), "utf8"),
+    installed,
+    "and its copy is still on the machine to merge from",
+  );
+});

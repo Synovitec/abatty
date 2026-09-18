@@ -5,8 +5,82 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The rule catalog carries each rule's next step.** Without it a rule could change the advice
+  it gives and the generated catalog stay byte-identical, so the coupled pair between
+  `src/rules/families/` and `docs/CATALOG.md` was refusing a push it could never be cured of.
+- **The push guard reads the branch a push targets, not a word in the command.** `-` and `/`
+  are word boundaries, so `\bmain\b` matched inside `fix/merge-to-main-1` and `main-nav-rework`
+  and the guard refused them as pushes to the base branch. It now takes the last non-flag
+  argument and the destination side of a refspec (`HEAD:main`, `:main`), with control cases in
+  both directions.
+- **git can run the hooks it is given.** `init` wrote `.githooks/pre-commit`, `pre-push` and
+  (now) `commit-msg` without the executable bit, and git skips a hook it cannot execute with
+  nothing but a hint. The pre-push hook is the gate: on this repository it never ran, which is
+  how `origin/main` came to be red on `docs.behindCode` while every push looked clean. `init`
+  now sets the bit on disk and in the index, repairs it on a hook it keeps, and the self-test
+  refuses a wired hook whose index mode is not 100755.
+- **The hooks read the repository's config again.** `init` writes `abatty.config.json` at the
+  root and also wired `ADOPTION_CONFIG` at the older place, which `init` does not write, so
+  every hook fell back to the template's defaults: the scrub off where the repository had opted
+  in, no coupled pairs for the Stop gate, the repository's protected paths replaced by the
+  template's, and nothing said so. The pin is gone, `configPath()` decides as it always
+  documented, and the self-test now refuses a settings file that pins a path that is not there
+  and checks that the hooks read the config it reads.
+- **The harness lock records what is installed, not what the package ships.** A file `init`
+  kept (the repository already had its own) was recorded at the package's hash, so `update`
+  read it as "your edit; the package did not change this file" and never delivered a change to
+  it again. A kept file now carries no ancestor, `update` writes the package's version beside
+  it, and a file that really was installed keeps its ancestor across a re-run of `init`.
+- **The config merges at every depth.** A repository that had set one key of a block lost the
+  rest of it, and the harness self-test then failed on the state file it could no longer find.
+- **A repository that opted into the scrub passes its own self-test.** The case for the default
+  read the repository's config instead of a default one, so opting in failed the harness on the
+  night it was installed for.
+- **The guard reads flags from argv, not from a heredoc body.** Writing a rule, a README or a
+  fixture that names the bypass flags is not an attempt to use them; a quoted argument is still
+  argv and is still refused. Both directions are control cases in the self-test.
+- **A unit runner is a practice, not a product.** `node --test` ships with Node and needs no
+  dependency and no config file; TEST-UNIT read only vitest and jest, so a repository with its
+  tests in the tree and green scored missing on having them.
+- The test suite is hermetic: it no longer inherits `ADOPTION_CONFIG` from the harness a
+  developer installed in this repository, which pointed the fixtures' hooks at a file that was
+  not there.
+
+### Changed
+
+- **The five standard documents are re-read against the code and dated again.** They carried
+  `last_verified: 2026-09-14` while citing sources that moved on 2026-09-15, so `docs.behindCode`
+  was red on `origin/main` and the gate could not pass on a push. The read found and corrected:
+  five references to the older config path where the root config is what the hooks now resolve;
+  a `verify-change` skill the plan listed as installed and `init` has never shipped; and the
+  preset rule files being described as "take the ones that apply" where `init` writes every one
+  the preset lists whatever the repository depends on, so a project with no ORM receives the ORM
+  rules. `AUTONOMOUS_ADOPTION.md` documented the `ADOPTION_CONFIG` pin as a feature; that entry
+  now records it as the defect it was. `ENFORCEMENT_MAP.md` records that FLOW.2 claimed Hard
+  while the pre-push hook was not executable and nothing ran, and the standard gains the
+  invariant that reading found missing: a hook that is wired is not thereby running, which is
+  P.1 applied one level up.
+
 ### Added
 
+- **The evidence base for the instrument** (`docs/standard/research/07-evidence-base.md`): what
+  the published research, the industrial reports and the competing repositories say about the
+  parts this package is made of, each finding graded and mapped to the rule, probe or command it
+  bears on, with twenty consequent changes. It is the first research file about the instrument
+  rather than about a technology cluster, and it records what is genuinely unclaimed: a measured
+  false-positive rate for a tool's own rules, a catalog validated against the defect history of
+  the repository it runs in, a harness that proves its gate can go red, and a human-owned,
+  schema-versioned baseline.
+- **abatty runs its own instrument** (roadmap #27): the harness, the gate, the hooks, the
+  import graph and the dead-code check are installed here, `doctor` is green on a machine set
+  up for a night, and `CLAUDE.md` is this repository's own rather than the template's. The
+  `node` preset is proven by a named repository for the first time, and the six bugs above are
+  what that first run found. The boundary map is enforced (the rules and the probes never reach
+  the terminal, nothing imports the templates), the five pre-existing import cycles are the
+  graph's committed debt, and `templates/harness/` is coupled to `.claude/` so the harness this
+  repository runs cannot drift from the one the package ships.
 - Distribution (roadmap #27): the version this repository follows is pinned in the config
   (`abatty`, written by `init`, moved by `update`, read by `doctor`); the README opens with
   the two-minute path a stranger can act on. The registry publish, the license and the

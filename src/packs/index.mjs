@@ -56,7 +56,9 @@ export const javascript = {
       deps: ["knip"],
     },
     test: {
-      name: "vitest or jest",
+      // The platform's own runner counts: `node --test` needs no dependency and no config file,
+      // so a repository that uses it has a runner and the rule must read it as one.
+      name: "vitest, jest or node --test",
       configs: /(^|\/)(vitest|jest)\.config\.(ts|js|mjs|mts|cjs)$/,
       script: /^test$/,
       deps: ["vitest", "jest"],

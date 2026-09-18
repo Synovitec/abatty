@@ -3,3 +3,6 @@ test/tmp/
 *.log
 .DS_Store
 .abatty/
+.claude/night/
+# the dated reading measure writes; the report under .abatty/reports is the record
+docs/GAP_ANALYSIS_*.md

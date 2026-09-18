@@ -1,10 +1,80 @@
 {
   "$schema": "https://abatty.io/schema/abatty.config.json",
-  "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config.",
+  "baseBranch": "main",
+  "branchPrefix": "adopt/standards",
+  "directPushToBase": false,
+  "commands": {
+    "gate": "npm run gate:fast",
+    "gateFull": "npm run gate",
+    "standards": "npm run standards",
+    "lintFile": "npx eslint --max-warnings=0",
+    "test": "npm test",
+    "typecheck": "npm run typecheck"
+  },
   "files": {
+    "changelog": "CHANGELOG.md",
+    "version": "package.json",
+    "state": "docs/ADOPTION_STATE.json",
+    "decisions": "docs/ADOPTION_DECISIONS.md",
+    "progress": "docs/STANDARDS_PROGRESS.md",
     "baseline": "scripts/ci/standards-baseline.json"
   },
+  "standard": "node_modules/abatty/docs/standard/ENGINEERING_STANDARD.md",
+  "plan": "node_modules/abatty/docs/standard/ADOPTION_PLAN.md",
+  "sourceGlobs": ["src/", "server/", "scripts/", "tests/", "migrations/", ".woodpecker"],
+  "changelogRequiredFor": [
+    "src/",
+    "server/",
+    "scripts/",
+    "migrations/",
+    ".woodpecker",
+    "eslint.config",
+    "tsconfig"
+  ],
+  "coupled": [
+    {
+      "when": "src/rules/families/",
+      "then": "docs/CATALOG.md",
+      "why": "a rule change regenerates the catalog (abatty rules --md)"
+    },
+    {
+      "when": "templates/harness/",
+      "then": ".claude/",
+      "why": "the harness the package ships and the harness this repository runs are the same files (abatty update)"
+    }
+  ],
+  "protectedPaths": [
+    "migrations/",
+    "prisma/migrations/",
+    "drizzle/",
+    ".env",
+    ".env.",
+    "docker-compose.production",
+    "prod.dont.touch"
+  ],
+  "mcpServers": [],
+  "sandbox": {
+    "mode": "auto"
+  },
+  "scrub": {
+    "$comment": "This repository opted into the scrub (the decision of its first day: the package names no tool, no vendor, no model in its files or its history). Provenance is the default for a repository that did not opt in. The research notes under docs/standard/research quote their sources verbatim, the vendor's own documentation among them; a rewritten citation would be a false one.",
+    "enabled": true,
+    "allow": ["docs/standard/research/"]
+  },
+  "provenance": {
+    "$comment": "The opposite option: a disclosure trailer every unattended commit carries (the guard refuses a night commit written without it); empty for none.",
+    "trailer": ""
+  },
+  "rules": {
+    "local": "abatty.rules.mjs",
+    "waived": {}
+  },
   "ratchet": {
+    "$comment": "The ratchet's configuration (abatty ratchet / abatty baseline): the repository's own probes file, metrics to exclude, kind overrides (hard, ratchet), exempt path patterns; the budgets by kind, the caps and the env module take the standard's defaults unless set here.",
+    "local": "abatty.probes.mjs",
+    "exclude": [],
+    "hard": [],
+    "ratchet": [],
     "exempt": [
       "(^|/)(generated|__generated__|vendor|vendored)/",
       "(^|/)(migrations|seeders|seeds)/",
@@ -18,16 +88,12 @@
     ],
     "citationsExempt": ["^docs/standard/"]
   },
-  "scrub": {
-    "$comment": "This repository opted into the scrub (the decision of its first day: the package names no tool, no vendor, no model in its files or its history). Provenance is the default for a repository that did not opt in. The research notes under docs/standard/research quote their sources verbatim, the vendor's own documentation among them; a rewritten citation would be a false one.",
-    "enabled": true,
-    "allow": ["docs/standard/research/"]
-  },
-  "coupled": [
-    {
-      "when": "src/rules/families/",
-      "then": "docs/CATALOG.md",
-      "why": "a rule change regenerates the catalog (abatty rules --md)"
-    }
-  ]
+  "lintOnEdit": true,
+  "lintExtensions": [".ts", ".js", ".mjs"],
+  "maxStopBlocks": 6,
+  "maxSessionsPerPhase": 2,
+  "phases": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  "stack": "node",
+  "abatty": "0.1.0",
+  "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config."
 }
