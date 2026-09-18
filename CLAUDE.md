@@ -155,7 +155,13 @@ when two readings of the request lead to materially different work.
   night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
 - The `node` preset is proven by this repository as of 2026-09-18; `astro`, `python` and `docs`
   are still proven by nobody.
-- `abatty help` lists fewer commands than the README documents.
+- `abatty help` lists fewer commands than the README documents, and the README claims
+  `abatty ci --provider github` writes a pull-request template, which no code does.
+- **This repository does not run its own gate.** `npm run gate` is a hand-written chain;
+  `abatty gate --fast` goes red at the lint step, because `init` wrote a `lint` script for
+  eslint and this repository has not adopted it. The README's "one implementation, three
+  callers" is false here. See `docs/POSITION.md` §2.1; fixing it changes what the gate checks
+  and is a decision, not a correction.
 - TEST-COVERAGE, TEST-MUTATION, CODE-DUP and CODE-JSDOC are missing here: each wants a
   dependency (coverage thresholds, StrykerJS, jscpd, eslint-plugin-jsdoc) and §1.1 says a
   dependency is a decision, not a default. They are open, not waived.

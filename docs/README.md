@@ -16,6 +16,7 @@ related: ["../README.md"]
 | `../CHANGELOG.md`                                            | Keep a Changelog, SemVer                                                                   | governance | living |
 | `CATALOG.md`                                                 | The rule catalog: every check, its level, what insures it, the reason (generated)          | reference  | living |
 | `ROADMAP.md`                                                 | What changes next and why, in the order of the evidence                                    | governance | living |
+| `POSITION.md`                                                | Where the package stands against the adoption evidence: scorecard, wedge, ninety-day order | governance | living |
 | `STANDARDS_PROGRESS.md`                                      | This package against the standard it ships: numbers, the one named debt                    | governance | living |
 | `ADOPTION_DECISIONS.md`                                      | The calls taken alone, by a night or by hand: the default taken, the alternative set aside | governance | living |
 | `standard/README.md`                                         | The engineering standard, in the open: its version, its documents, how it changes          | reference  | living |

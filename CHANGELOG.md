@@ -5,6 +5,33 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`docs/POSITION.md`**: where the package stands against the adoption evidence rather than
+  against taste. A scorecard graded on the repository at `583f9ce`, the wedge the survey found
+  unoccupied, a ninety-day order and what would kill it. Checked before landing: the package
+  size (454.6 kB packed, 1.4 MB unpacked, 214 files), the README (4,973 words, 33.8 kB) and
+  `publishConfig.provenance` are exact. Three figures were not and are corrected in place: the
+  suite is 143 tests and not 136, the first dogfood found nine defects and not six, and the
+  latency row claimed a 6.7 s gate where the gate this repository runs before a push takes
+  196 s.
+
+### Fixed
+
+- **The scrub's vocabulary check reads the command per line again.** The guard collapses every
+  newline into a space before splitting the result on newlines, so the split returned the whole
+  command as one line and `onlyRequiredPaths`, which exists to excuse a line whose only mention
+  is the agent's own folder, could never excuse anything. A multi-line commit message was judged
+  as a single line and refused for the prose around its one allowed mention. It now splits the
+  raw command, with control cases for a multi-line message that is clean and one that names a
+  tool on a later line. The single-line case was the only one ever tested.
+- **A finding the check turned up: this repository does not run its own gate.** `npm run gate`
+  is a hand-written chain, while `abatty gate --fast`, the command the package ships and the
+  README calls "one implementation, three callers", goes red here in 3.9 s at the lint step,
+  because `init` wrote a `lint` script for eslint and this repository has consciously not
+  adopted it. Recorded in `CLAUDE.md` §10 and `docs/POSITION.md` §2.1 as the open decision it
+  is: the cure changes what the gate checks, so it is not a correction to make silently.
+
 ### Fixed
 
 - **The rule catalog carries each rule's next step.** Without it a rule could change the advice
