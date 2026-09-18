@@ -76,8 +76,9 @@ export async function ratchetCommand(command, c) {
       out(
         `  ${t.gray(baseline ? `floor ${baselineRel} (${baseline.measuredAt})` : `no baseline at ${baselineRel} - every metric above zero fails until \`abatty baseline\` records the floor`)}${range ? t.gray(` · range ${range}`) : ""}\n\n`,
       );
+      // `improved` reads as a failure now: an unlocked floor is slack the gate still accepts.
       const mark = (/** @type {string} */ s) =>
-        s === "ok" || s === "improved" ? t.glyph.ok : s === "skipped" ? t.glyph.skip : t.glyph.fail;
+        s === "ok" ? t.glyph.ok : s === "skipped" ? t.glyph.skip : t.glyph.fail;
       for (const v of verdicts) {
         const word =
           v.status === "regressed"
@@ -89,7 +90,7 @@ export async function ratchetCommand(command, c) {
                 : v.status === "unbaselined"
                   ? t.red("NO FLOOR")
                   : v.status === "improved"
-                    ? t.green("improved")
+                    ? t.red("FLOOR UNLOCKED")
                     : v.status === "skipped"
                       ? t.gray("skipped")
                       : t.green("ok");
@@ -97,9 +98,7 @@ export async function ratchetCommand(command, c) {
           `  ${mark(v.status)} ${t.bold(v.metric.padEnd(24))} ${String(v.value).padStart(5)}${v.floor !== null ? t.gray(` / ${v.floor}`) : t.gray("      ")}  ${t.gray(v.kind.padEnd(7))} ${word}${v.scanned ? t.gray(`  · ${v.scanned} scanned`) : ""}\n`,
         );
         for (const m of v.messages)
-          out(
-            `      ${v.status === "skipped" || v.status === "improved" ? t.gray(m) : t.yellow(m)}\n`,
-          );
+          out(`      ${v.status === "skipped" ? t.gray(m) : t.yellow(m)}\n`);
       }
       const red = failed(verdicts);
       out(

@@ -30,7 +30,13 @@ export function measureAll(probes: Probe[], ctx: RepoContext, o: ProbeOptions, b
  * @returns {Verdict[]}
  */
 export function compare(measurements: Measurement[], baseline: Baseline | null, config: RatchetConfig): Verdict[];
-/** True when the run must fail. @param {Verdict[]} verdicts */
+/**
+ * True when the run must fail. `improved` is among them: a floor left above the value it now
+ * measures is slack the gate keeps accepting, so the run is red until `abatty baseline` records
+ * the number that was earned. Every status here is cured by a change, never by editing a floor
+ * upward.
+ * @param {Verdict[]} verdicts
+ */
 export function failed(verdicts: Verdict[]): boolean;
 /**
  * The readability score (standard AIR.2): each metric earns full marks at zero and nothing at
@@ -52,6 +58,7 @@ export function ratchetSetup(repoDir: string): {
     config: RatchetConfig;
     baselineRel: string;
 };
+export { DEFAULT_CONFIG } from "./config.mjs";
 /**
  * @typedef {import("../rules/context.mjs").RepoContext} RepoContext
  * @typedef {"hard" | "ratchet"} Kind
@@ -198,5 +205,4 @@ export type Baseline = {
     debt: Record<string, Record<string, number>>;
     [k: string]: unknown;
 };
-export { BASELINE_DEFAULT, BASELINE_NOTE, DEFAULT_CONFIG, DEFAULT_EXEMPT, DEFAULT_KINDS, baselinePath, resolveConfig } from "./config.mjs";
 export { readBaseline, writeBaseline } from "./baseline.mjs";

@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { git, hasScript, readPackage } from "./repo.mjs";
 import { auditOutcome, scanSecrets } from "./secrets.mjs";
+import { scanFiles, scrubConfig } from "./scrub.mjs";
 
 /**
  * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
@@ -134,6 +135,34 @@ export function runGate(o) {
         ms: Date.now() - t0,
         detail: `${r.scanned} file(s)`,
       });
+      return true;
+    }
+    if (s.builtin === "scrub") {
+      // Opt-in, like the feature it holds: a repository that did not ask for the scrub skips it,
+      // one that did has the gate refuse the trace before a push, which is the last point a file
+      // can still be changed without rewriting history.
+      const cfg = scrubConfig(repoDir);
+      if (!cfg.enabled) {
+        events.push({ label: s.label, outcome: "skipped", detail: "scrub.enabled is off" });
+        return true;
+      }
+      log(`\n▶ ${s.label}`);
+      const t0 = Date.now();
+      const findings = scanFiles(repoDir, { allow: cfg.allow });
+      if (findings.length) {
+        for (const f of findings.slice(0, 20)) log(`  ${f.where}:${f.line}  ${f.text}`);
+        events.push({
+          label: s.label,
+          outcome: "failed",
+          ms: Date.now() - t0,
+          detail: `${findings.length} finding(s)`,
+        });
+        log(
+          `\n✗ ${s.label} failed (${findings.length} finding(s)). Say it without the name, or allow the path in scrub.allow with the reason in the decisions file. The gate stops here.`,
+        );
+        return false;
+      }
+      events.push({ label: s.label, outcome: "ok", ms: Date.now() - t0 });
       return true;
     }
     if (s.builtin === "audit") {

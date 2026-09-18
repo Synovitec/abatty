@@ -238,7 +238,8 @@ the harness was installed by when it is not the package's.
 One implementation, three callers: `npm run gate`, `.githooks/pre-push`, the night's Stop hook.
 Always on, in this order - format (Prettier with `--end-of-line auto`), lint at zero warnings,
 typecheck, the import graph, dead code, unit tests, the abatty ratchet with the changelog
-check over the pushed range, the secret scan and the audit - then the preset's heavy suites
+check over the pushed range, the secret scan, the audit and the scrub where the repository
+opted into it - then the preset's heavy suites
 only when the push or the working tree touches their paths, deferred loudly to CI when Docker
 is absent. The secret scan is built into the gate (no dependency: a private key block, a cloud
 access key, a provider token, a payment key, a chat token, a signed web token, a long literal on

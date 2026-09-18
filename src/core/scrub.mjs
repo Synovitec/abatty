@@ -170,8 +170,3 @@ export function scrubConfig(repoDir) {
 export function allowList(repoDir) {
   return scrubConfig(repoDir).allow;
 }
-
-/** Leftover matches in a text, for the summary. @param {string} text */
-export function countMatches(text) {
-  return (text.match(FORBIDDEN_ALL) || []).length;
-}

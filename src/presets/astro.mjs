@@ -87,6 +87,7 @@ export const astro = {
       },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
       { label: "audit (SEC.1)", builtin: "audit" },
+      { label: "no trace of the tools (scrub)", builtin: "scrub" },
     ],
     // No database suite by default: a content site has none; a repository that adds one adds
     // the suite to its own gate. The browser suite serves the built output.

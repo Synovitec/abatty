@@ -4,7 +4,7 @@
  * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
  * its own folder, the repository-level steps once.
  *
- * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
+ * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit" | "scrub", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
  * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
  * @typedef {{
  *   id: string,

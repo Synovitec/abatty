@@ -1,9 +1,10 @@
 {
-  "measuredAt": "2026-09-15",
+  "measuredAt": "2026-09-18",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
   "score": 98,
   "hard": [
     "change.changelogMissing",
+    "change.coupledMissing",
     "code.barrels",
     "context.overCap",
     "docs.behindCode",
@@ -11,10 +12,13 @@
     "docs.danglingSource",
     "docs.frontMatter",
     "docs.indexDrift",
+    "size.excessCode",
+    "size.overBudget",
     "size.overRaw"
   ],
   "metrics": {
     "change.changelogMissing": 0,
+    "change.coupledMissing": 0,
     "code.barrels": 0,
     "context.overCap": 0,
     "docs.behindCode": 0,
@@ -22,33 +26,27 @@
     "docs.danglingSource": 0,
     "docs.frontMatter": 0,
     "docs.indexDrift": 0,
-    "size.excessCode": 9,
-    "size.overBudget": 1,
+    "size.excessCode": 0,
+    "size.overBudget": 0,
     "size.overRaw": 0,
     "types.escapes": 7,
     "valid.rawEnv": 7
   },
   "scanned": {
-    "code.barrels": 4,
-    "context.overCap": 0,
+    "code.barrels": 7,
+    "context.overCap": 1,
     "docs.behindCode": 5,
-    "docs.citations": 23,
+    "docs.citations": 33,
     "docs.danglingSource": 10,
-    "docs.frontMatter": 20,
-    "docs.indexDrift": 19,
-    "size.excessCode": 41,
-    "size.overBudget": 41,
-    "size.overRaw": 53,
-    "types.escapes": 41,
-    "valid.rawEnv": 41
+    "docs.frontMatter": 23,
+    "docs.indexDrift": 22,
+    "size.excessCode": 81,
+    "size.overBudget": 81,
+    "size.overRaw": 93,
+    "types.escapes": 81,
+    "valid.rawEnv": 80
   },
   "debt": {
-    "size.excessCode": {
-      "src/rules/families/code.mjs": 9
-    },
-    "size.overBudget": {
-      "src/rules/families/code.mjs": 1
-    },
     "types.escapes": {
       "src/ratchet/probes/code.mjs": 4,
       "src/rules/families/types.mjs": 3

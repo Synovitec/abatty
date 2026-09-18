@@ -97,6 +97,7 @@ export const next = {
       },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
       { label: "audit (SEC.1)", builtin: "audit" },
+      { label: "no trace of the tools (scrub)", builtin: "scrub" },
     ],
     // Path-aware: run when the push or the working tree touches the paths; need Docker or are
     // deferred loudly to CI.

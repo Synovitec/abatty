@@ -60,7 +60,7 @@ Measured on 2026-09-18 at `583f9ce`, on the repository itself.
 | Social proof        | Early adopters differ in standing; exposure drives adoption                  | One human maintainer, no external users, no external issues                                                                                                                                         | The real gate     |
 | Legibility of value | Observability significantly affects adoption                                 | The proposition needs about 5,000 words to state                                                                                                                                                    | Risk              |
 
-### 2.1 The package does not run its own gate
+### 2.1 The package did not run its own gate (fixed 2026-09-18)
 
 Found while checking this document's numbers on 2026-09-18, and it qualifies the Reliability row
 above. `README.md` says of the gate: "One implementation, three callers: `npm run gate`,
@@ -73,10 +73,17 @@ preset's steps instead, reaches the lint step and goes red in 3.9 s, because `in
 has consciously not adopted (see `CLAUDE.md` §10). So the two gates check different things, the
 green one is the one that is not the product, and the flagship command fails on its own package.
 
-It is the same defect as the seven the first dogfood found, one level out: a mechanism that is
-documented, believed and not in force. The cure is to point `gate` at `abatty gate` and to drop
-the vestigial `lint` script so the step reports as skipped rather than red, but it is a change to
-what this repository's gate checks and therefore a decision, not a correction.
+It was the same defect as the seven the first dogfood found, one level out: a mechanism that is
+documented, believed and not in force.
+
+**Resolved the same day.** `gate` and `gate:fast` now call `abatty gate`, the vestigial `lint`
+script is gone so the step reports as skipped, and the scrub became a built-in gate step rather
+than a line in a hand-written chain, so a repository that opted in keeps it whichever way the
+gate is called. The switch turned on three steps the hand-written chain never ran: the import
+graph, dead code and the audit. Dead code found ten unused exports, now deleted, and two knip
+patterns that matched nothing, which is the same `0 findings across 0 files` this standard
+refuses elsewhere. The Reliability row above is qualified for the record, not because the defect
+stands.
 
 ## 3. The three things that decide it
 

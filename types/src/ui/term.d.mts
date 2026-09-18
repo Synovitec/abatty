@@ -25,12 +25,9 @@ export function duration(ms: number): string;
 /** The product's one-line banner. @param {string} version */
 export function banner(version: string): string;
 export function bold(s: string): string;
-export function dim(s: string): string;
-export function italic(s: string): string;
 export function red(s: string): string;
 export function green(s: string): string;
 export function yellow(s: string): string;
-export function blue(s: string): string;
 export function magenta(s: string): string;
 export function cyan(s: string): string;
 export function gray(s: string): string;

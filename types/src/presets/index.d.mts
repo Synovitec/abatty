@@ -19,7 +19,7 @@ export type GateStep = {
     label: string;
     script?: string;
     command?: string[];
-    builtin?: "secrets" | "audit";
+    builtin?: "secrets" | "audit" | "scrub";
     requires?: string[];
     alternatives?: string[];
     rangeArg?: boolean;
