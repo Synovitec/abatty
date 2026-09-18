@@ -17,7 +17,7 @@ related:
     "../README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-14"
+last_verified: "2026-09-18"
 source_truth:
   - "./research/*.md"
   - "./guides/*.md"
@@ -201,13 +201,22 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
   boundary, the hook reads the whole command.
 - **The harness is read-only to the worker it constrains.** A control the constrained actor
   can rewrite is prose. At night nothing under `.claude/` is writable from any tool, the Stop
-  gate reads `adoption.json` from the base branch rather than the tree, a direction check
+  gate reads the root config from the base branch rather than the tree, a direction check
   refuses a floor raised, a threshold lowered, `--max-warnings=0` dropped, a rule switched off
   or an `ignores` entry added without a decision naming it (FLOW.3's written reason, made
   mechanical), and the runner refuses to continue or to push a branch where `.claude/` moved.
   A hook that hits an internal error refuses rather than passes. Before the first phase a
   canary session proves, in a real `-p` run, that a command runs without a prompt and that
   both hooks fire.
+- **A hook is insurance only where it runs, and that is itself a thing to check.** Read on
+  2026-09-18 against `templates/harness/`: every invariant above was correctly written and
+  three of them were not in force. `settings.json` pinned the config at a path `init` does
+  not write, so the hooks read their built-in defaults and not the repository's; the git
+  hooks were written without the executable bit, so git skipped the pre-push gate with a
+  hint; and the guard matched flags and branch names as substrings of the command text, so
+  it refused correct work and taught a team to route around it. Each is fixed and each now
+  has a control case. The lesson is the standard's own P.1 applied one level up: a guard
+  that is wired is not thereby running, and only a test that watches it fail says which.
 - **Permission modes are settings the project file cannot set.** `defaultMode: "auto"` and
   the `autoMode` classifier rules live in the user file only, by design, so a checked-in repo
   cannot grant itself trust. Unattended runs pass the mode on the command line
@@ -531,7 +540,7 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   single package and Lefthook for a monorepo (parallel, glob-scoped, no Node dependency);
   either way the list lives in the gate script, not in the hook. Whether `main` takes direct
   pushes or PRs only is a per-repository decision written in its `CLAUDE.md` and in
-  `.claude/adoption.json` (a client project with a signed IP transfer is PR-only; an internal
+  `abatty.config.json` (a client project with a signed IP transfer is PR-only; an internal
   platform may push to `main`). Either way `main` is never red on purpose, and a branch lives
   a day or two, not a month - larger work lands behind a flag.
 - **FLOW.3 (MUST) - No lowering a gate to go green.** Fix the code or the test. Changing a

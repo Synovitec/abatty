@@ -48,6 +48,21 @@ under Unreleased in the same commit.
   developer installed in this repository, which pointed the fixtures' hooks at a file that was
   not there.
 
+### Changed
+
+- **The five standard documents are re-read against the code and dated again.** They carried
+  `last_verified: 2026-09-14` while citing sources that moved on 2026-09-15, so `docs.behindCode`
+  was red on `origin/main` and the gate could not pass on a push. The read found and corrected:
+  five references to the older config path where the root config is what the hooks now resolve;
+  a `verify-change` skill the plan listed as installed and `init` has never shipped; and the
+  preset rule files being described as "take the ones that apply" where `init` writes every one
+  the preset lists whatever the repository depends on, so a project with no ORM receives the ORM
+  rules. `AUTONOMOUS_ADOPTION.md` documented the `ADOPTION_CONFIG` pin as a feature; that entry
+  now records it as the defect it was. `ENFORCEMENT_MAP.md` records that FLOW.2 claimed Hard
+  while the pre-push hook was not executable and nothing ran, and the standard gains the
+  invariant that reading found missing: a hook that is wired is not thereby running, which is
+  P.1 applied one level up.
+
 ### Added
 
 - **The evidence base for the instrument** (`docs/standard/research/07-evidence-base.md`): what

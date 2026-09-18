@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-14"
+last_verified: "2026-09-18"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -100,11 +100,17 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
 11. **Docs front matter check and index check** live from the first document.
 12. **The the agent harness**, from `templates/harness/`: `.claude/settings.json` (guard,
     protect, stop-gate, brief and lint-on-edit hooks; the repo's allow/deny rules),
-    `.claude/adoption.json` (commands, files, push policy, phases), the seven hooks (the
+    `abatty.config.json` at the root (commands, files, push policy, phases; the older
+    `.claude/adoption.json` is still read and `abatty config --migrate` moves it), the seven hooks (the
     guards, the direction check and their self-test), the path-scoped `.claude/rules/` for the stack (graphql,
-    sequelize, mui, testing, i18n, a11y, pwa, size-limits - take the ones that apply), the
-    `adopt-standards` skill, the `standards-reviewer` and `standards-adopter` agents, a
-    `verify-change` skill; `.claude/night/` in `.gitignore`. Domain reasoning that only
+    sequelize, mui, testing, i18n, a11y, pwa, size-limits - take the ones that apply; NOTE,
+    read 2026-09-18: `init` does not yet take them, it writes every file the preset lists
+    whatever the repository's dependencies are, so a project with no ORM still receives the
+    Sequelize rules. The catalog rules carry an `applies` predicate and the preset's rule
+    files do not; until they do, delete the ones that do not apply after `init`), the
+    `adopt-standards` skill and the `standards-reviewer` and `standards-adopter` agents
+    (`verify-change` is named by the context template and is NOT shipped: do not list it as
+    installed); `.claude/night/` in `.gitignore`. Domain reasoning that only
     matters in one directory goes to `.claude/rules/<topic>.md` with `paths:` front matter,
     keeping `CLAUDE.md` under 200 lines.
 13. **The agent-readability score** computed from the ratchet metrics and printed by the gate.

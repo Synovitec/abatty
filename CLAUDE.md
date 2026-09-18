@@ -104,8 +104,9 @@ written in `docs/STANDARDS_PROGRESS.md` in the same commit.
   repository follows and `update` moves it. On a bump, `[Unreleased]` becomes `## [x.y.z] - date`.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`),
   one behaviour per commit, the message says why. **No em-dash anywhere** (code, copy, commits;
-  the separator is `·` or a hyphen). **No `Co-Authored-By` trailer**, and no trailer naming a
-  tool, a vendor or a model: the scrub is on and the guard refuses the commit.
+  the separator is `·` or a hyphen). **No co-authorship trailer** and no trailer naming a tool,
+  a vendor or a model: the scrub is on and the guard refuses the commit. The trailer's literal
+  name is itself in the vocabulary, so write about it the way this line does.
 - **Branches:** `<type>/<short-description>`; `adopt/standards-<date>` for unattended runs.
   `main` is pushed through a pull request. Never red on purpose.
 - **Docs move with the code.** A doc whose `source_truth` or cited file changed is re-read
