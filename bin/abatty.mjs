@@ -213,7 +213,7 @@ switch (command) {
     );
     for (const e of r.events)
       out(
-        `  ${e.action === "kept" ? t.glyph.skip : e.action === "merged" ? t.glyph.warn : t.glyph.ok} ${t.gray(e.action.padEnd(11))} ${e.file}\n`,
+        `  ${e.action === "kept" || e.action === "n/a" ? t.glyph.skip : e.action === "merged" ? t.glyph.warn : t.glyph.ok} ${t.gray(e.action.padEnd(11))} ${e.file}${e.detail ? t.gray(" · " + e.detail) : ""}\n`,
       );
     out(t.heading("By hand, in this order"));
     let n = 1;

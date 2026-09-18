@@ -29,5 +29,6 @@ export function initRepo(o: {
 export const TEMPLATES: string;
 export type InitEvent = {
     file: string;
-    action: "written" | "kept" | "overwritten" | "merged";
+    action: "written" | "kept" | "overwritten" | "merged" | "n/a";
+    detail?: string;
 };

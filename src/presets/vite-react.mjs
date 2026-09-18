@@ -122,14 +122,30 @@ export const viteReact = {
       },
     ],
   },
+  // The practice files always apply; the three library files are guidance nobody can act on
+  // without the library, so they are written only where the repository depends on it. This
+  // preset was proven by a repository that had all three, and shipped all three to everyone.
   rules: [
     "testing.md",
     "i18n.md",
     "a11y.md",
-    "graphql.md",
-    "sequelize.md",
-    "mui.md",
     "size-limits.md",
+    {
+      file: "graphql.md",
+      needs: [
+        "graphql",
+        "@apollo/client",
+        "@apollo/server",
+        "apollo-server",
+        "apollo-server-express",
+        "urql",
+        "@urql/core",
+        "relay-runtime",
+        "graphql-request",
+      ],
+    },
+    { file: "sequelize.md", needs: ["sequelize", "sequelize-typescript"] },
+    { file: "mui.md", needs: ["@mui/material", "@mui/joy", "@mui/base", "@mui/system"] },
   ],
   tooling: { dependencyCruiser: true, knip: true },
 };

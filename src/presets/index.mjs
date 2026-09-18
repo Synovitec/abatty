@@ -6,6 +6,8 @@
  *
  * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit" | "scrub", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
  * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
+ * @typedef {{ file: string, needs: string[] }} PresetRule a rule file that applies only where the
+ *   repository depends on one of `needs`. A bare string always applies.
  * @typedef {{
  *   id: string,
  *   name: string,
@@ -17,7 +19,7 @@
  *   scripts: Record<string, string>,
  *   devDependencies: string[],
  *   gate: { always: GateStep[], suites: GateSuite[] },
- *   rules: string[],
+ *   rules: (string | PresetRule)[],
  *   tooling: { dependencyCruiser: boolean, knip: boolean },
  * }} Preset
  */
@@ -48,4 +50,24 @@ export function detectPreset(deps, files) {
     (files ? presets.find((p) => p.detectFiles && p.detectFiles(files)) : null) ||
     null
   );
+}
+
+/**
+ * The preset's rule files judged against the repository, the way the catalog's rules are judged
+ * by their `applies` predicate. A rule file about one library is guidance nobody can act on
+ * without that library, and writing it anyway teaches a reader that the harness does not know
+ * this repository: a project with no ORM was receiving the ORM rules. A bare string is a
+ * practice every repository of this stack owes (testing, size limits, accessibility) and always
+ * applies; a `{ file, needs }` entry applies only where one of `needs` is a dependency.
+ *
+ * Returns every entry with its verdict, so `init` can say what it skipped and why rather than
+ * silently writing fewer files.
+ * @param {Preset | null} preset @param {Set<string>} deps
+ * @returns {{ file: string, applies: boolean, needs: string[] }[]}
+ */
+export function presetRules(preset, deps) {
+  return (preset?.rules || []).map((r) => {
+    if (typeof r === "string") return { file: r, applies: true, needs: [] };
+    return { file: r.file, applies: r.needs.some((d) => deps.has(d)), needs: r.needs };
+  });
 }

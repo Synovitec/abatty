@@ -131,3 +131,56 @@ test("the git hooks init writes are executable, in the filesystem and in the ind
   assert.match(readFileSync(join(dir, ".githooks/pre-push"), "utf8"), /# ours/, "content kept");
   assert.match(git(dir, "ls-files", "-s", "--", ".githooks/pre-push"), /^100755 /, "mode repaired");
 });
+
+test("a preset's library rule files are written only where the repository depends on the library", () => {
+  // The catalog's rules carry an `applies` predicate; the preset's rule files carried none, so
+  // every repository on this preset received the GraphQL, Sequelize and Material UI rules whether
+  // or not it had any of them. One client's stack was arriving in every stranger's repository.
+  const base = { name: "app", private: true, version: "0.1.0" };
+  const react = { react: "19.0.0", "react-dom": "19.0.0" };
+
+  const plain = tempRepo("init-rules-plain", {
+    "package.json": JSON.stringify({
+      ...base,
+      dependencies: react,
+      devDependencies: { vite: "6" },
+    }),
+    "src/main.jsx": "export default 1;\n",
+  });
+  const r = cli(["init", plain, "--stack", "vite-react"], plain);
+  assert.equal(r.code, 0, r.out);
+  for (const f of ["testing.md", "i18n.md", "a11y.md", "size-limits.md"])
+    assert.ok(existsSync(join(plain, ".claude/rules", f)), `the practice file ${f} is written`);
+  for (const f of ["graphql.md", "sequelize.md", "mui.md"])
+    assert.equal(
+      existsSync(join(plain, ".claude/rules", f)),
+      false,
+      `${f} is not written to a repository without the library`,
+    );
+  assert.match(r.out, /n\/a\s+\.claude\/rules\/sequelize\.md/, "and the skip is reported");
+
+  // The same preset where the libraries ARE present: every file is written, so the gate is not
+  // simply switched off.
+  const full = tempRepo("init-rules-full", {
+    "package.json": JSON.stringify({
+      ...base,
+      dependencies: { ...react, graphql: "16", sequelize: "6", "@mui/material": "6" },
+      devDependencies: { vite: "6" },
+    }),
+    "src/main.jsx": "export default 1;\n",
+  });
+  assert.equal(cli(["init", full, "--stack", "vite-react"], full).code, 0);
+  for (const f of ["graphql.md", "sequelize.md", "mui.md"])
+    assert.ok(existsSync(join(full, ".claude/rules", f)), `${f} is written where the library is`);
+
+  // And the harness agrees with itself: a file that does not apply is not managed, so `update`
+  // does not add it back and `doctor` does not call it missing.
+  const doctor = cli(["doctor", plain, "--skip-self-test"], plain);
+  assert.doesNotMatch(
+    doctor.out,
+    /missing\s+\.claude\/rules\/(graphql|sequelize|mui)\.md/,
+    doctor.out,
+  );
+  const again = cli(["update", plain], plain);
+  assert.doesNotMatch(again.out, /added\s+\.claude\/rules\/(graphql|sequelize|mui)\.md/, again.out);
+});

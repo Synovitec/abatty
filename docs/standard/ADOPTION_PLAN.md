@@ -103,11 +103,10 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
     `abatty.config.json` at the root (commands, files, push policy, phases; the older
     `.claude/adoption.json` is still read and `abatty config --migrate` moves it), the seven hooks (the
     guards, the direction check and their self-test), the path-scoped `.claude/rules/` for the stack (graphql,
-    sequelize, mui, testing, i18n, a11y, pwa, size-limits - take the ones that apply; NOTE,
-    read 2026-09-18: `init` does not yet take them, it writes every file the preset lists
-    whatever the repository's dependencies are, so a project with no ORM still receives the
-    Sequelize rules. The catalog rules carry an `applies` predicate and the preset's rule
-    files do not; until they do, delete the ones that do not apply after `init`), the
+    sequelize, mui, testing, i18n, a11y, pwa, size-limits - `init` takes the ones that apply:
+    the practice files always, the library files only where the repository depends on the
+    library, reported as n/a with the dependencies it looked for. Fixed 2026-09-18; before that
+    a project with no ORM received the ORM rules), the
     `adopt-standards` skill and the `standards-reviewer` and `standards-adopter` agents
     (`verify-change` is named by the context template and is NOT shipped: do not list it as
     installed); `.claude/night/` in `.gitignore`. Domain reasoning that only

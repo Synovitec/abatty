@@ -20,15 +20,23 @@ import {
 import { spawnSync } from "node:child_process";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
+import {
+  CONFIG_FILE,
+  LEGACY_CONFIG,
+  dependencyNames,
+  readJsonFile,
+  readPackage,
+  writeJsonFile,
+} from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
+import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
-/** @typedef {{ file: string, action: "written" | "kept" | "overwritten" | "merged" }} InitEvent */
+/** @typedef {{ file: string, action: "written" | "kept" | "overwritten" | "merged" | "n/a", detail?: string }} InitEvent */
 
 /** @param {unknown} v true for a JSON object, which merges; an array is a value and is kept whole. */
 const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
@@ -148,9 +156,19 @@ export function initRepo(o) {
     put(`.claude/agents/${f}`, tpl(`harness/agents/${f}`));
   put(".claude/settings.json", tpl("harness/settings.project.json"));
   put(".claude/mcp.night.json", tpl("harness/mcp.night.json"));
-  for (const r of preset.rules)
-    if (existsSync(join(TEMPLATES, "harness", "rules", r)))
-      put(`.claude/rules/${r}`, tpl(`harness/rules/${r}`));
+  // Gated the way the catalog's rules are: a file about one library is not written where the
+  // repository does not depend on it, and the skip is reported rather than silent.
+  const rules = presetRules(preset, dependencyNames(repoDir));
+  for (const r of rules) {
+    if (!existsSync(join(TEMPLATES, "harness", "rules", r.file))) continue;
+    if (r.applies) put(`.claude/rules/${r.file}`, tpl(`harness/rules/${r.file}`));
+    else
+      events.push({
+        file: `.claude/rules/${r.file}`,
+        action: "n/a",
+        detail: `no ${r.needs.slice(0, 3).join(", ")} in this repository`,
+      });
+  }
 
   // 2. The config: abatty.config.json at the root, the template with the preset's commands and
   //    paths; a repository that still keeps it at the older place (.claude/adoption.json) has that
@@ -273,9 +291,12 @@ export function initRepo(o) {
   } else put(PRIMARY.contextFile, context);
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
-      for (const r of preset.rules)
-        if (existsSync(join(TEMPLATES, "harness", "rules", r)))
-          put(`${a.rulesDir}/${r.replace(/\.md$/, ".mdc")}`, toMdc(tpl(`harness/rules/${r}`)));
+      for (const r of rules)
+        if (r.applies && existsSync(join(TEMPLATES, "harness", "rules", r.file)))
+          put(
+            `${a.rulesDir}/${r.file.replace(/\.md$/, ".mdc")}`,
+            toMdc(tpl(`harness/rules/${r.file}`)),
+          );
   put(
     "CHANGELOG.md",
     "# Changelog\n\nKeep a Changelog, SemVer. Every commit that touches source, tests, scripts, CI, migrations or docs adds a line under Unreleased in the same commit (CHANGE.1, CHANGE.2).\n\n## [Unreleased]\n\n### Added\n\n- The engineering standard's instrument: harness, gate, import graph, dead code (`abatty init`).\n",
