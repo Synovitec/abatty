@@ -1,10 +1,9 @@
 # abatty
 
-**abatty** (abatty.io) is an engineering standard as an installable instrument, open source under
-Apache-2.0. The standard itself - the rules, the enforcement map, the adoption plan, the lessons,
-the research - ships with the package under [`docs/standard/`](docs/standard/README.md), versioned
-with it; the package is the part you install in a repository: the harness, the gate, the ratchet,
-the analysis tooling, the measurement, per stack, kept in step. Contributions under a DCO:
+**abatty** (abatty.io) installs a gate your repository has to pass, and proves the gate can
+fail. Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map,
+the adoption plan, the lessons, the research - ships with the package under
+[`docs/standard/`](docs/standard/README.md), versioned with it. Contributions under a DCO:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## In two minutes
@@ -12,41 +11,55 @@ the analysis tooling, the measurement, per stack, kept in step. Contributions un
 1. `npm i -D abatty` (the registry, from the first tagged release; `github:Synovitec/abatty`
    for the branch), in any repository: a Next, Astro, Vite, Node or Python one, a monorepo, or
    documents alone.
-2. `npx abatty` reads it: a score over the rules that concern it (its stage, its stack, its
-   language packs), what is held by a machine, the next steps in plan order.
-3. `npx abatty init` installs the instrument for the stack it detects (`--stack` names one,
-   `--stage design` says there is no application yet): the harness the agent runs under, the
-   gate, the ratchet with today's numbers as the floor, the hooks, CI from the gate, the day-0
-   documents; the version adopted is pinned in `abatty.config.json`.
-4. `npm run gate` before a push; `npx abatty doctor --controls` proves every step can go
-   red; `npx abatty night --canary-only` proves the harness before the first unattended night.
+2. `npx abatty init` installs the instrument for the stack it detects (`--stack` names one,
+   `--stage design` says there is no application yet): the gate, the pre-push hook that runs it,
+   the ratchet with today's numbers as the floor, the harness the agent works under, CI from the
+   same gate definition, the day-0 documents.
+3. **`npm run gate` before every push.** One implementation, three callers: this command, the
+   pre-push hook, and the unattended night's Stop hook. It refuses the work rather than
+   describing it, which is the whole of the difference.
+4. `npx abatty doctor --controls` plants a violation per gate step and reports a step that stays
+   green as **absent**: a guard nobody has watched fail is not a guard.
+5. Then the reading. `npx abatty` says where the repository stands, `npx abatty measure` writes
+   the dated report, and both are by-products of the gate rather than the point of it.
+
+**Why that order.** The same analysis, at the same precision, is acted on differently depending
+on where it fires: delivered as a report it reached a near-zero fix rate, and delivered on the
+change under review it passed seventy per cent. Placement beats precision, so the gate leads and
+the report follows. The sources are in
+[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
 
 Everything else below is the same instrument in more depth.
 
 ```sh
+# the four that do the work
 npm i -D abatty                  # the registry, from the first tagged release; github:Synovitec/abatty for the branch
-npx abatty                       # the repository at a glance: score, families, harness, nights, next steps
 npx abatty init --stack next     # the instrument, from the templates and the preset
-npx abatty measure               # the gap analysis: score, every check, next steps by phase
-npx abatty gate --fast           # the path-aware gate (the pre-push hook and the night run it too)
-npx abatty ratchet --range auto  # the ratchet: every probe against the committed baseline, per total and per file
+npx abatty gate --fast           # THE gate: the pre-push hook and the night run this same one
+npx abatty ratchet --range auto  # every probe against the committed baseline, per total and per file
+npx abatty doctor --controls     # plants a violation per gate step; a step that stays green is absent
+
+# the reading, which is what the gate leaves behind
+npx abatty                       # where this repository stands: the phase it is on, then the trend
+npx abatty measure               # the gap analysis: every check, the next steps by phase
+npx abatty explain CODE-DEADCODE # one rule, its reason, and its finding in this repository
+npx abatty rules                 # the rule catalog: what must hold, why, what insures it, when the plan installs it
+
+# the rest
 npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
 npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
+npx abatty night-report          # the morning after: the night's facts and the lessons they propose
 npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
 npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
-npx abatty night-report          # the morning after: the night's facts and the lessons they propose
 npx abatty secrets --staged      # the secret scan: the tree, the staged files (the pre-commit hook), a range (CI); one implementation
-npx abatty ci --provider github  # CI generated from the gate (Woodpecker, GitHub Actions); the PR template; --ruleset prints the org ruleset
+npx abatty ci --provider github  # CI generated from the gate (Woodpecker, GitHub Actions); --ruleset prints the org ruleset
 npx abatty serve --token <t>     # the dashboard hosted: CI posts each report, one page over every repository, a badge
 npx abatty publish --to <url>    # the CI step: post this repository's newest report to a service
-npx abatty doctor                # the harness self-test and the drift against the package
+npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
 npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
 npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
 npx abatty presets               # the stacks, and which repository proved each
 npx abatty scrub                 # opt-in: no trace of the tools in files (--fix), commit messages (--commits), pull requests (--prs)
-npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
-npx abatty rules                 # the rule catalog: what must hold, why, what insures it, when the plan installs it
-npx abatty explain CODE-DEADCODE # one rule, its reason, and its finding in this repository
 ```
 
 Every command prints for a terminal (colour, glyphs, bars, timings) and degrades to plain text

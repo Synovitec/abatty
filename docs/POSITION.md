@@ -196,10 +196,17 @@ Order matters more than content here. Items 1 to 3 are days of work, not weeks.
 1. **Publish.** Tag and release. Claim the name. Nothing else moves until this is done.
 2. **Cut the front page to four commands**: `init`, `gate`, `ratchet`, `doctor`. The rest move behind
    a help flag. Target a hero section under 150 words and a terminal recording under 30 seconds.
+   Partly done 2026-09-18 (evidence base C1): the hero is 54 words and says what the package does
+   rather than what it is, the two-minute path runs install, init, gate, controls and only then the
+   reading, and the command block leads with those four. What is left of this item is the cut
+   itself, the twenty commands are still on the page under a heading rather than behind a help
+   flag, and the recording.
 3. **Emit AGENTS.md from `abatty init`** alongside the tool-native files, and report surface coverage
    in `abatty agents`. This removes the interoperability objection for one day of work.
-4. **Implement C7 from the evidence base**: a floor above the current value is a finding. Small,
-   correct, and the one behaviour that separates this ratchet from the five that already exist.
+4. ~~**Implement C7 from the evidence base**: a floor above the current value is a finding.~~ Done
+   2026-09-18: `improved` fails the run and prints as `FLOOR UNLOCKED`, so an improvement is
+   recorded in the change that earned it. This repository was carrying a floor of 9 against a
+   value of 0 when it landed.
 5. **Ship the waiver reason and count it per rule.** This turns the first ten users into the
    precision dataset that everything in section 6 depends on.
 6. **Write one artefact aimed outward**: the dogfood numbers, what the standard cost and what it
