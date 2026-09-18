@@ -23,6 +23,8 @@ export function allReports(repoDir: string): Report[];
  *   problems: string[],
  *   profiles: string[],
  *   stage: string, stageFrom: string,
+ *   phase: { id: string, title: string, held: number, applicable: number } | null,
+ *   plan: { id: string, title: string, held: number, applicable: number }[],
  *   workspaces: { path: string, name: string, preset: string, from: string }[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
@@ -56,6 +58,18 @@ export type Report = {
     profiles: string[];
     stage: string;
     stageFrom: string;
+    phase: {
+        id: string;
+        title: string;
+        held: number;
+        applicable: number;
+    } | null;
+    plan: {
+        id: string;
+        title: string;
+        held: number;
+        applicable: number;
+    }[];
     workspaces: {
         path: string;
         name: string;

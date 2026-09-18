@@ -1,11 +1,6 @@
 /**
- * @typedef {import("../rules/index.mjs").Finding} Finding
- * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string }} GapResult
- */
-/**
  * Run a catalog (the built-in rules by default) over a repository, synchronously.
- * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[] }} [o]
+ * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[], phases?: import("../profiles/index.mjs").Phase[] }} [o]
  * @returns {GapResult}
  */
 export function analyze(repoDir: string, o?: {
@@ -13,6 +8,7 @@ export function analyze(repoDir: string, o?: {
     catalog?: import("../rules/index.mjs").CatalogRule[];
     problems?: string[];
     profiles?: string[];
+    phases?: import("../profiles/index.mjs").Phase[];
 }): GapResult;
 /**
  * Measure a repository with its full catalog: the built-in rules, its own rules file, its
@@ -29,8 +25,15 @@ export function measure(repoDir: string, o?: {
  * hyphen form left in a text. @param {string} text
  */
 export function stdIds(text: string): string;
-/** The findings still to do, in plan order. @param {Finding[]} findings */
-export function todoOf(findings: Finding[]): import("../rules/index.mjs").Finding[];
+/** @param {string} p */
+/**
+ * The findings still to do, in the plan's own order. Reading the first number out of the phase
+ * was the bug: "A.1" is day 0 and read as 1, so the whole of phase 0 was listed ahead of the
+ * day-0 work that blocks it. The plan declares its order, and a phase it does not carry sorts
+ * last rather than in the middle.
+ * @param {Finding[]} findings @param {string[]} [order] the phase ids in plan order
+ */
+export function todoOf(findings: Finding[], order?: string[]): import("../rules/index.mjs").Finding[];
 /**
  * The dated Markdown report for a result of analyze(), with the standard's front matter.
  * @param {GapResult} result
@@ -54,5 +57,7 @@ export type GapResult = {
     profiles: string[];
     stage: string;
     stageFrom: string;
+    plan: import("../rules/phases.mjs").PhaseCount[];
+    phase: import("../rules/phases.mjs").PhaseCount | null;
 };
 import { enforcedOf } from "../rules/index.mjs";

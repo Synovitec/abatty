@@ -5,6 +5,7 @@
  */
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
+import { phaseOf } from "../rules/phases.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} c
@@ -24,7 +25,8 @@ export async function statusCommand(c, preset) {
     `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(fresh ? "measured now" : `reading of ${r.date} · --fresh to measure`)}\n\n`,
   );
   out(
-    `  ${t.bar(r.score)}  ${t.bold(String(r.score))}${t.gray("/100")}  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
+    phaseLine(r) +
+      `  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
   );
   out(enforcedLine(r.enforced) + "\n\n");
   out(
@@ -126,18 +128,49 @@ export function enforcedLine(e) {
 }
 
 /** Phase "0" sorts first, "A.1 / 0" by its number, "-" last. @param {string} p */
-const phaseOrder = (p) => {
-  const m = String(p).match(/\d+/);
-  return m ? Number(m[0]) : 99;
+/**
+ * The next steps of a report, in the plan's own order. The report carries the plan, so the
+ * order comes from it rather than from the first number in the phase: that read "A.1" as 1 and
+ * listed the whole of phase 0 ahead of the day-0 work that blocks it.
+ * @param {import("../core/report.mjs").Report} r @param {number} n
+ */
+export const nextSteps = (r, n) => {
+  const order = (r.plan || []).map((p) => String(p.id));
+  const rank = (/** @type {string} */ p) => {
+    const id = phaseOf(p, order);
+    return id === null ? order.length : order.indexOf(id);
+  };
+  return (
+    r.findings
+      .filter((f) => f.status === "missing" || f.status === "partial")
+      // Plan order, and within a phase the must rules before the should ones.
+      .sort(
+        (a, b) =>
+          rank(a.phase) - rank(b.phase) ||
+          (a.level === "should" ? 1 : 0) - (b.level === "should" ? 1 : 0),
+      )
+      .slice(0, n)
+  );
 };
-/** The next steps of a report, in plan order. @param {import("../core/report.mjs").Report} r @param {number} n */
-export const nextSteps = (r, n) =>
-  r.findings
-    .filter((f) => f.status === "missing" || f.status === "partial")
-    // Plan order, and within a phase the must rules before the should ones.
-    .sort(
-      (a, b) =>
-        phaseOrder(a.phase) - phaseOrder(b.phase) ||
-        (a.level === "should" ? 1 : 0) - (b.level === "should" ? 1 : 0),
-    )
-    .slice(0, n);
+
+/**
+ * The headline: the phase the repository is ON and its standing, which is the number a reader
+ * can act on this week. The score over the whole catalog follows as a trend, labelled as one.
+ *
+ * A fresh application is missing the later phases by design - of the rules one was missing on
+ * 2026-09-18, six were phase 0 and seventeen were phases the plan puts after it - so a
+ * percentage that counts them reads as a verdict on work nobody was asked to do yet, and the
+ * first impression a stranger gets is a failure they did not earn.
+ * @param {{ phase: { id: string, title: string, held: number, applicable: number } | null, score: number, applicable: number }} r
+ */
+export function phaseLine(r) {
+  const trend = `  ${t.gray(`${r.score}/100 over ${r.applicable} applicable checks · a trend, not a grade`)}\n`;
+  if (!r.phase) return `  ${t.bar(100)}  ${t.bold("every phase of the plan is held")}\n` + trend;
+  const p = r.phase;
+  const pct = p.applicable ? Math.round((100 * p.held) / p.applicable) : 0;
+  return (
+    `  ${t.bar(pct)}  ${t.bold(`phase ${p.id}`)} ${t.gray("·")} ${t.bold(`${p.held} of ${p.applicable} held`)}\n` +
+    `  ${t.gray(p.title)}\n` +
+    trend
+  );
+}

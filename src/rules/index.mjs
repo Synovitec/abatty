@@ -16,7 +16,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readAdoption } from "../core/repo.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
-import { catalogOf, loadProfiles } from "../profiles/index.mjs";
+import { catalogOf, loadProfiles, phasesOf } from "../profiles/index.mjs";
 import { validate } from "./validate.mjs";
 
 export { validate };
@@ -104,7 +104,7 @@ export async function loadLocalRules(repoDir, adoption, base = RULES) {
  * The catalog of a repository: the rules of the profiles it names, its own, and the waivers
  * applied. A waiver names a reason; one with an `until` date in the past no longer waives.
  * @param {string} repoDir @param {{ adoption?: Record<string, any> | null, today?: string }} [o]
- * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[] }>}
+ * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[], phases: import("../profiles/index.mjs").Phase[] }>}
  */
 export async function loadCatalog(repoDir, o = {}) {
   const adoption = o.adoption === undefined ? readAdoption(repoDir) : o.adoption;
@@ -127,7 +127,13 @@ export async function loadCatalog(repoDir, o = {}) {
     if (until && until < today) return r;
     return { ...r, waived: until ? { reason, until } : { reason } };
   });
-  return { rules, localFile: local.file, problems, profiles: loaded.profiles.map((p) => p.id) };
+  return {
+    rules,
+    localFile: local.file,
+    problems,
+    profiles: loaded.profiles.map((p) => p.id),
+    phases: phasesOf(loaded.profiles),
+  };
 }
 
 /**

@@ -16,7 +16,7 @@ export function loadLocalRules(repoDir: string, adoption: Record<string, any> | 
  * The catalog of a repository: the rules of the profiles it names, its own, and the waivers
  * applied. A waiver names a reason; one with an `until` date in the past no longer waives.
  * @param {string} repoDir @param {{ adoption?: Record<string, any> | null, today?: string }} [o]
- * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[] }>}
+ * @returns {Promise<{ rules: CatalogRule[], localFile: string | null, problems: string[], profiles: string[], phases: import("../profiles/index.mjs").Phase[] }>}
  */
 export function loadCatalog(repoDir: string, o?: {
     adoption?: Record<string, any> | null;
@@ -26,6 +26,7 @@ export function loadCatalog(repoDir: string, o?: {
     localFile: string | null;
     problems: string[];
     profiles: string[];
+    phases: import("../profiles/index.mjs").Phase[];
 }>;
 /**
  * Run a catalog against a context: one finding per rule, in catalog order. A rule of another

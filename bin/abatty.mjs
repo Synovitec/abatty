@@ -69,7 +69,7 @@ import { renderDashboard } from "../src/ui/dashboard.mjs";
 import { ratchetCommand } from "../src/cli/ratchet.mjs";
 import { nightCommand, nightReportCommand } from "../src/cli/night.mjs";
 import { profilesCommand } from "../src/cli/catalog.mjs";
-import { enforcedLine, nextSteps, statusCommand } from "../src/cli/status.mjs";
+import { enforcedLine, nextSteps, phaseLine, statusCommand } from "../src/cli/status.mjs";
 import * as t from "../src/ui/term.mjs";
 
 const argv = process.argv.slice(2);
@@ -356,15 +356,15 @@ switch (command) {
     writeFileSync(target, md);
     const rel = relative(dir, target).split("\\").join("/");
     if (flag("--quiet")) {
-      out(`Score ${r.score}/100 over ${r.applicable} applicable checks · ${rel}\n`);
+      out(
+        `${r.phase ? `Phase ${r.phase.id}: ${r.phase.held} of ${r.phase.applicable} held · ` : "Every phase held · "}Score ${r.score}/100 over ${r.applicable} applicable checks · ${rel}\n`,
+      );
       break;
     }
     out(
       `\n${t.banner(VERSION)}  ${t.bold("measure")} ${t.gray("·")} ${r.name} ${t.gray(r.date)}\n\n`,
     );
-    out(
-      `  ${t.bar(r.score)}  ${t.bold(String(r.score))}${t.gray("/100")} ${t.gray(`over ${r.applicable} applicable checks`)}\n\n`,
-    );
+    out(phaseLine(r) + "\n");
     out(enforcedLine(r.enforced) + "\n\n");
     out(
       t.table(
