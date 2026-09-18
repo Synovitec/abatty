@@ -17,8 +17,8 @@
  * @property {Record<string, any>} pkg the root package.json, {} when absent
  * @property {Record<string, string>} scripts its scripts
  * @property {(re: RegExp) => [string, string] | undefined} script the first script whose name or command matches
- * @property {string[]} eslintFiles
- * @property {string} eslintText every ESLint flat config, joined
+ * @property {string[]} lintFiles every linter configuration the tree carries, whichever linter
+ * @property {string} lintText those configurations, joined
  * @property {string} tsconfigText every tsconfig, joined
  * @property {string[]} ciFiles the CI pipelines (Woodpecker, GitHub Actions)
  * @property {string} ciText
@@ -135,11 +135,14 @@ export type RepoContext = {
      * the first script whose name or command matches
      */
     script: (re: RegExp) => [string, string] | undefined;
-    eslintFiles: string[];
     /**
-     * every ESLint flat config, joined
+     * every linter configuration the tree carries, whichever linter
      */
-    eslintText: string;
+    lintFiles: string[];
+    /**
+     * those configurations, joined
+     */
+    lintText: string;
     /**
      * every tsconfig, joined
      */

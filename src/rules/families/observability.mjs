@@ -100,7 +100,8 @@ export const rules = [
     why: "One console call is the hole every structured-logging rule leaks through: it bypasses the redaction, the request scope and the transport, and it is the easiest thing in the world to add in a hurry.",
     next: "Add no-console at error for the server's paths in the lint configuration",
     check: (c) => {
-      const rule = /no-console/.test(c.eslintText);
+      // ESLint and oxlint call it no-console; Biome calls it suspicious/noConsole.
+      const rule = /no-console|noConsole/.test(c.lintText);
       const calls = (serverText(c).match(/\bconsole\.(log|info|debug|warn|error)\s*\(/g) || [])
         .length;
       if (!rule)

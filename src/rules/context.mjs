@@ -52,8 +52,8 @@ const AGENT_ROOT = ".claude";
  * @property {Record<string, any>} pkg the root package.json, {} when absent
  * @property {Record<string, string>} scripts its scripts
  * @property {(re: RegExp) => [string, string] | undefined} script the first script whose name or command matches
- * @property {string[]} eslintFiles
- * @property {string} eslintText every ESLint flat config, joined
+ * @property {string[]} lintFiles every linter configuration the tree carries, whichever linter
+ * @property {string} lintText those configurations, joined
  * @property {string} tsconfigText every tsconfig, joined
  * @property {string[]} ciFiles the CI pipelines (Woodpecker, GitHub Actions)
  * @property {string} ciText
@@ -216,7 +216,12 @@ export function buildContext(repoDir, o = {}) {
   /** @param {RegExp} re */
   const script = (re) => Object.entries(scripts).find(([k, v]) => re.test(k) || re.test(v));
 
-  const eslintFiles = files(/(^|\/)eslint\.config\.(js|mjs|cjs|ts)$/);
+  // Every linter's configuration, not one vendor's: a rule states the practice and the tool is
+  // the repository's choice, so a check that read eslint.config.js alone failed a repository on
+  // oxlint or Biome for a rule it satisfies. Flat and legacy ESLint, oxlint, Biome.
+  const lintFiles = files(
+    /(^|\/)(eslint\.config\.(js|mjs|cjs|ts)|\.eslintrc(\.(js|cjs|json|ya?ml))?|\.oxlintrc\.jsonc?|oxlint\.config\.m?ts|biome\.jsonc?)$/,
+  );
   const ciFiles = files(/^\.woodpecker(\/.*\.ya?ml|\.ya?ml)$|^\.github\/workflows\/.*\.ya?ml$/);
   const packs = detectPacks(files);
   const sourceFiles = allFiles.filter(
@@ -272,8 +277,8 @@ export function buildContext(repoDir, o = {}) {
     pkg,
     scripts,
     script,
-    eslintFiles,
-    eslintText: eslintFiles.map(read).join("\n"),
+    lintFiles,
+    lintText: lintFiles.map(read).join("\n"),
     tsconfigText: files(/(^|\/)tsconfig(\.base)?\.json$/)
       .map(read)
       .join("\n"),
