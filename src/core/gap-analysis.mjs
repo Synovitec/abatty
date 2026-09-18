@@ -9,22 +9,38 @@
  */
 import { buildContext } from "../rules/context.mjs";
 import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf } from "../rules/index.mjs";
+import { phaseOf, standing } from "../rules/phases.mjs";
+import { synovitec } from "../profiles/synovitec.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string, plan: import("../rules/phases.mjs").PhaseCount[], phase: import("../rules/phases.mjs").PhaseCount | null }} GapResult
  */
+
+/** @param {import("../rules/phases.mjs").PhaseStanding} p the counts a reader sees, without the list behind them */
+const counts = (p) => ({
+  id: p.id,
+  title: p.title,
+  held: p.held,
+  applicable: p.applicable,
+});
 
 /**
  * Run a catalog (the built-in rules by default) over a repository, synchronously.
- * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[] }} [o]
+ * @param {string} repoDir @param {{ today?: string, catalog?: import("../rules/index.mjs").CatalogRule[], problems?: string[], profiles?: string[], phases?: import("../profiles/index.mjs").Phase[] }} [o]
  * @returns {GapResult}
  */
 export function analyze(repoDir, o = {}) {
   const ctx = buildContext(repoDir, { today: o.today });
   const findings = runCatalog(ctx, o.catalog || RULES);
   const { score, applicable } = scoreOf(findings);
+  // The plan of the profiles this repository follows, narrowed to its stage: a phase that
+  // belongs to another stage is not work this repository owes, so it is not in its denominator.
+  const plan = (o.phases || synovitec.phases).filter(
+    (p) => !p.stages || p.stages.includes(/** @type {any} */ (ctx.stage)),
+  );
+  const where = standing(findings, plan);
   return {
     repo: ctx.repo,
     name: ctx.name,
@@ -39,6 +55,10 @@ export function analyze(repoDir, o = {}) {
     profiles: o.profiles || ["synovitec"],
     stage: ctx.stage,
     stageFrom: ctx.stageFrom,
+    // The counts only: what is left is already in `findings`, and the report and this result
+    // then carry the same shape, so a renderer reads either.
+    plan: where.phases.map(counts),
+    phase: where.current ? counts(where.current) : null,
   };
 }
 
@@ -53,6 +73,7 @@ export async function measure(repoDir, o = {}) {
     catalog: catalog.rules,
     problems: catalog.problems,
     profiles: catalog.profiles,
+    phases: catalog.phases,
   });
 }
 
@@ -71,16 +92,21 @@ export function stdIds(text) {
 }
 
 /** @param {string} p */
-const phaseOrder = (p) => {
-  const m = String(p).match(/\d+/);
-  return m ? Number(m[0]) : 99;
-};
-
-/** The findings still to do, in plan order. @param {Finding[]} findings */
-export function todoOf(findings) {
+/**
+ * The findings still to do, in the plan's own order. Reading the first number out of the phase
+ * was the bug: "A.1" is day 0 and read as 1, so the whole of phase 0 was listed ahead of the
+ * day-0 work that blocks it. The plan declares its order, and a phase it does not carry sorts
+ * last rather than in the middle.
+ * @param {Finding[]} findings @param {string[]} [order] the phase ids in plan order
+ */
+export function todoOf(findings, order = synovitec.phases.map((p) => String(p.id))) {
+  const rank = (/** @type {string} */ p) => {
+    const id = phaseOf(p, order);
+    return id === null ? order.length : order.indexOf(id);
+  };
   return findings
     .filter((f) => f.status === "missing" || f.status === "partial")
-    .sort((a, b) => phaseOrder(a.phase) - phaseOrder(b.phase));
+    .sort((a, b) => rank(a.phase) - rank(b.phase));
 }
 
 /**
@@ -112,6 +138,10 @@ export function renderMarkdown(result) {
   md.push(`# Gap analysis - ${name} - ${date}`);
   md.push("");
   md.push(
+    `${result.phase ? `**Phase ${result.phase.id}: ${result.phase.held} of ${result.phase.applicable} held.** ${result.phase.title}. That is the phase this repository is on: the earliest one in the plan with unfinished work, and the number to act on. ` : "**Every phase of the plan is held.** "}The score below is a trend over the whole catalog, including the phases the plan schedules for later, so a young repository is missing most of it by design.`,
+  );
+  md.push("");
+  md.push(
     `**Score ${score}/100** over ${applicable.length} applicable checks of the ${result.profiles.join(", ")} profile${result.profiles.length > 1 ? "s" : ""}, the repository at the ${result.stage} stage${result.stageFrom === "tree" ? " (read from the tree)" : ""}. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
     "",
     enforcedLine(result),
@@ -126,7 +156,10 @@ export function renderMarkdown(result) {
   md.push("");
   md.push("## Next steps, in plan order");
   md.push("");
-  const todo = todoOf(findings);
+  const todo = todoOf(
+    findings,
+    result.plan.map((p) => p.id),
+  );
   if (todo.length === 0)
     md.push("Nothing missing or partial. Re-run after the next research pass.");
   for (const f of todo)
@@ -174,7 +207,10 @@ export function renderSummary(result, reportPath) {
   const { findings, families, score, date, name } = result;
   /** @param {string} fam @param {string} st */
   const count = (fam, st) => findings.filter((f) => f.family === fam && f.status === st).length;
-  const todo = todoOf(findings);
+  const todo = todoOf(
+    findings,
+    result.plan.map((p) => p.id),
+  );
   const e = result.enforced;
   const lines = [
     `Gap analysis · ${name} · ${date} · score ${score}/100 · ${e.share === null ? "nothing present yet" : `${e.share}% of ${e.total} present rules held by a machine (${e.hard} hard, ${e.ratchet} ratchet, ${e.review} review, ${e.prose} prose)`}`,

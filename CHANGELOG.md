@@ -5,6 +5,26 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The headline is the phase the repository is on, not a percentage of the whole catalog.**
+  `abatty` and `abatty measure` lead with the earliest phase of the plan that has unfinished
+  work and its standing (`phase A.1 · 7 of 9 held`), with the phase's own title under it; the
+  score over everything follows as a trend, labelled as one. A fresh application is missing the
+  later phases by design: of the rules one was missing on 2026-09-18, six were phase 0 and
+  seventeen were phases the plan schedules after it, so the old headline read as a verdict on
+  work nobody had been asked to do yet and a healthy day-one project scored 16/100. The report
+  JSON and the Markdown report carry the standing per phase, so the dashboard and a reader see
+  the same number.
+
+### Fixed
+
+- **One plan order, the plan's own.** Three places read the phase by taking the first number out
+  of it, so `A.1` (day 0) sorted as 1 and the whole of phase 0 was listed ahead of the day-0
+  work that blocks it. The order now comes from the profile's declared phases, a rule that names
+  two phases (`2 / 10`: installed at 2, driven to target at 10) belongs to the earlier, and a
+  phase the plan does not carry sorts last instead of in the middle.
+
 ### Fixed
 
 - **A preset's rule files obey `applies` like the catalog's rules do.** `init` wrote every file

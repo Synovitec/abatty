@@ -24,6 +24,8 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
  *   problems: string[],
  *   profiles: string[],
  *   stage: string, stageFrom: string,
+ *   phase: { id: string, title: string, held: number, applicable: number } | null,
+ *   plan: { id: string, title: string, held: number, applicable: number }[],
  *   workspaces: { path: string, name: string, preset: string, from: string }[],
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
@@ -97,6 +99,10 @@ export async function buildReport(repoDir, o = {}) {
     profiles: gap.profiles,
     stage: gap.stage,
     stageFrom: gap.stageFrom,
+    // The phase the repository is on and the standing of every phase of its plan: the number a
+    // reader acts on, beside the score that is only a trend.
+    phase: gap.phase,
+    plan: gap.plan,
     workspaces: detectWorkspaces(repoDir, readAdoption(repoDir)).map((w) => ({
       path: w.path,
       name: w.name,
