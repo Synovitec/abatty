@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ## [0.2.0] - 2026-09-18
 
+### Changed
+
+- **`CODE-ESLINT` is `CODE-LINTER`.** The rule has said "a linter configured, for every language
+  in the tree" for as long as it has existed, and its check has always asked each language pack
+  which linter it names; only the ID still carried one vendor. A rule ID is a public contract the
+  moment a repository waives one by name, so the rename lands in the release that first reaches a
+  registry rather than in the one after it. Its `next` line names three JavaScript linters
+  instead of one.
+
 ### Added
 
 - **Observability is a family of rules, not a sentence.** The standard has carried the OBS.1

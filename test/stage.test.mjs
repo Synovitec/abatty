@@ -57,11 +57,11 @@ test("a rule of another stage is n/a with the stage named: design keeps the docu
     "does not apply: not at this stage: design (a rule of the build and run stages)",
   );
   assert.equal(
-    of(f, "CODE-ESLINT").status,
+    of(f, "CODE-LINTER").status,
     "n/a",
     "sources at design are not held to the linter yet",
   );
-  assert.match(of(f, "CODE-ESLINT").evidence, /not at this stage: design/);
+  assert.match(of(f, "CODE-LINTER").evidence, /not at this stage: design/);
   assert.equal(
     of(f, "DATA-BACKUP").evidence,
     "does not apply: not at this stage: design (a rule of the run stage)",

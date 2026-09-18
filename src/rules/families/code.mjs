@@ -10,7 +10,7 @@ import { perPack } from "../../packs/rules.mjs";
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
-    id: "CODE-ESLINT",
+    id: "CODE-LINTER",
     family: "Code",
     title: "A linter configured, for every language in the tree",
     standard: ["CODE.4"],
@@ -19,7 +19,7 @@ export const rules = [
     phase: "1",
     ...SOURCES,
     why: "The linter is where most rules of the standard become an error a machine refuses; without a config there is nothing to hold them. Each language pack names its linter; the rule keeps the same words.",
-    next: "Add the pack's linter config (eslint.config.js with the day-0 block from CODE.1; ruff for Python)",
+    next: "Add the pack's linter config (the day-0 block from CODE.1: ESLint, oxlint or Biome for JavaScript; ruff for Python)",
     check: (c) => perPack(c, "linter"),
   },
   {
