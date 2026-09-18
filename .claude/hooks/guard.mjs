@@ -62,7 +62,11 @@ if (hasFlag(/--no-verify\b|\bgit commit\b.*\s-n\b/)) {
 // line that only mentions the agent's own paths is not a mention.
 const isCommitText = /\bgit commit\b|\bgh pr (create|edit|merge)\b|\bgit tag\b.*-m|\bgh (issue|release) create\b/.test(cmd);
 if (config.scrub?.enabled === true && isCommitText) {
-  const said = cmd.split(/\r?\n/).find((line) => FORBIDDEN.test(line) && !onlyRequiredPaths(line));
+  // Per LINE of the raw command, not of the collapsed one: `cmd` has had every newline turned
+  // into a space, so splitting it on newlines yielded the whole command as a single line and
+  // `onlyRequiredPaths` could never excuse anything. A multi-line message whose one mention is
+  // the agent's own folder was refused for the other twenty lines around it.
+  const said = raw.split(/\r?\n/).find((line) => FORBIDDEN.test(line) && !onlyRequiredPaths(line));
   if (said) deny(`No trace of the tools in a commit, a tag, a pull request or an issue (scrub.enabled): the text names one (${said.trim().slice(0, 80)}). Say it again without the name.`);
 }
 // The opposite option: a repository that asks for a disclosure trailer (adoption.json →

@@ -247,6 +247,11 @@ try {
   cases.push(["scrub on, day: a pull request body that names the tool", bash(`gh pr create --title "feat: x" --body "${sampleTrailer()}"`), scrubOn, "deny"]);
   cases.push(["scrub on, night: a commit without a trailer", bash('git commit -m "feat: x\n\nwhy it changed"'), { ...night, ...scrubOn }, "none"]);
   cases.push(["scrub on, day: a commit that names the agent's own paths only", bash('git commit -m "chore: restore .claude/adoption.json and CLAUDE.md from main"'), scrubOn, "none"]);
+  // The same message over several lines: the check is per line of the raw command, and reading
+  // the collapsed one meant the whole message was judged as a single line, so the paths this
+  // vocabulary must allow were drowned by the prose around them.
+  cases.push(["scrub on, day: a multi-line message whose only mention is the agent's own paths", bash('git commit -m "refactor: split the gate\n\nThe step list moves out of the runner so the hook and CI read one file.\n\nRestores CLAUDE.md from main, unchanged.\n\nNo behaviour change."'), scrubOn, "none"]);
+  cases.push(["scrub on, day: a multi-line message that names a tool on a later line", bash(`git commit -m "refactor: split the gate\n\nThe step list moves out of the runner.\n\n${sampleTrailer()}"`), scrubOn, "deny"]);
   cases.push(["scrub on, day: an ordinary command that names the tool is not a commit", bash(`echo "${sampleTrailer()}"`), scrubOn, "none"]);
   // The opposite option: a disclosure trailer the repository asks for on unattended commits.
   const provCfg = join(tmp, "provenance.json");
