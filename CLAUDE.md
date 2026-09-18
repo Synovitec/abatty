@@ -31,8 +31,9 @@ Violating one of these is an incident, not a bug.
 ## 2. Commands
 
 ```bash
-npm run gate               # THE pre-push gate: format, typecheck, unit, the ratchet, secrets, scrub
-npm run gate:fast          # the same; this package has no Docker or browser suite
+npm run gate               # `abatty gate`: format, lint, typecheck, graph, dead code, unit, the
+                           # ratchet + changelog range, secrets, audit, scrub. One implementation
+npm run gate:fast          # the same without the heavy suites; this package has none
 npm test                   # node --test over test/*.test.mjs     npm run typecheck   # tsc --noEmit
 npm run standards          # the ratchet alone over the pushed range
 npm run standards:baseline # today's numbers as the floor; zeros promoted to hard
@@ -157,11 +158,9 @@ when two readings of the request lead to materially different work.
   are still proven by nobody.
 - `abatty help` lists fewer commands than the README documents, and the README claims
   `abatty ci --provider github` writes a pull-request template, which no code does.
-- **This repository does not run its own gate.** `npm run gate` is a hand-written chain;
-  `abatty gate --fast` goes red at the lint step, because `init` wrote a `lint` script for
-  eslint and this repository has not adopted it. The README's "one implementation, three
-  callers" is false here. See `docs/POSITION.md` §2.1; fixing it changes what the gate checks
-  and is a decision, not a correction.
+- The `lint` step is skipped here: this repository has no `lint` script, because it has not
+  adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
+  gap analysis names it, so it is visible rather than silently green.
 - TEST-COVERAGE, TEST-MUTATION, CODE-DUP and CODE-JSDOC are missing here: each wants a
   dependency (coverage thresholds, StrykerJS, jscpd, eslint-plugin-jsdoc) and §1.1 says a
   dependency is a decision, not a default. They are open, not waived.

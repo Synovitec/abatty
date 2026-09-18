@@ -38,8 +38,6 @@ export function scrubConfig(repoDir: string): {
 };
 /** The per-repository allow-list: `scrub.allow` of the adoption config and of `abatty.config.json` at the root. @param {string} repoDir */
 export function allowList(repoDir: string): string[];
-/** Leftover matches in a text, for the summary. @param {string} text */
-export function countMatches(text: string): number;
 export type ScrubFinding = {
     kind: "file" | "commit" | "pr";
     where: string;

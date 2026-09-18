@@ -293,3 +293,54 @@ test("the root config: abatty.config.json exempts paths and names the baseline w
   assert.ok(floor.hard.includes("size.overBudget"));
   mkdirSync(join(dir, "scripts"), { recursive: true });
 });
+
+test("C7 bidirectional: a floor above the current value is a finding until the improvement is locked", () => {
+  // A one-sided ratchet accepts, for free and for ever, findings that no longer exist: the floor
+  // keeps saying 9 where the tree measures 0, so nine may come back without the gate noticing.
+  // The cure is `abatty baseline` in the change that earned the improvement, which is also the
+  // only moment anyone knows why the number moved.
+  const dir = tempRepo("ratchet-c7", {
+    "package.json": PKG,
+    "src/a.ts": LONG(310),
+    "src/b.ts": LONG(310),
+  });
+  const config = DEFAULT_CONFIG;
+  writeBaseline({
+    repoDir: dir,
+    rel: "scripts/ci/standards-baseline.json",
+    measurements: measure(dir, null),
+    config,
+    previous: null,
+    today: "2026-09-18",
+  });
+  const baseline = readBaseline(dir, "scripts/ci/standards-baseline.json");
+  assert.ok(baseline);
+  assert.equal(baseline.metrics["size.overBudget"], 2);
+  assert.equal(failed(compare(measure(dir, baseline), baseline, config)), false, "level holds");
+
+  // One file cured: the total falls below its floor, and the run is red until it is recorded.
+  writeFileSync(join(dir, "src/b.ts"), LONG(10));
+  const better = compare(measure(dir, baseline), baseline, config);
+  const v = better.find((x) => x.metric === "size.overBudget");
+  assert.equal(v?.status, "improved");
+  assert.equal(failed(better), true, "an unlocked floor fails the run");
+  assert.match(v?.messages.join("\n") || "", /2 → 1/);
+  assert.match(v?.messages.join("\n") || "", /accepting 1 finding\(s\) that no longer exist/);
+
+  // Locked in, the same tree is green, and the floor now refuses the finding coming back.
+  writeBaseline({
+    repoDir: dir,
+    rel: "scripts/ci/standards-baseline.json",
+    measurements: measure(dir, baseline),
+    config,
+    previous: baseline,
+    today: "2026-09-18",
+  });
+  const locked = readBaseline(dir, "scripts/ci/standards-baseline.json");
+  assert.ok(locked);
+  assert.equal(locked.metrics["size.overBudget"], 1, "the floor moved down to what was earned");
+  assert.equal(failed(compare(measure(dir, locked), locked, config)), false, "green once locked");
+  writeFileSync(join(dir, "src/b.ts"), LONG(310));
+  const back = compare(measure(dir, locked), locked, config);
+  assert.equal(back.find((x) => x.metric === "size.overBudget")?.status, "regressed");
+});

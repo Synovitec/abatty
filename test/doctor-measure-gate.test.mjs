@@ -8,6 +8,7 @@ import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 import { normalise } from "../src/core/doctor.mjs";
+import { sampleTrailer } from "../src/core/vocabulary.mjs";
 
 test("doctor after init: the repository's self-test runs and every shipped file is in step", () => {
   const dir = tempRepo("doctor", { "package.json": NEXT_PKG });
@@ -183,4 +184,58 @@ test("the gate's suites are path-aware and defer without Docker", () => {
   assert.ok(calls.includes("test:rls"), "the alternative script name is found");
   assert.ok(calls.includes("coverage"));
   assert.ok(!calls.includes("e2e"), "no UI path touched, the browser suite is skipped");
+});
+
+test("the gate holds the scrub for a repository that opted in, and skips it for one that did not", () => {
+  // Non-negotiable for a repository that scrubs, and the last point a file can still be changed
+  // without rewriting history. Both directions, because a step that never goes red is absent.
+  const scripts = { "format:check": "true", typecheck: "true", test: "true", standards: "true" };
+  const preset = presetById("node");
+  assert.ok(preset);
+  const run = (/** @type {string} */ dir) => {
+    /** @type {string[]} */
+    const lines = [];
+    const r = runGate({
+      repoDir: dir,
+      preset,
+      fast: true,
+      run: () => 0,
+      log: (l) => lines.push(l),
+    });
+    return { r, out: lines.join("\n") };
+  };
+
+  // Opted out: the step is skipped and says why, whatever the files hold.
+  const off = tempRepo("gate-scrub-off", {
+    "package.json": JSON.stringify({ name: "g", scripts }),
+    "abatty.config.json": JSON.stringify({ scrub: { enabled: false } }),
+    "docs/NOTE.md": `a line naming ${sampleTrailer()}\n`,
+  });
+  const offRun = run(off);
+  assert.equal(offRun.r.ok, true, offRun.out);
+  assert.ok(
+    offRun.r.events.some((e) => /scrub/.test(e.label) && e.outcome === "skipped"),
+    "skipped where the repository did not opt in",
+  );
+
+  // Opted in with a trace in a file: red, and the file and line are named.
+  const on = tempRepo("gate-scrub-on", {
+    "package.json": JSON.stringify({ name: "g", scripts }),
+    "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
+    "docs/NOTE.md": `a line naming ${sampleTrailer()}\n`,
+  });
+  const onRun = run(on);
+  assert.equal(onRun.r.ok, false, "the gate refuses the trace");
+  assert.ok(onRun.r.events.some((e) => /scrub/.test(e.label) && e.outcome === "failed"));
+  assert.match(onRun.out, /docs\/NOTE\.md:1/);
+
+  // Opted in and clean: green, so the step is not merely always red.
+  const clean = tempRepo("gate-scrub-clean", {
+    "package.json": JSON.stringify({ name: "g", scripts }),
+    "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
+    "docs/NOTE.md": "a line naming nothing at all\n",
+  });
+  const cleanRun = run(clean);
+  assert.equal(cleanRun.r.ok, true, cleanRun.out);
+  assert.ok(cleanRun.r.events.some((e) => /scrub/.test(e.label) && e.outcome === "ok"));
 });

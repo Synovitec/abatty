@@ -93,8 +93,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check --end-of-line auto .",
-    "gate": "npm run -s format:check && npm run -s typecheck && npm test && npm run -s standards && npm run -s secrets && node bin/abatty.mjs scrub .",
-    "gate:fast": "npm run -s gate",
+    "gate": "node bin/abatty.mjs gate",
+    "gate:fast": "node bin/abatty.mjs gate --fast",
     "hooks:install": "git config core.hooksPath .githooks",
     "standards": "node bin/abatty.mjs ratchet --range auto",
     "standards:baseline": "node bin/abatty.mjs baseline",
@@ -102,7 +102,6 @@
     "secrets": "node bin/abatty.mjs secrets",
     "prepublishOnly": "npm run -s gate",
     "pack:check": "npm pack --dry-run",
-    "lint": "eslint . --max-warnings=0",
     "graph": "depcruise src bin --config .dependency-cruiser.cjs --ignore-known --output-type err",
     "graph:mermaid": "depcruise src --config .dependency-cruiser.cjs --output-type mermaid",
     "dead": "knip --max-issues 0"

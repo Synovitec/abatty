@@ -54,3 +54,32 @@ the alternative each set aside.
   pushed. The cure is to re-read each document against the code it cites and bump the date in
   the same change; blind bumping is what the rule exists to refuse, and re-reading 2,000 lines of
   standard is its own piece of work. Left stale and named, not waived.
+
+## 2026-09-18 · C7, and the package running its own gate
+
+- **`improved` is a failing status now (C7).** A floor above the value it measures is slack the
+  gate keeps accepting: nine findings could come back for free while the number said nine. The
+  run is red until `abatty baseline` records what was earned, in the change that earned it, which
+  is also the only moment anyone knows why it moved. Set aside: a warning instead of a failure,
+  which is the one-sided ratchet this package already has and which left this repository carrying
+  a floor of 9 against a value of 0 for four days.
+- **Two metrics promoted to HARD by that lock-in.** `size.excessCode` and `size.overBudget` were
+  both at zero when the floor was recorded, and the baseline writer promotes a zero to hard. They
+  may now never rise, which is a real tightening taken deliberately: it is the documented
+  behaviour and P.2 is the reason for it. Reversing it is a config override with a written reason,
+  not an edit of the baseline.
+- **`gate` and `gate:fast` call `abatty gate`.** They were a hand-written chain that ran format,
+  typecheck, unit, the ratchet, secrets and the scrub, while the command the package ships ran a
+  different list and went red on a lint step for a linter this repository has not adopted. Two
+  gates that check different things is worse than either. Set aside: adopting eslint to make the
+  step pass, which is a dependency and a decision of its own; the vestigial `lint` script is gone
+  instead and the step now reports as skipped, which the gap analysis names.
+- **The scrub became a built-in gate step.** It was a line in the hand-written chain, so pointing
+  `gate` at `abatty gate` would have dropped non-negotiable 2 for every repository that opted in.
+  It is skipped where `scrub.enabled` is off, and it is emitted into generated CI as well, so the
+  gate and CI cannot list different steps.
+- **Three steps the old chain never ran are now on: the import graph, dead code and the audit.**
+  Dead code found ten unused exports (six re-exports in `src/ratchet/index.mjs` that nothing
+  imported, `countMatches`, and three terminal colour helpers) and two knip patterns that matched
+  nothing. The exports are deleted and the patterns corrected: a pattern that matches nothing is
+  the `0 findings across 0 files` this standard refuses everywhere else.

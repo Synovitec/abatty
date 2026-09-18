@@ -95,6 +95,7 @@ export const viteReact = {
       },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
       { label: "audit (SEC.1)", builtin: "audit" },
+      { label: "no trace of the tools (scrub)", builtin: "scrub" },
     ],
     suites: [
       {

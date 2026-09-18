@@ -40,6 +40,13 @@ export function ciSteps(preset, o = {}) {
     when: "always",
   });
   steps.push({ name: "audit (SEC.1)", command: "npm audit --audit-level=high", when: "always" });
+  // The same step the gate runs, so the two cannot list different ones. It is a no-op where the
+  // repository did not opt in, exactly as the commit-msg hook is, and the command names no tool.
+  steps.push({
+    name: "no trace of the tools (scrub)",
+    command: "npx abatty scrub .",
+    when: "always",
+  });
   for (const suite of preset.gate.suites) {
     const db = /database|DATA.4/i.test(suite.name);
     for (const s of suite.steps)

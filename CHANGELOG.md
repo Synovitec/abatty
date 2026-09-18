@@ -5,6 +5,35 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The ratchet is bidirectional (evidence base C7).** A floor above the value it measures is a
+  finding, not a silent pass: the run is red until `abatty baseline` records what was earned, in
+  the change that earned it. A one-sided ratchet accepts for free, and for ever, findings that no
+  longer exist, and this repository was carrying a floor of 9 on `size.excessCode` against a
+  value of 0. `improved` now fails the run and prints as `FLOOR UNLOCKED`. Locking this
+  repository's floors in promoted `size.excessCode` and `size.overBudget` to HARD, which is the
+  baseline writer's documented behaviour and a deliberate tightening.
+- **The package runs its own gate.** `gate` and `gate:fast` were a hand-written chain that ran a
+  different list from `abatty gate`, the command the package ships; the chain was green and the
+  product was red. They now call `abatty gate`, the vestigial `lint` script for a linter this
+  repository has not adopted is gone so the step reports as skipped, and three steps the chain
+  never ran are on: the import graph, dead code and the audit. `README.md`'s "one implementation,
+  three callers" is true here for the first time.
+- **The scrub is a built-in gate step**, skipped where `scrub.enabled` is off and emitted into
+  generated CI as well, so the gate and CI cannot list different steps and a repository that
+  opted in keeps it whichever way the gate is called. Control cases in all three directions:
+  opted out skips, opted in with a trace is red and names the file and line, opted in and clean
+  is green.
+
+### Removed
+
+- Ten unused exports the dead-code step named once it ran: six re-exports in
+  `src/ratchet/index.mjs` that nothing imported, `countMatches` in `src/core/scrub.mjs`, and the
+  `dim`, `italic` and `blue` helpers in `src/ui/term.mjs`. Two knip patterns that matched nothing
+  are corrected: a pattern with no matches is the `0 findings across 0 files` this standard
+  refuses everywhere else.
+
 ### Added
 
 - **`docs/POSITION.md`**: where the package stands against the adoption evidence rather than

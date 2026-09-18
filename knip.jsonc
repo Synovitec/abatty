@@ -7,12 +7,11 @@
   // `npx knip --max-issues 0`; an existing repository starts at today's count held by the
   // ratchet as dead.knipIssues and drives it to zero. Cycles are left to dependency-cruiser.
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["scripts/**/*.{js,mjs,cjs,ts}"],
-  "project": [
-    "src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
-    "server/**/*.{js,mjs,cjs,ts}",
-    "lib/**/*.{js,ts}",
-  ],
+  // No `entry` here: package.json names the bin and the exports map, and knip reads both as
+  // entry points of its own. A pattern that matches nothing is a check that reports nothing, so
+  // server/ and lib/ are not carried either: this repository has neither.
+  "entry": [],
+  "project": ["src/**/*.{js,jsx,mjs,cjs,ts,tsx}", "bin/**/*.mjs"],
   // Per-path issue types to skip, with the reason: a vendored UI kit whose sub-component exports
   // are upstream surface goes here as { "src/components/ui/**": ["exports", "types"] }; the
   // files themselves stay reported.

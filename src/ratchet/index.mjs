@@ -22,15 +22,9 @@ import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 
-export {
-  BASELINE_DEFAULT,
-  BASELINE_NOTE,
-  DEFAULT_CONFIG,
-  DEFAULT_EXEMPT,
-  DEFAULT_KINDS,
-  baselinePath,
-  resolveConfig,
-} from "./config.mjs";
+// Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
+// the dead-code gate names once it runs (CODE.6). `config.mjs` remains their home.
+export { DEFAULT_CONFIG } from "./config.mjs";
 export { readBaseline, writeBaseline } from "./baseline.mjs";
 
 /**
@@ -273,8 +267,14 @@ export function compare(measurements, baseline, config) {
         ...perFile.slice(0, 12).map((s) => "per file: " + s),
         ...(m.value > floor && !perFile.length ? list : []),
       ]);
+    // Bidirectional: a floor ABOVE the current value is a finding, not a silent pass. Left
+    // unlocked it is slack the gate keeps accepting - findings that no longer exist may come
+    // back for free, and the number stops meaning what it says. So an improvement is locked in
+    // the change that earned it, which is also the only moment anyone knows why it moved.
     if (m.value < floor)
-      return v("improved", [`${floor} → ${m.value}; lock it with \`abatty baseline\``]);
+      return v("improved", [
+        `${floor} → ${m.value}: the floor is ${floor - m.value} above the current value, so the gate is still accepting ${floor - m.value} finding(s) that no longer exist. Lock it in this change with \`abatty baseline\`.`,
+      ]);
     return v("ok", []);
   });
 }
@@ -284,10 +284,16 @@ function where(f) {
   return `${f.path}${f.line ? ":" + f.line : ""}${f.detail ? " · " + f.detail : ""}${typeof f.weight === "number" && f.weight !== 1 ? ` (+${f.weight})` : ""}`;
 }
 
-/** True when the run must fail. @param {Verdict[]} verdicts */
+/**
+ * True when the run must fail. `improved` is among them: a floor left above the value it now
+ * measures is slack the gate keeps accepting, so the run is red until `abatty baseline` records
+ * the number that was earned. Every status here is cured by a change, never by editing a floor
+ * upward.
+ * @param {Verdict[]} verdicts
+ */
 export function failed(verdicts) {
   return verdicts.some((v) =>
-    ["regressed", "hard-fail", "scanned-zero", "unbaselined"].includes(v.status),
+    ["regressed", "hard-fail", "scanned-zero", "unbaselined", "improved"].includes(v.status),
   );
 }
 
