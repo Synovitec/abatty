@@ -7,7 +7,7 @@
     ".claude/hooks/lib.mjs": "049208ba82fa30d33c2479b49b9a961a81839ff977958e8661e44bfd31547a6f",
     ".claude/hooks/lint-on-edit.mjs": "6a1f9bed589c5aad07b4169ea3931b023fea3d65cacc65a73bbf03dfea1117e0",
     ".claude/hooks/protect.mjs": "f67bd4343eaaa51adf9d175883cf5abc1a51ed842e7bc21fd96576f8cf482e0b",
-    ".claude/hooks/self-test.mjs": "3bb6fe9a26b918a73b04581afe87d9b3342972c9c1fd0775c223a6aea3a5ed44",
+    ".claude/hooks/self-test.mjs": "b6dd5160e7d8a098846f02a329a08a052cdcd709d0925842d242e38e59d30051",
     ".claude/hooks/session-brief.mjs": "b36f6329249bb28b87ddb932b45486f2ae66b6e09760d516ffd00874514518af",
     ".claude/hooks/stop-gate.mjs": "80ffd3bd9c24d20507790faaacb011e37fc3b8a5b21c3a20e512c0095191351b",
     ".claude/hooks/vocabulary.mjs": "cb3f80737b8124562321c816fc6679db84b241a901def3b346b7abd713d01b3d",

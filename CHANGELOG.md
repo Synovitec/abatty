@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **git can run the hooks it is given.** `init` wrote `.githooks/pre-commit`, `pre-push` and
+  (now) `commit-msg` without the executable bit, and git skips a hook it cannot execute with
+  nothing but a hint. The pre-push hook is the gate: on this repository it never ran, which is
+  how `origin/main` came to be red on `docs.behindCode` while every push looked clean. `init`
+  now sets the bit on disk and in the index, repairs it on a hook it keeps, and the self-test
+  refuses a wired hook whose index mode is not 100755.
 - **The hooks read the repository's config again.** `init` writes `abatty.config.json` at the
   root and also wired `ADOPTION_CONFIG` at the older place, which `init` does not write, so
   every hook fell back to the template's defaults: the scrub off where the repository had opted

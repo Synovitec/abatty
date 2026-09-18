@@ -109,6 +109,21 @@ try {
     if (args.indexOf("--adoption") < 0)
       check("the hooks read the config this test reads", resolve(configPath()) === resolve(ADOPTION), `hooks: ${configPath()}; here: ${ADOPTION}`);
   }
+  // git skips a hook that is not executable and says so only as a hint, so a pre-push hook
+  // written 644 means the gate never runs and a red push reads as a green one. The mode git
+  // obeys is the one in the index, which is also the one that survives a clone.
+  // Not having them installed is a repository's choice (the night has its own Stop gate), so
+  // that is said and not failed; a hook that IS wired and that git cannot run is the defect.
+  const hooksPath = (spawnSync("git", ["config", "--get", "core.hooksPath"], { encoding: "utf8" }).stdout || "").trim();
+  if (!hooksPath) process.stdout.write("  ok   git hooks not installed here (npm run hooks:install)\n");
+  if (hooksPath) {
+    const indexed = (spawnSync("git", ["ls-files", "-s", "--", hooksPath], { encoding: "utf8" }).stdout || "").trim().split("\n").filter(Boolean);
+    for (const line of indexed) {
+      const mode = line.slice(0, 6);
+      const file = line.split("\t").pop();
+      check(`git can run ${file}`, mode === "100755", `mode ${mode}; git update-index --chmod=+x ${file}`);
+    }
+  }
   let adoption = null;
   try {
     adoption = readJson(ADOPTION);

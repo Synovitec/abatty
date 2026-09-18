@@ -8,7 +8,16 @@
  * (the repository's own edits are the point of `doctor`'s drift check), unless --force.
  * Dependencies are named, never installed: a dependency change is a decision.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
@@ -54,6 +63,26 @@ const ordered = (v) =>
 /** @param {any} a @param {any} b the two configs carry the same values, whatever order they are written in. */
 const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b));
 
+/**
+ * The executable bit on a file git must be able to run. git skips a hook that is not executable
+ * and says so only as a hint, so a pre-push hook written 644 means the gate never runs and a red
+ * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
+ * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
+ * the file may not be tracked yet.
+ * @param {string} target
+ */
+function makeExecutable(target) {
+  try {
+    chmodSync(target, 0o755);
+  } catch {
+    /* a filesystem without modes; the index below is what git reads */
+  }
+  spawnSync("git", ["update-index", "--chmod=+x", "--", relative(dirname(target), target)], {
+    cwd: dirname(target),
+    stdio: "ignore",
+  });
+}
+
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */
 function walk(dir, base = dir, acc = []) {
   for (const name of readdirSync(dir)) {
@@ -82,17 +111,21 @@ export function initRepo(o) {
   const put = (
     /** @type {string} */ rel,
     /** @type {string} */ content,
-    { merge } = { merge: false },
+    { merge, executable } = { merge: false, executable: false },
   ) => {
     const target = join(repoDir, rel);
     const exists = existsSync(target);
     if (exists && !force) {
+      // A git hook that is not executable is silently skipped by git, so the mode is repaired
+      // even on a file that is kept: that is how a repository pushed past a red gate for days.
+      if (executable && !dryRun) makeExecutable(target);
       events.push({ file: rel, action: "kept" });
       return false;
     }
     if (!dryRun) {
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
+      if (executable) makeExecutable(target);
     }
     events.push({ file: rel, action: exists ? "overwritten" : merge ? "merged" : "written" });
     return true;
@@ -156,10 +189,19 @@ export function initRepo(o) {
   put(
     ".githooks/pre-commit",
     "#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. Installed by `npm run hooks:install`.\nnpx abatty secrets --staged\n",
+    { merge: false, executable: true },
   );
   put(
     ".githooks/pre-push",
     "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`. Installed by `npm run hooks:install`.\nnpm run -s gate\n",
+    { merge: false, executable: true },
+  );
+  // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
+  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides.
+  put(
+    ".githooks/commit-msg",
+    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on; a no-op otherwise.\nnpx abatty scrub --message "$1"\n',
+    { merge: false, executable: true },
   );
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
   // `npm run hooks:install` are how the instrument is called, whatever the stack.
