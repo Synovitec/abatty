@@ -5,6 +5,30 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **Two more research rounds and the competitive picture.**
+  `docs/standard/research/08-security-compliance-tooling.md` (agent security and the hostile
+  repository, the Cyber Resilience Act as a deadline, the tooling landscape, the command-line
+  guide, changes from C21) and `09-market-and-voices.md` (the guides-and-sensors vocabulary the
+  field settled on, the named voices, the numbers a buyer feels, the five rings, changes from
+  C31). `docs/COMPETITIVE.md` is the living picture those two argue for: what each ring does and
+  what it does not, with the rule that a row without the second half is marketing.
+- The position the three of them converge on, stated once: this package installs the
+  computational half of a harness, proves its sensors can fail, and signs the record. Ring 5,
+  compliance automation, is the one with budget and a gap that matches what the package already
+  computes and currently discards.
+
+### Changed
+
+- `docs/POSITION.md`'s scorecard is re-measured after the gate switch: Reliability moves from
+  Qualified back to Strong now that `abatty gate` is green on its own package with every step it
+  ships, and §2.1 records the defect as fixed rather than open. The Latency row stays a Risk and
+  gains the reason: 3 min 22 s is a gate a team learns to start and walk away from.
+- Corrected before landing, as with the two documents before it: research 08 claimed two commands
+  carry `--json`. Eight document it and seven were verified to emit it; `--plain`, which the
+  command-line guide it cites expects, exists nowhere.
+
 ### Changed
 
 - **The ratchet is bidirectional (evidence base C7).** A floor above the value it measures is a
