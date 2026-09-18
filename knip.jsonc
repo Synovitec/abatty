@@ -1,0 +1,39 @@
+{
+  // Dead code is a gate, not a review item (CODE.6). knip finds its entry points from the
+  // framework plugins it detects (Next.js, Vite, Vitest, Playwright, ESLint, Prettier, Drizzle...);
+  // add an `entry` only for a file run by name that no plugin knows. A false positive is an
+  // ignoreIssues / ignoreDependencies entry with its reason in a comment beside it, never
+  // --no-exit-code (knip refuses unknown keys, hence .jsonc for the comments). Gate:
+  // `npx knip --max-issues 0`; an existing repository starts at today's count held by the
+  // ratchet as dead.knipIssues and drives it to zero. Cycles are left to dependency-cruiser.
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["scripts/**/*.{js,mjs,cjs,ts}"],
+  "project": [
+    "src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
+    "server/**/*.{js,mjs,cjs,ts}",
+    "lib/**/*.{js,ts}",
+  ],
+  // Per-path issue types to skip, with the reason: a vendored UI kit whose sub-component exports
+  // are upstream surface goes here as { "src/components/ui/**": ["exports", "types"] }; the
+  // files themselves stay reported.
+  "ignoreIssues": {},
+  "ignoreFiles": [],
+  "ignoreDependencies": [],
+  "ignoreBinaries": [],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "optionalPeerDependencies": "warn",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error",
+    "exports": "error",
+    "types": "error",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "enumMembers": "warn",
+    "duplicates": "warn",
+  },
+}

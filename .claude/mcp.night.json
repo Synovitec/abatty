@@ -1,0 +1,4 @@
+{
+  "$comment": "Loaded by the runner with --strict-mcp-config: these are the ONLY MCP servers a night session has. Empty means none - the mail, chat and drive connectors from the user settings do not exist at night. A server listed here must also be named in adoption.json -> mcpServers or every call to it is denied. The package's own server, for a typed measure/ratchet/gate/scrub/report/explain: \"abatty\": { \"command\": \"npx\", \"args\": [\"abatty\", \"mcp\"] }, named as abatty in mcpServers.",
+  "mcpServers": {}
+}

@@ -21,6 +21,39 @@ export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..
 
 /** @typedef {{ file: string, action: "written" | "kept" | "overwritten" | "merged" }} InitEvent */
 
+/** @param {unknown} v true for a JSON object, which merges; an array is a value and is kept whole. */
+const isObject = (v) => Boolean(v) && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * The defaults under the repository's own values, at every depth: a key the repository set wins,
+ * a key it never set is added. Shallow was the bug - a repository that had written one key of
+ * `files` lost the five the template names, and the harness self-test then failed on the state
+ * file it could no longer find.
+ * @param {any} base @param {any} own
+ */
+function mergeConfig(base, own) {
+  if (own === undefined) return base;
+  if (!isObject(base) || !isObject(own)) return own;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(own)) out[k] = k in base ? mergeConfig(base[k], v) : v;
+  return out;
+}
+
+/** @param {any} v @returns {any} the same object with its keys in one order, so equality does not read as a change. */
+const ordered = (v) =>
+  Array.isArray(v)
+    ? v.map(ordered)
+    : isObject(v)
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map((k) => [k, ordered(v[k])]),
+        )
+      : v;
+
+/** @param {any} a @param {any} b the two configs carry the same values, whatever order they are written in. */
+const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b));
+
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */
 function walk(dir, base = dir, acc = []) {
   for (const name of readdirSync(dir)) {
@@ -95,31 +128,24 @@ export function initRepo(o) {
   const legacy = readJsonFile(repoDir, LEGACY_CONFIG);
   const configRel = legacy && !readJsonFile(repoDir, CONFIG_FILE) ? LEGACY_CONFIG : CONFIG_FILE;
   const existing = readJsonFile(repoDir, configRel);
-  const merged = {
-    ...(configRel === CONFIG_FILE ? { $schema: SCHEMA_URL } : {}),
-    ...base,
-    ...preset.adoption,
+  const defaults = {
+    ...mergeConfig(
+      { ...(configRel === CONFIG_FILE ? { $schema: SCHEMA_URL } : {}), ...base },
+      preset.adoption,
+    ),
     stack: preset.id,
     // The version this repository follows, recorded where a human reads it; update moves it.
     abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
-    ...(existing || {}),
-    commands: {
-      ...base.commands,
-      ...(preset.adoption.commands || {}),
-      ...(existing?.commands || {}),
-    },
   };
+  const merged = mergeConfig(defaults, existing || {});
   if (!existing || force) {
     if (!dryRun) writeJsonFile(repoDir, configRel, { ...merged, stack: preset.id });
     events.push({ file: configRel, action: existing ? "overwritten" : "written" });
-  } else {
-    const keys = Object.keys(merged).filter((k) => !(k in existing));
-    if (keys.length) {
-      if (!dryRun) writeJsonFile(repoDir, configRel, merged);
-      events.push({ file: configRel, action: "merged" });
-    } else events.push({ file: configRel, action: "kept" });
-  }
+  } else if (!sameConfig(merged, existing)) {
+    if (!dryRun) writeJsonFile(repoDir, configRel, merged);
+    events.push({ file: configRel, action: "merged" });
+  } else events.push({ file: configRel, action: "kept" });
 
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)

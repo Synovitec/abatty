@@ -60,15 +60,39 @@ export function readLock(repoDir) {
 }
 
 /**
- * Record the package's version and the hash of every managed file as the package ships it,
- * and keep the shipped copies as the base of the next merge.
+ * Record the package's version and, per managed file, the copy that is actually installed here -
+ * the base of the next three-way merge. A file whose copy in the repository is the package's is
+ * recorded at that hash, with the shipped text kept beside it as the base. A file that differs
+ * (init keeps an existing file, and a repository edits its hooks) was NOT installed at this
+ * version, so its earlier entry and its earlier base are carried over untouched; a file with no
+ * earlier entry is left out, and `update` then has no ancestor to merge from and writes the
+ * package's version beside it rather than over it. Recording the package's hash for every file
+ * was the bug: a file the repository kept read as its own edit that the package never changed,
+ * and `update` refused to deliver a real change to it for as long as the repository lived.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset | null} preset @param {string} [version]
  */
 export function writeLock(repoDir, preset, version = packageVersion()) {
   /** @type {Record<string, string>} */
   const files = {};
+  const previous = readLock(repoDir);
   for (const [tpl, rel] of managedFiles(preset)) {
     const text = readFileSync(join(TEMPLATES, tpl), "utf8");
+    const target = join(repoDir, rel);
+    const installed = existsSync(target) && hashOf(readFileSync(target, "utf8")) === hashOf(text);
+    if (!installed) {
+      const carried = previous?.files?.[rel];
+      if (!carried) continue;
+      files[rel] = carried;
+      // The base is looked up under the lock's version, so the copy this file was installed from
+      // moves with the entry that names it.
+      const was = join(repoDir, BASE_DIR, previous.abatty, rel);
+      const base = join(repoDir, BASE_DIR, version, rel);
+      if (existsSync(was) && !existsSync(base)) {
+        mkdirSync(dirname(base), { recursive: true });
+        writeFileSync(base, readFileSync(was, "utf8"));
+      }
+      continue;
+    }
     files[rel] = hashOf(text);
     const base = join(repoDir, BASE_DIR, version, rel);
     mkdirSync(dirname(base), { recursive: true });

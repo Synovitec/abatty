@@ -120,3 +120,29 @@ test("the python preset: detected from the tree, init writes the private package
   assert.equal(by["secret scan"]?.outcome, "red");
   assert.deepEqual(controls.absent, []);
 });
+
+test("the platform's own runner counts as a runner: node --test needs no dependency and no config", () => {
+  // The rule states the practice - a runner and tests - and the profile names the tools it chose
+  // for it. Reading only vitest and jest was the bug: a repository on the runner that ships with
+  // Node scored "missing" on having unit tests, with its tests in the tree and green.
+  const dir = tempRepo("packs-node-test", {
+    "package.json": JSON.stringify({
+      name: "svc",
+      private: true,
+      scripts: { test: 'node --test "test/*.test.mjs"' },
+    }),
+    "src/index.mjs": "export const x = 1;\n",
+    "test/x.test.mjs": "import { test } from 'node:test';\ntest('x', () => {});\n",
+  });
+  const f = runCatalog(buildContext(dir), RULES);
+  assert.equal(of(f, "TEST-UNIT").status, "present");
+  assert.match(of(f, "TEST-UNIT").evidence, /node --test, 1 test file\(s\)/);
+  // And a repository with neither a runner nor tests still reads as missing.
+  const bare = tempRepo("packs-no-runner", {
+    "package.json": JSON.stringify({ name: "svc", private: true, scripts: { build: "tsc" } }),
+    "src/index.mjs": "export const x = 1;\n",
+  });
+  const g = runCatalog(buildContext(bare), RULES);
+  assert.equal(of(g, "TEST-UNIT").status, "missing");
+  assert.match(of(g, "TEST-UNIT").evidence, /no runner/);
+});

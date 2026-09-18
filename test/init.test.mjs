@@ -76,3 +76,33 @@ test("init --dry-run writes nothing", () => {
   assert.equal(r.code, 0, r.out);
   assert.equal(existsSync(join(dir, ".claude")), false);
 });
+
+test("init merges the config at every depth: a repository that set one key of a block keeps the rest", () => {
+  const dir = tempRepo("init5", {
+    "package.json": NEXT_PKG,
+    // A repository that named its own baseline and nothing else of `files`. Shallow was the bug:
+    // the five keys the template names went missing and the harness self-test then failed on the
+    // state file it could no longer find.
+    "abatty.config.json": JSON.stringify({
+      files: { baseline: "ci/floor.json" },
+      commands: { gate: "make gate" },
+      scrub: { enabled: true },
+    }),
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(r.code, 0, r.out);
+  const cfg = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
+  assert.equal(cfg.files.baseline, "ci/floor.json", "the value the repository set wins");
+  assert.equal(cfg.files.state, "docs/ADOPTION_STATE.json", "the keys it never set are added");
+  assert.equal(cfg.files.changelog, "CHANGELOG.md");
+  assert.equal(cfg.files.decisions, "docs/ADOPTION_DECISIONS.md");
+  assert.equal(cfg.files.progress, "docs/STANDARDS_PROGRESS.md");
+  assert.equal(cfg.commands.gate, "make gate", "the same one block deeper");
+  assert.equal(typeof cfg.commands.typecheck, "string");
+  assert.equal(cfg.scrub.enabled, true);
+  // And it settles: a second run over the merged file changes nothing.
+  const again = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(again.code, 0, again.out);
+  assert.match(again.out, /kept\s+abatty\.config\.json/);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")), cfg);
+});

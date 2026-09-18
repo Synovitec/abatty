@@ -1,15 +1,16 @@
 /**
  * The plain Node service preset (Express, Fastify, Hono, a worker, a CLI): no browser suite,
- * a source root under src/ or server/. NOT PROVEN by a repository yet - the standard's rule
- * is that a preset is real when a repository has run it, so `init` says so and the gap
- * analysis will name what the first Node repository finds.
+ * a source root under src/ or server/. Proven by this package itself, which is the first
+ * repository to run it; what that first run found is in the changelog (a shallow config merge,
+ * a lock that recorded the wrong ancestor, a self-test that failed a repository for opting into
+ * the scrub, a rule that read one test runner, a guard that read flags out of a heredoc).
  */
 
 /** @type {import("./index.mjs").Preset} */
 export const node = {
   id: "node",
   name: "Node service (Express / Fastify / Hono / worker)",
-  proven: "",
+  proven: "abatty, 2026-09-18 (instrument, harness, graph and dead code in the gate; five bugs)",
   detect: (deps) =>
     !deps.has("next") &&
     !deps.has("vite") &&

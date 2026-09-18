@@ -1,0 +1,22 @@
+{
+  "abatty": "0.1.0",
+  "installedAt": "2026-09-18",
+  "files": {
+    ".claude/hooks/check-direction.mjs": "32b328881f2f272c089dafc5d90694ad215c736ee9337afa4b5aa5d15000b458",
+    ".claude/hooks/guard.mjs": "187613dc1898d18dfe558174b49a91562e7ff3ca9bc642c3347b0511a9f71bd1",
+    ".claude/hooks/lib.mjs": "049208ba82fa30d33c2479b49b9a961a81839ff977958e8661e44bfd31547a6f",
+    ".claude/hooks/lint-on-edit.mjs": "6a1f9bed589c5aad07b4169ea3931b023fea3d65cacc65a73bbf03dfea1117e0",
+    ".claude/hooks/protect.mjs": "f67bd4343eaaa51adf9d175883cf5abc1a51ed842e7bc21fd96576f8cf482e0b",
+    ".claude/hooks/self-test.mjs": "3bb6fe9a26b918a73b04581afe87d9b3342972c9c1fd0775c223a6aea3a5ed44",
+    ".claude/hooks/session-brief.mjs": "b36f6329249bb28b87ddb932b45486f2ae66b6e09760d516ffd00874514518af",
+    ".claude/hooks/stop-gate.mjs": "80ffd3bd9c24d20507790faaacb011e37fc3b8a5b21c3a20e512c0095191351b",
+    ".claude/hooks/vocabulary.mjs": "cb3f80737b8124562321c816fc6679db84b241a901def3b346b7abd713d01b3d",
+    ".claude/skills/adopt-standards/SKILL.md": "edba13f3d2ef03766626bd49c3e46a6521d041d78d4aaf59a6fcf14cfcaea019",
+    ".claude/agents/standards-reviewer.md": "fbd61a3e5baadca110547a06dd2e8ac4048ba92089d7a2519592792531475266",
+    ".claude/agents/standards-adopter.md": "abbec418909a6fe4a65e06d859f2d726c907cab98373450e3f7f62599ebd3785",
+    ".claude/settings.json": "201ebabccae9b33943f10ad62046d5b8f53a453d5045f9259989fa959b698dae",
+    ".claude/mcp.night.json": "f144cfb7f85722aee2ee59d15994e35ae9c4b911f93e9a2be360030596748f5b",
+    ".claude/rules/testing.md": "7490d620208222b0f0b416b7db6179ff8f1c24877c07c79a59b6669de414f0dc",
+    ".claude/rules/size-limits.md": "21def85fa82a7d3841b6dba7f5c91efb0ed5280515981ef45cf2f34ee668abc5"
+  }
+}

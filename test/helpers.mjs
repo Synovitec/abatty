@@ -3,6 +3,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 
+// The suite is hermetic: the harness a developer installed in THIS repository exports
+// ADOPTION_CONFIG for every child process, and inherited into a fixture it points the hooks at a
+// file that is not there, so they run on defaults and the checks that read the config find
+// nothing. Every test file imports this one, so clearing it here clears it for all of them.
+delete process.env.ADOPTION_CONFIG;
+
 /** A fresh temp directory that is a git repository with one commit on main. @param {string} name @param {Record<string,string>} [files] */
 export function tempRepo(name, files = {}) {
   const dir = mkdtempSync(join(tmpdir(), `abatty-${name}-`));
@@ -25,8 +31,8 @@ export function git(dir, ...args) {
   return (r.stdout || "").trim();
 }
 
-/** Run the CLI; { code, out } with stdout and stderr joined. @param {string[]} args @param {string} cwd */
-export function cli(args, cwd) {
+/** Run the CLI; { code, out } with stdout and stderr joined. @param {string[]} args @param {string} cwd @param {Record<string,string>} [env] extra variables for the child */
+export function cli(args, cwd, env = {}) {
   const r = spawnSync(
     process.execPath,
     [new URL("../bin/abatty.mjs", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"), ...args],
@@ -38,7 +44,12 @@ export function cli(args, cwd) {
       env: {
         ...process.env,
         ADOPTION_RUN: "",
+        // The harness a developer installed in THIS repository exports it for every child
+        // process; inherited into a fixture it points the hooks at a file that is not there and
+        // they run on defaults, so the suite must not read the machine's.
+        ADOPTION_CONFIG: "",
         ABATTY_AGENT: process.env.ABATTY_AGENT || STUB_AGENT,
+        ...env,
       },
     },
   );

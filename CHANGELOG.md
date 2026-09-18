@@ -5,8 +5,45 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The hooks read the repository's config again.** `init` writes `abatty.config.json` at the
+  root and also wired `ADOPTION_CONFIG` at the older place, which `init` does not write, so
+  every hook fell back to the template's defaults: the scrub off where the repository had opted
+  in, no coupled pairs for the Stop gate, the repository's protected paths replaced by the
+  template's, and nothing said so. The pin is gone, `configPath()` decides as it always
+  documented, and the self-test now refuses a settings file that pins a path that is not there
+  and checks that the hooks read the config it reads.
+- **The harness lock records what is installed, not what the package ships.** A file `init`
+  kept (the repository already had its own) was recorded at the package's hash, so `update`
+  read it as "your edit; the package did not change this file" and never delivered a change to
+  it again. A kept file now carries no ancestor, `update` writes the package's version beside
+  it, and a file that really was installed keeps its ancestor across a re-run of `init`.
+- **The config merges at every depth.** A repository that had set one key of a block lost the
+  rest of it, and the harness self-test then failed on the state file it could no longer find.
+- **A repository that opted into the scrub passes its own self-test.** The case for the default
+  read the repository's config instead of a default one, so opting in failed the harness on the
+  night it was installed for.
+- **The guard reads flags from argv, not from a heredoc body.** Writing a rule, a README or a
+  fixture that names the bypass flags is not an attempt to use them; a quoted argument is still
+  argv and is still refused. Both directions are control cases in the self-test.
+- **A unit runner is a practice, not a product.** `node --test` ships with Node and needs no
+  dependency and no config file; TEST-UNIT read only vitest and jest, so a repository with its
+  tests in the tree and green scored missing on having them.
+- The test suite is hermetic: it no longer inherits `ADOPTION_CONFIG` from the harness a
+  developer installed in this repository, which pointed the fixtures' hooks at a file that was
+  not there.
+
 ### Added
 
+- **abatty runs its own instrument** (roadmap #27): the harness, the gate, the hooks, the
+  import graph and the dead-code check are installed here, `doctor` is green on a machine set
+  up for a night, and `CLAUDE.md` is this repository's own rather than the template's. The
+  `node` preset is proven by a named repository for the first time, and the six bugs above are
+  what that first run found. The boundary map is enforced (the rules and the probes never reach
+  the terminal, nothing imports the templates), the five pre-existing import cycles are the
+  graph's committed debt, and `templates/harness/` is coupled to `.claude/` so the harness this
+  repository runs cannot drift from the one the package ships.
 - Distribution (roadmap #27): the version this repository follows is pinned in the config
   (`abatty`, written by `init`, moved by `update`, read by `doctor`); the README opens with
   the two-minute path a stranger can act on. The registry publish, the license and the
