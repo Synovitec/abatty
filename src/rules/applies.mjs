@@ -49,6 +49,17 @@ export const BOUNDARY = {
   applies: (c) =>
     c.stack.server || c.stack.ui || "no boundary: neither a server nor a browser application",
 };
+/**
+ * A service: something with a process that runs, receives traffic and can be sent a signal.
+ * The observability rules are its alone - a library has no health endpoint and a browser
+ * application has no SIGTERM, so on those the finding is n/a with the reason.
+ * @type {Applies}
+ */
+export const SERVICE = {
+  when: "a repository with a server",
+  stages: BUILT,
+  applies: (c) => c.stack.server || "no server: nothing here receives traffic or a signal",
+};
 /** @type {Applies} */
 export const TEXT = {
   when: "a browser application, or a repository with translation catalogues",

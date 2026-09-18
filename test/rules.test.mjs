@@ -85,15 +85,21 @@ const IDS = [
   "A11Y-LINT",
   "A11Y-CONTRAST",
   "PWA-CONTRACT",
+  "OBS-STRUCTURED",
+  "OBS-REDACTION",
+  "OBS-CONSOLE",
+  "OBS-SIGTERM",
+  "OBS-HEALTH",
+  "OBS-TRACKER",
 ];
 
-test("the catalog is well-formed: 65 rules, unique IDs, every field, a reason on each", () => {
+test("the catalog is well-formed: 71 rules, unique IDs, every field, a reason on each", () => {
   assert.deepEqual(validate(RULES), []);
   assert.deepEqual(
     RULES.map((r) => r.id),
     IDS,
   );
-  assert.equal(FAMILIES.length, 13);
+  assert.equal(FAMILIES.length, 14);
   for (const r of RULES) {
     assert.ok(r.why.length > 40, `${r.id}: why is too short to be a reason`);
     assert.ok(r.title.length > 10, `${r.id}: title`);
@@ -244,11 +250,11 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   });
   const all = cli(["rules", dir], dir);
   assert.equal(all.code, 0, all.out);
-  assert.match(all.out, /65 of 65/);
+  assert.match(all.out, /71 of 71/);
   assert.match(all.out, /CODE-DEADCODE/);
   assert.match(all.out, /\d+ must · \d+ should · insured by: \d+ hard/);
   const fam = cli(["rules", dir, "--family", "Security", "--level", "must"], dir);
-  assert.match(fam.out, /4 of 65/);
+  assert.match(fam.out, /4 of 71/);
   assert.doesNotMatch(fam.out, /CODE-DEADCODE/);
   const ph = cli(["rules", dir, "--phase", "12", "--json"], dir);
   assert.deepEqual(
@@ -262,7 +268,7 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   );
   const json = cli(["rules", dir, "--json"], dir);
   const list = JSON.parse(json.out);
-  assert.equal(list.length, 65);
+  assert.equal(list.length, 71);
   assert.equal(list[0].check, undefined, "the function is not in the JSON");
   const nope = cli(["explain", "NOPE-1", dir], dir);
   assert.equal(nope.code, 2);

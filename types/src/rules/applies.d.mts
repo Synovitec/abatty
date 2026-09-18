@@ -10,6 +10,13 @@ export const DATABASE: Applies;
 export const BROWSER: Applies;
 /** @type {Applies} */
 export const BOUNDARY: Applies;
+/**
+ * A service: something with a process that runs, receives traffic and can be sent a signal.
+ * The observability rules are its alone - a library has no health endpoint and a browser
+ * application has no SIGTERM, so on those the finding is n/a with the reason.
+ * @type {Applies}
+ */
+export const SERVICE: Applies;
 /** @type {Applies} */
 export const TEXT: Applies;
 /** @type {Applies} */
