@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A rule says how far a machine can hold it** (C17). The enforced share has always named the
+  rules a night should move up a level, and some of them were never going anywhere: no check can
+  prove a restore would actually come back, or that a redaction list names every field that would
+  hurt, or that the decisions which shaped the system are the ones in the decision log. A rule now
+  carries a `ceiling`: the strongest enforcement any machine could reach, and why it stops there.
+  A rule already at its ceiling leaves the promotion queue and is counted separately, so the queue
+  is work that can actually be done rather than a list that never empties. The reason is on the
+  rule, checked to be a reason rather than a shrug, and it is printed by `abatty explain`, carried
+  in the catalog and named in the gap analysis. Five rules declare one today.
+
 - **The ratchet's numbers carry their provenance and their limits** (C5, C6, C18). Three things a
   floor never said about itself. A raised floor now records the reason AND an owner **against the
   metric it explains**, in the baseline's `entries`, instead of one reason per write: an unrelated

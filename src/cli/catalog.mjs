@@ -148,6 +148,12 @@ export async function explainCommand(cx, id) {
   if (rule.source && rule.source !== "abatty") out(t.kv("source", rule.source) + "\n");
   out(t.heading("Why"));
   out(`  ${rule.why}\n`);
+  // The ceiling belongs beside the reason, not in a table nobody opens: it is the answer to the
+  // question the reason provokes, which is why this is not simply made to fail a build.
+  if (rule.ceiling) {
+    out(t.heading("As far as a machine goes"));
+    out(`  ${rule.ceiling.at} is the ceiling. ${rule.ceiling.why}\n`);
+  }
   out(t.heading("Here", finding ? `${dir}` : ""));
   if (finding) {
     out(t.kv("status", t.status(finding.status)) + "\n");

@@ -139,6 +139,39 @@ test("validate names what a malformed rule lacks", () => {
   assert.ok(problems.some((p) => /check must be a function/.test(p)));
 });
 
+test("a machine ceiling is a claim, so it carries its reason and never sits below where the rule already is", () => {
+  const ok = {
+    id: "X-Y",
+    family: "f",
+    title: "t",
+    phase: "0",
+    why: "w",
+    next: "n",
+    level: /** @type {const} */ ("must"),
+    enforcement: /** @type {const} */ ("review"),
+    check: () => ({ status: /** @type {const} */ ("present"), evidence: "e" }),
+  };
+  assert.deepEqual(
+    validate([{ ...ok, ceiling: { at: "review", why: "a drill, not a scan" } }]),
+    [],
+  );
+  assert.deepEqual(validate([ok]), [], "no ceiling is not a problem");
+  assert.match(
+    validate(/** @type {any} */ ([{ ...ok, ceiling: { at: "review" } }])).join(""),
+    /ceiling\.why must say what a machine cannot see/,
+  );
+  assert.match(
+    validate(/** @type {any} */ ([{ ...ok, ceiling: { at: "prose", why: "x" } }])).join(""),
+    /ceiling prose is below the enforcement review/,
+  );
+  // every declared ceiling in the catalog says what a machine cannot see, not that it is hard
+  for (const r of RULES.filter((x) => x.ceiling))
+    assert.ok(
+      String(r.ceiling?.why).length > 60,
+      `${r.id}: a ceiling without a reason is an excuse`,
+    );
+});
+
 test("a check that throws is a finding, never a crash of the measurement", () => {
   const dir = tempRepo("throws", { "package.json": NEXT_PKG });
   const ctx = buildContext(dir);
@@ -339,7 +372,21 @@ test("the enforced share counts what the repository has by what insures it, and 
   assert.equal(e.share, 50);
   assert.deepEqual([e.hard, e.ratchet, e.review, e.prose], [1, 1, 1, 1]);
   assert.deepEqual(e.promotable, ["C", "D"]);
+  assert.deepEqual(e.atCeiling, [], "no ceiling declared: nothing leaves the queue");
   assert.equal(enforcedOf([]).share, null);
+
+  // The ceiling: a rule already as hard as any machine can hold it leaves the promotion queue,
+  // and one still a level below its ceiling stays in it. A queue that never empties is ignored.
+  const ceiling = /** @type {const} */ ({ at: "review", why: "a drill, not a scan" });
+  const c = enforcedOf([
+    { ...f("AT", "present", "review"), ceiling },
+    { ...f("BELOW", "present", "prose"), ceiling },
+    { ...f("FREE", "present", "review") },
+    { ...f("HELD", "present", "hard"), ceiling },
+  ]);
+  assert.deepEqual(c.atCeiling, ["AT"]);
+  assert.deepEqual(c.promotable, ["BELOW", "FREE"], "one step left, and one with no ceiling");
+  assert.equal(c.share, 25, "the ceiling changes the queue, never the share");
   const out = cli(["rules", "--enforcement", "prose", "--json"], process.cwd()).out;
   assert.ok(JSON.parse(out).every((/** @type {any} */ r) => r.enforcement === "prose"));
 });

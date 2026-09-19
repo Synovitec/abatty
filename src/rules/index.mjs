@@ -41,11 +41,12 @@ export { validate };
  * @property {string} [when] where the rule applies, as a sentence for the catalog ("a repository with a database"); absent means always
  * @property {(ctx: RepoContext) => boolean | string} [applies] true where the rule applies; a string is the reason it does not (the finding is n/a with it), false a bare n/a
  * @property {import("./stage.mjs").Stage[]} [stages] the stages the rule belongs to (design, build, run); absent means every stage
+ * @property {{ at: Enforcement, why: string }} [ceiling] the strongest enforcement any machine can reach for this rule, and why it stops there; a rule already at its ceiling leaves the promotion queue instead of sitting in it forever
  * @property {(ctx: RepoContext) => Verdict} check the finding for a repository
  * @property {string} [source] "abatty" for the built-in rules, the file path for a repository's own
  *
  * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[] }} Finding
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string } }} Finding
  */
 
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
@@ -188,6 +189,7 @@ export function runCatalog(ctx, catalog = RULES) {
       standard: r.standard || [],
       when: r.when || "always",
       stages: r.stages || ["design", "build", "run"],
+      ...(r.ceiling ? { ceiling: r.ceiling } : {}),
     };
   });
 }
@@ -198,7 +200,7 @@ export function runCatalog(ctx, catalog = RULES) {
  * The number that says how much of a written standard is actually enforced; the rules under
  * review or prose are what a night moves up a level next.
  * @param {Finding[]} findings
- * @returns {{ share: number | null, total: number, hard: number, ratchet: number, review: number, prose: number, promotable: string[] }}
+ * @returns {{ share: number | null, total: number, hard: number, ratchet: number, review: number, prose: number, promotable: string[], atCeiling: string[] }}
  */
 export function enforcedOf(findings) {
   const held = findings.filter((f) => f.status === "present" || f.status === "partial");
@@ -217,9 +219,29 @@ export function enforcedOf(findings) {
     review,
     prose,
     promotable: held
-      .filter((f) => f.enforcement === "review" || f.enforcement === "prose")
+      .filter(unheldByAMachine)
+      .filter(belowCeiling)
+      .map((f) => f.id),
+    // The rules a night would keep trying to promote and keep failing to. A queue that never
+    // empties teaches its reader to ignore it, so a rule no machine can hold leaves it, once,
+    // with the reason on the rule rather than in somebody's head.
+    atCeiling: held
+      .filter(unheldByAMachine)
+      .filter((f) => !belowCeiling(f))
       .map((f) => f.id),
   };
+}
+
+/** A rule a machine does not hold today. @param {Finding} f */
+function unheldByAMachine(f) {
+  return f.enforcement === "review" || f.enforcement === "prose";
+}
+
+/** Whether a machine could still hold this rule harder than it does. @param {Finding} f */
+function belowCeiling(f) {
+  if (!f.ceiling) return true;
+  const ladder = ["prose", "review", "ratchet", "hard"];
+  return ladder.indexOf(f.enforcement) < ladder.indexOf(f.ceiling.at);
 }
 
 /** The score of a list of findings: present = 1, partial = 0.5, over the applicable ones. @param {Finding[]} findings */

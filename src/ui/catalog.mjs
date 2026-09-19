@@ -32,7 +32,7 @@ export function renderCatalogMarkdown(rules, o = {}) {
   md.push(`# ${o.title || "Rule catalog"}`);
   md.push("");
   md.push(
-    `${rules.length} rules in ${families.length} families; ${must} must, ${rules.length - must} should. A rule is a check with a reason: \`abatty measure\` runs every one, \`abatty explain <ID>\` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. The standard's rule IDs are \`FAMILY.N\` (\`CODE.6\`), a namespace of their own that a repository's citation check never claims. **Applies** says where a rule concerns a repository at all, and at which stage (design, build, run): elsewhere its finding is n/a with the reason, never missing.`,
+    `${rules.length} rules in ${families.length} families; ${must} must, ${rules.length - must} should. A rule is a check with a reason: \`abatty measure\` runs every one, \`abatty explain <ID>\` opens one against a repository. **Insured by** says what holds the rule once it is present: **hard**, a machine refuses the work (a lint error, a hook denial, a failing gate step); **ratchet**, a number that may only fall, with a per-file floor; **review**, an item of the reviewer's checklist; **prose**, written and checked by nothing yet. A rule that carries a **ceiling** names the strongest level any machine could reach for it and why it stops there; once it is at that level it leaves the promotion queue instead of sitting in it forever. The standard's rule IDs are \`FAMILY.N\` (\`CODE.6\`), a namespace of their own that a repository's citation check never claims. **Applies** says where a rule concerns a repository at all, and at which stage (design, build, run): elsewhere its finding is n/a with the reason, never missing.`,
   );
   md.push("");
   md.push(
@@ -50,7 +50,7 @@ export function renderCatalogMarkdown(rules, o = {}) {
     md.push("|---|---|---|---|---|---|---|---|---|");
     for (const r of list)
       md.push(
-        `| ${r.id} | ${cell(r.title)} | ${r.level} | ${r.enforcement} | ${r.phase} | ${cell(r.when || "always")}${r.stages ? cell("; at " + r.stages.join(", ")) : ""} | ${cell((r.standard || []).join(", ")) || "-"} | ${cell(r.why)} | ${cell(r.next) || "-"} |`,
+        `| ${r.id} | ${cell(r.title)} | ${r.level} | ${r.enforcement}${r.ceiling ? cell(` (ceiling ${r.ceiling.at}: ${r.ceiling.why})`) : ""} | ${r.phase} | ${cell(r.when || "always")}${r.stages ? cell("; at " + r.stages.join(", ")) : ""} | ${cell((r.standard || []).join(", ")) || "-"} | ${cell(r.why)} | ${cell(r.next) || "-"} |`,
       );
     md.push("");
   }

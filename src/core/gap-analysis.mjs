@@ -199,7 +199,12 @@ export function renderMarkdown(result) {
 function enforcedLine(r) {
   const e = r.enforced;
   if (!e || e.share === null) return "**Enforced share**: nothing present yet.";
-  return `**Enforced share ${e.share}%**: of the ${e.total} rules this repository has, ${e.hard + e.ratchet} are held by a machine (${e.hard} hard, ${e.ratchet} ratchet) and ${e.review + e.prose} by a reviewer or a sentence (${e.review} review, ${e.prose} prose). The second group is what a night moves up a level next${e.promotable.length ? ": " + e.promotable.slice(0, 8).join(", ") + (e.promotable.length > 8 ? ", ..." : "") : ""}.`;
+  // A report saved before the field existed carries none; an old reading is read, never crashed on.
+  const atCeiling = e.atCeiling || [];
+  const ceiling = atCeiling.length
+    ? ` ${atCeiling.length} of them (${atCeiling.slice(0, 6).join(", ")}${atCeiling.length > 6 ? ", ..." : ""}) are at their machine ceiling: no check can hold them harder, and they are out of that queue rather than permanently behind in it.`
+    : "";
+  return `**Enforced share ${e.share}%**: of the ${e.total} rules this repository has, ${e.hard + e.ratchet} are held by a machine (${e.hard} hard, ${e.ratchet} ratchet) and ${e.review + e.prose} by a reviewer or a sentence (${e.review} review, ${e.prose} prose). The second group is what a night moves up a level next${e.promotable.length ? ": " + e.promotable.slice(0, 8).join(", ") + (e.promotable.length > 8 ? ", ..." : "") : ""}.${ceiling}`;
 }
 
 /** The console summary the CLI prints under the report. @param {GapResult} result @param {string} [reportPath] */

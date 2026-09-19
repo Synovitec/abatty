@@ -70,6 +70,10 @@ export const rules = [
   },
   {
     id: "DATA-BACKUP",
+    ceiling: {
+      at: "review",
+      why: "A machine can see that a drill exists and when it last ran. Whether a restore would actually come back is proven by running it against real data, which is a rehearsal a person schedules and watches, not a check a gate performs.",
+    },
     family: "Data",
     title: "A restore drill exists",
     standard: ["DATA.5"],
