@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The secret scan is measured, and the measurement changed it** (C15). `abatty secrets
+  --benchmark` scores the scan against a corpus published in the package: 18 documented credential
+  shapes on one side, 23 look-alikes on the other, every case carrying in words the reason it is
+  the verdict it is, so anybody who disagrees with a case can read it and argue with it. The
+  corpus was written before the scan was touched and the first run scored 100 per cent precision
+  and **67 per cent recall**. It missed six shapes, including the unquoted `API_KEY=...` that a
+  `.env` file is made of and the password inside a connection string, which is the most-committed
+  credential there is. All six are shapes the scan now carries, and both numbers are 100 with a
+  test holding them as a floor. The corpus also found a false positive in this repository's own
+  tree: the throwaway `postgres://postgres:postgres@...` every pipeline writes for a service
+  container, which is now not a finding, because flagging it is how a scan teaches its reader to
+  scroll past the real one. `docs/SECRET_SCAN_BENCHMARK.md` publishes the numbers and says plainly
+  what the corpus is not: it is this repository's own, and a third-party benchmark is still open.
+
 ### Changed
 
 - **Coverage and mutation testing are read for their bounds, not for their tool** (C14, C13).

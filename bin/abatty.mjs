@@ -7,7 +7,7 @@
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
- *   abatty secrets [dir] [--staged|--range <r>] [--json]                the secret scan: the tree, the staged files (pre-commit), a range (CI)
+ *   abatty secrets [dir] [--staged|--range <r>|--benchmark] [--json]   the secret scan: the tree, the staged files (pre-commit), a range (CI), or the scan measured against the published corpus
  *   abatty ci [dir] [--provider woodpecker,github] [--check] [--ruleset]  CI generated from the gate; the PR template; the ruleset printed
  *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
@@ -318,6 +318,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
   ${t.bold("abatty fix")} [dir] [--phase <n>] [--write]                        what a phase asks for that a machine can write; the plan unless --write
   ${t.bold("abatty check")} <ID> [dir] [--json]                                 one rule and an exit code: 0 it holds, 3 it does not (what a finding\u0027s verify names)
+  ${t.bold("abatty secrets")} [dir] [--staged|--range <r>|--benchmark] [--json]   the secret scan: the tree, the staged files, a range, or the scan measured against the published corpus
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
 

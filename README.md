@@ -145,6 +145,15 @@ rules that could apply here - a rule that repository after repository waives is,
 likelihood, a rule that is wrong, and this is the first input to a false-positive rate the
 catalog can be judged by.
 
+The secret scan is measured, not asserted. `abatty secrets --benchmark` runs it against a corpus
+published in the package (`src/core/secret-corpus.mjs`): documented credential shapes on one side,
+the look-alikes that get scanners uninstalled on the other, every case carrying the reason it is
+the verdict it is. Today it scores 100 per cent precision and 100 per cent recall over 41 cases,
+and a test holds both as a floor. That measurement is what found the six shapes it used to miss,
+the unquoted `API_KEY=...` of a `.env` file and the password inside a connection string among
+them. The corpus is this repository's own rather than a third-party benchmark, which
+`docs/SECRET_SCAN_BENCHMARK.md` says on the page with the number.
+
 The dependency audit is scoped before it is trusted, because an unscoped audit is the one people
 switch off: production dependencies only, a severity floor, and an advisory allowed by name or by
 id in `security.audit.allow` with a reason and, where the decision is not permanent, an `until`

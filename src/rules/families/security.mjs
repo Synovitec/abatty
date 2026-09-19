@@ -15,7 +15,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
-    why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree.",
+    why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree. What the scan is worth is a measurement, not an assertion: `abatty secrets --benchmark` scores it against a published corpus, and the numbers are in docs/SECRET_SCAN_BENCHMARK.md.",
     next: "abatty init writes the pre-commit hook (abatty secrets --staged) and abatty ci the CI step; the gate runs the same scan",
     check: (c) => {
       const scanner = c.exists(".gitleaks.toml")

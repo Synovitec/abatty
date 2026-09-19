@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { scanSecrets, scanText } from "../src/core/secrets.mjs";
 import { auditOutcome } from "../src/core/audit.mjs";
+import { CORPUS, NEGATIVES, POSITIVES, scoreCorpus } from "../src/core/secret-corpus.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
 
@@ -156,4 +157,34 @@ test("the CLI and the hook: abatty secrets --staged is what init's pre-commit ho
   const staged = cli(["secrets", dir, "--staged", "--json"], dir);
   assert.equal(staged.code, 3);
   assert.equal(JSON.parse(staged.out).findings[0].path, "leak.ts");
+});
+
+test("the secret scan is measured against the published corpus, and the numbers are a floor", () => {
+  const r = scoreCorpus((text) => scanText("corpus", text));
+
+  // A corpus that only contains what the scanner already catches measures nothing, so the shape
+  // of the corpus is checked before its score: look-alikes outnumber secrets, and every case
+  // says in words why it is the verdict it is.
+  assert.ok(POSITIVES.length >= 15, `${POSITIVES.length} secrets in the corpus`);
+  assert.ok(NEGATIVES.length >= POSITIVES.length, "the look-alikes are the harder half");
+  for (const c of CORPUS) assert.ok(c.why.length > 20, `a case with no reason: ${c.text}`);
+
+  // The floor, published in docs/SECRET_SCAN_BENCHMARK.md. These may rise and never fall.
+  assert.equal(r.precision, 100, r.falsePositives.map((x) => x.why).join("; "));
+  assert.equal(r.recall, 100, r.falseNegatives.map((x) => x.why).join("; "));
+
+  // and the mutation in both directions: the corpus can tell a working scanner from a broken one
+  assert.equal(scoreCorpus(() => []).recall, 0, "a scanner that finds nothing scores zero recall");
+  const everything = scoreCorpus(() => [{}]);
+  assert.equal(everything.recall, 100);
+  assert.ok(everything.precision < 50, "a scanner that reports everything loses on precision");
+});
+
+test("the throwaway credential every pipeline writes is not a finding, and a real one still is", () => {
+  const throwaway = "DATABASE_URL: postgres://postgres:postgres@postgres:5432/test";
+  assert.deepEqual(scanText("ci.yml", throwaway), []);
+  assert.deepEqual(scanText("ci.yml", "redis://root:root@cache:6379/0"), []);
+  const real = scanText("env", "DATABASE_URL=postgres://app:hunter2hunter2@db.internal:5432/app");
+  assert.equal(real.length, 1);
+  assert.equal(real[0]?.kind, "a connection string carrying a password");
 });

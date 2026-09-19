@@ -196,18 +196,18 @@ Evidence: `08` F16, F17, F18, F19, F20 · `07` F8 · `DESIGN.md` §1.3
 
 ## 6. Wave 5 · the instrument proves itself without users
 
-| ID  | Change                                                                              | State  | Size |
-| --- | ----------------------------------------------------------------------------------- | ------ | ---- |
-| C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | open   | L    |
-| C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | landed | S    |
-| C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | landed | S    |
-| C6  | The baseline carries a schema version per metric                                    | landed | S    |
-| C17 | Each rule carries a machine-ceiling flag; the unpromotable leave the queue          | landed | S    |
-| C16 | SEC-AUDIT is scoped before it is added, or it is not added                          | landed | S    |
-| C14 | TEST-COVERAGE gates on the delta over changed lines                                 | landed | M    |
-| C13 | TEST-MUTATION gains arid-node suppression and a per-diff cap                        | landed | M    |
-| C15 | SEC-SECRETS is measured against a public benchmark and the result published         | open   | M    |
-| C18 | `docs.behindCode` is documented as an approximation, not an equivalent              | landed | S    |
+| ID  | Change                                                                              | State   | Size |
+| --- | ----------------------------------------------------------------------------------- | ------- | ---- |
+| C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | open    | L    |
+| C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | landed  | S    |
+| C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | landed  | S    |
+| C6  | The baseline carries a schema version per metric                                    | landed  | S    |
+| C17 | Each rule carries a machine-ceiling flag; the unpromotable leave the queue          | landed  | S    |
+| C16 | SEC-AUDIT is scoped before it is added, or it is not added                          | landed  | S    |
+| C14 | TEST-COVERAGE gates on the delta over changed lines                                 | landed  | M    |
+| C13 | TEST-MUTATION gains arid-node suppression and a per-diff cap                        | landed  | M    |
+| C15 | SEC-SECRETS is measured against a public benchmark and the result published         | partial | M    |
+| C18 | `docs.behindCode` is documented as an approximation, not an equivalent              | landed  | S    |
 
 **Done when**
 
@@ -287,13 +287,14 @@ would have to change the rule first, and that is a change to the standard, not t
 
 Checked at `e043e66`. Each entry says what exists and what is actually missing.
 
-| ID  | Already built                                                                                                                                   | Missing                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`) | It should be written always, and `agents` should report which surfaces are covered  |
-| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)               | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran       |
-| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                   | Nothing reports the harness's own footprint per session to the adopter              |
-| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                               | The codes carry no documented meaning; no `--plain`; most commands have no `--json` |
-| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                         | It does not open with the reader's problem or the practitioners' framing            |
+| ID  | Already built                                                                                                                                                                 | Missing                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`)                               | It should be written always, and `agents` should report which surfaces are covered                               |
+| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)                                             | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran                                    |
+| C15 | `abatty secrets --benchmark` scores the scan against a corpus published in the package, and the numbers are in `docs/SECRET_SCAN_BENCHMARK.md` (`src/core/secret-corpus.mjs`) | A run against a THIRD-PARTY benchmark: the corpus is this repository's own, which is weaker evidence and says so |
+| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                                                 | Nothing reports the harness's own footprint per session to the adopter                                           |
+| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                                             | The codes carry no documented meaning; no `--plain`; most commands have no `--json`                              |
+| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                                                       | It does not open with the reader's problem or the practitioners' framing                                         |
 
 ## 12. The register
 
@@ -316,7 +317,7 @@ files; `D` is `DESIGN.md`.
 | C12 | 4    | partial | 07   | C37 | 6    | open    | 09   |
 | C13 | 5    | landed  | 07   | C38 | 6    | open    | 09   |
 | C14 | 5    | landed  | 07   | C39 | 6    | open    | 09   |
-| C15 | 5    | open    | 07   | C40 | 6    | open    | 09   |
+| C15 | 5    | partial | 07   | C40 | 6    | open    | 09   |
 | C16 | 5    | landed  | 07   | C41 | 1    | open    | D    |
 | C17 | 5    | landed  | 07   | C42 | 1    | open    | D    |
 | C18 | 5    | landed  | 07   | C43 | 3    | open    | D    |
