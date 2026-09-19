@@ -1,11 +1,12 @@
 /**
  * Measure the repository (its full catalog: built-in rules, its own, its waivers) and assemble
  * the report. Writes it under .abatty/reports/ unless `write` is false.
- * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
+ * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string, cache?: boolean }} [o]
  */
 export function buildReport(repoDir: string, o?: {
     write?: boolean;
     abattyVersion?: string;
+    cache?: boolean;
 }): Promise<Report>;
 /** The newest report on disk, or null. @param {string} repoDir @returns {Report | null} */
 export function latestReport(repoDir: string): Report | null;

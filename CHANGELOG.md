@@ -7,6 +7,22 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The second reading of an unchanged tree is nearly free** (C44). Every `measure` read the whole
+  tree and ran the whole catalog, so nothing was cheaper the second time and the inner-loop tier
+  was aspirational. One property governs the design and every control case is about it: **a cache
+  must never be able to turn a finding into a pass.** The key is the content of everything a rule
+  could read - git's own tree object for what is committed, plus a content hash of every file that
+  differs from it, staged, modified or untracked - so an edit twice in one second moves the key
+  where a timestamp would not, and a file touched and restored does not. A repository without git
+  has no key and is measured every time. Measured here: **149 ms to 79 ms**, of which 31 ms is the
+  runtime's own floor, so the catalog run itself goes from about 90 ms to nothing.
+
+  One thing the first implementation got wrong and the controls caught: writing the cache created
+  an untracked file, which changed the key that named it, so the cache never hit in a repository
+  that does not ignore `.abatty/`. The tool's own scratch folder is not an input.
+
+### Added
+
 - **`abatty fix` writes what a phase asks for that a machine can write** (C46). A tool that only
   refuses is half a tool, and most of day zero is not a judgement: a document with front matter, a
   row in the index, a decision record for the decisions already taken. The judgement is what goes

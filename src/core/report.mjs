@@ -11,6 +11,7 @@ import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
+import { cacheKey, readCache, writeCache } from "./cache.mjs";
 
 /**
  * @typedef {{
@@ -65,9 +66,15 @@ function nightFacts(repoDir) {
 /**
  * Measure the repository (its full catalog: built-in rules, its own, its waivers) and assemble
  * the report. Writes it under .abatty/reports/ unless `write` is false.
- * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
+ * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string, cache?: boolean }} [o]
  */
 export async function buildReport(repoDir, o = {}) {
+  // The reading of an unchanged tree is the reading. The key is the content of everything a rule
+  // could read, so a hit cannot turn a finding into a pass; anything it cannot account for is a
+  // miss and the catalog runs.
+  const key = o.cache === false ? null : cacheKey(repoDir, { version: o.abattyVersion });
+  const cached = key ? readCache(repoDir, key) : null;
+  if (cached) return /** @type {Report} */ (cached);
   const gap = await measure(repoDir);
   const families = gap.families.map((name) => ({
     name,
@@ -122,6 +129,7 @@ export async function buildReport(repoDir, o = {}) {
     },
     night: nightFacts(repoDir),
   };
+  if (key) writeCache(repoDir, key, report);
   if (o.write !== false) {
     const dir = join(repoDir, REPORT_DIR);
     mkdirSync(dir, { recursive: true });
