@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The hosted service records adoption events** (C20). `GET /api/events` and
+  `/api/events/<name>`: what changed between readings, rather than what the number is. A wall of
+  scores tells an adopter nothing they can act on; "on the 14th CODE-SIZE-300 went from missing to
+  present, on the 15th FLOW-COMMITS was promoted from a checklist item to something a machine
+  refuses" is the adoption story, and it is what a team reads once a month rather than a number
+  they stop looking at. Rules held and lost, promoted and demoted up the enforcement ladder,
+  entering and leaving the catalog, waivers starting and ending, the phase moving. Everything is
+  derived from the readings the service already holds, so nothing new is collected and a
+  repository cannot tell the service it adopted something. Losses are events too and are not
+  softened: `regressions` is counted on its own line so a dashboard cannot bury it.
+
 - **`abatty validate`: which rules precede the commits that fix things, here** (C4). Every rule
   carries a `why`, and a `why` is an argument rather than evidence. This asks the only question a
   repository can answer on its own: do the files that break a rule turn out to be the files

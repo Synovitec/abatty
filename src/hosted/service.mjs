@@ -7,6 +7,8 @@
  *   GET  /                        the dashboard over every repository
  *   GET  /api/reports             the index: repositories, readings, scores
  *   GET  /api/reports/<name>      one repository's readings
+ *   GET  /api/events [?limit=]    what CHANGED across every repository, newest first
+ *   GET  /api/events/<name>       one repository's adoption events, newest first
  *   GET  /badge/<name>.svg        the score as a badge
  *   GET  /healthz
  *
@@ -18,6 +20,7 @@ import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { renderDashboard } from "../ui/dashboard.mjs";
+import { eventsOf, summariseEvents } from "./events.mjs";
 
 /**
  * @typedef {{ dataDir: string, token: string, noAuth?: boolean, abattyVersion?: string }} ServiceOptions
@@ -174,6 +177,26 @@ export function createService(o) {
             enforced: r.reports.at(-1)?.enforced?.share ?? null,
           })),
         );
+      // What changed, rather than what the number is: derived from the readings the service
+      // already holds, so a repository cannot tell the service it adopted something.
+      if (req.method === "GET" && path === "/api/events") {
+        const all = store
+          .repos()
+          .flatMap((r) => eventsOf(r.reports).map((e) => ({ repository: r.name, ...e })));
+        all.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+        const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit")) || 100));
+        return json(res, 200, {
+          ...summariseEvents(all),
+          events: all.slice(0, limit),
+        });
+      }
+      const events = path.match(/^\/api\/events\/([^/]+)$/);
+      if (req.method === "GET" && events) {
+        const r = store.repo(decodeURIComponent(events[1] || ""));
+        if (!r) return json(res, 404, { error: "no such repository" });
+        const list = eventsOf(r.reports).reverse();
+        return json(res, 200, { repository: r.name, ...summariseEvents(list), events: list });
+      }
       const one = path.match(/^\/api\/reports\/([^/]+)$/);
       if (req.method === "GET" && one) {
         const r = store.repo(decodeURIComponent(one[1] || ""));

@@ -14,6 +14,7 @@ import {
   publishReport,
   safeName,
 } from "../src/hosted/service.mjs";
+import { eventsBetween, summariseEvents } from "../src/hosted/events.mjs";
 
 /**
  * Run the CLI without blocking the event loop: the service under test lives in this process,
@@ -153,5 +154,113 @@ test("the CLI: abatty publish posts the newest report (measured now when there i
     );
   } finally {
     await s.close();
+  }
+});
+
+/** A reading, as the service stores one. @param {string} date @param {any[]} findings @param {object} [extra] */
+const reading = (date, findings, extra = {}) => ({
+  version: 1,
+  name: "shop",
+  repo: "shop",
+  date,
+  score: 50,
+  applicable: findings.length,
+  findings,
+  ...extra,
+});
+/** @param {string} id @param {string} status @param {string} enforcement */
+const rule = (id, status, enforcement = "hard") => ({
+  id,
+  family: "Code",
+  rule: id,
+  status,
+  evidence: "e",
+  next: "n",
+  phase: "0",
+  level: /** @type {const} */ ("must"),
+  enforcement,
+  standard: [],
+});
+
+test("adoption events are what changed between two readings, and a loss is an event as loud as a gain", () => {
+  const first = reading("2026-09-01", [rule("A", "missing"), rule("B", "present")]);
+  const second = reading("2026-09-02", [rule("A", "present"), rule("B", "missing")]);
+  assert.deepEqual(
+    eventsBetween(null, first).map((e) => e.kind),
+    ["first-reading"],
+    "a first reading is one event, not a hundred",
+  );
+  const e = eventsBetween(first, second);
+  const held = e.find((x) => x.subject === "A");
+  assert.equal(held?.kind, "rule-held");
+  assert.equal(held?.from, "missing");
+  assert.equal(held?.to, "present");
+  const lost = e.find((x) => x.subject === "B");
+  assert.equal(lost?.kind, "rule-lost", "a regression is an event, not a silence");
+  assert.match(String(lost?.detail), /was present and now reads missing/);
+  assert.equal(
+    summariseEvents(e).regressions,
+    1,
+    "counted on its own so a dashboard cannot bury it",
+  );
+});
+
+test("a rule moving up or down the enforcement ladder is an event, and an unchanged one is not", () => {
+  const before = reading("2026-09-01", [
+    rule("A", "present", "review"),
+    rule("C", "present", "hard"),
+  ]);
+  const after = reading("2026-09-02", [rule("A", "present", "hard"), rule("C", "present", "hard")]);
+  const e = eventsBetween(before, after);
+  assert.deepEqual(
+    e.map((x) => [x.kind, x.subject]),
+    [["rule-promoted", "A"]],
+    "only the one that moved",
+  );
+  const down = eventsBetween(after, before);
+  assert.equal(down[0]?.kind, "rule-demoted");
+  assert.equal(summariseEvents(down).regressions, 1);
+  assert.deepEqual(eventsBetween(after, after), [], "nothing changed, nothing recorded");
+});
+
+test("a rule entering or leaving the catalog, a waiver starting and ending, and the phase moving", () => {
+  const a = reading("2026-09-01", [rule("A", "present"), rule("GONE", "present")], {
+    phase: { id: "0" },
+  });
+  const b = reading("2026-09-02", [rule("A", "waived"), rule("NEW", "partial")], {
+    phase: { id: "1" },
+  });
+  const kinds = eventsBetween(a, b).map((x) => `${x.kind}:${x.subject}`);
+  assert.ok(kinds.includes("waived:A"));
+  assert.ok(kinds.includes("rule-added:NEW"));
+  assert.ok(kinds.includes("rule-removed:GONE"));
+  assert.ok(kinds.includes("phase:1"));
+  const back = eventsBetween(b, a).map((x) => `${x.kind}:${x.subject}`);
+  assert.ok(back.includes("waiver-ended:A"));
+});
+
+test("the service serves the events it derived, newest first, across every repository and per repository", async () => {
+  const svc = await started({ noAuth: true });
+  try {
+    for (const r of [
+      reading("2026-09-01", [rule("A", "missing")]),
+      reading("2026-09-02", [rule("A", "present")]),
+    ])
+      await fetch(`${svc.url}/reports`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(r),
+      });
+    const all = await (await fetch(`${svc.url}/api/events`)).json();
+    assert.equal(all.total, 2, "the first reading, then the rule holding");
+    assert.equal(all.events[0].at, "2026-09-02", "newest first");
+    assert.equal(all.events[0].kind, "rule-held");
+    assert.equal(all.events[0].repository, "shop");
+    const one = await (await fetch(`${svc.url}/api/events/shop`)).json();
+    assert.equal(one.repository, "shop");
+    assert.equal(one.events[0].kind, "rule-held");
+    assert.equal((await fetch(`${svc.url}/api/events/nope`)).status, 404);
+  } finally {
+    await svc.close();
   }
 });

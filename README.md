@@ -309,6 +309,15 @@ under the data folder, one per repository and day. `abatty publish --to <url> [-
 (or `ABATTY_DASHBOARD` and `ABATTY_TOKEN`) is the CI step: it posts the newest report, measuring
 first when there is none.
 
+`GET /api/events` and `GET /api/events/<name>` are the **adoption events**: what changed between
+readings rather than what the number is. A wall of scores tells an adopter nothing they can act on
+and nothing they can show anybody; "on the 14th CODE-SIZE-300 went from missing to present, on the
+15th FLOW-COMMITS was promoted from a checklist item to something a machine refuses" is the
+adoption story. They are derived from the readings the service already holds, so nothing new is
+collected and a repository cannot tell the service it adopted something. **Losses are events too
+and are not softened**: a rule that was present and is now missing is the most useful line the log
+carries, and `regressions` is counted on its own so a dashboard cannot bury it.
+
 ## The MCP server
 
 `abatty mcp [dir]` speaks the Model Context Protocol over stdio and exposes the package as

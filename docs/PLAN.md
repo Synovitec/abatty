@@ -236,7 +236,7 @@ already be finished.
 | C4  | `abatty validate`: which rules precede defect-fixing commits here              | landed | L    |
 | C19 | The harness reports its own token footprint per session                        | landed | M    |
 | C10 | The context file grows only from the night's lessons                           | landed | M    |
-| C20 | The hosted service records adoption events                                     | open   | M    |
+| C20 | The hosted service records adoption events                                     | landed | M    |
 | C37 | A portal plugin publishes conformance into an existing catalogue               | open   | M    |
 | C34 | The README opens with the reader's problem and the practitioners' framing      | landed | S    |
 | C35 | The measurement story is told as amplification, not as a promise of speed      | landed | S    |
@@ -321,7 +321,7 @@ files; `D` is `DESIGN.md`.
 | C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
 | C18 | 5    | landed   | 07   | C43 | 3    | partial | D    |
 | C19 | 6    | landed   | 07   | C44 | 3    | landed  | D    |
-| C20 | 6    | open     | 07   | C45 | 2    | landed  | D    |
+| C20 | 6    | landed   | 07   | C45 | 2    | landed  | D    |
 | C21 | 4    | landed   | 08   | C46 | 3    | landed  | D    |
 | C22 | 4    | landed   | 08   | C47 | 3    | landed  | D    |
 | C23 | 4    | landed   | 08   | C48 | 1    | landed  | D    |
