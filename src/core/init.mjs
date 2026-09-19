@@ -33,6 +33,7 @@ import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
+import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
@@ -79,7 +80,7 @@ const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(order
  * the file may not be tracked yet.
  * @param {string} target
  */
-function makeExecutable(target) {
+export function makeExecutable(target) {
   try {
     chmodSync(target, 0o755);
   } catch {
@@ -143,6 +144,14 @@ export function initRepo(o) {
   // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
   for (const f of walk(join(TEMPLATES, "harness", "hooks")))
     put(`.claude/hooks/${f}`, tpl(`harness/hooks/${f}`));
+  // The bypass layer outside the agent: a `git` the shell finds before the real one, so the two
+  // things the guard refuses inside the agent's session are refused in a terminal and a script
+  // too. shim.mjs is read by node, never executed, so only the wrappers carry the mode.
+  for (const f of SHIM_FILES)
+    put(`${SHIM_DIR}/${f}`, tpl(`harness/bin/${f}`), {
+      merge: false,
+      executable: f !== "shim.mjs",
+    });
   // The skill, in the open agent-skills format, at every configured adapter's skills folder.
   const skillText = tpl("skills/adopt-standards/SKILL.md");
   const skillAdapters = configuredAdapters(

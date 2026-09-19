@@ -1,0 +1,6 @@
+#!/bin/sh
+# The bypass layer outside the agent: this file shadows the real git on PATH. It is a wrapper and
+# not the check itself so that the refusals live in exactly one place, shim.mjs, shared with the
+# .cmd twin beside it. `exec` so git's exit code, its signals and its stdio are this shell's,
+# unchanged: a layer that alters an ordinary command is one people take back out.
+exec node "$(dirname "$0")/shim.mjs" "$@"

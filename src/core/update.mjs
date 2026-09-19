@@ -17,8 +17,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { TEMPLATES } from "./init.mjs";
+import { TEMPLATES, makeExecutable } from "./init.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
+import { shimExecutable } from "./shim.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -192,6 +193,7 @@ export function updateRepo(o) {
     if (dryRun) return;
     mkdirSync(dirname(join(repoDir, rel)), { recursive: true });
     writeFileSync(join(repoDir, rel), text);
+    if (shimExecutable(rel)) makeExecutable(join(repoDir, rel));
   };
 
   for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {

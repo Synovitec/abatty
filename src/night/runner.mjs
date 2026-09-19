@@ -24,6 +24,7 @@ import { runCanary } from "./canary.mjs";
 import { preflight, readJson, writeJson } from "./preflight.mjs";
 import { deadlineOf, runSession } from "./session.mjs";
 import { describeSpent, exhausted } from "./allowance.mjs";
+import { shimmedPath } from "../core/shim.mjs";
 
 /**
  * @typedef {{
@@ -222,6 +223,9 @@ export function runNight(o) {
         name: `adopt-${phase}-${date}`,
         outBase: join(nightDir, `phase-${phase}-${stamp}`),
         env: {
+          // The layer outside the agent, on the run's PATH before the real git: the guard holds
+          // in the agent's own shell, and this holds in every subprocess it starts.
+          PATH: shimmedPath(repoDir),
           ADOPTION_RUN: "1",
           ADOPTION_BRANCH: branch,
           ADOPTION_BASE: base,

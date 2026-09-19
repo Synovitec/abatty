@@ -168,15 +168,15 @@ Evidence: `09` F31 · `07` F6 · `DESIGN.md` §3.2, §3.3, §4.1, §4.3
 
 ## 5. Wave 4 · the night is safe to point at a repository that is not ours
 
-| ID  | Change                                                                            | State   | Size |
-| --- | --------------------------------------------------------------------------------- | ------- | ---- |
-| C22 | A pre-flight scan for instruction-shaped content before an unattended night       | landed  | M    |
-| C23 | A published threat model for the sandbox: what it holds and what it does not      | landed  | S    |
-| C21 | A rule family for agent security: sandbox, permissions, hooks, the trust boundary | landed  | M    |
-| C12 | `doctor --controls` becomes a precondition of the first night, not a suggestion   | landed  | S    |
-| C11 | The night withholds a slice of the checkable surface and evaluates on it after    | landed  | M    |
-| C24 | The shim layer, so a bypass is refused outside the agent as well as inside it     | partial | M    |
-| C25 | Generated CI detects a bypassed commit; the report carries the bypass rate        | landed  | S    |
+| ID  | Change                                                                            | State  | Size |
+| --- | --------------------------------------------------------------------------------- | ------ | ---- |
+| C22 | A pre-flight scan for instruction-shaped content before an unattended night       | landed | M    |
+| C23 | A published threat model for the sandbox: what it holds and what it does not      | landed | S    |
+| C21 | A rule family for agent security: sandbox, permissions, hooks, the trust boundary | landed | M    |
+| C12 | `doctor --controls` becomes a precondition of the first night, not a suggestion   | landed | S    |
+| C11 | The night withholds a slice of the checkable surface and evaluates on it after    | landed | M    |
+| C24 | The shim layer, so a bypass is refused outside the agent as well as inside it     | landed | M    |
+| C25 | Generated CI detects a bypassed commit; the report carries the bypass rate        | landed | S    |
 
 **Done when**
 
@@ -287,20 +287,19 @@ would have to change the rule first, and that is a change to the standard, not t
 
 Checked at `e043e66`. Each entry says what exists and what is actually missing.
 
-| ID  | Already built                                                                                                                                           | Missing                                                                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| C3  | `loadCatalog` refuses a waiver without a reason and supports an `until` date that stops waiving when it passes (`src/rules/index.mjs`)                  | The count per rule, and the rate in the report                                          |
-| C5  | `writeBaseline` refuses a rise without a reason, and refuses a HARD metric above zero (`src/ratchet/baseline.mjs`)                                      | The reason is per write, not per entry; no owner field                                  |
-| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`)         | It should be written always, and `agents` should report which surfaces are covered      |
-| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)                       | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran           |
-| C13 | TEST-MUTATION exists in the catalog at hard, phase 10 (`src/rules/families/tests.mjs`)                                                                  | Arid-node suppression before generation, and a per-diff mutant cap                      |
-| C14 | TEST-COVERAGE exists in the catalog at hard, phase 2                                                                                                    | The gate is on the absolute figure; it should be on the delta over changed lines        |
-| C16 | SEC-AUDIT exists in the catalog with its reason (`src/rules/families/security.mjs`)                                                                     | It is unscoped: production dependencies only, a severity floor, a waiver with an expiry |
-| C17 | `enforcedOf` already computes `promotable` from the review and prose rules (`src/rules/index.mjs`)                                                      | A per-rule ceiling flag, so a rule no machine can hold leaves that queue                |
-| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                           | Nothing reports the harness's own footprint per session to the adopter                  |
-| C24 | The guard hook parses argv and refuses a bypass flag, including a quoted one, and reads the branch a push targets (`templates/harness/hooks/guard.mjs`) | The layer outside the agent: a shim that refuses the same flag in any shell             |
-| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                       | The codes carry no documented meaning; no `--plain`; most commands have no `--json`     |
-| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                                 | It does not open with the reader's problem or the practitioners' framing                |
+| ID  | Already built                                                                                                                                   | Missing                                                                                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| C3  | `loadCatalog` refuses a waiver without a reason and supports an `until` date that stops waiving when it passes (`src/rules/index.mjs`)          | The count per rule, and the rate in the report                                          |
+| C5  | `writeBaseline` refuses a rise without a reason, and refuses a HARD metric above zero (`src/ratchet/baseline.mjs`)                              | The reason is per write, not per entry; no owner field                                  |
+| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`) | It should be written always, and `agents` should report which surfaces are covered      |
+| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)               | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran           |
+| C13 | TEST-MUTATION exists in the catalog at hard, phase 10 (`src/rules/families/tests.mjs`)                                                          | Arid-node suppression before generation, and a per-diff mutant cap                      |
+| C14 | TEST-COVERAGE exists in the catalog at hard, phase 2                                                                                            | The gate is on the absolute figure; it should be on the delta over changed lines        |
+| C16 | SEC-AUDIT exists in the catalog with its reason (`src/rules/families/security.mjs`)                                                             | It is unscoped: production dependencies only, a severity floor, a waiver with an expiry |
+| C17 | `enforcedOf` already computes `promotable` from the review and prose rules (`src/rules/index.mjs`)                                              | A per-rule ceiling flag, so a rule no machine can hold leaves that queue                |
+| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                   | Nothing reports the harness's own footprint per session to the adopter                  |
+| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                               | The codes carry no documented meaning; no `--plain`; most commands have no `--json`     |
+| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                         | It does not open with the reader's problem or the practitioners' framing                |
 
 ## 12. The register
 
@@ -332,5 +331,5 @@ files; `D` is `DESIGN.md`.
 | C21 | 4    | open    | 08   | C46 | 3    | open    | D    |
 | C22 | 4    | open    | 08   | C47 | 3    | open    | D    |
 | C23 | 4    | open    | 08   | C48 | 1    | open    | D    |
-| C24 | 4    | partial | 08   | C49 | 5    | open    | D    |
+| C24 | 4    | landed  | 08   | C49 | 5    | open    | D    |
 | C25 | 4    | open    | 08   |     |      |         |      |

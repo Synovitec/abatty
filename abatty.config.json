@@ -97,9 +97,9 @@
       "(^|/)[^/]*\\.config\\.[cm]?[jt]s$",
       "^scripts/",
       "^bin/",
-      "^\\.claude/hooks/",
+      "^\\.claude/(hooks|bin)/",
       "^(tests?|e2e)/",
-      "^templates/harness/(hooks|testing)/"
+      "^templates/harness/(hooks|testing|bin)/"
     ],
     "citationsExempt": ["^docs/standard/"]
   },

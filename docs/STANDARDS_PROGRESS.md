@@ -199,3 +199,16 @@ identical on every machine, and it only moves when somebody adds an import.
 
 The suite went from 225 s to 81 s in the same change, by splitting the one file that was 151 s of
 it into three that run at once. The number to watch is the longest file, now 70 s.
+
+### 2026-09-19 - The shim's three raw environment reads, exempted rather than counted
+
+`valid.rawEnv` went 7 -> 10 when the git shim landed, and the floor may only fall. Two of the
+three are in `templates/harness/bin/shim.mjs`, which runs inside whatever repository installed it
+and cannot import this package's env module - the same reason `templates/harness/hooks/` and the
+stub agent have been exempt since the metric existed. The exempt list gains
+`templates/harness/bin/` and the installed `.claude/bin/`, and the third read, in
+`src/core/shim.mjs`, moved into `src/core/env.mjs` as `pathFromEnv()` where it belongs. Back to 7,
+which is the floor it was.
+
+The distinction worth keeping: exempting a path because the rule cannot apply there is not the
+same as raising a floor, and it is written down here so the next reader can disagree with it.

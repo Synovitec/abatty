@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The bypass layer outside the agent** (C24). The guard hook refuses a force push and a hook
+  bypass inside the agent's own shell, which made the refusal a property of one tool rather than
+  of the repository: the same command went through from a second terminal, a script, a CI step or
+  another assistant. `abatty init` now writes `.claude/bin/`, a `git` that a shell finds before
+  the real one and that refuses exactly those two things, in the guard's own words, before git
+  ever sees them. Everything else is handed straight through with its exit code, its signals and
+  its stdio unchanged, because a layer that alters ordinary work is one people take back out.
+  `ABATTY_SHIM=off` is the deliberate way past it, and it says so on stderr rather than passing
+  silently. The night puts the directory on its PATH, so every subprocess a session starts meets
+  the same refusal; a container sandbox keeps its own PATH, which is the image's. A new rule,
+  `SEC-AGENT-SHIM`, reports whether a repository has the layer at all.
+
 - **The night is measured on a surface it was not pointed at** (C11). A night is told which rules
   to work on and then measured on those rules, which is marking your own paper: an agent that
   fixes exactly what it was aimed at scores perfectly and may have learned nothing about the

@@ -106,6 +106,31 @@ export const rules = [
     },
   },
   {
+    id: "SEC-AGENT-SHIM",
+    family: "Agent security",
+    title: "The bypass is refused outside the agent as well as inside it",
+    standard: ["SEC.5"],
+    level: "should",
+    enforcement: "review",
+    phase: "0",
+    ...HARNESSED,
+    why: "A guard that lives in one tool's hook is a property of that tool, not of the repository: the same force push goes through from a second terminal, a script or another assistant. The layer that makes it a property of the repository is a `git` the shell finds first.",
+    next: "Install the shim (`abatty init` writes .claude/bin/) and put that directory on PATH for any run that is not being watched",
+    check: (c) => {
+      const wrapper = c.exists(".claude/bin/git") || c.exists(".claude/bin/git.cmd");
+      const logic = c.exists(".claude/bin/shim.mjs");
+      if (wrapper && logic) return { status: "present", evidence: "the git shim is installed" };
+      if (wrapper || logic)
+        return {
+          status: "partial",
+          evidence: wrapper
+            ? "a wrapper with no refusals beside it"
+            : "the refusals with no wrapper",
+        };
+      return { status: "missing", evidence: "no shim: a bypass outside the agent meets nothing" };
+    },
+  },
+  {
     id: "SEC-AGENT-BYPASS",
     family: "Agent security",
     title: "A commit made with a bypass is visible, not invisible",
