@@ -4,13 +4,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { presets, presetById } from "../src/presets/index.mjs";
-import {
-  ciSteps,
-  renderGithubActions,
-  renderPullRequestTemplate,
-  renderRuleset,
-  renderWoodpecker,
-} from "../src/ci/generate.mjs";
+import { ciSteps, renderGithubActions, renderWoodpecker } from "../src/ci/generate.mjs";
+import { renderPullRequestTemplate, renderRuleset } from "../src/ci/templates.mjs";
 import { FORBIDDEN, TERMS } from "../src/core/vocabulary.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { RULES, runCatalog } from "../src/rules/index.mjs";

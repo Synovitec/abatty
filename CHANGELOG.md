@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The bypass rate, in the report and in the generated pipeline** (C25). The guard refuses a
+  bypass at the moment it is attempted, which leaves the one that happened where the guard was
+  not: a machine whose hooks were never installed, a commit made before the harness landed, a
+  pipeline committing on somebody's behalf. A bypass nobody can see afterwards is a gate with a
+  hole nobody can measure. The report now carries, per push, how many commits got past the hook
+  and at what rate, and the generated CI prints it and fails on one that has no reason. **The
+  detection is narrower than the item asked for, and deliberately so:** "somebody typed the flag"
+  is not recoverable from a git history, so what is measured is a commit that broke a rule the
+  hook enforces at commit time - it cannot have passed through the hook, and reading it needs no
+  cooperation from the machine that made it, which is exactly the machine whose cooperation cannot
+  be assumed. A commit whose message says why is counted as a decision rather than a hole: the
+  reason is the difference between a decision and a habit.
+
+### Added
+
 - **The sandbox's threat model is published** (C23), in `docs/standard/AUTONOMOUS_ADOPTION.md` §9.
   A sandbox nobody can describe is a claim, so the document says what the boundary holds, how it
   is proven, and - the part that matters - **what it does not contain**: the network, the

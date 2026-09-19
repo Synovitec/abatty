@@ -176,7 +176,7 @@ Evidence: `09` F31 · `07` F6 · `DESIGN.md` §3.2, §3.3, §4.1, §4.3
 | C12 | `doctor --controls` becomes a precondition of the first night, not a suggestion   | landed  | S    |
 | C11 | The night withholds a slice of the checkable surface and evaluates on it after    | open    | M    |
 | C24 | The shim layer, so a bypass is refused outside the agent as well as inside it     | partial | M    |
-| C25 | Generated CI detects a bypassed commit; the report carries the bypass rate        | open    | S    |
+| C25 | Generated CI detects a bypassed commit; the report carries the bypass rate        | landed  | S    |
 
 **Done when**
 
@@ -186,7 +186,11 @@ Evidence: `09` F31 · `07` F6 · `DESIGN.md` §3.2, §3.3, §4.1, §4.3
 - `abatty night` refuses to start when the controls have never been run.
 - `abatty night-report` prints the gap between the visible and the withheld surface.
 - A commit made with a bypass flag is visible in CI; one with a documented reason is accepted and
-  one without is a finding.
+  one without is a finding. Landed, with the detection narrowed to what is actually knowable: a
+  commit that broke a rule the hook enforces at commit time cannot have passed through the hook,
+  so it was not installed or it was bypassed. That needs no cooperation from the machine that made
+  the commit, which is exactly the machine whose cooperation cannot be assumed; "somebody typed
+  the flag" is not recoverable from the history at all.
 
 Evidence: `08` F16, F17, F18, F19, F20 · `07` F8 · `DESIGN.md` §1.3
 

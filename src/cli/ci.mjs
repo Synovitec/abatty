@@ -5,13 +5,8 @@
 import { EXIT } from "./exit.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import {
-  PROVIDERS,
-  renderGithubActions,
-  renderPullRequestTemplate,
-  renderRuleset,
-  renderWoodpecker,
-} from "../ci/generate.mjs";
+import { PROVIDERS, renderGithubActions, renderWoodpecker } from "../ci/generate.mjs";
+import { renderPullRequestTemplate, renderRuleset } from "../ci/templates.mjs";
 import * as t from "../ui/term.mjs";
 
 /** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {{ base?: string }} o */

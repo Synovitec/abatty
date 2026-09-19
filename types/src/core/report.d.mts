@@ -30,6 +30,7 @@ export function allReports(repoDir: string): Report[];
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
+ *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  * }} Report
  */
 export const REPORT_DIR: string;
@@ -91,5 +92,11 @@ export type Report = {
         decisions: number;
         lastReport: string | null;
         lastRun: unknown | null;
+    };
+    bypass: {
+        commits: number;
+        bypassed: number;
+        reasoned: number;
+        rate: number;
     };
 };
