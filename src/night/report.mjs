@@ -13,6 +13,7 @@ import { distil } from "./lessons.mjs";
 
 export { distil } from "./lessons.mjs";
 export { renderNightReport } from "./report-render.mjs";
+import { footprintShare, harnessFootprint } from "./footprint.mjs";
 
 /**
  * @typedef {{ name: string, phase: string, cost: number, denials: number, crashed: boolean, isError: boolean, sessionId: string }} SessionFact
@@ -20,7 +21,7 @@ export { renderNightReport } from "./report-render.mjs";
  * @typedef {{ at: string, sessionId: string, phase: string | null, check: string, reason: string, block: number }} BlockFact
  * @typedef {{ at: string, tool: string, what: string, reason: string }} DenialFact
  * @typedef {{ kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary", title: string, lesson: string, check: string, evidence: string[], count: number }} Lesson
- * @typedef {{ date: string, branch: string, base: string, run: any, sessions: SessionFact[], receipts: ReceiptFact[], blocks: BlockFact[], denials: DenialFact[], direction: string[], phases: any[], decisions: Record<string, number>, commits: string[], canary: { ok: boolean | null, findings: string[] }, lessons: Lesson[] }} NightReport
+ * @typedef {{ date: string, branch: string, base: string, run: any, sessions: SessionFact[], receipts: ReceiptFact[], blocks: BlockFact[], denials: DenialFact[], direction: string[], phases: any[], decisions: Record<string, number>, commits: string[], canary: { ok: boolean | null, findings: string[] }, lessons: Lesson[], footprint: ReturnType<typeof harnessFootprint>, footprintShare: ReturnType<typeof footprintShare> }} NightReport
  */
 
 /** @param {string} p @returns {any} */
@@ -151,6 +152,7 @@ export function gatherNight(repoDir, date) {
   const commits = git(repoDir, "log", "--format=%h %s", `${base}..${branch}`)
     .split("\n")
     .filter(Boolean);
+  const footprint = harnessFootprint(repoDir);
   const canaryJson = readJsonOrNull(join(dir, "canary.json"));
   const canary = {
     ok: canaryJson ? canaryJson.is_error !== true : null,
@@ -172,6 +174,13 @@ export function gatherNight(repoDir, date) {
     commits,
     canary,
     lessons: /** @type {Lesson[]} */ ([]),
+    // What the harness itself cost to carry, on every one of those sessions. The adopter is
+    // paying it whether or not anybody tells them, so the report tells them.
+    footprint,
+    footprintShare: footprintShare(footprint, {
+      sessions: sessions.length,
+      tokens: Number(run?.spent?.tokens) || 0,
+    }),
   };
   facts.lessons = distil(facts);
   return facts;

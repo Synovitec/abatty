@@ -65,4 +65,8 @@ export type NightReport = {
         findings: string[];
     };
     lessons: Lesson[];
+    footprint: ReturnType<typeof harnessFootprint>;
+    footprintShare: ReturnType<typeof footprintShare>;
 };
+import { harnessFootprint } from "./footprint.mjs";
+import { footprintShare } from "./footprint.mjs";

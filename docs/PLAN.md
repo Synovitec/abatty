@@ -226,21 +226,21 @@ Evidence: `07` F3, F5, F9, F10, F11, F12, F13, F14 · `DESIGN.md` §0
 Worth doing, none of it worth doing first. Each item records or exports a tool that should
 already be finished.
 
-| ID  | Change                                                                         | State   | Size |
-| --- | ------------------------------------------------------------------------------ | ------- | ---- |
-| C38 | `abatty attest` emits a custom predicate in the established attestation format | landed  | M    |
-| C39 | Signing uses the established ecosystem and the release's identity mechanism    | landed  | S    |
-| C36 | The record is scoped to what the compliance ring cannot produce                | landed  | S    |
-| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed  | L    |
-| C27 | An evidence export fit for technical documentation                             | landed  | M    |
-| C4  | `abatty validate`: which rules precede defect-fixing commits here              | open    | L    |
-| C19 | The harness reports its own token footprint per session                        | partial | M    |
-| C10 | The context file grows only from the night's lessons                           | open    | M    |
-| C20 | The hosted service records adoption events                                     | open    | M    |
-| C37 | A portal plugin publishes conformance into an existing catalogue               | open    | M    |
-| C34 | The README opens with the reader's problem and the practitioners' framing      | landed  | S    |
-| C35 | The measurement story is told as amplification, not as a promise of speed      | landed  | S    |
-| C40 | One outward artefact: this repository's dogfood, negative results included     | landed  | S    |
+| ID  | Change                                                                         | State  | Size |
+| --- | ------------------------------------------------------------------------------ | ------ | ---- |
+| C38 | `abatty attest` emits a custom predicate in the established attestation format | landed | M    |
+| C39 | Signing uses the established ecosystem and the release's identity mechanism    | landed | S    |
+| C36 | The record is scoped to what the compliance ring cannot produce                | landed | S    |
+| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed | L    |
+| C27 | An evidence export fit for technical documentation                             | landed | M    |
+| C4  | `abatty validate`: which rules precede defect-fixing commits here              | open   | L    |
+| C19 | The harness reports its own token footprint per session                        | landed | M    |
+| C10 | The context file grows only from the night's lessons                           | open   | M    |
+| C20 | The hosted service records adoption events                                     | open   | M    |
+| C37 | A portal plugin publishes conformance into an existing catalogue               | open   | M    |
+| C34 | The README opens with the reader's problem and the practitioners' framing      | landed | S    |
+| C35 | The measurement story is told as amplification, not as a promise of speed      | landed | S    |
+| C40 | One outward artefact: this repository's dogfood, negative results included     | landed | S    |
 
 Evidence: `09` F37, F38, F39, F40 · `08` F21 · `07` F4, F15
 
@@ -293,7 +293,6 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 | C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)                                                    | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran                                                                             |
 | C15 | `abatty secrets --benchmark` scores the scan against a corpus published in the package, and the numbers are in `docs/SECRET_SCAN_BENCHMARK.md` (`src/core/secret-corpus.mjs`)        | A run against a THIRD-PARTY benchmark: the corpus is this repository's own, which is weaker evidence and says so                                          |
 | C49 | Every preset has a fixture repository the suite runs `init`, `measure`, `doctor` and the gate against, and the by-hand steps now name only what init wrote (`test/presets.test.mjs`) | The portfolio itself: `astro`, `python` and `docs` are proven by nobody, and only a named repository and a date can change that. A fixture is not a proof |
-| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                                                        | Nothing reports the harness's own footprint per session to the adopter                                                                                    |
 | C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                                                    | The codes carry no documented meaning; no `--plain`; most commands have no `--json`                                                                       |
 
 ## 12. The register
@@ -321,7 +320,7 @@ files; `D` is `DESIGN.md`.
 | C16 | 5    | landed   | 07   | C41 | 1    | open    | D    |
 | C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
 | C18 | 5    | landed   | 07   | C43 | 3    | partial | D    |
-| C19 | 6    | partial  | 07   | C44 | 3    | landed  | D    |
+| C19 | 6    | landed   | 07   | C44 | 3    | landed  | D    |
 | C20 | 6    | open     | 07   | C45 | 2    | landed  | D    |
 | C21 | 4    | landed   | 08   | C46 | 3    | landed  | D    |
 | C22 | 4    | landed   | 08   | C47 | 3    | landed  | D    |

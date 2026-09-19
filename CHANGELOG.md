@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The harness reports what it costs to carry** (C19). Every unattended session reads the
+  harness before it reads any code: the context file, the path-scoped rules, the skill, the agent
+  personas. That is a bill the adopter pays on every session of every night, and nothing was
+  telling them what it is; a standard that quietly eats a third of every context window is a
+  standard people quietly stop installing. The night report now opens its sessions section with
+  the footprint, broken down by part, and with what the night carried across all its sessions as
+  a share of what it spent. On this repository the harness is 44 kB, about 11,000 tokens per
+  session. The token figure is an estimate and says so in the object rather than in a comment, so
+  no caller can print it as a measurement: the bytes are exact, the divisor is one round number
+  for every model, and a night that reported no tokens gets `null` rather than a zero that would
+  read as "the harness cost nothing".
+
 - **The conformance statement is signed by the run, not by a key anybody holds** (C39). A
   signature is worth exactly the identity behind it, and the only identity a measurement tool
   could offer is a key on somebody's laptop or a secret in a repository: the weakest of the

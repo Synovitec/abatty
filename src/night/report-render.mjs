@@ -3,6 +3,8 @@
  * sessions, the Stop gate, the guard, the phases and decisions, the proposed lessons.
  */
 
+import { describeFootprint } from "./footprint.mjs";
+
 /** @typedef {import("./report.mjs").NightReport} NightReport */
 
 /** The report as Markdown, in the shape of the other night documents. @param {NightReport} r */
@@ -25,6 +27,12 @@ export function renderNightReport(r) {
     `Branch \`${r.branch}\` from \`${r.base}\` · ${r.sessions.length} session(s) · ${spent.toFixed(2)} USD · ${r.commits.length} commit(s) · ${done} phase(s) done, ${blocked} blocked · sandbox ${r.run?.sandbox || "none"}${r.run?.spent ? ` · ${r.run.spent.sessions} session(s) and ${r.run.spent.tokens} tokens against the allowance` : ""}${r.run?.status && r.run.status !== "done" ? ` · run ${r.run.status}` : ""}.`,
     "",
     "## Sessions",
+    "",
+    `**What the harness cost to carry.** ${describeFootprint(r.footprint, r.footprintShare)}.`,
+    "",
+    "| Part | kB | ~tokens |",
+    "|---|---|---|",
+    ...r.footprint.parts.map((p) => `| ${p.part} | ${(p.bytes / 1024).toFixed(1)} | ${p.tokens} |`),
     "",
     "| Session | Phase | Cost | Denials | Outcome |",
     "|---|---|---|---|---|",
