@@ -8,6 +8,9 @@ import { frontMatter, matchesAny, regexes } from "./lib.mjs";
 
 const CITATION =
   /`([^`\s]+\/[^`\s]*\.(?:mjs|cjs|js|ts|tsx|jsx|json|jsonc|md|ya?ml|sql|ps1|sh|toml|css)(?::\d+)?)`/g;
+// A path the index names, taken whole: bounded at both ends so one document's name cannot be
+// matched inside another's. Covers a backticked path, a link target and a bare mention.
+const NAMED = /(?:^|[\s`([<|])((?:[\w.-]+\/)*[\w.-]+\.md)(?=[\s`)\]>|,.:]|$)/gm;
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
 
@@ -72,12 +75,17 @@ export const probes = [
     scan: (c) => {
       const index = c.docFiles.find((f) => /^docs\/(README|SOMMAIRE|INDEX)\.md$/i.test(f));
       if (!index) return { scanned: 0, findings: [] };
-      const text = c.read(index);
+      // The paths the index actually names, each taken whole. A substring match read PLAN.md as
+      // named because the index carries standard/ADOPTION_PLAN.md, so a document whose name ends
+      // another document's name was invisible to this check: it reported nothing and the missing
+      // row stayed missing.
+      const named = new Set();
+      for (const m of c.read(index).matchAll(NAMED)) named.add(String(m[1]).replace(/^\.\//, ""));
       const others = c.docFiles.filter((f) => f !== index);
       const findings = [];
       for (const f of others) {
         const rel = f.slice("docs/".length);
-        if (!text.includes(rel) && !text.includes(posix.basename(f)))
+        if (!named.has(rel) && !named.has(posix.basename(f)))
           findings.push({ path: f, detail: `not in ${index}` });
       }
       return { scanned: others.length, findings };
@@ -98,6 +106,26 @@ export const probes = [
           "docs/README.md": "# Index\n\n`A.md` `B.md`\n",
           "docs/A.md": FM(),
           "docs/B.md": FM(),
+        },
+        expect: 0,
+      },
+      {
+        // The case the substring match could not see: PLAN.md is missing from the index and
+        // ADOPTION_PLAN.md ends with it, so the check reported nothing while the row was absent.
+        name: "a doc whose name ends another doc's name is still missing",
+        files: {
+          "docs/README.md": "# Index\n\n| `standard/ADOPTION_PLAN.md` |\n",
+          "docs/standard/ADOPTION_PLAN.md": FM(),
+          "docs/PLAN.md": FM(),
+        },
+        expect: 1,
+      },
+      {
+        name: "the longer name is named in its own right",
+        files: {
+          "docs/README.md": "# Index\n\n| `standard/ADOPTION_PLAN.md` | `PLAN.md` |\n",
+          "docs/standard/ADOPTION_PLAN.md": FM(),
+          "docs/PLAN.md": FM(),
         },
         expect: 0,
       },

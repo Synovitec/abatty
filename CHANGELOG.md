@@ -5,6 +5,16 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A document whose name ends another document's name was invisible to `docs.indexDrift`.** The
+  probe asked whether the index text contained the path, so `PLAN.md` read as named because the
+  index carries `standard/ADOPTION_PLAN.md`, and the metric reported nothing while the row was
+  genuinely absent: a check that cannot see a whole class of its own subject. It now reads the
+  paths the index names, each taken whole and bounded at both ends, and carries two control cases
+  for exactly this shape, the missing one and the named one. Both were watched failing against the
+  substring match before the fix landed.
+
 ### Added
 
 - **`docs/DESIGN.md`: what the instrument has to become on its own terms.** The roadmap says what
