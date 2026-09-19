@@ -521,3 +521,35 @@ test("a probe that stands in for something it cannot measure says so where the n
     "a probe that measures what it says carries none",
   );
 });
+
+test("a probe that counts occurrences reports each one on its line, and the totals do not move", () => {
+  const dir = tempRepo("probe-lines", {
+    "package.json": PKG,
+    "src/a.ts": [
+      "export const one = process.env.A;",
+      "export const two = process.env.B;",
+      "",
+      "export const three: any = 1;",
+    ].join("\n"),
+  });
+  const measured = measure(dir, null);
+  const env = measured.find((m) => m.metric === "valid.rawEnv");
+  const esc = measured.find((m) => m.metric === "types.escapes");
+
+  // The line is what puts the finding on the diff line in a forge rather than at the top of the
+  // file. A probe that knows the offset and throws it away cannot be placed by any renderer.
+  assert.deepEqual(
+    env?.findings.map((f) => f.line),
+    [1, 2],
+  );
+  assert.deepEqual(
+    esc?.findings.map((f) => f.line),
+    [4],
+  );
+
+  // And the invariant that made this safe to change: one finding per occurrence sums to exactly
+  // what one finding per file with a weight summed to, so no floor moves under anybody.
+  assert.equal(env?.value, 2);
+  assert.equal(env?.debt["src/a.ts"], 2);
+  assert.equal(esc?.value, 1);
+});

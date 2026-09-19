@@ -7,6 +7,46 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The trust scanner fired on its own repository, and would have blocked a night here** (from an
+  outside review). Ten findings on this tree, every one a false positive: the scanner's own
+  pattern table, its own test fixtures, the permission deny-list that forbids `rm -rf /`, and
+  research prose reading "the Cyber Resilience **Act as a** deadline" and "they **act as a**
+  ratchet". A night-blocking check has the tightest false-positive budget there is, and this one
+  was running at roughly one hundred per cent on its author's tree, which is the shape of check
+  people switch off. Four narrowings: the scanner's own two files are exempt by name (those two,
+  never "tests" as a class, because a hostile repository would hide an instruction in a test file
+  precisely because a scan was taught to skip them); a list that forbids what it names is read as
+  forbidding, by looking for the key above rather than only the line; `act as` needs both a
+  second-person lead and a role-shaped object; and the secret pattern needs a determiner, so
+  "fewer output tokens" is prose again. A repository may also name paths to skip, in
+  `preflight.trustAllow`, with the reason. A test asserts the scan is clean on this repository and
+  a hostile fixture proves all seven attack shapes are still caught.
+- **SARIF findings carried no line numbers** (from the same review). Zero of eight ratchet results
+  had a region, so a forge placed them at the top of the file rather than on the line of the
+  change under review, which was the whole argument for emitting SARIF. The renderer was right;
+  the probes never supplied a line. The two probes that scan for occurrences now report one
+  finding per occurrence on its own line, and the totals and per-file floors are untouched because
+  the ratchet sums weights either way. Fingerprints gained an ordinal so two findings in one file
+  are two alerts rather than one, and they still survive an unrelated line being inserted above.
+- **Six test assertions accepted either answer at the exact point the fifth gate outcome exists.**
+  A step whose tool ran and failed exits 3; one whose tool could not run exits 4. Widening the
+  assertions to `[3, 4]` made the suite unable to detect a regression in either direction. They
+  are exact again, against fixtures that decide the outcome rather than hoping for it, plus an
+  end-to-end case through real npm covering both codes. Verified by running the suite with
+  `eslint`, `ruff` and `mypy` removed from the machine, which is the condition that broke CI.
+- **Three surfaces each decided for themselves whether a finding had a location**, and two
+  disagreed. A finding now carries `where`, attached once in `runCatalog`, and the SARIF renderer
+  and the agent surface both read it. The first attempt put the scrape in the renderer and this
+  repository's own import graph refused it, correctly: `src/ui/` renders what it is given.
+- **`bin/abatty.mjs` was 312 code lines against a 300 budget** and `explain CODE-SIZE-300` still
+  named it, which wave 1 had claimed as done. The help screen moved to `src/ui/help.mjs`, where
+  the boundary map says terminal text belongs; the entry point is 288 lines, the rule no longer
+  names it, and the startup floor is unchanged at 3 because the import is lazy.
+- **`preflight.trust` was read by a rule but absent from the config schema**, so a repository
+  setting it would have failed validation. Both `preflight` keys are in the schema now.
+
+### Fixed
+
 - **Six tests pinned the machine they were written on, and went red on a clean runner.** A gate
   step whose tool is absent reports `could not run` and exits 4; one whose tool found something
   reports `failed` and exits 3. That distinction is the whole point of the fifth gate outcome, and

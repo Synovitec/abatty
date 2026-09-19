@@ -17,6 +17,7 @@ import { pathToFileURL } from "node:url";
 import { readAdoption } from "../core/repo.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
 import { catalogOf, loadProfiles, phasesOf } from "../profiles/index.mjs";
+import { whereOf } from "./agent.mjs";
 import { validate } from "./validate.mjs";
 
 export { validate };
@@ -47,7 +48,7 @@ export { validate };
  *
  * @typedef {{ reason: string, until?: string, expired?: boolean }} Waiver
  * @typedef {Rule & { waived?: Waiver }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver }} Finding
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver, where?: { path: string, line?: number } }} Finding
  */
 
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
@@ -180,6 +181,7 @@ export function runCatalog(ctx, catalog = RULES) {
         };
       }
     }
+    const where = whereOf(String(v.evidence));
     return {
       id: r.id,
       family: r.family,
@@ -194,6 +196,15 @@ export function runCatalog(ctx, catalog = RULES) {
       when: r.when || "always",
       stages: r.stages || ["design", "build", "run"],
       ...(r.ceiling ? { ceiling: r.ceiling } : {}),
+      // Where in the tree the finding is, when the evidence names a file. Attached ONCE, here,
+      // so every surface agrees: the terminal, the SARIF a forge reads and the MCP surface an
+      // agent reads were each deciding for themselves, and two of them disagreed.
+      //
+      // It is a scrape of the check's own prose, and it should not have to be: the check knows
+      // the path and writes it into a sentence for something else to parse back out. A `where`
+      // returned by the check is the right shape and is a change to the whole catalog; doing it
+      // in one place is what makes that change possible later without touching every surface.
+      ...(where ? { where } : {}),
       ...(r.waived ? { waiver: r.waived } : {}),
     };
   });

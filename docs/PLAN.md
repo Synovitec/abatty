@@ -58,11 +58,11 @@ this plan was written, on `e043e66`, so the distance is visible rather than asse
 |                         | When the plan was written       | Now                       |
 | ----------------------- | ------------------------------- | ------------------------- |
 | Changes on the register | 49                              | 49                        |
-| Landed                  | 4                               | 44                        |
-| Partly built            | 9                               | 4                         |
+| Landed                  | 4                               | 41                        |
+| Partly built            | 9                               | 6                         |
 | Open                    | 36                              | 0                         |
 | Reshaped or withdrawn   | 0                               | 2 (C9, C37), with reasons |
-| Tests                   | 158, one skipped                | 254, one skipped          |
+| Tests                   | 158, one skipped                | 263, one skipped          |
 | Ratchet                 | green, 14 metrics               | green, 16 metrics         |
 | Phase                   | A.1, 7 of 9 held                | 0, 15 of 22 held          |
 | Score                   | 68 of 100, a trend              | 75 of 100, a trend        |
@@ -74,12 +74,39 @@ seven of the rules added since are held by a reviewer or by nothing, so the shar
 machine holds fell even as more is held. A share that only ever rose would be measuring the
 catalog rather than the enforcement.
 
-**What is left.** Four items are partial and none is open. Two of the four cannot be finished
-from inside this repository: `C15` needs a third-party secret-scanning benchmark, and `C49` needs
-named repositories running `astro`, `python` and `docs`. The other two are real work with nobody
-blocking them: `C30`'s remaining half is `--json` on every command a script may consume (`--plain`
-landed), and `C43` wants the gate's independent steps to run together, which changes what "the
-gate stops here" means and needs designing rather than doing.
+**What is left, and four acceptance numbers this plan was claiming and should not have been.**
+An external review measured them; the figures below were then re-measured here, on a four-core
+machine, and they are the ones a reader should hold this plan to.
+
+| Acceptance criterion  | Target      | Measured                                    | Row |
+| --------------------- | ----------- | ------------------------------------------- | --- |
+| `npm test`            | under 60 s  | **92 s**                                    | C43 |
+| `abatty version`      | under 30 ms | **42 ms** (bare `node -e ''` is 24 ms here) | C30 |
+| `abatty status`, warm | under 60 ms | **69 ms**                                   | C30 |
+| A warm `measure`      | 10x faster  | **1.8x**                                    | C44 |
+
+Two of those are restated rather than open, and the arithmetic is in wave 1: the runtime's own
+floor is 24 ms on this machine, so a 30 ms budget for `version` leaves 6 ms for everything the
+command does, which is not a target, it is a rounding error.
+
+`npm test` is the one worth naming properly, because the obvious fix does not work. The suite is
+**throughput-bound, not critical-path-bound**: 255 s of work over four cores, so the theoretical
+best is about 64 s and the measured 92 s is near it. A concurrency flag changes nothing (92 s
+default, 90 s at four, 98 s at eight), and splitting the longest file changes nothing either,
+both measured. The target needs the WORK to shrink, which means the night tests that spawn real
+agent processes, and that is a change of its own rather than a flag.
+
+The two items that cannot be finished from inside this repository are unchanged: `C15` needs a
+third-party secret-scanning benchmark, and `C49` needs named repositories running `astro`,
+`python` and `docs`. `C30`'s remaining half is `--json` on every command a script may consume.
+`C43` keeps the gate half of its claim and loses the suite half.
+
+`C46` also moves to partial, from the same review. `abatty fix --phase 0` prints "phase 0 has no
+open rule this can write" on this repository while phase 0 stands at 15 of 22, which is honest
+output and an unfinished feature: the two fixers that exist write documents (`DOC-CONVENTIONS`,
+`DOC-ADR`, both phase A.1) and both files already exist here. Phase 0's open rules are a control
+run that has not happened, a permission list missing two entries, an unnamed MCP server and a
+pipeline step: several of those are writable by a machine, and none of them is written.
 
 Work that landed and is not on the register, because it came from the repository rather than
 from the research: the observability family closing the OBS.1 pillar, a preset's rule files
@@ -153,7 +180,7 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 | --- | ----------------------------------------------------------------------------------- | -------- | ---- |
 | C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | partial  | M    |
 | C44 | Measurement is cached on the git tree of the paths a rule reads                     | landed   | M    |
-| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | landed   | M    |
+| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | partial  | M    |
 | C47 | The first run needs no configuration, no `--stack` and no profile                   | landed   | S    |
 | C32 | The latency tiers become a probe: a regression in cold start is a finding           | landed   | S    |
 | C9  | The context-file template ships near-empty by default                               | reshaped | S    |
@@ -161,10 +188,14 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 
 **Done when**
 
-- `abatty gate --fast` runs in under 3 s and `npm test` in under 60 s. Today they are 207 s and
-  225 s: `--fast` skips only the database suite and the coverage run, neither of which this
-  repository has, so the 3 min 18 s unit suite runs inside the fast tier unchanged, and 185 s of
-  the suite is one file.
+- `abatty gate --fast` runs in under 3 s and `npm test` in under 60 s. **Not met, and measured
+  rather than estimated: the suite is 92 s.** `--fast` skips only the database suite and the
+  coverage run, neither of which this repository has, so the unit suite runs inside the fast tier
+  unchanged. The reason it cannot be flagged away: 255 s of work over four cores puts the
+  theoretical best at about 64 s, so the suite is throughput-bound and already near it. Measured:
+  92 s at the default concurrency, 90 s at four, 98 s at eight, and 92 s again after splitting the
+  longest file. The remaining lever is the work itself, which is the night tests spawning real
+  agent processes.
 - A second `abatty measure` over an unchanged tree is at least ten times faster than the first,
   and no cache state can turn a finding into a pass: on any doubt it misses. Landed, with the
   first half restated for the same reason as the 30 ms target: measured here the second run is
@@ -344,8 +375,8 @@ files; `D` is `DESIGN.md`.
 | C4  | 6    | landed   | 07   | C29 | 1    | landed   | 08   |
 | C5  | 5    | landed   | 07   | C30 | 1    | partial  | 08   |
 | C6  | 5    | landed   | 07   | C31 | 2    | landed   | 09   |
-| C7  | -    | landed   | 07   | C32 | 3    | open     | 09   |
-| C8  | 3    | partial  | 07   | C33 | 2    | open     | 09   |
+| C7  | -    | landed   | 07   | C32 | 3    | landed   | 09   |
+| C8  | 3    | partial  | 07   | C33 | 2    | landed   | 09   |
 | C9  | 3    | reshaped | 07   | C34 | 6    | landed   | 09   |
 | C10 | 6    | landed   | 07   | C35 | 6    | landed   | 09   |
 | C11 | 4    | landed   | 07   | C36 | 6    | landed   | 09   |
@@ -358,7 +389,7 @@ files; `D` is `DESIGN.md`.
 | C18 | 5    | landed   | 07   | C43 | 3    | partial  | D    |
 | C19 | 6    | landed   | 07   | C44 | 3    | landed   | D    |
 | C20 | 6    | landed   | 07   | C45 | 2    | landed   | D    |
-| C21 | 4    | landed   | 08   | C46 | 3    | landed   | D    |
+| C21 | 4    | landed   | 08   | C46 | 3    | partial  | D    |
 | C22 | 4    | landed   | 08   | C47 | 3    | landed   | D    |
 | C23 | 4    | landed   | 08   | C48 | 1    | landed   | D    |
 | C24 | 4    | landed   | 08   | C49 | 5    | partial  | D    |

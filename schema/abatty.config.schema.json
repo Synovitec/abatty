@@ -500,6 +500,46 @@
           "description": "The container's HOME, where the agent's state folder is mounted (default /root)."
         }
       }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\$": {}
+      },
+      "description": "The night's pre-flight: what is read before an agent is pointed at the tree.",
+      "properties": {
+        "trust": {
+          "type": "boolean",
+          "description": "Whether the trust scan runs before a night (default true). Setting it to false is a decision a reviewer can see, and the rule SEC-AGENT-TRUST reports it as partial rather than present."
+        },
+        "trustAllow": {
+          "type": "array",
+          "description": "Paths the trust scan skips, as regular expressions against the repository-relative path, each with the reason it is there. For a repository that keeps injection fixtures of its own. A pattern that does not compile skips nothing.",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "reason"],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "A regular expression against the repository-relative path."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why this path carries text the scan would otherwise stop a night for."
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cli, tempRepo } from "./helpers.mjs";
 import { detectPreset, presetById } from "../src/presets/index.mjs";
@@ -148,13 +148,18 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     const gate = cli(["gate", dir, "--fast"], dir);
     if (fx.gate) assert.match(gate.out, fx.gate, `${id}: ${gate.out}`);
     else {
-      // The dependencies are named in the fixture, never installed. On a machine that happens to
-      // have the linter the step FAILS (3); on a clean one it cannot run (4). Which of the two
-      // is a property of the machine, and pinning either is how this suite passed here and went
-      // red on the runner. What the test is about is that the gate reaches lint and stops there.
-      assert.ok([3, 4].includes(gate.code), `expected 3 or 4, got ${gate.code}\n${gate.out}`);
-      assert.match(gate.out, /skipped format/);
-      assert.match(gate.out, /lint \(CODE\.4\) (failed|could not run)/);
+      // The preset names its linter and never installs it, so on a machine that happens to have
+      // one the step fails and on a clean one it cannot run. Rather than accept either answer,
+      // the fixture's lint script is replaced with one whose outcome is the same everywhere: it
+      // runs, and it fails. What the test is about - the skeleton reaches lint and stops there -
+      // is unchanged, and the exit code is exact again.
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      pkg.scripts.lint = "node -e 'process.exit(1)'";
+      writeFileSync(join(dir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
+      const exact = cli(["gate", dir, "--fast"], dir);
+      assert.equal(exact.code, 3, exact.out);
+      assert.match(exact.out, /skipped format/);
+      assert.match(exact.out, /✗ lint \(CODE\.4\)/);
     }
   });
 }

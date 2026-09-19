@@ -6,6 +6,14 @@ import { lines, matchesAny, regexes } from "./lib.mjs";
 
 const ESCAPE = /(:\s*any\b|<any>|\bas any\b|@ts-ignore|@ts-nocheck|@ts-expect-error)/g;
 const RAW_ENV = /\bprocess\.env(\.|\[)/g;
+
+/**
+ * The 1-based line an offset falls on. WHY it matters: a finding without a line is placed at the
+ * top of the file by every forge that reads SARIF, which is not the diff line a reviewer is
+ * looking at, and the whole argument for emitting SARIF was that placement beats precision.
+ * @param {string} text @param {number} index
+ */
+const lineAt = (text, index) => text.slice(0, index).split("\n").length;
 const REEXPORT = /^\s*export\s+(\*|\{[^}]*\})\s+from\s+/;
 
 /** @type {import("../index.mjs").Probe[]} */
@@ -62,15 +70,16 @@ export const probes = [
       const exempt = regexes(o.config.exempt);
       const files = c.sourceFiles.filter((f) => !matchesAny(f, exempt));
       const findings = [];
+      // One finding per occurrence, each on its line, rather than one per file carrying a count.
+      // The total and the per-file debt are identical either way - the ratchet sums the weights -
+      // so the floor does not move, and a reviewer gets the finding on the line that caused it.
       for (const f of files) {
         const text = c.read(f);
         const isTs = /\.tsx?$/.test(f);
-        let count = 0;
         for (const m of text.matchAll(ESCAPE)) {
           if (!isTs && !m[0].startsWith("@ts-")) continue;
-          count++;
+          findings.push({ path: f, line: lineAt(text, m.index ?? 0), detail: `escape: ${m[0]}` });
         }
-        if (count) findings.push({ path: f, detail: `${count} escape(s)`, weight: count });
       }
       return { scanned: files.length, findings };
     },
@@ -108,8 +117,13 @@ export const probes = [
       const files = c.sourceFiles.filter((f) => !matchesAny(f, exempt) && !env.test(f));
       const findings = [];
       for (const f of files) {
-        const n = (c.read(f).match(RAW_ENV) || []).length;
-        if (n) findings.push({ path: f, detail: `${n} raw read(s)`, weight: n });
+        const text = c.read(f);
+        for (const m of text.matchAll(RAW_ENV))
+          findings.push({
+            path: f,
+            line: lineAt(text, m.index ?? 0),
+            detail: "raw process.env read",
+          });
       }
       return { scanned: files.length, findings };
     },
