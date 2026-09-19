@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The sandbox's threat model is published** (C23), in `docs/standard/AUTONOMOUS_ADOPTION.md` §9.
+  A sandbox nobody can describe is a claim, so the document says what the boundary holds, how it
+  is proven, and - the part that matters - **what it does not contain**: the network, the
+  credentials the environment already holds, whatever the gate allows, the model's own behaviour,
+  and the case where `auto` finds no driver and there is no OS boundary at all. A reader can now
+  decide whether it is enough for their repository instead of trusting the word "sandbox". The
+  closing line is the honest one: run a night on a machine you would be willing to hand to the
+  repository it is working on, because for the length of the night that is what you have done.
+
+### Added
+
 - **Agent security is a family of rules** (C21). The other families ask what the code does; these
   ask what the agent may do to the repository and what the repository may do to the agent - a
   different question, and the one the field's own incidents are about, because an unattended run
