@@ -37,15 +37,15 @@
     "code.barrels": 7,
     "context.overCap": 1,
     "docs.behindCode": 5,
-    "docs.citations": 59,
+    "docs.citations": 66,
     "docs.danglingSource": 10,
-    "docs.frontMatter": 28,
-    "docs.indexDrift": 27,
-    "size.excessCode": 94,
-    "size.overBudget": 94,
-    "size.overRaw": 107,
-    "types.escapes": 94,
-    "valid.rawEnv": 93
+    "docs.frontMatter": 30,
+    "docs.indexDrift": 29,
+    "size.excessCode": 103,
+    "size.overBudget": 103,
+    "size.overRaw": 117,
+    "types.escapes": 103,
+    "valid.rawEnv": 102
   },
   "debt": {
     "startup.eagerModules": {
@@ -63,9 +63,22 @@
       "src/ui/term.mjs": 3
     }
   },
-  "lastReason": {
-    "at": "2026-09-19",
-    "reason": "the cold-start probe lands with today's graph as its floor: three modules parsed before the command is known",
-    "rises": []
-  }
+  "versions": {
+    "change.changelogMissing": 1,
+    "change.coupledMissing": 1,
+    "code.barrels": 1,
+    "context.overCap": 1,
+    "docs.behindCode": 1,
+    "docs.citations": 1,
+    "docs.danglingSource": 1,
+    "docs.frontMatter": 1,
+    "docs.indexDrift": 1,
+    "size.excessCode": 1,
+    "size.overBudget": 1,
+    "size.overRaw": 1,
+    "startup.eagerModules": 1,
+    "types.escapes": 1,
+    "valid.rawEnv": 1
+  },
+  "entries": {}
 }

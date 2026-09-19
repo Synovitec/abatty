@@ -200,14 +200,14 @@ Evidence: `08` F16, F17, F18, F19, F20 · `07` F8 · `DESIGN.md` §1.3
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
 | C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | open    | L    |
 | C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | partial | S    |
-| C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | partial | S    |
-| C6  | The baseline carries a schema version per metric                                    | open    | S    |
+| C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | landed  | S    |
+| C6  | The baseline carries a schema version per metric                                    | landed  | S    |
 | C17 | Each rule carries a machine-ceiling flag; the unpromotable leave the queue          | partial | S    |
 | C16 | SEC-AUDIT is scoped before it is added, or it is not added                          | partial | S    |
 | C14 | TEST-COVERAGE gates on the delta over changed lines                                 | partial | M    |
 | C13 | TEST-MUTATION gains arid-node suppression and a per-diff cap                        | partial | M    |
 | C15 | SEC-SECRETS is measured against a public benchmark and the result published         | open    | M    |
-| C18 | `docs.behindCode` is documented as an approximation, not an equivalent              | open    | S    |
+| C18 | `docs.behindCode` is documented as an approximation, not an equivalent              | landed  | S    |
 
 **Done when**
 
@@ -290,7 +290,6 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 | ID  | Already built                                                                                                                                   | Missing                                                                                 |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | C3  | `loadCatalog` refuses a waiver without a reason and supports an `until` date that stops waiving when it passes (`src/rules/index.mjs`)          | The count per rule, and the rate in the report                                          |
-| C5  | `writeBaseline` refuses a rise without a reason, and refuses a HARD metric above zero (`src/ratchet/baseline.mjs`)                              | The reason is per write, not per entry; no owner field                                  |
 | C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`) | It should be written always, and `agents` should report which surfaces are covered      |
 | C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)               | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran           |
 | C13 | TEST-MUTATION exists in the catalog at hard, phase 10 (`src/rules/families/tests.mjs`)                                                          | Arid-node suppression before generation, and a per-diff mutant cap                      |
@@ -312,8 +311,8 @@ files; `D` is `DESIGN.md`.
 | C2  | 2    | open    | 07   | C27 | 6    | open    | 08   |
 | C3  | 5    | partial | 07   | C28 | -    | landed  | 08   |
 | C4  | 6    | open    | 07   | C29 | 1    | open    | 08   |
-| C5  | 5    | partial | 07   | C30 | 1    | partial | 08   |
-| C6  | 5    | open    | 07   | C31 | 2    | open    | 09   |
+| C5  | 5    | landed  | 07   | C30 | 1    | partial | 08   |
+| C6  | 5    | landed  | 07   | C31 | 2    | open    | 09   |
 | C7  | -    | landed  | 07   | C32 | 3    | open    | 09   |
 | C8  | 3    | partial | 07   | C33 | 2    | open    | 09   |
 | C9  | 3    | open    | 07   | C34 | 6    | partial | 09   |
@@ -325,7 +324,7 @@ files; `D` is `DESIGN.md`.
 | C15 | 5    | open    | 07   | C40 | 6    | open    | 09   |
 | C16 | 5    | partial | 07   | C41 | 1    | open    | D    |
 | C17 | 5    | partial | 07   | C42 | 1    | open    | D    |
-| C18 | 5    | open    | 07   | C43 | 3    | open    | D    |
+| C18 | 5    | landed  | 07   | C43 | 3    | open    | D    |
 | C19 | 6    | partial | 07   | C44 | 3    | open    | D    |
 | C20 | 6    | open    | 07   | C45 | 2    | open    | D    |
 | C21 | 4    | open    | 08   | C46 | 3    | open    | D    |

@@ -189,9 +189,11 @@ export const probes = [
     kind: "ratchet",
     standard: ["DOC.5"],
     title: "Documents whose source_truth moved after their last_verified date",
-    why: "Freshness is measured against the diff, never the calendar: when the code a doc names was committed after the doc was verified, the doc is behind, and an agent reading it confidently does the wrong thing.",
+    why: "Freshness is measured against the diff, never the calendar: when the code a doc names was committed after the doc was verified, the doc is unverified against what it describes, and an agent reading it confidently does the wrong thing. The count is a prompt to re-read, not a claim that the doc is wrong.",
     axis: "docs-freshness",
     lossAt: 20,
+    approximates:
+      "whether a document is still true. It counts one observable fact instead: a commit touched a cited path after the document's last_verified date. It is wrong in both directions - a formatting pass or a change to a part of the file the document never described counts, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
     scan: (c) => {
       const findings = [];
       let scanned = 0;

@@ -58,6 +58,8 @@ export const probes = [
     axis: "boundary-clarity",
     lossAt: 40,
     emptyScanOk: true,
+    approximates:
+      "the cold start a user feels. Milliseconds belong to the machine that measured them - a busy laptop and a cold runner disagree by a factor of three - so the count of modules parsed before the dispatch stands in for them: it is the cause, it is identical everywhere, and it moves only when somebody adds an import. A module that is cheap to parse counts the same as an expensive one.",
     scan: (c) => {
       const entry = ["bin/abatty.mjs", "bin/cli.mjs", "src/index.mjs"].find((f) => c.exists(f));
       if (!entry) return { scanned: 0, findings: [], skipped: "no entry point" };

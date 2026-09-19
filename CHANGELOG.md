@@ -7,6 +7,22 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The ratchet's numbers carry their provenance and their limits** (C5, C6, C18). Three things a
+  floor never said about itself. A raised floor now records the reason AND an owner **against the
+  metric it explains**, in the baseline's `entries`, instead of one reason per write: an unrelated
+  rebaseline no longer erases another metric's explanation, `abatty baseline` refuses a rise
+  without `--owner` as well as `--reason`, and the entry is deleted when the debt it explained is
+  paid, so it cannot be read as cover for the next rise. The reason and the owner are printed on
+  the metric they belong to on every `abatty ratchet`. Every floor also records the probe
+  `version` it was written under; a probe that changes what it counts reports `REDEFINED` and the
+  run is red until somebody re-reads it and re-baselines, rather than comparing today's count
+  against a number that answered a different question. A baseline written before the field existed
+  is taken at its word rather than declared stale. And a probe that stands in for something it
+  cannot measure now says so in `approximates`, printed beside its own count wherever it is red:
+  `docs.behindCode` states that it is wrong in both directions and is a prompt to re-read rather
+  than a verdict that a document is wrong, and `startup.eagerModules` states that a module count
+  is standing in for milliseconds that belong to whichever machine measured them.
+
 - **The bypass layer outside the agent** (C24). The guard hook refuses a force push and a hook
   bypass inside the agent's own shell, which made the refusal a property of one tool rather than
   of the repository: the same command went through from a second terminal, a script, a CI step or

@@ -1,7 +1,14 @@
 /**
  * The baseline: the committed floor, read back tolerant of a hand edit, and written by
  * `abatty baseline` under the rules of standard §2.2 - a zero is promoted to HARD, a HARD
- * metric above zero is refused, a number that rose is refused without a reason.
+ * metric above zero is refused, a number that rose is refused without a reason and an owner.
+ *
+ * Two things are recorded beside every number, because a floor is a promise and a promise with
+ * nobody's name on it is a wish. `entries` holds, per metric, the day it was raised, who raised
+ * it and why, and it survives the next write: a reason given once for one metric is not erased by
+ * an unrelated rebaseline of another. `versions` holds the definition each floor was written
+ * under, so a probe that changes what it counts is reported rather than silently compared against
+ * a number that meant something else.
  */
 import { readJsonFile, writeJsonFile } from "../core/repo.mjs";
 import { BASELINE_NOTE } from "./config.mjs";
@@ -11,7 +18,18 @@ import { scoreOf } from "./index.mjs";
  * @typedef {import("./index.mjs").Baseline} Baseline
  * @typedef {import("./index.mjs").Measurement} Measurement
  * @typedef {import("./index.mjs").RatchetConfig} RatchetConfig
+ * @typedef {import("./index.mjs").BaselineEntry} BaselineEntry
  */
+
+/**
+ * The definition a metric is counted under. A probe that changes WHAT it counts bumps this, and
+ * the floor written under the old number is then reported rather than compared. 1 is the
+ * definition a probe has until somebody says otherwise.
+ * @param {{ probe: { version?: number } }} m
+ */
+export function probeVersion(m) {
+  return typeof m.probe.version === "number" ? m.probe.version : 1;
+}
 
 /** The committed baseline, or null. @param {string} repoDir @param {string} rel @returns {Baseline | null} */
 export function readBaseline(repoDir, rel) {
@@ -29,7 +47,7 @@ export function readBaseline(repoDir, rel) {
  * the config holds it as a ratchet; a HARD metric above zero is refused; a number above the
  * committed floor is refused without a reason, and with one the reason belongs in the progress
  * log. Nothing is written when refused.
- * @param {{ repoDir: string, rel: string, measurements: Measurement[], config: RatchetConfig, previous: Baseline | null, today: string, reason?: string, dryRun?: boolean }} o
+ * @param {{ repoDir: string, rel: string, measurements: Measurement[], config: RatchetConfig, previous: Baseline | null, today: string, reason?: string, owner?: string, dryRun?: boolean }} o
  * @returns {{ ok: boolean, baseline: Baseline, refusals: string[], promoted: string[], rises: string[] }}
  */
 export function writeBaseline(o) {
@@ -47,6 +65,10 @@ export function writeBaseline(o) {
   const scanned = {};
   /** @type {Record<string, Record<string, number>>} */
   const debt = {};
+  /** @type {Record<string, number>} */
+  const versions = {};
+  /** Kept from the previous write: an entry explains ITS metric, not the day it was written. */
+  const entries = { .../** @type {Record<string, BaselineEntry>} */ (previous?.entries || {}) };
   for (const m of measurements) {
     if (m.skipped) continue;
     const forcedRatchet = config.ratchet.includes(m.metric);
@@ -63,6 +85,7 @@ export function writeBaseline(o) {
     const was = previous?.metrics?.[m.metric];
     if (typeof was === "number" && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
     metrics[m.metric] = m.value;
+    versions[m.metric] = probeVersion(m);
     if (!m.probe.emptyScanOk) scanned[m.metric] = m.scanned;
     if (m.value === 0 && !forcedRatchet) {
       if (!hard.has(m.metric) && m.probe.kind !== "hard") promoted.push(m.metric);
@@ -72,10 +95,22 @@ export function writeBaseline(o) {
       if (m.value > 0) debt[m.metric] = Object.fromEntries(Object.entries(m.debt).sort());
     }
   }
-  if (rises.length && !o.reason)
+  const missing = rises.length && (!o.reason || !o.owner);
+  if (missing)
     refusals.push(
-      `a floor never rises without a reason: ${rises.join(", ")}. Pass --reason "<why>" and write the same reason in docs/STANDARDS_PROGRESS.md, or fix the findings`,
+      `a floor never rises without a reason and an owner: ${rises.join(", ")}. Pass --reason "<why>" --owner "<who>" and write the same reason in docs/STANDARDS_PROGRESS.md, or fix the findings`,
     );
+  for (const m of measurements) {
+    if (m.skipped || !(m.metric in metrics)) continue;
+    const was = previous?.metrics?.[m.metric];
+    // The entry explains a number that is still there. Once the value falls back to or below the
+    // floor it explained, the debt it was written for is gone and so is the entry: a reason left
+    // behind outlives its subject and is read as cover for the next rise.
+    if (typeof was === "number" && m.value > was && o.reason && o.owner)
+      entries[m.metric] = { at: o.today, was, now: m.value, reason: o.reason, owner: o.owner };
+    else if (entries[m.metric] && m.value <= (entries[m.metric]?.was ?? -1))
+      delete entries[m.metric];
+  }
   const { score } = scoreOf(measurements);
   /** @type {Baseline} */
   const baseline = {
@@ -87,8 +122,12 @@ export function writeBaseline(o) {
     metrics: Object.fromEntries(Object.entries(metrics).sort()),
     scanned: Object.fromEntries(Object.entries(scanned).sort()),
     debt: Object.fromEntries(Object.entries(debt).sort()),
+    versions: Object.fromEntries(Object.entries(versions).sort()),
+    entries: Object.fromEntries(Object.entries(entries).sort()),
   };
-  if (o.reason) baseline.lastReason = { at: o.today, reason: o.reason, rises };
+  // The one-per-write field this replaces. Left in place it would read as the reason for whatever
+  // is in the file today, which is exactly the confusion `entries` exists to end.
+  delete baseline.lastReason;
   const ok = refusals.length === 0;
   if (ok && !o.dryRun) writeJsonFile(o.repoDir, o.rel, baseline);
   return { ok, baseline, refusals, promoted, rises };

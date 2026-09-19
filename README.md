@@ -400,14 +400,19 @@ item with the evidence that put it there.
 
 `abatty ratchet` measures every mechanical rule the linter cannot state and refuses a number
 that goes the wrong way; `abatty baseline` writes today's numbers as the floor. A **probe** is
-data with one function: `{ metric, kind, standard, title, why, scan(ctx), controls }`. Two
+data with one function: `{ metric, kind, standard, title, why, version, scan(ctx), controls }`. Two
 kinds: **hard** must be zero, now and forever; **ratchet** holds today's number and may only
 fall, by its total **and per file** (the `debt` in the baseline), so debt cannot relocate: a
 file may improve, never worsen, and a file not on the list carries none. A metric at zero is
 promoted to hard by the baseline writer; a hard metric above zero is never recorded; a floor
-that rose is refused without `--reason`, and the reason belongs in `docs/STANDARDS_PROGRESS.md`
-too. A probe that scans zero files where the baseline saw some fails the run, so a moved path
-never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
+that rose is refused without `--reason` and `--owner`, and the reason belongs in
+`docs/STANDARDS_PROGRESS.md` too. The reason and the owner are recorded **against the metric**,
+in the baseline's `entries`, not against the write: one metric's explanation is not erased by an
+unrelated rebaseline of another, and it is deleted when the debt it explained is gone. A probe
+also carries a `version`, the definition it counts under, written into the baseline beside the
+number; a probe that changes what it counts reports `REDEFINED` rather than comparing today's
+count against a floor that answered a different question. A probe that scans zero files where the
+baseline saw some fails the run, so a moved path never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
 among the others; the gate passes it the range.
 
 The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE.1, the budgets

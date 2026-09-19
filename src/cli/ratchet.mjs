@@ -103,14 +103,21 @@ export async function ratchetCommand(command, c) {
                   ? t.red("NO FLOOR")
                   : v.status === "improved"
                     ? t.red("FLOOR UNLOCKED")
-                    : v.status === "skipped"
-                      ? t.gray("skipped")
-                      : t.green("ok");
+                    : v.status === "redefined"
+                      ? t.red("REDEFINED")
+                      : v.status === "skipped"
+                        ? t.gray("skipped")
+                        : t.green("ok");
         out(
           `  ${mark(v.status)} ${t.bold(v.metric.padEnd(24))} ${String(v.value).padStart(5)}${v.floor !== null ? t.gray(` / ${v.floor}`) : t.gray("      ")}  ${t.gray(v.kind.padEnd(7))} ${word}${v.scanned ? t.gray(`  · ${v.scanned} scanned`) : ""}\n`,
         );
         for (const m of v.messages)
           out(`      ${v.status === "skipped" ? t.gray(m) : t.yellow(m)}\n`);
+        // Who raised this floor and why, read from the baseline, on the metric it explains.
+        if (v.floorNote) out(`      ${t.gray(v.floorNote)}\n`);
+        // And what the number is not: a proxy says so where it is read, beside its own count.
+        if (v.approximates && v.status !== "ok" && v.status !== "skipped")
+          out(`      ${t.gray(`a proxy: ${v.approximates}`)}\n`);
       }
       // What this change introduced, before what the repository already carried. A gate that
       // reports both in one list teaches its reader to scroll past both.
@@ -145,7 +152,8 @@ export async function ratchetCommand(command, c) {
     }
     case "baseline": {
       // Today's numbers as the floor: zeros promoted to HARD, a HARD metric above zero refused, a
-      // rise refused without --reason (and the reason belongs in the progress log too).
+      // rise refused without --reason and --owner (the reason belongs in the progress log too),
+      // and recorded against the metric it explains rather than against the write.
       const { adoption, config, baselineRel } = ratchetSetup(dir);
       const { probes, problems } = await loadProbes(dir, config);
       out(
@@ -170,6 +178,7 @@ export async function ratchetCommand(command, c) {
         previous,
         today: ctx.today,
         reason: opt("--reason"),
+        owner: opt("--owner"),
         dryRun: flag("--dry-run"),
       });
       for (const m of measurements) {
@@ -182,7 +191,7 @@ export async function ratchetCommand(command, c) {
       for (const x of r.refusals) out(`\n  ${t.glyph.fail} ${t.red(x)}\n`);
       if (r.rises.length && r.ok)
         out(
-          `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised with a reason: ${r.rises.join(", ")} - write the same reason in docs/STANDARDS_PROGRESS.md`)}\n`,
+          `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised by ${opt("--owner")}: ${r.rises.join(", ")} - the reason is recorded per metric in the baseline; write the same one in docs/STANDARDS_PROGRESS.md`)}\n`,
         );
       out(
         `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green(flag("--dry-run") ? "baseline computed (not written: --dry-run)" : "baseline written") : t.red("baseline refused; nothing written")} ${t.gray(`· readability ${r.baseline.score}/100`)}\n\n`,
