@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
@@ -27,9 +27,26 @@ function nightRepo(name, phases = ["11"]) {
   cfg.phases = phases.map(Number);
   cfg.maxSessionsPerPhase = 2;
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
+  // The controls are a precondition of a night, so a fixture that means to run one records that
+  // every gate step was watched going red. A fixture without this is the refusal case, and it has
+  // a test of its own.
+  recordControls(dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");
   return dir;
+}
+
+/** Every gate step watched failing on a planted violation, as `doctor --controls` records it. @param {string} dir */
+export function recordControls(dir, steps = ["format", "typecheck", "unit tests (TEST.1)"]) {
+  mkdirSync(join(dir, ".abatty"), { recursive: true });
+  writeFileSync(
+    join(dir, ".abatty", "controls.json"),
+    JSON.stringify({
+      at: new Date().toISOString(),
+      steps: steps.map((label) => ({ label, outcome: "red", detail: "went red, as it must" })),
+      absent: [],
+    }),
+  );
 }
 
 /** @param {string} dir @param {string} command */

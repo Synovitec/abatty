@@ -8,7 +8,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { git, parseJson, readAdoption } from "../core/repo.mjs";
+import { git, parseJson, readAdoption, readJsonFile } from "../core/repo.mjs";
+import { CONTROLS_FILE } from "../core/step-controls.mjs";
+import { buildContext } from "../rules/context.mjs";
+import { describeTrust, scanTrust } from "./trust.mjs";
 import { agentCommand, clock } from "./session.mjs";
 import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
 import { prepareSandbox } from "./sandbox.mjs";
@@ -88,6 +91,37 @@ export function preflight(o, c) {
       `no night for ${adapters.map((a) => a.id).join(", ")}: an adapter without a hook protocol loses ${first ? lostGuarantees(first).join("; ") : "every hook"}. Name an adapter with hooks in agents, or run the gate and CI by day.`,
     );
   }
+  // The controls are a precondition, not a suggestion. A night is hours of unattended work whose
+  // only stop is the gate, and a gate step nobody has watched go red is a step that may be
+  // checking nothing. Running the night on it is trusting a guard that has never been tested.
+  const controls = readJsonFile(repoDir, CONTROLS_FILE);
+  if (!controls)
+    return refuse(
+      `the gate steps have never been watched failing: run \`abatty doctor --controls\` once, on this machine, before the first night. A step that has never gone red may be checking nothing, and the night has no other stop.`,
+      2,
+    );
+  const absent = Array.isArray(controls.absent) ? controls.absent.map(String) : [];
+  if (absent.length)
+    return refuse(
+      `${absent.join(", ")} stayed green on a planted violation: the step is absent, not passing. Fix the step or remove it, then run \`abatty doctor --controls\` again.`,
+      2,
+    );
+  log(
+    `controls: every gate step went red on a planted violation (${String(controls.at).slice(0, 10)})`,
+  );
+
+  // What the repository is telling an agent to do, before an agent reads it. A finding stops the
+  // night and is named; it is never filtered out of the content, because a filter that fails
+  // quietly is the same defect as a gate step that checks nothing.
+  const ctx = buildContext(repoDir);
+  const untrusted = scanTrust(ctx);
+  if (untrusted.length)
+    return refuse(
+      `the repository carries ${untrusted.length} instruction-shaped line(s) an agent would read as an instruction:\n  ${describeTrust(untrusted).slice(0, 10).join("\n  ")}${untrusted.length > 10 ? `\n  ... and ${untrusted.length - 10} more` : ""}\nA night reads the tree. Remove them, or allow them deliberately, before pointing a model at it.`,
+      2,
+    );
+  log("trust: nothing in the tree reads as an instruction to a model");
+
   const base = String(config.baseBranch || "main");
   const prefix = String(config.branchPrefix || "adopt/standards");
   const stateFile = String(config.files?.state || "docs/ADOPTION_STATE.json");

@@ -5,6 +5,32 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The repository is read before an agent is pointed at it** (C22). A night let a model read
+  everything in the tree - source, documents, dependency metadata - and nothing asked what the
+  repository was telling it to do. Text in a file an agent reads is an instruction in exactly the
+  way a prompt is, and a repository is a place other people can write. The pre-flight now scans
+  for three shapes: text that addresses a model (dropping its instructions, reassigning its role,
+  forging a turn boundary, asking for a secret, asking for a control to be switched off), a
+  command a document asks somebody to run (a download piped into a shell, `rm -rf` from home), and
+  a manifest that runs code at install time. A finding **stops the night and is named**; it is
+  never filtered out of the content, because a filter that fails quietly is the same defect as a
+  gate step that checks nothing.
+
+  The second direction is what makes it survivable. A line that forbids the thing it names is not
+  an instruction to do it: this package's own guard writes the bypass flag down in order to refuse
+  it, and the first version of the scan flagged ten lines of its own harness. A scan that fires on
+  a repository documenting its own controls is a scan somebody switches off, and then it catches
+  nothing at all. Five control cases, two of them entirely about silence.
+
+- **A night is refused until the gate steps have been watched failing** (C12). `doctor --controls`
+  plants a violation per gate step and reports a step that stays green as absent; it was a
+  suggestion, and the night never asked whether it had been run. A night is hours of unattended
+  work whose only stop is the gate, so a step nobody has watched go red is a guard nobody has
+  tested. The night now refuses to start without the record, and refuses just as firmly when the
+  record names a step that stayed green: absent is not passing.
+
 ### Fixed
 
 - **The coupled path for the harness named a folder it does not install into.** `templates/harness/`
