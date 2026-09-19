@@ -228,9 +228,9 @@ already be finished.
 
 | ID  | Change                                                                         | State   | Size |
 | --- | ------------------------------------------------------------------------------ | ------- | ---- |
-| C38 | `abatty attest` emits a custom predicate in the established attestation format | open    | M    |
+| C38 | `abatty attest` emits a custom predicate in the established attestation format | landed  | M    |
 | C39 | Signing uses the established ecosystem and the release's identity mechanism    | open    | S    |
-| C36 | The record is scoped to what the compliance ring cannot produce                | open    | S    |
+| C36 | The record is scoped to what the compliance ring cannot produce                | landed  | S    |
 | C26 | A `cra` profile mapping rules to the regulation's essential requirements       | open    | L    |
 | C27 | An evidence export fit for technical documentation                             | open    | M    |
 | C4  | `abatty validate`: which rules precede defect-fixing commits here              | open    | L    |
@@ -302,30 +302,30 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 Every change, its wave, its state and where it came from. `07`, `08` and `09` are the research
 files; `D` is `DESIGN.md`.
 
-| ID  | Wave | State   | From | ID  | Wave | State   | From |
-| --- | ---- | ------- | ---- | --- | ---- | ------- | ---- |
-| C1  | -    | landed  | 07   | C26 | 6    | open    | 08   |
-| C2  | 2    | open    | 07   | C27 | 6    | open    | 08   |
-| C3  | 5    | landed  | 07   | C28 | -    | landed  | 08   |
-| C4  | 6    | open    | 07   | C29 | 1    | open    | 08   |
-| C5  | 5    | landed  | 07   | C30 | 1    | partial | 08   |
-| C6  | 5    | landed  | 07   | C31 | 2    | open    | 09   |
-| C7  | -    | landed  | 07   | C32 | 3    | open    | 09   |
-| C8  | 3    | partial | 07   | C33 | 2    | open    | 09   |
-| C9  | 3    | open    | 07   | C34 | 6    | partial | 09   |
-| C10 | 6    | open    | 07   | C35 | 6    | open    | 09   |
-| C11 | 4    | open    | 07   | C36 | 6    | open    | 09   |
-| C12 | 4    | partial | 07   | C37 | 6    | open    | 09   |
-| C13 | 5    | landed  | 07   | C38 | 6    | open    | 09   |
-| C14 | 5    | landed  | 07   | C39 | 6    | open    | 09   |
-| C15 | 5    | partial | 07   | C40 | 6    | open    | 09   |
-| C16 | 5    | landed  | 07   | C41 | 1    | open    | D    |
-| C17 | 5    | landed  | 07   | C42 | 1    | open    | D    |
-| C18 | 5    | landed  | 07   | C43 | 3    | open    | D    |
-| C19 | 6    | partial | 07   | C44 | 3    | open    | D    |
-| C20 | 6    | open    | 07   | C45 | 2    | open    | D    |
-| C21 | 4    | open    | 08   | C46 | 3    | open    | D    |
-| C22 | 4    | open    | 08   | C47 | 3    | open    | D    |
-| C23 | 4    | open    | 08   | C48 | 1    | open    | D    |
-| C24 | 4    | landed  | 08   | C49 | 5    | partial | D    |
-| C25 | 4    | open    | 08   |     |      |         |      |
+| ID  | Wave | State    | From | ID  | Wave | State   | From |
+| --- | ---- | -------- | ---- | --- | ---- | ------- | ---- |
+| C1  | -    | landed   | 07   | C26 | 6    | open    | 08   |
+| C2  | 2    | open     | 07   | C27 | 6    | open    | 08   |
+| C3  | 5    | landed   | 07   | C28 | -    | landed  | 08   |
+| C4  | 6    | open     | 07   | C29 | 1    | open    | 08   |
+| C5  | 5    | landed   | 07   | C30 | 1    | partial | 08   |
+| C6  | 5    | landed   | 07   | C31 | 2    | open    | 09   |
+| C7  | -    | landed   | 07   | C32 | 3    | open    | 09   |
+| C8  | 3    | partial  | 07   | C33 | 2    | open    | 09   |
+| C9  | 3    | reshaped | 07   | C34 | 6    | partial | 09   |
+| C10 | 6    | open     | 07   | C35 | 6    | open    | 09   |
+| C11 | 4    | landed   | 07   | C36 | 6    | landed  | 09   |
+| C12 | 4    | landed   | 07   | C37 | 6    | open    | 09   |
+| C13 | 5    | landed   | 07   | C38 | 6    | landed  | 09   |
+| C14 | 5    | landed   | 07   | C39 | 6    | open    | 09   |
+| C15 | 5    | partial  | 07   | C40 | 6    | open    | 09   |
+| C16 | 5    | landed   | 07   | C41 | 1    | open    | D    |
+| C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
+| C18 | 5    | landed   | 07   | C43 | 3    | partial | D    |
+| C19 | 6    | partial  | 07   | C44 | 3    | landed  | D    |
+| C20 | 6    | open     | 07   | C45 | 2    | landed  | D    |
+| C21 | 4    | landed   | 08   | C46 | 3    | landed  | D    |
+| C22 | 4    | landed   | 08   | C47 | 3    | landed  | D    |
+| C23 | 4    | landed   | 08   | C48 | 1    | landed  | D    |
+| C24 | 4    | landed   | 08   | C49 | 5    | partial | D    |
+| C25 | 4    | landed   | 08   |     |      |         |      |

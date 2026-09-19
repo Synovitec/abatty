@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty attest`: the conformance statement, ready to sign** (C38, C36). What held, at which
+  commit, under which version of which standard, the waivers with their owners and their expiry
+  dates, the floors with who raised each one and why, and the proof from the last
+  `abatty doctor --controls` run that each gate step has been watched going red. It is an in-toto
+  Statement carrying a custom predicate rather than a document of this package's invention, so
+  every attestation store, policy engine and verifier that already exists can hold it and gate on
+  it on day one; the subject is the git commit, because a conformance statement is about a state
+  of a source tree. The predicate states inside itself what it does NOT answer - the bill of
+  materials, the vulnerability report, the licence inventory, the build provenance - so a reader
+  who finds it in a store knows what not to ask of it, and so the record never becomes a worse
+  copy of four solved problems. A statement whose controls never ran says so and the command exits
+  3, because a gate of steps that cannot fail passes everything. Signing stays the pipeline's: the
+  package does not hold a key.
+
 - **Every preset has a fixture repository, and the next steps say what `init` actually wrote**
   (C49, partial). Three of the six presets had a fixture repository the suite runs `init`,
   `measure`, `doctor` and the gate against; `next`, `python` and `docs` had none, which meant the

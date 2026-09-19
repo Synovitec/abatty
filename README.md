@@ -163,6 +163,24 @@ is a decision nobody revisits. `SEC-AUDIT` reads for that scoping rather than fo
 `audit`: an unscoped audit reads partial, and a repository whose CI runs the gate has the
 built-in one, which is scoped by construction.
 
+`abatty attest` writes the conformance statement, ready to sign: what held, at which commit,
+under which version of which standard, the waivers with their owners and their expiry dates, the
+floors with who raised each one and why, and the proof from the last `abatty doctor --controls`
+run that each gate step has been watched going red. It is an **in-toto Statement with a custom
+predicate** (`https://abatty.dev/attestation/conformance/v1`), not a document of this package's
+invention, so every attestation store, policy engine and verifier that already exists can hold it
+and gate on it without a reader anybody has to write first. The subject is the git commit: a
+conformance statement is about a state of a source tree, not about a built file.
+
+The predicate says inside itself what it does **not** answer - the bill of materials, the
+vulnerability report, the licence inventory, the build provenance - because each of those is a
+solved problem with a decade of tooling behind it, and a record that quietly restated them would
+be a worse copy inviting the reader to trust one document for everything. It carries only what
+nothing else produces: which engineering rules hold, under which written standard, which were set
+aside and by whom, and whether the checks that say so have themselves been watched failing. A
+statement whose controls never ran says so and the command exits 3. Signing is the pipeline's:
+this package does not hold a key.
+
 ## What `init` writes
 
 | Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |
