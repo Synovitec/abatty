@@ -78,11 +78,16 @@ worth doing while any of them is open.
 
 | ID  | Change                                                                              | State   | Size |
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
-| C48 | A fifth gate outcome, `errored`: a step whose tool could not run is not a violation | open    | S    |
+| C48 | A fifth gate outcome, `errored`: a step whose tool could not run is not a violation | landed  | S    |
 | C30 | Semantic exit codes documented in the help; `--json` and `--plain` everywhere       | partial | S    |
-| C41 | Lazy imports; the entry point split into `src/cli/`                                 | open    | M    |
-| C29 | Workspace selection walks the import graph, or runs everything and says so          | open    | M    |
-| C42 | `shell: true` removed from the eleven spawn sites that do not need it               | open    | S    |
+
+C48 landed with the exit codes of C30: 0 clean, 2 bad input, 3 found violations, 4 the instrument,
+130 interrupted, in `src/cli/exit.mjs` and in `abatty help`. What is left of C30 is the flag sweep,
+`--json` and `--plain` on every command a script may consume.
+
+| C41 | Lazy imports; the entry point split into `src/cli/` | open | M |
+| C29 | Workspace selection walks the import graph, or runs everything and says so | open | M |
+| C42 | `shell: true` removed from the eleven spawn sites that do not need it | open | S |
 
 **Done when**
 

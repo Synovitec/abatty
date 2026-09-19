@@ -21,29 +21,56 @@ import { auditOutcome, scanSecrets } from "./secrets.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
 
 /**
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {{ code: number, errored?: boolean, detail?: string }} RunResult
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
- * Run an npm script and return its exit code; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
+ * Did the tool run and report, or did it never get to report? A tool that exits non-zero has
+ * judged the work; a tool that could not be spawned, was killed by a signal, or that the shell
+ * could not find or execute has judged nothing, and calling that a failure tells the reader
+ * their work is bad when the instrument is what broke.
+ * @param {import("node:child_process").SpawnSyncReturns<string | Buffer>} r @returns {RunResult}
  */
-export function runScript(repoDir, script, extraArgs = []) {
-  const r = spawnSync(
-    "npm",
-    ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])],
-    { cwd: repoDir, stdio: "inherit", shell: true },
-  );
-  return r.status ?? 1;
+function resultOf(r) {
+  if (r.error)
+    return {
+      code: r.status ?? 1,
+      errored: true,
+      detail: /** @type {NodeJS.ErrnoException} */ (r.error).code
+        ? `${/** @type {NodeJS.ErrnoException} */ (r.error).code}: ${r.error.message}`
+        : r.error.message,
+    };
+  if (r.signal) return { code: 1, errored: true, detail: `killed by ${r.signal}` };
+  if (r.status === 127) return { code: 127, errored: true, detail: "command not found" };
+  if (r.status === 126) return { code: 126, errored: true, detail: "command not executable" };
+  return { code: r.status ?? 1 };
 }
 
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv */
+/** A runner may answer with a bare exit code; read it as one that ran. @param {RunResult | number} r @returns {RunResult} */
+export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
+
+/**
+ * Run an npm script and say how it went; output goes straight to the terminal.
+ * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
+ */
+export function runScript(repoDir, script, extraArgs = []) {
+  return resultOf(
+    spawnSync("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])], {
+      cwd: repoDir,
+      stdio: "inherit",
+      shell: true,
+    }),
+  );
+}
+
+/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
 export function runCommand(repoDir, argv) {
   const [cmd, ...args] = argv;
-  const r = spawnSync(String(cmd), args, { cwd: repoDir, stdio: "inherit", shell: true });
-  return r.status ?? 1;
+  return resultOf(spawnSync(String(cmd), args, { cwd: repoDir, stdio: "inherit", shell: true }));
 }
 
 function dockerRunning() {
@@ -203,11 +230,18 @@ export function runGate(o) {
     if (s.command) {
       log(`\n▶ ${prefix}${s.label}`);
       const t0 = Date.now();
-      const code = runCommand(cwd, s.command);
+      const res = asResult(runCommand(cwd, s.command));
       const ms = Date.now() - t0;
-      if (code !== 0) {
+      if (res.errored) {
+        events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
+        log(
+          `\n✗ ${prefix}${s.label} could not run: ${s.command.join(" ")} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+        );
+        return false;
+      }
+      if (res.code !== 0) {
         events.push({ label: prefix + s.label, outcome: "failed", ms });
-        log(`\n✗ ${prefix}${s.label} failed (exit ${code}). The gate stops here.`);
+        log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
         return false;
       }
       events.push({ label: prefix + s.label, outcome: "ok", ms });
@@ -228,11 +262,18 @@ export function runGate(o) {
     }
     log(`\n▶ ${prefix}${s.label}`);
     const t0 = Date.now();
-    const code = run(cwd, script, s.rangeArg ? ["--range", range] : []);
+    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : []));
     const ms = Date.now() - t0;
-    if (code !== 0) {
+    if (res.errored) {
+      events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
+      log(
+        `\n✗ ${prefix}${s.label} could not run: npm run ${script} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+      );
+      return false;
+    }
+    if (res.code !== 0) {
       events.push({ label: prefix + s.label, outcome: "failed", ms });
-      log(`\n✗ ${prefix}${s.label} failed (exit ${code}). The gate stops here.`);
+      log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
       return false;
     }
     events.push({ label: prefix + s.label, outcome: "ok", ms });
@@ -271,14 +312,23 @@ export function runGate(o) {
   };
 
   const gated = (o.workspaces || []).filter((w) => w.preset);
-  for (const s of preset.gate.always) if (!step(s)) return { ok: false, events, range };
+  // The verdict, with the instrument's own state beside it: a step that could not run is not a
+  // step that found something, and a caller that exits on the difference needs to see it.
+  const done = (/** @type {boolean} */ ok) => ({
+    ok,
+    events,
+    range,
+    errored: events.some((e) => e.outcome === "errored"),
+  });
+
+  for (const s of preset.gate.always) if (!step(s)) return done(false);
   for (const w of gated) {
     const p = /** @type {import("../presets/index.mjs").Preset} */ (w.preset);
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
     log(`\n— workspace ${w.path} (${p.id})`);
-    for (const s of p.gate.always) if (!step(s)) return { ok: false, events, range };
+    for (const s of p.gate.always) if (!step(s)) return done(false);
   }
   cwd = repoDir;
   prefix = "";
@@ -291,17 +341,17 @@ export function runGate(o) {
     for (const w of gated)
       for (const suite of /** @type {any} */ (w.preset).gate.suites)
         events.push({ label: `${w.path} · ${suite.name}`, outcome: "skipped", detail: "--fast" });
-    return { ok: true, events, range };
+    return done(true);
   }
 
-  if (!suites(preset, "")) return { ok: false, events, range };
+  if (!suites(preset, "")) return done(false);
   for (const w of gated) {
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
-    if (!suites(/** @type {any} */ (w.preset), `${w.path}/`)) return { ok: false, events, range };
+    if (!suites(/** @type {any} */ (w.preset), `${w.path}/`)) return done(false);
   }
-  return { ok: true, events, range };
+  return done(true);
 }
 
 /**

@@ -2,6 +2,7 @@
  * The `ci` command: the pipeline files generated from the preset's gate, the pull-request
  * template, the ruleset printed for import.
  */
+import { EXIT } from "./exit.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
@@ -57,11 +58,11 @@ export function ciCommand(c) {
   const { dir, opt, flag, out, err, VERSION, preset, config } = c;
   if (flag("--ruleset")) {
     out(renderRuleset({ checks: ["checks"] }) + "\n");
-    return 0;
+    return EXIT.clean;
   }
   if (!preset) {
     err(`${t.glyph.fail} no preset: pass --stack, or set stack in the config\n`);
-    return 2;
+    return EXIT.input;
   }
   const named = opt("--provider")
     ? opt("--provider")
@@ -74,7 +75,7 @@ export function ciCommand(c) {
     err(
       `${t.glyph.fail} unknown provider(s): ${unknown.join(", ")} (known: ${PROVIDERS.join(", ")})\n`,
     );
-    return 2;
+    return EXIT.input;
   }
   const events = writeCi({
     repoDir: dir,
@@ -94,5 +95,5 @@ export function ciCommand(c) {
   out(
     `\n${behind ? t.glyph.fail + " " + t.red(`${behind} file(s) behind the gate: run abatty ci`) : t.glyph.ok + " " + t.green("CI is the gate")}${flag("--ruleset") ? "" : t.gray(" · --ruleset prints the organisation ruleset for import")}\n\n`,
   );
-  return behind ? 1 : 0;
+  return behind ? EXIT.findings : EXIT.clean;
 }

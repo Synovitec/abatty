@@ -129,7 +129,7 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0, "in step");
   writeFileSync(join(dir, ".github/workflows/checks.yml"), "name: old\n");
   const behind = cli(["ci", dir, "--provider", "github", "--check"], dir);
-  assert.equal(behind.code, 1);
+  assert.equal(behind.code, 3, "the check ran and found the pipeline behind");
   assert.match(behind.out, /behind\s+\.github\/workflows\/checks\.yml/);
   assert.equal(cli(["ci", dir, "--provider", "nope"], dir).code, 2);
   const findings = runCatalog(buildContext(dir), RULES);

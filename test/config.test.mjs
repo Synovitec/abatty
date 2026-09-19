@@ -107,7 +107,7 @@ test("abatty config: the files, the problems, --migrate moves the older place to
   assert.match(before.out, /the older place; abatty config --migrate/);
   writeFileSync(join(dir, LEGACY_CONFIG), JSON.stringify({ baseBranch: 1 }));
   const bad = cli(["config", dir], dir);
-  assert.equal(bad.code, 1);
+  assert.equal(bad.code, 2, "a config that does not match the schema is bad input");
   assert.match(bad.out, /baseBranch: expected string/);
   writeFileSync(
     join(dir, LEGACY_CONFIG),

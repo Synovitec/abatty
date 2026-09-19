@@ -52,6 +52,7 @@ import {
   readConfig,
 } from "../src/core/config.mjs";
 import { runGate } from "../src/core/gate.mjs";
+import { EXIT, EXIT_CODES } from "../src/cli/exit.mjs";
 import { dependencyNames, readAdoption, readJsonFile, repoRoot } from "../src/core/repo.mjs";
 import { detectPreset, presetById, presets } from "../src/presets/index.mjs";
 import { detectWorkspaces } from "../src/presets/workspaces.mjs";
@@ -254,7 +255,7 @@ switch (command) {
     out(
       `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
     );
-    process.exit(r.conflicts ? 1 : 0);
+    process.exit(r.conflicts ? EXIT.findings : EXIT.clean);
   }
   case "config": {
     // The one config: which files carry it, what it resolves to, what the schema refuses.
@@ -269,7 +270,7 @@ switch (command) {
     }
     if (flag("--json")) {
       out(JSON.stringify({ files, problems, config: readConfig(dir) }, null, 2) + "\n");
-      process.exit(problems.length ? 1 : 0);
+      process.exit(problems.length ? EXIT.input : EXIT.clean);
     }
     out(`\n${t.banner(VERSION)}  ${t.bold("config")} ${t.gray("·")} ${dir}\n\n`);
     out(
@@ -290,7 +291,7 @@ switch (command) {
     out(
       `\n${problems.length ? t.glyph.fail + " " + t.red(`${problems.length} problem(s) against the schema`) : t.glyph.ok + " " + t.green("valid against the schema")} ${t.gray("· --json for the resolved config")}\n\n`,
     );
-    process.exit(problems.length ? 1 : 0);
+    process.exit(problems.length ? EXIT.input : EXIT.clean);
   }
   case "agents": {
     // The adapters: what each gives, and what this repository loses with the ones it named.
@@ -309,7 +310,7 @@ switch (command) {
     out(
       `\n  ${t.gray(`this repository: ${adapters.map((a) => a.id).join(", ") || "none"} (config → agents)${adapters.some((a) => a.guarantees.night) ? "" : " · no adapter with hooks: no night, the gate and CI by day"}`)}\n\n`,
     );
-    process.exit(unknown.length ? 1 : 0);
+    process.exit(unknown.length ? EXIT.input : EXIT.clean);
   }
   case "mcp": {
     // The MCP server over stdio, scoped to this repository; it returns only when stdin closes.
@@ -410,16 +411,18 @@ switch (command) {
         else out(`${t.gray(l)}\n`);
       },
     });
-    const ran = r.events.filter((e) => e.outcome === "ok" || e.outcome === "failed");
+    const ran = r.events.filter(
+      (e) => e.outcome === "ok" || e.outcome === "failed" || e.outcome === "errored",
+    );
     out(
-      `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green("gate green") : t.red("gate red")} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}\n`,
+      `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green("gate green") : r.errored ? t.red("gate could not run") : t.red("gate red")} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}\n`,
     );
     for (const e of r.events)
       out(
-        `  ${e.outcome === "ok" ? t.glyph.ok : e.outcome === "failed" ? t.glyph.fail : e.outcome === "deferred" ? t.glyph.defer : t.glyph.skip} ${e.outcome === "skipped" ? t.gray(e.label) : e.label}${e.ms ? t.gray("  " + t.duration(e.ms)) : ""}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
+        `  ${e.outcome === "ok" ? t.glyph.ok : e.outcome === "failed" ? t.glyph.fail : e.outcome === "errored" ? t.glyph.warn : e.outcome === "deferred" ? t.glyph.defer : t.glyph.skip} ${e.outcome === "skipped" ? t.gray(e.label) : e.label}${e.outcome === "errored" ? t.yellow(" could not run") : ""}${e.ms ? t.gray("  " + t.duration(e.ms)) : ""}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
       );
     out("\n");
-    process.exit(r.ok ? 0 : 1);
+    process.exit(r.errored ? EXIT.error : r.ok ? EXIT.clean : EXIT.findings);
   }
   case "doctor": {
     const preset = choosePreset(false);
@@ -476,7 +479,7 @@ switch (command) {
     out(
       `\n${r.ok ? t.glyph.ok + " " + t.green("doctor: ok") : t.glyph.fail + " " + t.red("doctor: NOT ok")}\n\n`,
     );
-    process.exit(r.ok ? 0 : 1);
+    process.exit(r.ok ? EXIT.clean : EXIT.findings);
   }
   case "scrub": {
     if (opt("--message")) {
@@ -491,7 +494,7 @@ switch (command) {
         err(
           `${t.glyph.fail} commit message names a tool: ${said.trim().slice(0, 100)}\n  say it without the name (abatty scrub)\n`,
         );
-        process.exit(1);
+        process.exit(EXIT.findings);
       }
       process.exit(0);
     }
@@ -527,7 +530,7 @@ switch (command) {
         `\n${t.gray("To rewrite the commit messages (a deliberate step, from a fresh clone, then a force-push and the hosting provider's purge request):")}\n  git filter-repo --message-callback "$(node -e \"import('abatty/scrub-map').then(m=>process.stdout.write(m.filterRepoCallback()))\")"\n`,
       );
     out("\n");
-    process.exit(all.length ? 1 : 0);
+    process.exit(all.length ? EXIT.findings : EXIT.clean);
   }
   case "report": {
     const r = await buildReport(dir, { abattyVersion: VERSION });
@@ -692,6 +695,9 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
+
+  ${t.gray("exit codes")}  ${EXIT_CODES.map(([c, w]) => `${c} ${w}`).join("  ·  ")}
+  ${t.gray("3 is the one that matters: a gate that found something did not fail, it worked. 4 is the instrument.")}
 
 `);
   }

@@ -1,15 +1,10 @@
 /**
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * Run an npm script and say how it went; output goes straight to the terminal.
+ * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
  */
-/**
- * Run an npm script and return its exit code; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
- */
-export function runScript(repoDir: string, script: string, extraArgs?: string[]): number;
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv */
-export function runCommand(repoDir: string, argv: string[]): number;
+export function runScript(repoDir: string, script: string, extraArgs?: string[]): RunResult;
+/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
+export function runCommand(repoDir: string, argv: string[]): RunResult;
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
  * a rebase or an amend it is not, and the diff would show the amend delta rather than the
@@ -29,24 +24,32 @@ export function runGate(o: GateOptions): {
     ok: boolean;
     events: GateEvent[];
     range: string;
+    errored: boolean;
 };
 /**
  * The always-on scripts the preset expects that package.json does not have (for doctor).
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
 export function missingGateScripts(repoDir: string, preset: import("../presets/index.mjs").Preset): (string | undefined)[];
+export function asResult(r: RunResult | number): RunResult;
+export type GateOutcome = "ok" | "failed" | "errored" | "skipped" | "deferred";
 export type GateEvent = {
     label: string;
-    outcome: "ok" | "failed" | "skipped" | "deferred";
+    outcome: GateOutcome;
     detail?: string;
     ms?: number;
 };
 export type GateEventW = {
     label: string;
-    outcome: "ok" | "failed" | "skipped" | "deferred";
+    outcome: GateOutcome;
     detail?: string;
     ms?: number;
     workspace?: string;
+};
+export type RunResult = {
+    code: number;
+    errored?: boolean;
+    detail?: string;
 };
 export type GateOptions = {
     repoDir: string;
@@ -54,7 +57,7 @@ export type GateOptions = {
     fast?: boolean;
     range?: string;
     base?: string;
-    run?: typeof runScript;
+    run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
     dockerUp?: () => boolean;
     log?: (line: string) => void;
     workspaces?: {

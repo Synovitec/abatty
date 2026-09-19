@@ -94,7 +94,7 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     // The dependencies are named, never installed: the gate skips the format step (no Prettier
     // config yet), reaches lint, and stops there naming the step - the skeleton holds its order.
     const gate = cli(["gate", dir, "--fast"], dir);
-    assert.equal(gate.code, 1, gate.out);
+    assert.equal(gate.code, 3, gate.out);
     assert.match(gate.out, /skipped format/);
     assert.match(gate.out, /lint \(CODE.4\) failed/);
   });

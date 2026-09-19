@@ -20,4 +20,4 @@ export function writeCi(o: {
 export function ciCommand(c: import("./ratchet.mjs").CliContext & {
     preset: import("../presets/index.mjs").Preset | null;
     config: Record<string, any> | null;
-}): 0 | 1 | 2;
+}): 0 | 2 | 3;

@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The gate can say "I could not run", and the exit codes say which happened** (C48, and the
+  codes of C30). A dead-code analyser that crashed and one that found dead code produced the same
+  `✗ ... failed. The gate stops here.`, so the verdict conflated "your work is bad" with "my
+  instrument broke" - in the one package whose whole claim is that its verdict means something. A
+  fifth outcome, `errored`, now carries the second: a step whose tool could not be spawned, was
+  killed by a signal, or that the shell could not find or execute is reported as the instrument
+  rather than as the work, names the tool and the message, and still stops the gate, because an
+  unproven step is not a passed step. The exit codes follow it and are listed in `abatty help`:
+  **0** clean, **2** invalid input, flags or configuration, **3** ran correctly and found
+  violations, **4** internal error or a step that could not run, **130** interrupted. Three is the
+  one that matters: a gate that found something did not fail, it worked. Two control cases run in
+  both directions - the same step crashing and the same step exiting non-zero after it ran - so
+  the difference is watched rather than asserted.
+
 ### Fixed
 
 - **A document whose name ends another document's name was invisible to `docs.indexDrift`.** The

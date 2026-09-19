@@ -225,7 +225,7 @@ test("the CLI: ratchet is red without a floor, baseline writes it, ratchet is gr
     "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n",
   });
   const red = cli(["ratchet", dir], dir);
-  assert.equal(red.code, 1, red.out);
+  assert.equal(red.code, 3, red.out);
   assert.match(red.out, /NO FLOOR/);
   assert.match(red.out, /ratchet red/);
   const base = cli(["baseline", dir], dir);
@@ -265,7 +265,7 @@ test("the changelog range: a source commit after the last changelog touch fails 
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "feat: six");
   const red = cli(["ratchet", dir, "--range", "auto"], dir);
-  assert.equal(red.code, 1, red.out);
+  assert.equal(red.code, 3, red.out);
   assert.match(red.out, /change\.changelogMissing/);
   assert.match(red.out, /HARD FAIL/);
   assert.match(red.out, /feat: six: src\/a\.ts changed, CHANGELOG\.md not touched after it/);

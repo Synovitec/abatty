@@ -93,7 +93,7 @@ test("the python preset: detected from the tree, init writes the private package
   git(py, "add", "-A");
   git(py, "commit", "-q", "-m", "chore: the instrument");
   const gate = cli(["gate", py, "--fast"], py);
-  assert.equal(gate.code, 1, gate.out);
+  assert.equal(gate.code, 3, gate.out);
   // With the tools installed the strict typecheck refuses the unannotated test; without them
   // the first command fails on "not found". Either way the gate is red at a command step.
   assert.match(

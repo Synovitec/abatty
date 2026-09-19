@@ -144,7 +144,7 @@ test("the CLI and the hook: abatty secrets --staged is what init's pre-commit ho
   assert.equal(clean.code, 0, clean.out);
   writeFileSync(join(dir, "leak.ts"), `${PEM}\n`);
   const tree = cli(["secrets", dir], dir);
-  assert.equal(tree.code, 1);
+  assert.equal(tree.code, 3);
   assert.match(tree.out, /private key block/);
   assert.equal(
     cli(["secrets", dir, "--staged"], dir).code,
@@ -153,6 +153,6 @@ test("the CLI and the hook: abatty secrets --staged is what init's pre-commit ho
   );
   git(dir, "add", "leak.ts");
   const staged = cli(["secrets", dir, "--staged", "--json"], dir);
-  assert.equal(staged.code, 1);
+  assert.equal(staged.code, 3);
   assert.equal(JSON.parse(staged.out).findings[0].path, "leak.ts");
 });

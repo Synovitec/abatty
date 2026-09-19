@@ -92,7 +92,7 @@ test("doctor --controls prints the verdict per step and is not ok while a step i
   const dir = fixture("controls-doctor");
   cli(["init", dir, "--stack", "node"], dir);
   const r = cli(["doctor", dir, "--skip-self-test", "--controls"], dir);
-  assert.equal(r.code, 1, r.out);
+  assert.equal(r.code, 3, r.out);
   assert.match(r.out, /Controls/);
   assert.match(r.out, /typecheck \(CODE\.3\).*stayed GREEN/);
   assert.match(r.out, /lint \(CODE\.4\).*went red on a debugger statement/);
