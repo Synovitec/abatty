@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The coupled path for the harness named a folder it does not install into.** `templates/harness/`
+  was coupled to `.claude/`, but the context-file template installs to the root as `CLAUDE.md`,
+  not into `.claude/` at all - so editing it demanded a change to a folder it never touches, and
+  the gate refused a correct push. The coupling is now the four pairs that are actually installs:
+  the hooks, the path-scoped rules, the agents and the project settings. A rule that fires where
+  nothing is wrong is the same defect as a rule that stays silent where something is.
+
 ### Changed
 
 - **The interoperable context file is always written, and `agents` says which surfaces are

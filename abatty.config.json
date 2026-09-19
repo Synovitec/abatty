@@ -38,9 +38,24 @@
       "why": "a rule change regenerates the catalog (abatty rules --md)"
     },
     {
-      "when": "templates/harness/",
-      "then": ".claude/",
-      "why": "the harness the package ships and the harness this repository runs are the same files (abatty update)"
+      "when": "templates/harness/hooks/",
+      "then": ".claude/hooks/",
+      "why": "the hooks the package ships and the hooks this repository runs are the same files (abatty update)"
+    },
+    {
+      "when": "templates/harness/rules/",
+      "then": ".claude/rules/",
+      "why": "the path-scoped rules the package ships are installed here (abatty update)"
+    },
+    {
+      "when": "templates/harness/agents/",
+      "then": ".claude/agents/",
+      "why": "the agents the package ships are installed here (abatty update)"
+    },
+    {
+      "when": "templates/harness/settings.project.json",
+      "then": ".claude/settings.json",
+      "why": "the settings the package ships are installed here (abatty update)"
     }
   ],
   "protectedPaths": [
