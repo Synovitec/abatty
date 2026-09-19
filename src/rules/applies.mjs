@@ -72,3 +72,18 @@ export const PWA = {
   stages: BUILT,
   applies: (c) => c.stack.pwa || "no service worker and no web manifest",
 };
+
+/**
+ * A repository an agent works in unattended: the harness is installed, so the rules about the
+ * sandbox, the permission surface and the trust boundary have a subject. A repository nobody
+ * points a model at overnight is not failing them; it is not running them.
+ * @type {Applies}
+ */
+export const HARNESSED = {
+  when: "a repository with the agent harness installed",
+  applies: (c) =>
+    c.exists(".claude/settings.json") ||
+    c.exists(".claude/hooks") ||
+    Boolean(c.adoption) ||
+    "no agent harness: nothing here runs unattended",
+};

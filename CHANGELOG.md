@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Agent security is a family of rules** (C21). The other families ask what the code does; these
+  ask what the agent may do to the repository and what the repository may do to the agent - a
+  different question, and the one the field's own incidents are about, because an unattended run
+  is a session with no reviewer and both directions of trust are open by default. Five rules:
+  `SEC-AGENT-SANDBOX` (a sandbox that proves its own boundary, and `off` stated rather than
+  assumed reads differently from never considered), `SEC-AGENT-PERMISSIONS` (the deny list is the
+  one place a reviewer can read what the agent may never do), `SEC-AGENT-TRUST` (the tree is read
+  before a model is pointed at it), `SEC-AGENT-MCP` (a server the config does not name is a
+  surface nobody reviewed) and `SEC-AGENT-BYPASS` (a bypass nobody can see afterwards is a hole
+  nobody can measure). Each is a harnessed repository's: a repository nobody runs unattended reads
+  `n/a` with the reason rather than failing five rules it never opted into. The catalog is 76
+  rules over 15 families.
+
+### Added
+
 - **The repository is read before an agent is pointed at it** (C22). A night let a model read
   everything in the tree - source, documents, dependency metadata - and nothing asked what the
   repository was telling it to do. Text in a file an agent reads is an instruction in exactly the
