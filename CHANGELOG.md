@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **Findings go to the diff, as SARIF** (C45). The strongest finding in the whole evidence base is
+  about placement rather than precision: the same analysis, at the same precision, reached a
+  near-zero fix rate delivered as a report and above seventy per cent delivered on the change
+  under review. This package produced the report. `abatty measure --sarif` and
+  `abatty ratchet --sarif` now write SARIF 2.1.0, and the pipeline `abatty ci` generates emits it
+  and uploads it to code scanning, so a finding appears on the line it concerns in the pull
+  request - through an OASIS standard the forges already ingest rather than through a bot we would
+  have to build and convince people to install. Enforcement decides the level: `hard` is an error,
+  `review` a warning, `prose` a note, and a ratchet metric is an error only when the number rose,
+  because the promise a ratchet makes is about the direction. `partialFingerprints` gives a
+  finding an identity that survives the lines above it moving, which is the problem the per-file
+  debt solves by hand today. It is a renderer and nothing else: one finding model, another
+  surface, nothing recomputed.
+
 ### Changed
 
 - **The shell is gone from every spawn site that did not need it** (C42). Eleven sites passed a

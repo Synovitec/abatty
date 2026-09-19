@@ -294,7 +294,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
 
   ${t.bold("abatty")} [status] [dir] [--fresh]                                    the repository at a glance
   ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--force] [--dry-run]   the instrument, from the templates and the preset
-  ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--quiet]           the gap analysis: score, every check, next steps by phase
+  ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--sarif] [--quiet]  the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run
   ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test]                  the harness self-test and the drift against the package
   ${t.bold("abatty scrub")} [dir] [--fix] [--commits|--range <r>] [--prs] [--history]  no trace of the tools (opt-in, scrub.enabled): files, commit messages, pull requests

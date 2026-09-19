@@ -7,6 +7,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { buildReport } from "../core/report.mjs";
 import { renderMarkdown } from "../core/gap-analysis.mjs";
 import { enforcedLine, nextSteps, phaseLine } from "./status.mjs";
+import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
 
 /**
@@ -16,6 +17,14 @@ export async function measureCommand(cx) {
   const { dir, opt, flag, out, err, VERSION } = cx;
   const r = await buildReport(dir, { abattyVersion: VERSION });
   for (const p of r.problems) err(`${t.glyph.warn} ${p}\n`);
+  if (flag("--sarif")) {
+    // The same findings in the shape a forge puts on a diff. Nothing is recomputed: one finding,
+    // another renderer.
+    out(
+      JSON.stringify(sarifOfFindings({ findings: r.findings, version: VERSION }), null, 2) + "\n",
+    );
+    return;
+  }
   if (flag("--json")) {
     out(JSON.stringify(r, null, 2) + "\n");
     return;

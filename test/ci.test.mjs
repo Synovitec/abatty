@@ -145,3 +145,19 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.ok(existsSync(join(fresh, ".github/workflows/checks.yml")));
   assert.match(init.out, /written\s+\.github\/workflows\/checks\.yml/);
 });
+
+test("the generated pipeline emits SARIF and uploads it, so findings land on the diff", () => {
+  // The strongest finding in the evidence base is about placement rather than precision: the same
+  // analysis reached a near-zero fix rate as a report and above seventy per cent on the change
+  // under review. This is that delivery, through a standard rather than through a bot we build.
+  const preset = presetById("next");
+  assert.ok(preset);
+  const yaml = renderGithubActions(preset, { base: "main" });
+  assert.match(yaml, /security-events: write/, "the upload needs the permission");
+  assert.match(yaml, /abatty ratchet --range auto --sarif > abatty\.sarif/);
+  assert.match(yaml, /github\/codeql-action\/upload-sarif@v3/);
+  assert.match(yaml, /sarif_file: abatty\.sarif/);
+  // Both steps run even when the gate went red, because that is the run whose findings matter.
+  const upload = yaml.slice(yaml.indexOf("findings as SARIF"));
+  assert.equal((upload.match(/if: always\(\)/g) || []).length, 2);
+});

@@ -224,12 +224,26 @@ export function renderGithubActions(preset, o = {}) {
     `  pull_request:`,
     `permissions:`,
     `  contents: read`,
+    // The findings are uploaded to code scanning, which is what puts them on the diff of the
+    // change under review rather than in a report nobody opens.
+    `  security-events: write`,
     `jobs:`,
     `  checks:`,
     `    runs-on: ubuntu-latest`,
     `    steps:`,
     ...setup,
     ...always.map(step),
+    // Emitted and uploaded even when a step above went red: a run that failed is exactly the run
+    // whose findings a reviewer needs on the diff.
+    `      - name: findings as SARIF`,
+    `        if: always()`,
+    `        run: npx abatty ratchet --range auto --sarif > abatty.sarif || true`,
+    `      - name: upload the findings`,
+    `        if: always()`,
+    `        uses: github/codeql-action/upload-sarif@v3`,
+    `        with:`,
+    `          sarif_file: abatty.sarif`,
+    `          category: abatty`,
   ];
   if (db.length) {
     out.push(

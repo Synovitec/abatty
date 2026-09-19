@@ -33,7 +33,9 @@ export async function ratchetCommand(command, c) {
       // --controls runs each probe's control cases on throwaway repositories instead.
       const { adoption, config, baselineRel } = ratchetSetup(dir);
       const { probes, problems } = await loadProbes(dir, config);
-      if (!flag("--json")) {
+      // A machine surface carries the findings and nothing else: a banner above them is a
+      // parse error to whatever reads them.
+      if (!flag("--json") && !flag("--sarif")) {
         out(`\n${t.banner(VERSION)}  ${t.bold("ratchet")} ${t.gray("·")} ${dir}\n\n`);
         for (const p of problems) out(`  ${t.glyph.fail} ${t.red(p)}\n`);
       }
@@ -64,6 +66,15 @@ export async function ratchetCommand(command, c) {
       const measurements = measureAll(probes, ctx, { config, range }, baseline);
       const verdicts = compare(measurements, baseline, config);
       const { score, axes } = scoreOf(measurements);
+      if (flag("--sarif")) {
+        // The probes carry a path and a line, which is what makes this the surface that lands on
+        // the diff of the change under review rather than in a report nobody opens.
+        const { sarifOfVerdicts } = await import("../ui/sarif.mjs");
+        out(
+          JSON.stringify(sarifOfVerdicts({ verdicts, probes, version: VERSION }), null, 2) + "\n",
+        );
+        process.exit(problems.length ? EXIT.input : failed(verdicts) ? EXIT.findings : EXIT.clean);
+      }
       if (flag("--json")) {
         out(
           JSON.stringify(
