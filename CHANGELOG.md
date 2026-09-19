@@ -7,6 +7,19 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The README opens with the reader's problem, and `docs/DOGFOOD.md` publishes the negative
+  results** (C34, C35, C40). The README used to open with what the package is; it now opens with
+  why anybody would want one, and with the finding that motivates the whole design - the same
+  analysis reached a near-zero fix rate as a report and passed seventy per cent on the change
+  under review. It also says what the package is honest about: it does not make anybody faster
+  and is not sold as if it did. What a written, enforced standard does is amplify whatever
+  discipline is already there, and a team that has not agreed on how it builds gets the same
+  disagreements produced faster. `docs/DOGFOOD.md` is the evidence for and against: the score and
+  what is behind it, eight bugs the instrument found in its own code, the five rules it cannot
+  hold because each wants a dependency, the four places it is wrong or incomplete, and the two
+  performance targets that were restated rather than met. Writing it found three em-dashes in
+  output strings, which `CLAUDE.md` forbids anywhere and which are now gone.
+
 - **The regulation's requirements as a lens, and the evidence export that reads it** (C26, C27).
   A new `cra` profile carries a mapping of the Cyber Resilience Act's twenty-one essential
   requirements onto rules that already exist, and carries **no rules of its own**: a profile that

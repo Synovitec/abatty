@@ -312,7 +312,7 @@ export function runGate(o) {
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
-    log(`\n— workspace ${w.path} (${p.id})`);
+    log(`\n· workspace ${w.path} (${p.id})`);
     for (const s of p.gate.always) if (!step(s)) return done(false);
   }
   cwd = repoDir;

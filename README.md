@@ -1,8 +1,41 @@
 # abatty
 
-**abatty** (abatty.io) installs a gate your repository has to pass, and proves the gate can
-fail. Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map,
-the adoption plan, the lessons, the research - ships with the package under
+## The problem this is for
+
+Your team writes more code than it used to, and it reviews it at the same speed it always did.
+Somewhere in there, the things everybody agreed to - the file that should have been split, the
+test that should have gone red first, the doc that should have moved with the code - stopped
+being decisions and became a queue nobody reads. A model can now produce a week of plausible
+work in an afternoon, and the only thing standing between that and your main branch is a person
+reading a diff at the end of a Thursday.
+
+The usual answer is another report. Reports are where good analysis goes to die: the same
+finding, at the same precision, reached a **near-zero fix rate as a report** and passed
+**seventy per cent when it arrived on the change under review**. Placement beats precision. The
+sources are in
+[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
+
+So this is not a report. **abatty installs a gate your repository has to pass, and then proves
+the gate can fail** - it plants a violation in each step and calls a step that stays green
+_absent_, because a guard nobody has watched fail is not a guard.
+
+### What it is honest about
+
+It does not make anybody faster, and it is not sold as if it did. What a written, enforced
+standard does is **amplify whatever discipline is already there**: a team that agrees on how it
+builds gets an agent that builds that way and a reviewer who can read a diff instead of policing
+one. A team that has not agreed gets the same disagreements, produced faster. The instrument
+enforces a decision; it does not make it, and it will not save a team from not having made one.
+
+The reading it produces - the score, the phase, the trend - is a way to compare this repository
+against itself over time. It is not a grade, not a percentage of conformity, and not a number to
+put in front of anybody as one.
+
+What running it on itself actually produced, negative results included, is in
+[`docs/DOGFOOD.md`](docs/DOGFOOD.md).
+
+Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map, the
+adoption plan, the lessons, the research - ships with the package under
 [`docs/standard/`](docs/standard/README.md), versioned with it. Contributions under a DCO:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -24,11 +57,7 @@ the adoption plan, the lessons, the research - ships with the package under
 5. Then the reading. `npx abatty` says where the repository stands, `npx abatty measure` writes
    the dated report, and both are by-products of the gate rather than the point of it.
 
-**Why that order.** The same analysis, at the same precision, is acted on differently depending
-on where it fires: delivered as a report it reached a near-zero fix rate, and delivered on the
-change under review it passed seventy per cent. Placement beats precision, so the gate leads and
-the report follows. The sources are in
-[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
+**Why that order.** Placement beats precision, as above: the gate leads and the report follows.
 
 Everything else below is the same instrument in more depth.
 

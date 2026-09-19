@@ -238,9 +238,9 @@ already be finished.
 | C10 | The context file grows only from the night's lessons                           | open    | M    |
 | C20 | The hosted service records adoption events                                     | open    | M    |
 | C37 | A portal plugin publishes conformance into an existing catalogue               | open    | M    |
-| C34 | The README opens with the reader's problem and the practitioners' framing      | partial | S    |
-| C35 | The measurement story is told as amplification, not as a promise of speed      | open    | S    |
-| C40 | One outward artefact: this repository's dogfood, negative results included     | open    | S    |
+| C34 | The README opens with the reader's problem and the practitioners' framing      | landed  | S    |
+| C35 | The measurement story is told as amplification, not as a promise of speed      | landed  | S    |
+| C40 | One outward artefact: this repository's dogfood, negative results included     | landed  | S    |
 
 Evidence: `09` F37, F38, F39, F40 · `08` F21 · `07` F4, F15
 
@@ -295,7 +295,6 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 | C49 | Every preset has a fixture repository the suite runs `init`, `measure`, `doctor` and the gate against, and the by-hand steps now name only what init wrote (`test/presets.test.mjs`) | The portfolio itself: `astro`, `python` and `docs` are proven by nobody, and only a named repository and a date can change that. A fixture is not a proof |
 | C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                                                        | Nothing reports the harness's own footprint per session to the adopter                                                                                    |
 | C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                                                    | The codes carry no documented meaning; no `--plain`; most commands have no `--json`                                                                       |
-| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                                                              | It does not open with the reader's problem or the practitioners' framing                                                                                  |
 
 ## 12. The register
 
@@ -312,13 +311,13 @@ files; `D` is `DESIGN.md`.
 | C6  | 5    | landed   | 07   | C31 | 2    | open    | 09   |
 | C7  | -    | landed   | 07   | C32 | 3    | open    | 09   |
 | C8  | 3    | partial  | 07   | C33 | 2    | open    | 09   |
-| C9  | 3    | reshaped | 07   | C34 | 6    | partial | 09   |
-| C10 | 6    | open     | 07   | C35 | 6    | open    | 09   |
+| C9  | 3    | reshaped | 07   | C34 | 6    | landed  | 09   |
+| C10 | 6    | open     | 07   | C35 | 6    | landed  | 09   |
 | C11 | 4    | landed   | 07   | C36 | 6    | landed  | 09   |
 | C12 | 4    | landed   | 07   | C37 | 6    | open    | 09   |
 | C13 | 5    | landed   | 07   | C38 | 6    | landed  | 09   |
 | C14 | 5    | landed   | 07   | C39 | 6    | open    | 09   |
-| C15 | 5    | partial  | 07   | C40 | 6    | open    | 09   |
+| C15 | 5    | partial  | 07   | C40 | 6    | landed  | 09   |
 | C16 | 5    | landed   | 07   | C41 | 1    | open    | D    |
 | C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
 | C18 | 5    | landed   | 07   | C43 | 3    | partial | D    |
