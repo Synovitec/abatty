@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The dependency audit is scoped before it is trusted** (C16). An unscoped audit is the one
+  people switch off: it reports a dev-only advisory nobody ships, at a severity nobody would act
+  on, with no fix available, on every push, until somebody adds the flag that kills it for good.
+  The gate's audit is now scoped three ways. Production dependencies only and a severity floor
+  were already in the command; the third is new, an advisory allowed by package name or advisory
+  id in `security.audit.allow`, with a reason and an `until` date. An allowance that has expired
+  stops allowing and the gate names which one ran out, and a live allowance is printed even on a
+  green run, because a decision nobody is reminded of is a decision nobody revisits. Where an
+  allowance applies, the gate reads `npm audit --json` and fails on whatever is left rather than
+  guessing from the text. `SEC-AUDIT` reads for the scoping instead of for the word `audit`: an
+  unscoped audit is partial with what it lacks named, and a repository whose CI runs the gate has
+  the built-in one. The audit moved out of `src/core/secrets.mjs` into `src/core/audit.mjs`: a
+  secret scan and a supply-chain audit are two different things that shared a file.
+
 - **The waiver rate, and a waiver that has run out** (C3). A waiver used to be a line in a list.
   It is now a number: `abatty rules` and the gap analysis report the share of the rules that could
   apply to this repository which it has set aside, over a denominator that excludes the rules that

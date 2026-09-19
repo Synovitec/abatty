@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
-import { auditOutcome, scanSecrets, scanText } from "../src/core/secrets.mjs";
+import { scanSecrets, scanText } from "../src/core/secrets.mjs";
+import { auditOutcome } from "../src/core/audit.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
 

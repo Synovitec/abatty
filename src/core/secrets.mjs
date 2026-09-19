@@ -112,29 +112,3 @@ export function scanSecrets(repoDir, o = {}) {
   }
   return { scanned, findings };
 }
-
-/**
- * The audit, as the gate runs it: `npm audit --audit-level=high` when a lockfile exists. No
- * network is a deferral to CI, said loudly, never a red gate and never a green one.
- * @param {string} repoDir @param {(cmd: string, args: string[]) => { status: number | null, output: string }} run
- * @returns {{ outcome: "ok" | "failed" | "skipped" | "deferred", detail: string }}
- */
-export function auditOutcome(repoDir, run) {
-  if (
-    !existsSync(join(repoDir, "package-lock.json")) &&
-    !existsSync(join(repoDir, "npm-shrinkwrap.json"))
-  )
-    return { outcome: "skipped", detail: "no package-lock.json (an npm audit needs one)" };
-  const r = run("npm", ["audit", "--audit-level=high", "--omit=dev"]);
-  if (r.status === 0) return { outcome: "ok", detail: "" };
-  if (
-    /ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ETIMEDOUT|ENETUNREACH|network|registry.*(unreachable|offline)/i.test(
-      r.output,
-    )
-  )
-    return { outcome: "deferred", detail: "the registry is unreachable; CI runs the audit" };
-  return {
-    outcome: "failed",
-    detail: r.output.split(/\r?\n/).filter(Boolean).slice(-8).join("\n"),
-  };
-}

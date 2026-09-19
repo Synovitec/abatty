@@ -145,6 +145,15 @@ rules that could apply here - a rule that repository after repository waives is,
 likelihood, a rule that is wrong, and this is the first input to a false-positive rate the
 catalog can be judged by.
 
+The dependency audit is scoped before it is trusted, because an unscoped audit is the one people
+switch off: production dependencies only, a severity floor, and an advisory allowed by name or by
+id in `security.audit.allow` with a reason and, where the decision is not permanent, an `until`
+date. An allowance that has expired stops allowing and the gate names which one ran out; an
+allowance that is still live is printed on the green run, because a decision nobody is reminded of
+is a decision nobody revisits. `SEC-AUDIT` reads for that scoping rather than for the word
+`audit`: an unscoped audit reads partial, and a repository whose CI runs the gate has the
+built-in one, which is scoped by construction.
+
 ## What `init` writes
 
 | Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |

@@ -5,7 +5,9 @@
   "description": "The one configuration of a repository under abatty: what the hooks trust (the gate command, the files, the push policy, the phases), the ratchet, the scrub, the provenance, the rules. At the repository root; the older place, .claude/adoption.json, is still read and the root file wins key by key.",
   "type": "object",
   "additionalProperties": false,
-  "patternProperties": { "^\\$": {} },
+  "patternProperties": {
+    "^\\$": {}
+  },
   "properties": {
     "abatty": {
       "type": "string",
@@ -14,12 +16,16 @@
     },
     "profiles": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "The profiles this repository follows, in order: a built-in id (synovitec), a file (./profiles/acme.mjs) or an installed package exporting a profile (rules, phases, presets, harness rule files as one package). [\"synovitec\"] when absent; a client project names only its own."
     },
     "workspaces": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "The preset of a workspace folder when its dependencies do not say (`\"apps/web\": \"next\"`). Each workspace with a preset is gated in its own folder by that preset's steps; the repository-level steps run once at the root."
     },
     "stage": {
@@ -35,7 +41,10 @@
       "type": "string",
       "description": "The branch a night starts from and the Stop gate reads the config from."
     },
-    "branchPrefix": { "type": "string", "description": "The night's branch is <prefix>-<date>." },
+    "branchPrefix": {
+      "type": "string",
+      "description": "The night's branch is <prefix>-<date>."
+    },
     "directPushToBase": {
       "type": "boolean",
       "description": "true for an internal platform that pushes to the base after the gate; false for a PR-only project. A night never pushes to the base."
@@ -43,38 +52,76 @@
     "commands": {
       "type": "object",
       "description": "The repository's own commands, as the hooks and the runner call them.",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "properties": {
-        "gate": { "type": "string" },
-        "gateFull": { "type": "string" },
-        "standards": { "type": "string" },
-        "lintFile": { "type": "string" },
-        "test": { "type": "string" },
-        "typecheck": { "type": "string" }
+        "gate": {
+          "type": "string"
+        },
+        "gateFull": {
+          "type": "string"
+        },
+        "standards": {
+          "type": "string"
+        },
+        "lintFile": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "typecheck": {
+          "type": "string"
+        }
       }
     },
     "files": {
       "type": "object",
       "description": "Where the changelog, the version, the night's state, the decisions, the progress log and the baseline live.",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "properties": {
-        "changelog": { "type": "string" },
-        "version": { "type": "string" },
-        "state": { "type": "string" },
-        "decisions": { "type": "string" },
-        "progress": { "type": "string" },
-        "baseline": { "type": "string" }
+        "changelog": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "decisions": {
+          "type": "string"
+        },
+        "progress": {
+          "type": "string"
+        },
+        "baseline": {
+          "type": "string"
+        }
       }
     },
     "standard": {
       "type": "string",
       "description": "The standard's document, for the agents to read."
     },
-    "plan": { "type": "string", "description": "The adoption plan, for the agents to read." },
-    "sourceGlobs": { "type": "array", "items": { "type": "string" } },
+    "plan": {
+      "type": "string",
+      "description": "The adoption plan, for the agents to read."
+    },
+    "sourceGlobs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "changelogRequiredFor": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Path prefixes whose commits must carry a changelog line."
     },
     "coupled": {
@@ -87,28 +134,43 @@
         "properties": {
           "when": {
             "type": ["string", "array"],
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "A prefix or a glob (* a segment, ** any depth)."
           },
-          "then": { "type": ["string", "array"], "items": { "type": "string" } },
-          "why": { "type": "string" }
+          "then": {
+            "type": ["string", "array"],
+            "items": {
+              "type": "string"
+            }
+          },
+          "why": {
+            "type": "string"
+          }
         }
       }
     },
     "protectedPaths": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Paths a night never writes: applied migrations, env files, production compose."
     },
     "mcpServers": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "The MCP servers a night may call; every other server's tools are denied."
     },
     "rules": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "local": {
           "type": "string",
@@ -124,53 +186,114 @@
     "ratchet": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "local": {
           "type": "string",
           "description": "The repository's own probes file (abatty.probes.mjs)."
         },
-        "include": { "type": "array", "items": { "type": "string" } },
-        "exclude": { "type": "array", "items": { "type": "string" } },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "hard": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Metrics held at zero whatever the probe says."
         },
         "ratchet": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Metrics held as a ratchet even at zero (never promoted to hard)."
         },
-        "mustScan": { "type": "array", "items": { "type": "string" } },
-        "cap": { "type": "integer", "minimum": 1 },
-        "defaultMax": { "type": "integer", "minimum": 1 },
-        "contextMax": { "type": "integer", "minimum": 1 },
-        "barrelMax": { "type": "integer", "minimum": 0 },
+        "mustScan": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cap": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "defaultMax": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contextMax": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "barrelMax": {
+          "type": "integer",
+          "minimum": 0
+        },
         "kinds": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "match": { "type": "string" },
-              "kind": { "type": "string" },
-              "max": { "type": "integer", "minimum": 1 }
+              "match": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 1
+              }
             },
             "required": ["match", "kind", "max"]
           }
         },
-        "exempt": { "type": "array", "items": { "type": "string" } },
-        "envModule": { "type": "string" },
-        "citationsExempt": { "type": "array", "items": { "type": "string" } },
-        "changelog": { "type": "string" },
-        "changelogRequiredFor": { "type": "array", "items": { "type": "string" } }
+        "exempt": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "envModule": {
+          "type": "string"
+        },
+        "citationsExempt": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changelog": {
+          "type": "string"
+        },
+        "changelogRequiredFor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "scrub": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "enabled": {
           "type": "boolean",
@@ -178,16 +301,25 @@
         },
         "allow": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Path substrings whose lines are not findings."
         },
-        "map": { "type": "object", "additionalProperties": { "type": "string" } }
+        "map": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
       }
     },
     "provenance": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "trailer": {
           "type": "string",
@@ -198,34 +330,106 @@
     "secrets": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "allow": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Path substrings the secret scan skips (fixtures, samples), with the reason beside them."
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\$": {}
+      },
+      "description": "Security scoping the gate reads. The dependency audit is scoped before it is trusted: an unscoped audit is the one people switch off.",
+      "properties": {
+        "audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^\\$": {}
+          },
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["info", "low", "moderate", "high", "critical"],
+              "description": "The severity floor the audit refuses at; below it an advisory is reported, never a red gate. Default high."
+            },
+            "allow": {
+              "type": "array",
+              "description": "Advisories this repository has decided to carry, each with a reason and, where the decision is not permanent, a date it stops applying. An allowance that has expired stops allowing and the gate says which one ran out.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "reason"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "The package name or the advisory id the allowance covers."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why this repository carries it: no fix available, not reachable from the shipped code, a pinned transitive."
+                  },
+                  "until": {
+                    "type": "string",
+                    "description": "The date the allowance stops applying (YYYY-MM-DD). Absent means permanent, which is a decision a reviewer can see."
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "ci": {
       "type": "object",
       "additionalProperties": false,
-      "patternProperties": { "^\\$": {} },
+      "patternProperties": {
+        "^\\$": {}
+      },
       "properties": {
         "providers": {
           "type": "array",
-          "items": { "type": "string", "enum": ["woodpecker", "github"] },
+          "items": {
+            "type": "string",
+            "enum": ["woodpecker", "github"]
+          },
           "description": "The CI providers abatty ci generates for, from the gate; init writes them too."
         }
       }
     },
-    "lintOnEdit": { "type": "boolean" },
-    "lintExtensions": { "type": "array", "items": { "type": "string" } },
-    "maxStopBlocks": { "type": "integer", "minimum": 1, "maximum": 8 },
-    "maxSessionsPerPhase": { "type": "integer", "minimum": 1 },
+    "lintOnEdit": {
+      "type": "boolean"
+    },
+    "lintExtensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxStopBlocks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8
+    },
+    "maxSessionsPerPhase": {
+      "type": "integer",
+      "minimum": 1
+    },
     "phases": {
       "type": "array",
-      "items": { "type": ["integer", "string"] },
+      "items": {
+        "type": ["integer", "string"]
+      },
       "description": "The phases a night walks, in order."
     },
     "allowance": {
@@ -233,9 +437,18 @@
       "additionalProperties": false,
       "description": "What a night may spend, in the unit the account is billed in: dollars for metered access; sessions or tokens under a subscription, where the dollar figure is a proxy. Any cap reached ends the night. Without one, 60 USD.",
       "properties": {
-        "usd": { "type": "number", "minimum": 0 },
-        "sessions": { "type": "integer", "minimum": 1 },
-        "tokens": { "type": "integer", "minimum": 1 }
+        "usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sessions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tokens": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "sandbox": {
@@ -263,17 +476,23 @@
         },
         "readOnly": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "More paths read-only inside the boundary."
         },
         "writable": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Paths outside the tree a session may write (a cache, a tool's state folder)."
         },
         "env": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "The variables a container passes through, by name."
         },
         "home": {

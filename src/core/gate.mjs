@@ -17,8 +17,9 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, bin, dockerRunning, runCommand, runScript } from "./spawn.mjs";
-import { git, hasScript, readPackage } from "./repo.mjs";
-import { auditOutcome, scanSecrets } from "./secrets.mjs";
+import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
+import { scanSecrets } from "./secrets.mjs";
+import { auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 
@@ -159,14 +160,22 @@ export function runGate(o) {
     if (s.builtin === "audit") {
       log(`\n▶ ${s.label}`);
       const t0 = Date.now();
-      const a = auditOutcome(repoDir, (cmd, args) => {
-        const r = spawnSync(bin(cmd), args, {
-          cwd: repoDir,
-          encoding: "utf8",
-          maxBuffer: 16 * 1024 * 1024,
-        });
-        return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
-      });
+      const cfg = readConfig(repoDir);
+      const a = auditOutcome(
+        repoDir,
+        (cmd, args) => {
+          const r = spawnSync(bin(cmd), args, {
+            cwd: repoDir,
+            encoding: "utf8",
+            maxBuffer: 16 * 1024 * 1024,
+          });
+          return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
+        },
+        { allow: cfg?.security?.audit?.allow || [], level: cfg?.security?.audit?.level },
+      );
+      // An advisory the repository allows, and an allowance whose date has run out, are said out
+      // loud on a green step: a decision nobody is reminded of is a decision nobody revisits.
+      if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
       if (a.outcome === "failed") {
         log(a.detail);
         events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });

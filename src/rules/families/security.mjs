@@ -42,14 +42,38 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     ...PACKAGE,
-    why: "The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident.",
-    next: "Add npm/pnpm audit on the shipped tree and audit signatures",
+    why: "The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident. An UNSCOPED audit is the reason teams switch audits off: it reports a dev-only advisory nobody ships, at a severity nobody would act on, with no fix available, on every push, until somebody adds the flag that kills it for good.",
+    next: "Scope the audit before you trust it: production dependencies only (--omit=dev / --prod), a severity floor (--audit-level), and an advisory allowed with a reason and an expiry date (security.audit.allow) rather than a flag that silences everything",
     check: (c) => {
       const ci = /audit/.test(c.ciText);
       const s = c.script(/audit/);
+      const text = [c.ciText, s?.[1] || ""].join("\n");
+      const allow = /** @type {any} */ (c.adoption)?.security?.audit?.allow;
+      // The gate's own audit step is scoped by construction: production dependencies, a severity
+      // floor, and allowances that expire. A repository whose CI runs the gate has it, and a rule
+      // that could not see that would be reading for a flag rather than for the practice.
+      if (/abatty(\.mjs)? gate\b/.test([c.ciText, ...Object.values(c.scripts || {})].join("\n")))
+        return {
+          status: "present",
+          evidence: `the gate's built-in audit: production only, a severity floor${Array.isArray(allow) && allow.length ? `, ${allow.length} allowance(s)` : ""}`,
+        };
+      if (!ci && !s) return { status: "missing", evidence: "none" };
+      // Two of the three scopes are readable from the command; the third is the allowance, which
+      // is a config key rather than a flag and is counted where the repository states it.
+      const scoped = /--omit=dev|--production\b|--prod\b|--groups=?\s*prod/.test(text);
+      const floor = /--audit-level|--severity|--fail-on/.test(text);
+      const where = ci ? "ci step" : s?.[0] || "script";
+      const has = [
+        scoped ? "production only" : "",
+        floor ? "a severity floor" : "",
+        Array.isArray(allow) && allow.length ? `${allow.length} allowance(s)` : "",
+      ].filter(Boolean);
+      const lacks = [scoped ? "" : "production scoping", floor ? "" : "a severity floor"].filter(
+        Boolean,
+      );
       return {
-        status: ci || s ? "present" : "missing",
-        evidence: ci ? "ci step" : s?.[0] || "none",
+        status: scoped && floor ? "present" : "partial",
+        evidence: `${where}${has.length ? ": " + has.join(", ") : ""}${lacks.length ? `; unscoped on ${lacks.join(" and ")}, which is the audit people end up switching off` : ""}`,
       };
     },
   },
