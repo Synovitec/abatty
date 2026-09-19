@@ -43,9 +43,21 @@ export async function initCommand(cx, preset) {
   out(t.heading("By hand, in this order"));
   let n = 1;
   if (r.missingDeps.length) out(`  ${n++}. npm i -D ${r.missingDeps.join(" ")}\n`);
+  out(`  ${n++}. npm run hooks:install\n`);
+  // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
+  // documents repository was being told to fill a dependency-cruiser config it has no reason to
+  // own and no copy of, which is the first thing its reader would go looking for and not find.
+  const wrote = (/** @type {string} */ f) =>
+    r.events.some((e) => e.file === f && e.action !== "n/a");
+  const graph = wrote(".dependency-cruiser.cjs");
   out(
-    `  ${n++}. npm run hooks:install\n  ${n++}. Fill CLAUDE.md (the placeholders in <>), then .dependency-cruiser.cjs: one rule per arrow of CLAUDE.md §3\n  ${n++}. On an existing repository: npx depcruise src --config .dependency-cruiser.cjs --baseline (once); knip at today's count\n  ${n++}. abatty doctor · abatty measure · npm run gate\n\n`,
+    `  ${n++}. Fill CLAUDE.md (the placeholders in <>)${graph ? ", then .dependency-cruiser.cjs: one rule per arrow of CLAUDE.md §3" : ""}\n`,
   );
+  if (graph)
+    out(
+      `  ${n++}. On an existing repository: npx depcruise src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
+    );
+  out(`  ${n++}. abatty doctor · abatty measure · npm run gate\n\n`);
   return;
 }
 

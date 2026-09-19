@@ -5,11 +5,15 @@ import { join } from "node:path";
 import { cli, tempRepo } from "./helpers.mjs";
 import { detectPreset, presetById } from "../src/presets/index.mjs";
 
-// Fixture repositories for the presets no client has run yet: init, the detection from the
-// dependencies alone, measure, doctor's drift and the gate's skeleton (every step skipped or
-// green on a fresh repository). A preset stays "unproven" until a repository ran it; the
-// fixture proves the package does not break on the shape.
-/** @type {Record<string, { pkg: { dependencies: Record<string, string>, devDependencies?: Record<string, string>, [k: string]: unknown }, files: Record<string, string>, rule: string }>} */
+// A fixture repository per preset: init, the detection from the dependencies alone where the
+// preset has any, measure, doctor's drift and the gate's skeleton (every step skipped, green or
+// stopped on a tool that is not installed).
+//
+// A fixture is NOT a proof. A preset stays unproven until a named repository has run it and a
+// date says when; what the fixture proves is narrower and still worth having, which is that the
+// package does not break on the shape. Every preset the package ships has one, because the three
+// that no repository has run are exactly the three where nothing else would catch a break.
+/** @type {Record<string, { pkg?: { dependencies?: Record<string, string>, devDependencies?: Record<string, string>, [k: string]: unknown }, files: Record<string, string>, rule?: string, expect?: string[], noJs?: boolean, gate?: RegExp }>} */
 const FIXTURES = {
   "vite-react": {
     pkg: {
@@ -54,27 +58,75 @@ const FIXTURES = {
     files: { "src/server.mjs": "export const app = () => 1;\n" },
     rule: "testing.md",
   },
+  next: {
+    pkg: {
+      name: "fixture-next",
+      version: "0.1.0",
+      private: true,
+      scripts: { test: "node -e process.exit(0)", build: "next build", dev: "next dev" },
+      dependencies: { next: "15.0.0", react: "19.0.0", "react-dom": "19.0.0" },
+      devDependencies: { typescript: "5.6.0" },
+    },
+    files: {
+      "app/page.tsx": "export default function Page() { return null; }\n",
+      "app/layout.tsx": "export default function Layout() { return null; }\n",
+      "next.config.mjs": "export default {};\n",
+    },
+    rule: "a11y.md",
+  },
+  // The two presets that are not JavaScript at all: `init` writes them a private package.json
+  // so `npm run gate` and the hooks work, and no dependency-cruiser or knip config, because
+  // neither tool has anything to read. The gate's shape differs, so each says what it expects.
+  python: {
+    files: {
+      "pyproject.toml": '[project]\nname = "fixture"\nversion = "0.1.0"\n',
+      "src/app.py": "def main():\n    return 1\n",
+      "tests/test_app.py": "def test_main():\n    assert True\n",
+    },
+    noJs: true,
+    expect: [".claude/settings.json", "abatty.config.json", ".githooks/pre-push", "CLAUDE.md"],
+    gate: /format/,
+  },
+  docs: {
+    files: {
+      "docs/README.md": '---\ntitle: "Index"\n---\n\n# Index\n',
+      "README.md": "# Fixture\n",
+    },
+    noJs: true,
+    expect: [".claude/settings.json", "abatty.config.json", ".githooks/pre-push", "CLAUDE.md"],
+    gate: /format|ratchet/,
+  },
 };
 
 for (const [id, fx] of Object.entries(FIXTURES)) {
-  test(`preset ${id}: detected from the dependencies; init, measure, doctor and the gate skeleton work on its fixture`, () => {
+  test(`preset ${id}: ${fx.pkg ? "detected from the dependencies" : "chosen by --stack"}; init, measure, doctor and the gate skeleton work on its fixture`, () => {
     const dir = tempRepo(`preset-${id}`, {
-      "package.json": JSON.stringify(fx.pkg, null, 2) + "\n",
+      ...(fx.pkg ? { "package.json": JSON.stringify(fx.pkg, null, 2) + "\n" } : {}),
       ...fx.files,
     });
+    // A preset with dependencies is detected from them alone; python and docs have none, and
+    // are chosen by `--stack`, which is what the flag below exercises.
+    if (fx.pkg)
+      assert.equal(
+        detectPreset(
+          new Set([
+            ...Object.keys(fx.pkg.dependencies || {}),
+            ...Object.keys(fx.pkg.devDependencies || {}),
+          ]),
+        )?.id,
+        id,
+      );
+    const init = fx.noJs ? cli(["init", dir, "--stack", id], dir) : cli(["init", dir], dir);
+    // The next steps are what THIS init wrote. A preset with no import graph must not send its
+    // reader looking for a dependency-cruiser config it has no copy of.
     assert.equal(
-      detectPreset(
-        new Set([
-          ...Object.keys(fx.pkg.dependencies),
-          ...Object.keys(fx.pkg.devDependencies || {}),
-        ]),
-      )?.id,
-      id,
+      /dependency-cruiser\.cjs: one rule per arrow/.test(init.out),
+      !fx.noJs,
+      `${id}: the next steps name a file this preset ${fx.noJs ? "does not write" : "writes"}`,
     );
-    const init = cli(["init", dir], dir);
     assert.equal(init.code, 0, init.out);
     assert.match(init.out, presetById(id)?.proven ? /proven by/ : /not yet proven by a repository/);
-    for (const f of [
+    for (const f of fx.expect || [
       ".claude/settings.json",
       "abatty.config.json",
       ".claude/hooks/guard.mjs",
@@ -94,8 +146,11 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     // The dependencies are named, never installed: the gate skips the format step (no Prettier
     // config yet), reaches lint, and stops there naming the step - the skeleton holds its order.
     const gate = cli(["gate", dir, "--fast"], dir);
-    assert.equal(gate.code, 3, gate.out);
-    assert.match(gate.out, /skipped format/);
-    assert.match(gate.out, /lint \(CODE.4\) failed/);
+    if (fx.gate) assert.match(gate.out, fx.gate, `${id}: ${gate.out}`);
+    else {
+      assert.equal(gate.code, 3, gate.out);
+      assert.match(gate.out, /skipped format/);
+      assert.match(gate.out, /lint \(CODE.4\) failed/);
+    }
   });
 }

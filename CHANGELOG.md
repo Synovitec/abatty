@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Every preset has a fixture repository, and the next steps say what `init` actually wrote**
+  (C49, partial). Three of the six presets had a fixture repository the suite runs `init`,
+  `measure`, `doctor` and the gate against; `next`, `python` and `docs` had none, which meant the
+  three nobody has run were also the three nothing would catch a break in. All six have one now.
+  Running them found a real one: the by-hand steps `init` prints told every repository to fill a
+  `.dependency-cruiser.cjs` and run `depcruise --baseline`, including the Python and documents
+  repositories that are never written one. The steps are now derived from the files that init
+  wrote. A fixture is not a proof and is not counted as one: `astro`, `python` and `docs` are
+  still proven by nobody, and `abatty presets` still says so.
+
 - **The secret scan is measured, and the measurement changed it** (C15). `abatty secrets
   --benchmark` scores the scan against a corpus published in the package: 18 documented credential
   shapes on one side, 23 look-alikes on the other, every case carrying in words the reason it is

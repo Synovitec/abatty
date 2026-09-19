@@ -198,7 +198,7 @@ Evidence: `08` F16, F17, F18, F19, F20 · `07` F8 · `DESIGN.md` §1.3
 
 | ID  | Change                                                                              | State   | Size |
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
-| C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | open    | L    |
+| C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | partial | L    |
 | C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | landed  | S    |
 | C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | landed  | S    |
 | C6  | The baseline carries a schema version per metric                                    | landed  | S    |
@@ -287,14 +287,15 @@ would have to change the rule first, and that is a change to the standard, not t
 
 Checked at `e043e66`. Each entry says what exists and what is actually missing.
 
-| ID  | Already built                                                                                                                                                                 | Missing                                                                                                          |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`)                               | It should be written always, and `agents` should report which surfaces are covered                               |
-| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)                                             | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran                                    |
-| C15 | `abatty secrets --benchmark` scores the scan against a corpus published in the package, and the numbers are in `docs/SECRET_SCAN_BENCHMARK.md` (`src/core/secret-corpus.mjs`) | A run against a THIRD-PARTY benchmark: the corpus is this repository's own, which is weaker evidence and says so |
-| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                                                 | Nothing reports the harness's own footprint per session to the adopter                                           |
-| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                                             | The codes carry no documented meaning; no `--plain`; most commands have no `--json`                              |
-| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                                                       | It does not open with the reader's problem or the practitioners' framing                                         |
+| ID  | Already built                                                                                                                                                                        | Missing                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`)                                      | It should be written always, and `agents` should report which surfaces are covered                                                                        |
+| C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)                                                    | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran                                                                             |
+| C15 | `abatty secrets --benchmark` scores the scan against a corpus published in the package, and the numbers are in `docs/SECRET_SCAN_BENCHMARK.md` (`src/core/secret-corpus.mjs`)        | A run against a THIRD-PARTY benchmark: the corpus is this repository's own, which is weaker evidence and says so                                          |
+| C49 | Every preset has a fixture repository the suite runs `init`, `measure`, `doctor` and the gate against, and the by-hand steps now name only what init wrote (`test/presets.test.mjs`) | The portfolio itself: `astro`, `python` and `docs` are proven by nobody, and only a named repository and a date can change that. A fixture is not a proof |
+| C19 | The night's allowance tracks tokens, sessions and cost, with caps (`src/night/allowance.mjs`)                                                                                        | Nothing reports the harness's own footprint per session to the adopter                                                                                    |
+| C30 | The CLI exits 0, 1 and 2 in places, and `--json` exists on `measure` and `report`                                                                                                    | The codes carry no documented meaning; no `--plain`; most commands have no `--json`                                                                       |
+| C34 | The README leads with the gate and cites the placement evidence (PR #7)                                                                                                              | It does not open with the reader's problem or the practitioners' framing                                                                                  |
 
 ## 12. The register
 
@@ -326,5 +327,5 @@ files; `D` is `DESIGN.md`.
 | C21 | 4    | open    | 08   | C46 | 3    | open    | D    |
 | C22 | 4    | open    | 08   | C47 | 3    | open    | D    |
 | C23 | 4    | open    | 08   | C48 | 1    | open    | D    |
-| C24 | 4    | landed  | 08   | C49 | 5    | open    | D    |
+| C24 | 4    | landed  | 08   | C49 | 5    | partial | D    |
 | C25 | 4    | open    | 08   |     |      |         |      |
