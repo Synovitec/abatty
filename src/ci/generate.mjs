@@ -224,6 +224,9 @@ export function renderGithubActions(preset, o = {}) {
     `  pull_request:`,
     `permissions:`,
     `  contents: read`,
+    // The workload identity the signature is made with, and the write the transparency log needs.
+    `  id-token: write`,
+    `  attestations: write`,
     // The findings are uploaded to code scanning, which is what puts them on the diff of the
     // change under review rather than in a report nobody opens.
     `  security-events: write`,
@@ -248,6 +251,25 @@ export function renderGithubActions(preset, o = {}) {
     `        with:`,
     `          sarif_file: abatty.sarif`,
     `          category: abatty`,
+    // The conformance statement, signed by the RUN rather than by a key anybody holds.
+    //
+    // WHY here and not in the package: a signature is worth the identity behind it, and the only
+    // identity available to a measurement tool would be a key on a developer's machine or a
+    // secret in a repository, which is the weakest attestation of the two and the one most
+    // likely to leak. The pipeline already has a short-lived workload identity that no human can
+    // export, and the platform's own attestation action turns it into a signature in the
+    // established transparency log. So this package prints the statement and the pipeline signs
+    // it, with the run's identity, for free, in the store every verifier already reads.
+    `      - name: the conformance statement`,
+    `        if: always()`,
+    `        run: npx abatty attest --out abatty-conformance.json || true`,
+    `      - name: sign it with this run's identity`,
+    `        if: always()`,
+    `        uses: actions/attest@v2`,
+    `        with:`,
+    `          subject-path: abatty-conformance.json`,
+    `          predicate-type: https://abatty.dev/attestation/conformance/v1`,
+    `          predicate-path: abatty-conformance.json`,
   ];
   if (db.length) {
     out.push(

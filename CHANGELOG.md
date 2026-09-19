@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The conformance statement is signed by the run, not by a key anybody holds** (C39). A
+  signature is worth exactly the identity behind it, and the only identity a measurement tool
+  could offer is a key on somebody's laptop or a secret in a repository: the weakest of the
+  options and the likeliest to leak. So the package prints the statement and never signs it. The
+  generated pipeline writes it out and signs it with the run's own short-lived workload identity,
+  through the platform's attestation action, into the transparency log every verifier already
+  reads; this repository's release workflow does the same for each published version, beside the
+  registry's own provenance. A test checks the negative too: no key, no secret, nothing to leak.
+
 - **The README opens with the reader's problem, and `docs/DOGFOOD.md` publishes the negative
   results** (C34, C35, C40). The README used to open with what the package is; it now opens with
   why anybody would want one, and with the finding that motivates the whole design - the same

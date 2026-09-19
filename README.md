@@ -207,8 +207,16 @@ solved problem with a decade of tooling behind it, and a record that quietly res
 be a worse copy inviting the reader to trust one document for everything. It carries only what
 nothing else produces: which engineering rules hold, under which written standard, which were set
 aside and by whom, and whether the checks that say so have themselves been watched failing. A
-statement whose controls never ran says so and the command exits 3. Signing is the pipeline's:
-this package does not hold a key.
+statement whose controls never ran says so and the command exits 3.
+
+**Signing is the pipeline's, and deliberately so.** A signature is worth exactly the identity
+behind it, and the only identity a measurement tool could offer is a key on somebody's laptop or
+a secret in a repository, which is the weakest of the options and the likeliest to leak. The
+pipeline already has a short-lived workload identity that no human can export, so the generated
+pipeline prints the statement and signs it with that, through the platform's own attestation
+action, into the transparency log every verifier already reads. `abatty ci --provider github`
+writes those steps; this repository's release workflow does the same for each published version,
+alongside the registry's own provenance.
 
 `abatty evidence` is the same facts for a person: the regulation's essential requirements mapped
 onto the rules of the catalog, as a document. The `cra` profile carries that mapping and **no

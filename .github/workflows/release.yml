@@ -9,7 +9,10 @@ on:
     tags: ["v*"]
 permissions:
   contents: read
+  # The workload identity the registry's provenance and the conformance signature are both made
+  # with: short-lived, issued to this run, and not exportable by anybody.
   id-token: write
+  attestations: write
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -31,3 +34,15 @@ jobs:
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # What held at the released commit, signed by the run rather than by a key anybody holds.
+      # The package prints the statement and never signs: a signature is worth the identity
+      # behind it, and a measurement tool's only identity would be a key on a laptop or a secret
+      # in a repository, which is the weakest of the options and the likeliest to leak.
+      - name: the conformance statement for this release
+        run: node bin/abatty.mjs attest --out abatty-conformance.json || true
+      - name: sign it with this run's identity
+        uses: actions/attest@v2
+        with:
+          subject-path: abatty-conformance.json
+          predicate-type: https://abatty.dev/attestation/conformance/v1
+          predicate-path: abatty-conformance.json

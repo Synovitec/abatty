@@ -229,7 +229,7 @@ already be finished.
 | ID  | Change                                                                         | State   | Size |
 | --- | ------------------------------------------------------------------------------ | ------- | ---- |
 | C38 | `abatty attest` emits a custom predicate in the established attestation format | landed  | M    |
-| C39 | Signing uses the established ecosystem and the release's identity mechanism    | open    | S    |
+| C39 | Signing uses the established ecosystem and the release's identity mechanism    | landed  | S    |
 | C36 | The record is scoped to what the compliance ring cannot produce                | landed  | S    |
 | C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed  | L    |
 | C27 | An evidence export fit for technical documentation                             | landed  | M    |
@@ -316,7 +316,7 @@ files; `D` is `DESIGN.md`.
 | C11 | 4    | landed   | 07   | C36 | 6    | landed  | 09   |
 | C12 | 4    | landed   | 07   | C37 | 6    | open    | 09   |
 | C13 | 5    | landed   | 07   | C38 | 6    | landed  | 09   |
-| C14 | 5    | landed   | 07   | C39 | 6    | open    | 09   |
+| C14 | 5    | landed   | 07   | C39 | 6    | landed  | 09   |
 | C15 | 5    | partial  | 07   | C40 | 6    | landed  | 09   |
 | C16 | 5    | landed   | 07   | C41 | 1    | open    | D    |
 | C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
