@@ -7,6 +7,24 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty fix` writes what a phase asks for that a machine can write** (C46). A tool that only
+  refuses is half a tool, and most of day zero is not a judgement: a document with front matter, a
+  row in the index, a decision record for the decisions already taken. The judgement is what goes
+  inside them, and the placeholders are the questions rather than the answers. Two rules the
+  fixers obey, both learned from this repository's own gate: **what is written satisfies the rules
+  the repository already has**, so a document lands with its front matter and its index row and
+  never trades one finding for another; and **nothing is written without being shown** - the
+  default is the plan and `--write` performs it, so the destructive direction is the one that
+  needs the flag. Run here it closed phase A.1: 7 of 9 held became 9 of 9, and the headline moved
+  on to phase 0.
+
+- **The first run needs no configuration** (C47), which turned out to be already true and now has
+  the control case that holds it: a repository with one file and a git directory gets its phase,
+  a stack detected without being named, the stage read off the tree, and five next steps - no
+  `--stack`, no config, no profile.
+
+### Added
+
 - **The cold start is a number the ratchet holds** (C32). `startup.eagerModules` counts the
   modules the entry point parses before it knows which command was asked for - the floor under
   every command in the inner loop - and it may only fall. It lands at **3**, from 89 before the

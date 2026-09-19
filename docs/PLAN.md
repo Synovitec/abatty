@@ -138,8 +138,8 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
 | C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | partial | M    |
 | C44 | Measurement is cached on the git tree of the paths a rule reads                     | open    | M    |
-| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | open    | M    |
-| C47 | The first run needs no configuration, no `--stack` and no profile                   | open    | S    |
+| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | landed  | M    |
+| C47 | The first run needs no configuration, no `--stack` and no profile                   | landed  | S    |
 | C32 | The latency tiers become a probe: a regression in cold start is a finding           | landed  | S    |
 | C9  | The context-file template ships near-empty by default                               | open    | S    |
 | C8  | `init` always writes the interoperable context file, and `agents` reports the cover | partial | S    |
@@ -153,7 +153,10 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 - A second `abatty measure` over an unchanged tree is at least ten times faster than the first,
   and no cache state can turn a finding into a pass: on any doubt it misses.
 - `npx abatty` in a repository with nothing produces a useful reading and names one next step.
-- `abatty fix --phase 0` moves this repository from 7 of 9 held to 9 of 9.
+- `abatty fix --phase 0` moves this repository from 7 of 9 held to 9 of 9: done, and the
+  headline moved on to phase 0, 10 of 15. C47 was already built - a repository with nothing gets
+  a reading, a detected stack, the stage and five next steps - and now has the control case that
+  says so.
 - The template is the build and test commands, the gate command, and nothing that restates the
   codebase. It is 144 lines today.
 

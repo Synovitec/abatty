@@ -57,6 +57,7 @@ const KNOWN = [
   "rules",
   "explain",
   "check",
+  "fix",
   "ratchet",
   "baseline",
   "night",
@@ -254,6 +255,11 @@ switch (command) {
     await rulesCommand(ctx);
     break;
   }
+  case "fix": {
+    const { fixCommand } = await import("../src/cli/fix.mjs");
+    await fixCommand(ctx);
+    break;
+  }
   case "check": {
     const { checkCommand } = await import("../src/cli/catalog.mjs");
     await checkCommand(ctx, String(positional[0] || ""));
@@ -310,6 +316,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
   ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--phase <n>] [--json|--md]  the rule catalog: what must hold, why, what insures it
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
+  ${t.bold("abatty fix")} [dir] [--phase <n>] [--write]                        what a phase asks for that a machine can write; the plan unless --write
   ${t.bold("abatty check")} <ID> [dir] [--json]                                 one rule and an exit code: 0 it holds, 3 it does not (what a finding\u0027s verify names)
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
