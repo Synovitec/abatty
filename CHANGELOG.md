@@ -5,6 +5,39 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`docs/DESIGN.md`: what the instrument has to become on its own terms.** The roadmap says what
+  changes next and the position says where the package stands against the evidence about
+  adoption; neither answers what finished looks like judged by the core and the output alone.
+  This one does, in six parts: the bar when it is not users (the portfolio, the controls, the
+  research), four defects that are wrong rather than unpolished (affectedness in a workspace, a
+  gate with no outcome for a step that could not run, a night that reads the repository as
+  trusted input, eleven shells that are not needed), one finding model behind four surfaces (the
+  terminal, the agent with a `verify` command whose exit code proves the edit, SARIF for the
+  pull request, the signed predicate for an auditor), the latency tiers with today's numbers
+  against their targets, the first run that needs no configuration, and the order the ten items
+  land in. Every claim carries the measurement or the research finding that put it there. Its
+  ordering section is now a pointer to the plan, so the order lives in one place.
+
+- **`docs/PLAN.md`: the one queue.** Three rounds of research and a design pass produced
+  forty-nine changes spread across five documents, and an order that lives in more than one place
+  is not an order. They are merged here into six dependency waves, each with the acceptance check
+  that says when an item is done, and **every row was checked against the code at `e043e66`
+  rather than against the research that asked for it**. That check changed the picture: nine of
+  the forty-nine are partly built already, so §11 records what exists for each of them, with the
+  file, and what is actually missing. Four are landed. The work that came from this repository
+  rather than from the research is named as such.
+
+### Changed
+
+- **`docs/ROADMAP.md` is archived and points at the plan.** Four of its five tables were empty
+  and the one open row split in two: the presets it wanted proven are wave 5 of the plan, and the
+  repository outside the company is the position's subject. The 2026-09-15 analysis it carried of
+  what stopped a stranger's repository from a meaningful score is left in place rather than
+  moved, because three of its four blockers are closed and it describes a repository that no
+  longer exists.
+
 ## [0.2.0] - 2026-09-18
 
 ### Changed
