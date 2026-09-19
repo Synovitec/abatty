@@ -93,11 +93,13 @@ C48 landed with the exit codes of C30: 0 clean, 2 bad input, 3 found violations,
 
 - A gate step whose tool exits on a crash reports `errored`, names the tool and the message, stops
   the gate, and exits 4. A step that found violations exits 3. `--help` lists every code.
-- `abatty version` runs in under 30 ms and status in under 60 ms on this repository. Today they
-  are 131 ms and 131 ms, because 89 modules and 12,845 lines are statically reachable from the
-  entry point and it holds one dynamic import.
-- `abatty explain CODE-SIZE-300` no longer names `bin/abatty.mjs`, which is 646 code lines
-  against a 300-line rule this package ships.
+- `abatty version` runs in under 30 ms and status in under 60 ms on this repository. Measured
+  after C41: 45 ms and 78 ms, from 131 ms and 131 ms. The 30 ms target is unreachable and is
+  restated: `node -e ""` alone is 31 ms here, so the budget is the share above the runtime's
+  floor, about 14 ms for `version`. Status has 18 ms of its own left to give.
+- `abatty explain CODE-SIZE-300` no longer names `bin/abatty.mjs`: done, 646 code lines to 291.
+  The rule still names `templates/harness/hooks/self-test.mjs` at 424, which ships into every
+  repository that installs the package and is its own item.
 - In a fixture monorepo where an application imports a shared package, a change to the package
   alone selects the application. Where the graph cannot be read, the output names the fallback.
 - `grep -rn "shell: true" src bin` returns only sites with a comment saying why.

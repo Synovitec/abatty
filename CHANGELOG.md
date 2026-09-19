@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **Every command loads only what it uses, and the entry point is a dispatcher again** (C41).
+  Printing a version string parsed the night runner, the sandbox drivers, the hosted service, the
+  MCP server and the CI generator: 89 modules and 12,845 lines were statically reachable from
+  `bin/abatty.mjs`, which is the floor under every command in the inner loop. Each case now
+  imports what it needs when it is chosen, and the eleven screens that were written inline moved
+  into `src/cli/` beside the seven already there: `measure`, `gate` and `doctor`, `init` and
+  `update`, `config` and `agents`, `scrub`, `report` and `dashboard`, `rules` and `explain`.
+  `abatty version` falls from 131 ms to 45 ms, status from 131 ms to 78 ms, `measure` from 229 ms
+  to 165 ms. The entry point falls from 646 code lines to 291, so `abatty explain CODE-SIZE-300`
+  no longer names the file an agent edits most - the tool stops failing its own rule at the one
+  place it hurt. What the remaining 45 ms is: `node -e ""` alone is 31 ms here, so the package's
+  own share is about 14 ms, and the plan's 30 ms target is restated as the share above the
+  runtime's floor rather than an absolute nobody can reach.
+
 ### Added
 
 - **The gate can say "I could not run", and the exit codes say which happened** (C48, and the

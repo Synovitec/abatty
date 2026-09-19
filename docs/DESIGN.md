@@ -207,9 +207,9 @@ Measured here on 2026-09-19:
 
 | Command              | Now    | Tier        | Target  |
 | -------------------- | ------ | ----------- | ------- |
-| `abatty version`     | 131 ms | inner loop  | < 30 ms |
-| `abatty` (status)    | 131 ms | inner loop  | < 60 ms |
-| `abatty measure`     | 229 ms | inner loop  | holds   |
+| `abatty version`     | 45 ms  | inner loop  | < 30 ms |
+| `abatty` (status)    | 78 ms  | inner loop  | < 60 ms |
+| `abatty measure`     | 165 ms | inner loop  | holds   |
 | `abatty gate --fast` | 207 s  | gate        | < 3 s   |
 | `npm test`           | 225 s  | out of loop | < 60 s  |
 
@@ -218,10 +218,15 @@ the coverage run, and this repository has neither, so the 3 min 18 s unit suite 
 unchanged. A tier that only exists for other people's repositories is the same honesty problem as
 a preset nobody has proven.
 
-The floor under every one of these is the module graph: **89 modules and 12,845 lines are
-statically reachable from `bin/abatty.mjs`**, and the file contains exactly one dynamic import.
-Printing a version string parses the night runner, the sandbox drivers, the hosted service, the
-MCP server and the CI generator.
+The floor under every one of these was the module graph: 89 modules and 12,845 lines were
+statically reachable from `bin/abatty.mjs`, and printing a version string parsed the night
+runner, the sandbox drivers, the hosted service, the MCP server and the CI generator. Each
+command now loads only what it uses, and the entry point holds six static imports.
+
+What is left is not ours: **`node -e ""` alone is 31 ms on this machine**, so `version` at 45 ms
+spends about 14 ms in this package and the rest in the runtime. The target of 30 ms is below the
+floor the runtime sets and cannot be met by any amount of import discipline; what a budget can
+hold is the share above it.
 
 **The design.** Each `case` in the entry point becomes an `await import()` of a module under
 `src/cli/`, where seven of them already live. That single refactor also resolves the tool's own
