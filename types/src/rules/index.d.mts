@@ -127,7 +127,7 @@ export { validate };
  *
  * @typedef {{ reason: string, until?: string, expired?: boolean }} Waiver
  * @typedef {Rule & { waived?: Waiver }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver }} Finding
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver, where?: { path: string, line?: number } }} Finding
  */
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
 export const RULES: Rule[];
@@ -233,5 +233,9 @@ export type Finding = {
         why: string;
     };
     waiver?: Waiver;
+    where?: {
+        path: string;
+        line?: number;
+    };
 };
 import { validate } from "./validate.mjs";

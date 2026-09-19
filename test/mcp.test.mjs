@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { PROTOCOL_VERSION, createHandler, tools } from "../src/mcp/server.mjs";
 
@@ -93,6 +95,12 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
     "src/a.ts": "export const a = 1;\n",
   });
   cli(["init", dir, "--stack", "next"], dir);
+  // A lint script whose outcome is the same on every machine: the preset names a linter it never
+  // installs, so without this the gate fails here and cannot run on a clean runner, and the tool
+  // under test is the one relaying the outcome.
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+  pkg.scripts.lint = "node -e 'process.exit(1)'";
+  writeFileSync(join(dir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
   const handle = createHandler(dir);
   const r = await handle(req("tools/call", { name: "gate", arguments: { fast: true } }, 7));
   assert.equal(
@@ -100,9 +108,12 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
     false,
     "the dependencies are named, never installed: the gate does not pass",
   );
-  // Failed or could not run, depending on whether the machine happens to have the linter. The
-  // tool's job is to return the gate's outcome and its output, not to make one of the two.
-  assert.match(r?.result.structuredContent.output, /lint \(CODE\.4\) (failed|could not run)/);
+  assert.match(r?.result.structuredContent.output, /✗ lint \(CODE\.4\)/);
+  assert.equal(
+    /could not run/.test(r?.result.structuredContent.output),
+    false,
+    "the tool ran and failed: the work, not the instrument",
+  );
 });
 
 test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing else to stdout", () => {

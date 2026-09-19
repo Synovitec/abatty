@@ -292,3 +292,41 @@ test("the gate holds the scrub for a repository that opted in, and skips it for 
   assert.equal(cleanRun.r.ok, true, cleanRun.out);
   assert.ok(cleanRun.r.events.some((e) => /scrub/.test(e.label) && e.outcome === "ok"));
 });
+
+test("end to end, through real npm: a tool that ran and failed exits 3, one that could not run exits 4", () => {
+  // The test above proves runGate classifies an injected result. This one drives the real spawn
+  // path, because that is where the distinction was actually untested: the suite passed on a
+  // machine with a linter installed and went red on a runner without one, and the assertions
+  // were then widened to accept either answer, which is the one thing they must not do. The
+  // fixtures below control the outcome instead of hoping for it. `node` always exists; the other
+  // name cannot.
+  /** @param {string} name @param {string} lint */
+  const gateOf = (name, lint) => {
+    const dir = tempRepo(name, {
+      "package.json":
+        JSON.stringify({
+          name: "fixture",
+          version: "0.1.0",
+          private: true,
+          scripts: { lint },
+          dependencies: { express: "5.0.0" },
+        }) + "\n",
+      "src/a.mjs": "export const a = 1;\n",
+    });
+    return cli(["gate", dir, "--fast"], dir);
+  };
+
+  const ran = gateOf("gate-exit-3", "node -e 'process.exit(1)'");
+  assert.equal(ran.code, 3, ran.out);
+  assert.match(ran.out, /✗ lint \(CODE\.4\)/);
+  assert.equal(
+    /could not run/.test(ran.out),
+    false,
+    "the tool ran: this is the work, not the instrument",
+  );
+
+  const absent = gateOf("gate-exit-4", "abatty-no-such-binary-__ .");
+  assert.equal(absent.code, 4, absent.out);
+  assert.match(absent.out, /lint \(CODE\.4\) could not run/);
+  assert.match(absent.out, /the instrument, not the work/);
+});

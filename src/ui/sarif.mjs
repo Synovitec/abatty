@@ -115,13 +115,20 @@ export function sarifOfFindings(o) {
       },
     });
   }
-  const results = open.map((f) => ({
-    ruleId: f.id,
-    level: sarifLevel(f.enforcement),
-    message: { text: `${f.status}: ${f.evidence}${f.next ? ` · next: ${f.next}` : ""}` },
-    partialFingerprints: { abattyFinding: fingerprint([f.id, f.status]) },
-    properties: { status: f.status, phase: f.phase, enforcement: f.enforcement },
-  }));
+  const results = open.map((f) => {
+    // Rendered from the finding's own `where`, never derived here: this file renders what it is
+    // given, which is the boundary the import graph enforces. Without it, this renderer and the
+    // MCP surface disagreed about whether a finding's location was knowable.
+    const at = f.where;
+    return {
+      ruleId: f.id,
+      level: sarifLevel(f.enforcement),
+      message: { text: `${f.status}: ${f.evidence}${f.next ? ` · next: ${f.next}` : ""}` },
+      ...(at ? { locations: locationOf(at.path, at.line) } : {}),
+      partialFingerprints: { abattyFinding: fingerprint([f.id, f.status]) },
+      properties: { status: f.status, phase: f.phase, enforcement: f.enforcement },
+    };
+  });
   return sarifLog({ version: o.version, rules, results });
 }
 
@@ -147,7 +154,17 @@ export function sarifOfVerdicts(o) {
       defaultConfiguration: { level: sarifLevel(v.kind, rising) },
       properties: { kind: v.kind, standard: probe?.standard || [], axis: probe?.axis },
     });
-    for (const f of v.findings)
+    // The ordinal of this finding among the ones this metric reports for this file. A probe that
+    // reports per occurrence produces several findings sharing a metric, a path and a detail, and
+    // without a discriminator they collide into one and a forge shows a single alert for three
+    // problems. The ordinal rather than the LINE on purpose: the point of a partial fingerprint
+    // is to survive an unrelated line being inserted above, and a line number does not.
+    /** @type {Map<string, number>} */
+    const seen = new Map();
+    for (const f of v.findings) {
+      const key = `${v.metric}\u0000${f.path}`;
+      const nth = (seen.get(key) || 0) + 1;
+      seen.set(key, nth);
       results.push({
         ruleId: v.metric,
         level: sarifLevel(v.kind, rising),
@@ -155,9 +172,10 @@ export function sarifOfVerdicts(o) {
           text: `${f.detail || v.metric}${v.floor === null ? "" : ` · floor ${v.floor}, now ${v.value}`}`,
         },
         locations: locationOf(f.path, f.line),
-        partialFingerprints: { abattyFinding: fingerprint([v.metric, f.path, f.detail]) },
+        partialFingerprints: { abattyFinding: fingerprint([v.metric, f.path, f.detail, nth]) },
         properties: { kind: v.kind, status: v.status },
       });
+    }
   }
   return sarifLog({ version: o.version, rules, results });
 }

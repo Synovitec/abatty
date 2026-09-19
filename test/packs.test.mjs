@@ -93,11 +93,13 @@ test("the python preset: detected from the tree, init writes the private package
   git(py, "add", "-A");
   git(py, "commit", "-q", "-m", "chore: the instrument");
   const gate = cli(["gate", py, "--fast"], py);
-  // 3 is "the step found violations", 4 is "the step could not run": which one a machine with no
-  // Python tools installed produces is a property of that machine, not of the gate. The test is
-  // about WHERE the gate stops, so it accepts either and would still catch a gate that sailed
-  // past the first command step or reported a clean 0.
+  // Unlike the JavaScript presets, this one's steps are commands rather than npm scripts, so a
+  // fixture cannot decide whether `ruff` exists and the machine does: 3 where it ran and found
+  // something, 4 where it is not installed. That distinction is not what this test is about, and
+  // it is covered exactly, on both sides, by the end-to-end case in doctor-measure-gate.test.mjs.
+  // What is asserted here is WHERE the gate stops, which no machine gets to decide.
   assert.ok([3, 4].includes(gate.code), `expected 3 or 4, got ${gate.code}\n${gate.out}`);
+  assert.equal(/gate green/.test(gate.out), false, "a fixture with no tools is never green");
   assert.match(
     gate.out,
     /(format|lint \(CODE\.4\)|typecheck \(CODE\.3\)|dead code \(CODE\.6\)|unit tests \(TEST\.1\)) (failed|could not run)/,

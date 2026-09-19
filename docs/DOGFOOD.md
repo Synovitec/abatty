@@ -29,15 +29,15 @@ npx abatty evidence
 
 ## Where it stands, on 2026-09-19
 
-|                             |                                                       |
-| --------------------------- | ----------------------------------------------------- |
-| Score                       | **74 of 100** over 54 applicable checks, on `511d041` |
-| Present / partial / missing | 35 / 10 / 9                                           |
-| Phase                       | 0, with 15 of 22 held                                 |
-| Enforced share              | 67 per cent of 45 present rules held by a machine     |
-| Catalog                     | 78 rules in 15 families                               |
-| Ratchet                     | 15 metrics, green                                     |
-| Tests                       | 231, one skipped                                      |
+|                             |                                                   |
+| --------------------------- | ------------------------------------------------- |
+| Score                       | **75 of 100** over 54 applicable checks           |
+| Present / partial / missing | 36 / 9 / 9                                        |
+| Phase                       | 0, with 15 of 22 held                             |
+| Enforced share              | 67 per cent of 45 present rules held by a machine |
+| Catalog                     | 78 rules in 15 families                           |
+| Ratchet                     | 16 metrics, green                                 |
+| Tests                       | 263, one skipped                                  |
 
 **The score is not a grade.** It is a way to compare this repository against itself over time. A
 repository with a gate and a ratchet and a long context file scores below one with neither and a
@@ -109,6 +109,45 @@ commit, and this repository's own pipeline is hand-written and does not yet.
   and is stated on the page that carries the number.
 - **`abatty gate --fast` takes about two minutes here**, against a target of three seconds. The
   target is not met and the plan says so rather than moving the target.
+
+## What an outside review found, 2026-09-19
+
+An external reviewer probed the work and found six things. They are here because a page like this
+is worth nothing if it only contains what its author noticed.
+
+- **The trust scanner fired ten times on this repository and would have blocked a night here.**
+  Its own pattern table, its own test fixtures, the permission deny-list that forbids `rm -rf /`,
+  and research prose containing the words "Cyber Resilience **Act as a** deadline" and "they
+  **act as a** ratchet". A night-blocking check at a near-zero false-positive budget, running at
+  roughly one hundred per cent false positives on its author's own tree. Fixed: the scanner's own
+  two files are exempt, a list that forbids what it names is read as forbidding, `act as` now
+  needs both a second-person lead and a role-shaped object, and the secret pattern needs a
+  determiner so "fewer output tokens" is prose again. A test now asserts the scan is clean on this
+  repository, and a hostile fixture proves all seven attack shapes are still caught.
+- **SARIF carried no line numbers.** Zero of eight ratchet results had a region, so a forge placed
+  them at the top of the file rather than on the diff line, which was the entire argument for
+  emitting SARIF. The renderer was correct; the probes never supplied a line. The two probes that
+  scan for occurrences now report one finding per occurrence on its own line: 14 of 17 results
+  carry a region, the three without are about a module rather than a line, and the totals and
+  per-file floors are unchanged because the ratchet sums weights either way.
+- **Six test assertions had been weakened rather than fixed.** Accepting either exit code at the
+  exact point where the fifth gate outcome exists is the one thing those assertions must not do.
+  Replaced with fixtures that decide the outcome instead of hoping for it, and with an end-to-end
+  case driving real npm: a tool that runs and fails exits 3, one that cannot run exits 4. Verified
+  by running the suite with `eslint`, `ruff` and `mypy` removed from the machine.
+- **`abatty fix --phase 0` does nothing here**, while phase 0 stands at 15 of 22. The two fixers
+  that exist write documents, both files already exist, and phase 0's gaps are a control run, a
+  permission list and a pipeline step. The message is honest; the feature is unfinished. `C46` is
+  partial again.
+- **Three renderers each decided for themselves whether a finding had a location**, and two of
+  them disagreed. A finding now carries `where`, attached once. The first attempt at this put the
+  scrape in the renderer and the repository's own import graph refused it, correctly: `src/ui/`
+  renders what it is given.
+- **Four acceptance numbers were missed while the plan called their rows landed.** They are in
+  `PLAN.md` §1 now, with the measurements. The one worth repeating: `npm test` is 92 s against a
+  60 s target, and the obvious fix does not work. The suite is throughput-bound, 255 s of work
+  over four cores, so about 64 s is the theoretical best. A concurrency flag moves it by two
+  seconds and splitting the longest file moves it by none, both measured.
 
 ## Two targets that were restated rather than met
 

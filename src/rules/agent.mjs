@@ -49,7 +49,10 @@ export function whereOf(evidence) {
  */
 export const agentFinding = (f, rule = {}) => ({
   id: f.id,
-  where: whereOf(f.evidence),
+  // The finding's own `where`, attached once by runCatalog, falling back to the scrape for a
+  // finding built by hand. Three surfaces deciding this for themselves is how two of them came
+  // to disagree about whether a location was knowable at all.
+  where: f.where || whereOf(f.evidence),
   what: f.next,
   verify: verifyCommand(f.id),
   why: rule.why || "",
