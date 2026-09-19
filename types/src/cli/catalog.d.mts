@@ -12,3 +12,10 @@ export function rulesCommand(cx: import("./ratchet.mjs").CliContext): Promise<vo
  * @param {import("./ratchet.mjs").CliContext} cx @param {string} id
  */
 export function explainCommand(cx: import("./ratchet.mjs").CliContext, id: string): Promise<void>;
+/**
+ * `abatty check <ID>`: one rule, and an exit code that says whether it holds. This is the
+ * command a finding's `verify` field names, so an agent can prove its own edit worked without a
+ * human reading a screen, and it cannot drift from the rule because it runs the rule.
+ * @param {import("./ratchet.mjs").CliContext} cx @param {string} id
+ */
+export function checkCommand(cx: import("./ratchet.mjs").CliContext, id: string): Promise<void>;

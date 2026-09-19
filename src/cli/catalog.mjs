@@ -156,3 +156,29 @@ export async function explainCommand(cx, id) {
   out("\n");
   return;
 }
+
+/**
+ * `abatty check <ID>`: one rule, and an exit code that says whether it holds. This is the
+ * command a finding's `verify` field names, so an agent can prove its own edit worked without a
+ * human reading a screen, and it cannot drift from the rule because it runs the rule.
+ * @param {import("./ratchet.mjs").CliContext} cx @param {string} id
+ */
+export async function checkCommand(cx, id) {
+  const { dir, flag, out, err } = cx;
+  const catalog = await loadCatalog(dir);
+  const rule = ruleById(String(id || "").toUpperCase(), catalog.rules);
+  if (!rule) {
+    err(`no rule ${id || "(none named)"}; abatty rules lists the catalog\n`);
+    process.exit(EXIT.input);
+  }
+  const finding = runCatalog(buildContext(dir), [rule])[0];
+  if (!finding) {
+    err(`${rule.id} produced no finding\n`);
+    process.exit(EXIT.error);
+  }
+  const held =
+    finding.status === "present" || finding.status === "n/a" || finding.status === "waived";
+  if (flag("--json")) out(JSON.stringify({ ...finding, held }, null, 2) + "\n");
+  else out(`${finding.id} ${finding.status} · ${finding.evidence}\n`);
+  process.exit(held ? EXIT.clean : EXIT.findings);
+}

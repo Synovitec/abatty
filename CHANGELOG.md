@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A finding now carries the command that proves it was fixed** (C31). The published definition
+  of a sensor in an agent harness is a signal optimised for the model and carrying the instruction
+  for its own correction; measured against it this package emitted reports, because
+  `Verdict.next` is a sentence for a person who already knows the codebase. The MCP surface gains
+  a `findings` tool that returns, per open finding, **where** it is, **what** edit to make,
+  **why** the rule exists, and **`verify`**: a command whose exit code proves the edit worked.
+  `abatty check <ID>` is that command - one rule, run alone, **0** when it holds and **3** when it
+  does not - so it cannot drift from the rule, because it is the rule. The loop closes without a
+  human: the rule breaks, the gate refuses with an instruction, the agent edits, the agent runs
+  `verify`. The control case is the one that matters and runs both ways: `verify` is non-zero
+  before the edit and zero after it, with nothing else in the repository changed.
+
+### Added
+
 - **Findings go to the diff, as SARIF** (C45). The strongest finding in the whole evidence base is
   about placement rather than precision: the same analysis, at the same precision, reached a
   near-zero fix rate delivered as a report and above seventy per cent delivered on the change

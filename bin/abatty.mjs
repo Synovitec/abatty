@@ -56,6 +56,7 @@ const KNOWN = [
   "dashboard",
   "rules",
   "explain",
+  "check",
   "ratchet",
   "baseline",
   "night",
@@ -104,8 +105,9 @@ const VALUE_FLAGS = [
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
 );
-// `explain <ID> [dir]` takes the rule first; every other command takes the directory first.
-const dirArg = command === "explain" ? positional[1] : positional[0];
+// `explain <ID> [dir]` and `check <ID> [dir]` take the rule first; every other command takes
+// the directory first.
+const dirArg = command === "explain" || command === "check" ? positional[1] : positional[0];
 const dir = repoRoot(dirArg || process.cwd());
 const out = (/** @type {string} */ s) => process.stdout.write(s);
 const err = (/** @type {string} */ s) => process.stderr.write(s);
@@ -252,6 +254,11 @@ switch (command) {
     await rulesCommand(ctx);
     break;
   }
+  case "check": {
+    const { checkCommand } = await import("../src/cli/catalog.mjs");
+    await checkCommand(ctx, String(positional[0] || ""));
+    break;
+  }
   case "explain": {
     const { explainCommand } = await import("../src/cli/catalog.mjs");
     await explainCommand(ctx, String(positional[0] || ""));
@@ -303,6 +310,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
   ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--phase <n>] [--json|--md]  the rule catalog: what must hold, why, what insures it
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
+  ${t.bold("abatty check")} <ID> [dir] [--json]                                 one rule and an exit code: 0 it holds, 3 it does not (what a finding\u0027s verify names)
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
 
