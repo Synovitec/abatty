@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **Coverage and mutation testing are read for their bounds, not for their tool** (C14, C13).
+  TEST-COVERAGE asked for a threshold on the tree total, which is the wrong question asked loudly:
+  a whole new untested file passes while the total holds, and a refactor that deletes well-tested
+  code fails for improving the codebase. It now asks for a gate on the coverage of the lines the
+  change touched, with the total kept as a floor underneath. TEST-MUTATION asked whether a
+  particular package was installed. It now asks for the two bounds without which mutation testing
+  is the slowest check anybody has ever switched off: mutate what the change touched, and ignore
+  the nodes a mutant cannot prove anything about, so a surviving mutant is a real gap in the tests
+  rather than a log line. Both rules read the tool's config files, the scripts and the pipeline,
+  in whichever ecosystem's spelling, instead of one vendor's file name; where a rule still names a
+  tool it is because that tool is the exception, and it says so.
+
 ### Added
 
 - **The dependency audit is scoped before it is trusted** (C16). An unscoped audit is the one

@@ -6,6 +6,28 @@
 import { BROWSER, DATABASE, JS_SOURCES, SOURCES } from "../applies.mjs";
 import { perPack } from "../../packs/rules.mjs";
 
+/**
+ * Everywhere a repository configures a test-quality tool: the tool's own files, whichever tool,
+ * plus the scripts and the pipeline that invoke it. A rule reads the practice out of all three,
+ * because a threshold on a command line holds exactly as much as one in a config file, and a
+ * check that reads only one vendor's file name is a check about that vendor.
+ * @param {import("../context.mjs").RepoContext} c @param {RegExp} files
+ */
+function toolText(c, files) {
+  const found = c.files(files);
+  // The PATHS as well as the contents: `stryker.conf.json` and `codecov.yml` say which tool is
+  // configured by existing, and their contents may never repeat the tool's own name.
+  return [...found, ...found.map(c.read), ...Object.values(c.scripts), c.ciText].join("\n");
+}
+
+/** Wherever a coverage run is configured, in any of the ecosystems a repository may use. */
+const COVERAGE_FILES =
+  /(^|\/)(vitest(\.\w+)?\.config\.[cm]?[jt]s|jest\.config\.[cm]?[jt]s|\.nycrc(\.json|\.ya?ml)?|\.c8rc(\.json)?|codecov\.ya?ml|\.codecov\.ya?ml|\.coveragerc|pyproject\.toml|setup\.cfg|sonar-project\.properties)$/;
+
+/** Wherever a mutation run is configured. */
+const MUTATION_FILES =
+  /(^|\/)(stryker(\.\w+)*\.conf\.(json|jsonc|js|mjs|cjs|ts)|\.stryker\.conf\.[\w.]+|mutmut\.ini|setup\.cfg|pyproject\.toml|infection\.json(\.dist)?|pitest\.\w+)$/;
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -72,30 +94,51 @@ export const rules = [
   {
     id: "TEST-COVERAGE",
     family: "Tests",
-    title: "Coverage thresholds pinned, reportOnFailure on",
+    title: "Coverage is gated on the change, with a floor under the tree",
     standard: ["TEST.4"],
     level: "must",
     enforcement: "hard",
     phase: "2",
-    ...JS_SOURCES,
-    why: "A threshold pinned at today's figure is a floor coverage cannot fall below unnoticed; reportOnFailure keeps the report when the suite is red, which is when it is read.",
-    next: "Pin thresholds at today's measured figure per area; set reportOnFailure: true",
+    ...SOURCES,
+    why: "A threshold on the tree total is the wrong question asked loudly: a whole new untested file passes while the total holds, and a refactor that deletes well-tested code fails for improving the codebase. What a reviewer wants to know is whether THIS change is tested, which is the coverage of the lines it touched. The total is still worth a floor, so coverage cannot drift down unnoticed; it is a floor, not the gate.",
+    next: "Gate on the coverage of the changed lines (a patch status, a diff-coverage step, or the runner's changed-files mode), keep a threshold on the total as a floor, and keep the report when the suite is red, which is when it is read",
     check: (c) => {
-      const cfg = c
-        .files(/vitest(\.\w+)?\.config\.(ts|js|mjs|mts)$/)
-        .map(c.read)
-        .join("\n");
-      const thresholds = /thresholds/.test(cfg);
-      // The flag may live in the config or on the CI script's command line; both hold TEST.4.
-      const rofScript = Object.entries(c.scripts).find(([, v]) => /reportOnFailure/.test(v));
-      const rof = /reportOnFailure/.test(cfg)
-        ? "config"
-        : rofScript
-          ? "`" + rofScript[0] + "` flag"
-          : "";
+      const text = toolText(c, COVERAGE_FILES);
+      if (!/coverage|nyc|c8|codecov|cobertura|lcov/i.test(text))
+        return { status: "missing", evidence: "nothing measures coverage" };
+      const floor =
+        /thresholds|coverageThreshold|check-coverage|fail_under|minimum_coverage|coverage_threshold/i.test(
+          text,
+        );
+      // The delta gate, in whichever shape the ecosystem spells it: a patch status, a diff
+      // coverage tool, or a runner told to look only at what changed.
+      const delta =
+        /diff[-_]?cover|patch:|patch_?status|--changed\b|changedSince|--since\b|--diff\b|compare[-_]?branch|newCodePeriod|new_code/i.test(
+          text,
+        );
+      // Most runners write the report before they set the exit code, so it survives a red suite
+      // by default. Vitest discards it unless told otherwise, so the flag is asked for THERE and
+      // nowhere else: a rule that demanded it of every ecosystem would be asking for a vitest
+      // option by name.
+      const vitest = /vitest/i.test(text);
+      const kept = !vitest || /reportOnFailure/i.test(text);
+      const has = [
+        floor ? "a floor on the total" : "",
+        delta ? "a gate on the change" : "",
+        vitest && kept ? "reportOnFailure" : "",
+      ].filter(Boolean);
+      const lacks = [
+        floor ? "" : "no floor on the total",
+        delta
+          ? ""
+          : "no gate on the changed lines, so an untested new file passes while the total holds",
+        kept
+          ? ""
+          : "vitest discards the coverage report when the suite is red, which is when it is read",
+      ].filter(Boolean);
       return {
-        status: thresholds && rof ? "present" : thresholds ? "partial" : "missing",
-        evidence: `${thresholds ? "thresholds set" : "no thresholds"}${rof ? ", reportOnFailure (" + rof + ")" : ", no reportOnFailure"}`,
+        status: floor && delta && kept ? "present" : "partial",
+        evidence: [has.join(", "), lacks.join("; ")].filter(Boolean).join(" · "),
       };
     },
   },
@@ -151,17 +194,41 @@ export const rules = [
   {
     id: "TEST-MUTATION",
     family: "Tests",
-    title: "Mutation testing wired",
+    title: "Mutation testing wired, bounded to the change and to what a mutant can prove",
     standard: ["TEST.5"],
     level: "should",
     enforcement: "hard",
     phase: "10",
-    ...JS_SOURCES,
-    why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code.",
-    next: "Add StrykerJS on changed files per PR with break at today's floor",
+    ...SOURCES,
+    why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code. Unbounded, it is also the slowest check anybody has ever switched off: it mutates the whole tree on every run, and it mutates nodes no test could ever observe - a log line, a message string, a piece of code with no behaviour behind it - so it reports survivors nobody can kill and a run nobody waits for.",
+    next: "Bound it twice before you trust it: mutate what the change touched (--since / --incremental / a diff-driven glob) and ignore the nodes a mutant cannot prove anything about (arid nodes, excluded mutators, ignore patterns), with a floor it breaks at",
     check: (c) => {
-      const s = c.has("@stryker-mutator/core");
-      return { status: s ? "present" : "missing", evidence: s ? "stryker present" : "none" };
+      const text = toolText(c, MUTATION_FILES);
+      const runner =
+        c.has("@stryker-mutator/core") ||
+        /stryker|mutmut|infection|pitest|mutant|mutation[-_]?test/i.test(text);
+      if (!runner) return { status: "missing", evidence: "nothing mutates the code" };
+      // Scoped to the change, so it finishes; and told what not to mutate, so what survives is
+      // a real gap in the tests rather than a line no assertion could ever reach.
+      const scoped = /--since\b|incremental|--changed\b|changed[-_]?files|diff|paths-?from/i.test(
+        text,
+      );
+      const arid =
+        /ignorers|excludedMutations|ignore[-_]?patterns|"ignore"|aridNode|arid|also-?copy|exclude/i.test(
+          text,
+        );
+      const floor = /break|threshold|score|--fail|MUTPY_|min[-_]?score/i.test(text);
+      const lacks = [
+        scoped ? "" : "unbounded: it mutates the whole tree on every run",
+        arid ? "" : "nothing is ignored, so a log line counts as a surviving mutant",
+        floor ? "" : "no floor to break at",
+      ].filter(Boolean);
+      return {
+        status: scoped && arid ? "present" : "partial",
+        evidence: lacks.length
+          ? lacks.join("; ")
+          : "bounded to the change, with the nodes a mutant cannot prove ignored",
+      };
     },
   },
 ];

@@ -476,3 +476,77 @@ test("a waiver is counted per rule: the rate, and a waiver that has run out is m
   assert.match(out, /waived: 2 of \d+ \(\d+%\)/);
   assert.match(out, /1 waiver\(s\) expired and measured again: SEC-AUDIT/);
 });
+
+test("coverage is read for the gate on the change, not for the word coverage", () => {
+  /** @param {Record<string, string>} files @param {string} id */
+  const find = (files, id) => {
+    const dir = tempRepo("cov-" + Math.random().toString(36).slice(2, 8), {
+      "package.json": NEXT_PKG,
+      "src/index.ts": "export const x = 1;\n",
+      ...files,
+    });
+    const f = runCatalog(buildContext(dir), RULES).find((x) => x.id === id);
+    assert.ok(f, id);
+    return f;
+  };
+  const wf = (/** @type {string} */ run) => ({
+    ".github/workflows/ci.yml": `jobs:\n  a:\n    steps:\n      - run: ${run}\n`,
+  });
+
+  assert.equal(find({}, "TEST-COVERAGE").status, "missing");
+  const total = find(
+    {
+      "vitest.config.ts": "export default { test: { coverage: { thresholds: { lines: 80 } } } }\n",
+    },
+    "TEST-COVERAGE",
+  );
+  assert.equal(total.status, "partial");
+  assert.match(total.evidence, /no gate on the changed lines/);
+
+  // the same practice in another ecosystem's spelling holds the rule just as well
+  const patch = find(
+    {
+      "codecov.yml": "coverage:\n  status:\n    patch:\n      default:\n        target: 80\n",
+      ".coveragerc": "[report]\nfail_under = 80\n",
+      ...wf("pytest --cov --cov-report=xml && diff-cover coverage.xml"),
+    },
+    "TEST-COVERAGE",
+  );
+  assert.equal(patch.status, "present", patch.evidence);
+  assert.match(patch.evidence, /a gate on the change/);
+});
+
+test("mutation testing is read for its two bounds, not for the runner's name", () => {
+  /** @param {Record<string, string>} files */
+  const find = (files) => {
+    const dir = tempRepo("mut-" + Math.random().toString(36).slice(2, 8), {
+      "package.json": NEXT_PKG,
+      "src/index.ts": "export const x = 1;\n",
+      ...files,
+    });
+    const f = runCatalog(buildContext(dir), RULES).find((x) => x.id === "TEST-MUTATION");
+    assert.ok(f);
+    return f;
+  };
+
+  assert.equal(find({}).status, "missing");
+  const unbounded = find({ "stryker.conf.json": '{ "testRunner": "vitest" }\n' });
+  assert.equal(unbounded.status, "partial");
+  assert.match(unbounded.evidence, /mutates the whole tree on every run/);
+  assert.match(unbounded.evidence, /a log line counts as a surviving mutant/);
+
+  const bounded = find({
+    "stryker.conf.json":
+      '{ "testRunner": "vitest", "incremental": true, "ignorers": ["console"], "thresholds": { "break": 60 } }\n',
+  });
+  assert.equal(bounded.status, "present", bounded.evidence);
+  assert.match(bounded.evidence, /bounded to the change/);
+
+  // one bound without the other is still partial, and the evidence says which one is missing
+  const half = find({
+    "stryker.conf.json": '{ "testRunner": "vitest", "incremental": true, "thresholds": {} }\n',
+  });
+  assert.equal(half.status, "partial");
+  assert.equal(/mutates the whole tree/.test(half.evidence), false);
+  assert.match(half.evidence, /nothing is ignored/);
+});
