@@ -93,12 +93,14 @@ test("the python preset: detected from the tree, init writes the private package
   git(py, "add", "-A");
   git(py, "commit", "-q", "-m", "chore: the instrument");
   const gate = cli(["gate", py, "--fast"], py);
-  assert.equal(gate.code, 3, gate.out);
-  // With the tools installed the strict typecheck refuses the unannotated test; without them
-  // the first command fails on "not found". Either way the gate is red at a command step.
+  // 3 is "the step found violations", 4 is "the step could not run": which one a machine with no
+  // Python tools installed produces is a property of that machine, not of the gate. The test is
+  // about WHERE the gate stops, so it accepts either and would still catch a gate that sailed
+  // past the first command step or reported a clean 0.
+  assert.ok([3, 4].includes(gate.code), `expected 3 or 4, got ${gate.code}\n${gate.out}`);
   assert.match(
     gate.out,
-    /(format|lint \(CODE\.4\)|typecheck \(CODE\.3\)|dead code \(CODE\.6\)|unit tests \(TEST\.1\)) failed/,
+    /(format|lint \(CODE\.4\)|typecheck \(CODE\.3\)|dead code \(CODE\.6\)|unit tests \(TEST\.1\)) (failed|could not run)/,
   );
   const preset = presetById("python");
   assert.ok(preset);

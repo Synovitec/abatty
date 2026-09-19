@@ -98,9 +98,11 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
   assert.equal(
     r?.result.structuredContent.ok,
     false,
-    "the dependencies are named, never installed: lint fails",
+    "the dependencies are named, never installed: the gate does not pass",
   );
-  assert.match(r?.result.structuredContent.output, /lint \(CODE.4\) failed/);
+  // Failed or could not run, depending on whether the machine happens to have the linter. The
+  // tool's job is to return the gate's outcome and its output, not to make one of the two.
+  assert.match(r?.result.structuredContent.output, /lint \(CODE\.4\) (failed|could not run)/);
 });
 
 test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing else to stdout", () => {

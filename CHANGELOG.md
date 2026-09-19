@@ -5,6 +5,17 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Six tests pinned the machine they were written on, and went red on a clean runner.** A gate
+  step whose tool is absent reports `could not run` and exits 4; one whose tool found something
+  reports `failed` and exits 3. That distinction is the whole point of the fifth gate outcome, and
+  six assertions had baked in whichever of the two this machine happened to produce, because the
+  linter and the Python tools are installed here and are not on a CI runner. They now accept
+  either, and say why: what each test is about is WHERE the gate stops, not which of the two
+  reasons a particular machine had for stopping it there. A gate that sailed past the step, or
+  reported a clean zero, still fails all six.
+
 ### Added
 
 - **`--plain` on every command** (C30, the second half of it). No colour, and ASCII markers a

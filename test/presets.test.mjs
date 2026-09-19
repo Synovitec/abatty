@@ -148,9 +148,13 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
     const gate = cli(["gate", dir, "--fast"], dir);
     if (fx.gate) assert.match(gate.out, fx.gate, `${id}: ${gate.out}`);
     else {
-      assert.equal(gate.code, 3, gate.out);
+      // The dependencies are named in the fixture, never installed. On a machine that happens to
+      // have the linter the step FAILS (3); on a clean one it cannot run (4). Which of the two
+      // is a property of the machine, and pinning either is how this suite passed here and went
+      // red on the runner. What the test is about is that the gate reaches lint and stops there.
+      assert.ok([3, 4].includes(gate.code), `expected 3 or 4, got ${gate.code}\n${gate.out}`);
       assert.match(gate.out, /skipped format/);
-      assert.match(gate.out, /lint \(CODE.4\) failed/);
+      assert.match(gate.out, /lint \(CODE\.4\) (failed|could not run)/);
     }
   });
 }
