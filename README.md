@@ -245,6 +245,11 @@ read as it is today against fixes from the whole range, so a file that was fixed
 up counts against its rule - an error that runs one way and flatters nothing. And it is one
 repository, which the reading names.
 
+Every command takes `--plain`: no colour, and ASCII markers (`[ok]`, `[FAIL]`, `[skip]`) that a
+log parser can match without knowing about Unicode. Colour is off anyway when stdout is not a
+terminal, when `NO_COLOR` is set or in CI; `--plain` is for when none of those is true and
+something is still reading the output.
+
 ## What `init` writes
 
 | Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |

@@ -52,24 +52,39 @@ because the research that produced it stays on the record either way.
 
 ## 1. Where the work stands
 
-Measured on `e043e66`, 2026-09-19, by running the instrument and reading the source.
+Measured by running the instrument, 2026-09-19. The row above each number is what it was when
+this plan was written, on `e043e66`, so the distance is visible rather than asserted.
 
-|                         |                                 |
-| ----------------------- | ------------------------------- |
-| Changes on the register | 49                              |
-| Landed                  | 4                               |
-| Partly built            | 9                               |
-| Open                    | 36                              |
-| Tests                   | 158, one skipped                |
-| Ratchet                 | green, 14 metrics               |
-| Phase                   | A.1, 7 of 9 held                |
-| Score                   | 68 of 100, a trend              |
-| Enforced share          | 78 per cent of 36 present rules |
-| Catalog                 | 71 rules, 13 families           |
+|                         | When the plan was written       | Now                       |
+| ----------------------- | ------------------------------- | ------------------------- |
+| Changes on the register | 49                              | 49                        |
+| Landed                  | 4                               | 44                        |
+| Partly built            | 9                               | 4                         |
+| Open                    | 36                              | 0                         |
+| Reshaped or withdrawn   | 0                               | 2 (C9, C37), with reasons |
+| Tests                   | 158, one skipped                | 254, one skipped          |
+| Ratchet                 | green, 14 metrics               | green, 16 metrics         |
+| Phase                   | A.1, 7 of 9 held                | 0, 15 of 22 held          |
+| Score                   | 68 of 100, a trend              | 75 of 100, a trend        |
+| Enforced share          | 78 per cent of 36 present rules | 67 per cent of 45 present |
+| Catalog                 | 71 rules, 13 families           | 78 rules, 15 families     |
+
+The enforced share went DOWN while the catalog grew, and that is the number behaving correctly:
+seven of the rules added since are held by a reviewer or by nothing, so the share of what a
+machine holds fell even as more is held. A share that only ever rose would be measuring the
+catalog rather than the enforcement.
+
+**What is left.** Four items are partial and none is open. Two of the four cannot be finished
+from inside this repository: `C15` needs a third-party secret-scanning benchmark, and `C49` needs
+named repositories running `astro`, `python` and `docs`. The other two are real work with nobody
+blocking them: `C30`'s remaining half is `--json` on every command a script may consume (`--plain`
+landed), and `C43` wants the gate's independent steps to run together, which changes what "the
+gate stops here" means and needs designing rather than doing.
 
 Work that landed and is not on the register, because it came from the repository rather than
 from the research: the observability family closing the OBS.1 pillar, a preset's rule files
-obeying `applies`, and the phase replacing the score as the headline.
+obeying `applies`, the phase replacing the score as the headline, `SEC-DISCLOSURE` and the
+disclosure policy behind it, and the published secret-scan corpus.
 
 ## 2. Wave 1 · the core is correct and the floor is gone
 
@@ -85,9 +100,9 @@ C48 landed with the exit codes of C30: 0 clean, 2 bad input, 3 found violations,
 130 interrupted, in `src/cli/exit.mjs` and in `abatty help`. What is left of C30 is the flag sweep,
 `--json` and `--plain` on every command a script may consume.
 
-| C41 | Lazy imports; the entry point split into `src/cli/` | open | M |
-| C29 | Workspace selection walks the import graph, or runs everything and says so | open | M |
-| C42 | `shell: true` removed from the eleven spawn sites that do not need it | open | S |
+| C41 | Lazy imports; the entry point split into `src/cli/` | landed | M |
+| C29 | Workspace selection walks the import graph, or runs everything and says so | landed | M |
+| C42 | `shell: true` removed from the eleven spawn sites that do not need it | landed | S |
 
 **Done when**
 
@@ -114,8 +129,8 @@ The largest change in the plan, and the one that most changes what the tool is f
 | ID  | Change                                                                                     | State  | Size |
 | --- | ------------------------------------------------------------------------------------------ | ------ | ---- |
 | C45 | A SARIF 2.1.0 emitter, and the upload step in the CI that `abatty ci` generates            | landed | M    |
-| C31 | Every finding carries the edit and a `verify` command whose exit code proves it worked     | open   | M    |
-| C2  | `abatty gate` reports the findings the range introduced, separately from the standing ones | open   | M    |
+| C31 | Every finding carries the edit and a `verify` command whose exit code proves it worked     | landed | M    |
+| C2  | `abatty gate` reports the findings the range introduced, separately from the standing ones | landed | M    |
 | C33 | Each rule is labelled a guide or a sensor, computational or inferential                    | landed | S    |
 
 **Done when**
@@ -324,11 +339,11 @@ files; `D` is `DESIGN.md`.
 | ID  | Wave | State    | From | ID  | Wave | State    | From |
 | --- | ---- | -------- | ---- | --- | ---- | -------- | ---- |
 | C1  | -    | landed   | 07   | C26 | 6    | landed   | 08   |
-| C2  | 2    | open     | 07   | C27 | 6    | landed   | 08   |
+| C2  | 2    | landed   | 07   | C27 | 6    | landed   | 08   |
 | C3  | 5    | landed   | 07   | C28 | -    | landed   | 08   |
-| C4  | 6    | landed   | 07   | C29 | 1    | open     | 08   |
+| C4  | 6    | landed   | 07   | C29 | 1    | landed   | 08   |
 | C5  | 5    | landed   | 07   | C30 | 1    | partial  | 08   |
-| C6  | 5    | landed   | 07   | C31 | 2    | open     | 09   |
+| C6  | 5    | landed   | 07   | C31 | 2    | landed   | 09   |
 | C7  | -    | landed   | 07   | C32 | 3    | open     | 09   |
 | C8  | 3    | partial  | 07   | C33 | 2    | open     | 09   |
 | C9  | 3    | reshaped | 07   | C34 | 6    | landed   | 09   |
@@ -338,8 +353,8 @@ files; `D` is `DESIGN.md`.
 | C13 | 5    | landed   | 07   | C38 | 6    | landed   | 09   |
 | C14 | 5    | landed   | 07   | C39 | 6    | landed   | 09   |
 | C15 | 5    | partial  | 07   | C40 | 6    | landed   | 09   |
-| C16 | 5    | landed   | 07   | C41 | 1    | open     | D    |
-| C17 | 5    | landed   | 07   | C42 | 1    | open     | D    |
+| C16 | 5    | landed   | 07   | C41 | 1    | landed   | D    |
+| C17 | 5    | landed   | 07   | C42 | 1    | landed   | D    |
 | C18 | 5    | landed   | 07   | C43 | 3    | partial  | D    |
 | C19 | 6    | landed   | 07   | C44 | 3    | landed   | D    |
 | C20 | 6    | landed   | 07   | C45 | 2    | landed   | D    |

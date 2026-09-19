@@ -85,6 +85,9 @@ const opt = (/** @type {string} */ name) => {
   const v = i >= 0 ? rest[i + 1] : undefined;
   return v && !v.startsWith("--") ? v : "";
 };
+// One place, before any screen is drawn: --plain is for whatever is reading the output, so it
+// must reach every command rather than the handful that remembered to look for it.
+if (flag("--plain")) t.setPlain(true);
 const VALUE_FLAGS = [
   "--stack",
   "--out",
@@ -349,6 +352,8 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty secrets")} [dir] [--staged|--range <r>|--benchmark] [--json]   the secret scan: the tree, the staged files, a range, or the scan measured against the published corpus
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
+
+  ${t.gray("--plain on any command: no colour, ASCII markers, for a log file or a script")}
 
   ${t.gray("exit codes")}  ${EXIT_CODES.map(([c, w]) => `${c} ${w}`).join("  ·  ")}
   ${t.gray("3 is the one that matters: a gate that found something did not fail, it worked. 4 is the instrument.")}

@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`--plain` on every command** (C30, the second half of it). No colour, and ASCII markers a
+  byte-oriented reader can match on: `[ok]`, `[FAIL]`, `[skip]`. It is handled once at the entry
+  point rather than threaded through every screen, because the screen that forgot to thread it
+  would be the one a script was parsing. The glyphs are getters so the flag reaches them after
+  the module was loaded. What is still open in C30 is `--json` on every command a script may
+  consume; the exit codes and `--plain` are done, and `docs/PLAN.md` §1 says which is which.
+
 - **`abatty portal`: the conformance in the catalogue's own entity descriptor** (C37, reshaped).
   The item asked for a portal plugin. A plugin is a separate package carrying that portal's
   framework as a dependency, it puts the work behind an install a whole organisation has to agree
