@@ -224,12 +224,52 @@ export function renderGithubActions(preset, o = {}) {
     `  pull_request:`,
     `permissions:`,
     `  contents: read`,
+    // The workload identity the signature is made with, and the write the transparency log needs.
+    `  id-token: write`,
+    `  attestations: write`,
+    // The findings are uploaded to code scanning, which is what puts them on the diff of the
+    // change under review rather than in a report nobody opens.
+    `  security-events: write`,
     `jobs:`,
     `  checks:`,
     `    runs-on: ubuntu-latest`,
     `    steps:`,
     ...setup,
     ...always.map(step),
+    // Emitted and uploaded even when a step above went red: a run that failed is exactly the run
+    // whose findings a reviewer needs on the diff.
+    // A bypass nobody can see afterwards is a gate with a hole nobody can measure.
+    `      - name: the bypass rate of this push`,
+    `        if: always()`,
+    `        run: npx abatty report --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const b=JSON.parse(s).bypass||{};console.log(\`bypass: \${b.bypassed||0} of \${b.commits||0} commit(s) got past the hook without saying why (\${b.rate||0}%), \${b.reasoned||0} with a reason\`);process.exit(b.bypassed?1:0)})"`,
+    `      - name: findings as SARIF`,
+    `        if: always()`,
+    `        run: npx abatty ratchet --range auto --sarif > abatty.sarif || true`,
+    `      - name: upload the findings`,
+    `        if: always()`,
+    `        uses: github/codeql-action/upload-sarif@v3`,
+    `        with:`,
+    `          sarif_file: abatty.sarif`,
+    `          category: abatty`,
+    // The conformance statement, signed by the RUN rather than by a key anybody holds.
+    //
+    // WHY here and not in the package: a signature is worth the identity behind it, and the only
+    // identity available to a measurement tool would be a key on a developer's machine or a
+    // secret in a repository, which is the weakest attestation of the two and the one most
+    // likely to leak. The pipeline already has a short-lived workload identity that no human can
+    // export, and the platform's own attestation action turns it into a signature in the
+    // established transparency log. So this package prints the statement and the pipeline signs
+    // it, with the run's identity, for free, in the store every verifier already reads.
+    `      - name: the conformance statement`,
+    `        if: always()`,
+    `        run: npx abatty attest --out abatty-conformance.json || true`,
+    `      - name: sign it with this run's identity`,
+    `        if: always()`,
+    `        uses: actions/attest@v2`,
+    `        with:`,
+    `          subject-path: abatty-conformance.json`,
+    `          predicate-type: https://abatty.dev/attestation/conformance/v1`,
+    `          predicate-path: abatty-conformance.json`,
   ];
   if (db.length) {
     out.push(
@@ -264,77 +304,4 @@ export function renderGithubActions(preset, o = {}) {
     );
   }
   return out.join("\n") + "\n";
-}
-
-/** The pull-request template: the reviewer's checklist in the author's hands. */
-export function renderPullRequestTemplate() {
-  return [
-    `## What changed, and why`,
-    ``,
-    `<!-- One behaviour per pull request. The changelog line under [Unreleased] says it for the reader. -->`,
-    ``,
-    `## Before asking for review`,
-    ``,
-    `- [ ] The gate is green (\`npm run gate\`), and CI runs the same steps`,
-    `- [ ] A line under \`## [Unreleased]\` in the changelog, written for the reader`,
-    `- [ ] No floor raised, no threshold lowered, no rule switched off without a reason in the decisions file`,
-    `- [ ] A new guard or probe was seen red before green (a planted violation, then the fix)`,
-    `- [ ] Docs that describe the changed code were re-read against it (\`last_verified\`), not just dated`,
-    `- [ ] Behaviour kept identical in a refactor, and the commit says how that was checked`,
-    ``,
-  ].join("\n");
-}
-
-/**
- * The organisation ruleset for GitHub (Settings → Rules → Rulesets → Import): a branch name
- * that names a tool is refused, a pull request is required on the default branch, and the
- * generated checks must pass. Carries the vocabulary in the open, so it is printed, never
- * written into a repository.
- * @param {{ checks?: string[] }} [o]
- */
-export function renderRuleset(o = {}) {
-  // The vocabulary's own regex sources, word boundaries included (RE2 has them).
-  const pattern = TERMS.join("|");
-  const checks = o.checks && o.checks.length ? o.checks : ["checks"];
-  return JSON.stringify(
-    {
-      name: "abatty",
-      target: "branch",
-      enforcement: "active",
-      conditions: { ref_name: { include: ["~ALL"], exclude: [] } },
-      rules: [
-        {
-          type: "branch_name_pattern",
-          parameters: {
-            operator: "regex",
-            pattern: `(?i)(${pattern})`,
-            negate: true,
-            name: "no branch names a tool",
-          },
-        },
-        { type: "deletion" },
-        { type: "non_fast_forward" },
-        {
-          type: "pull_request",
-          parameters: {
-            required_approving_review_count: 1,
-            dismiss_stale_reviews_on_push: true,
-            require_code_owner_review: false,
-            require_last_push_approval: false,
-            required_review_thread_resolution: true,
-          },
-        },
-        {
-          type: "required_status_checks",
-          parameters: {
-            strict_required_status_checks_policy: true,
-            required_status_checks: checks.map((c) => ({ context: c })),
-          },
-        },
-      ],
-      bypass_actors: [],
-    },
-    null,
-    2,
-  );
 }

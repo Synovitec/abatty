@@ -16,39 +16,20 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { git, hasScript, readPackage } from "./repo.mjs";
-import { auditOutcome, scanSecrets } from "./secrets.mjs";
+import { asResult, bin, dockerRunning, runCommand, runScript } from "./spawn.mjs";
+import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
+import { scanSecrets } from "./secrets.mjs";
+import { auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
+import { affectedWorkspaces } from "../presets/workspaces.mjs";
 
 /**
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {import("./spawn.mjs").RunResult} RunResult
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
-
-/**
- * Run an npm script and return its exit code; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
- */
-export function runScript(repoDir, script, extraArgs = []) {
-  const r = spawnSync(
-    "npm",
-    ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])],
-    { cwd: repoDir, stdio: "inherit", shell: true },
-  );
-  return r.status ?? 1;
-}
-
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv */
-export function runCommand(repoDir, argv) {
-  const [cmd, ...args] = argv;
-  const r = spawnSync(String(cmd), args, { cwd: repoDir, stdio: "inherit", shell: true });
-  return r.status ?? 1;
-}
-
-function dockerRunning() {
-  return spawnSync("docker", ["info"], { stdio: "ignore", shell: true }).status === 0;
-}
 
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
@@ -79,6 +60,17 @@ export function pendingPaths(repoDir) {
   const tracked = git(repoDir, "diff", "--name-only", "HEAD");
   const untracked = git(repoDir, "ls-files", "--others", "--exclude-standard");
   return `${tracked}\n${untracked}`.split("\n").filter(Boolean);
+}
+
+/**
+ * The files a range changed, repository-relative. A finding in a file this change never touched
+ * is not this change's finding, however true it is, and telling the two apart is the difference
+ * between a gate a team acts on and a list they learn to scroll past.
+ * @param {string} repoDir @param {string} range
+ */
+export function changedPaths(repoDir, range) {
+  if (!range) return [];
+  return git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
 }
 
 /**
@@ -168,15 +160,22 @@ export function runGate(o) {
     if (s.builtin === "audit") {
       log(`\n▶ ${s.label}`);
       const t0 = Date.now();
-      const a = auditOutcome(repoDir, (cmd, args) => {
-        const r = spawnSync(cmd, args, {
-          cwd: repoDir,
-          encoding: "utf8",
-          shell: true,
-          maxBuffer: 16 * 1024 * 1024,
-        });
-        return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
-      });
+      const cfg = readConfig(repoDir);
+      const a = auditOutcome(
+        repoDir,
+        (cmd, args) => {
+          const r = spawnSync(bin(cmd), args, {
+            cwd: repoDir,
+            encoding: "utf8",
+            maxBuffer: 16 * 1024 * 1024,
+          });
+          return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
+        },
+        { allow: cfg?.security?.audit?.allow || [], level: cfg?.security?.audit?.level },
+      );
+      // An advisory the repository allows, and an allowance whose date has run out, are said out
+      // loud on a green step: a decision nobody is reminded of is a decision nobody revisits.
+      if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
       if (a.outcome === "failed") {
         log(a.detail);
         events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });
@@ -203,11 +202,18 @@ export function runGate(o) {
     if (s.command) {
       log(`\n▶ ${prefix}${s.label}`);
       const t0 = Date.now();
-      const code = runCommand(cwd, s.command);
+      const res = asResult(runCommand(cwd, s.command));
       const ms = Date.now() - t0;
-      if (code !== 0) {
+      if (res.errored) {
+        events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
+        log(
+          `\n✗ ${prefix}${s.label} could not run: ${s.command.join(" ")} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+        );
+        return false;
+      }
+      if (res.code !== 0) {
         events.push({ label: prefix + s.label, outcome: "failed", ms });
-        log(`\n✗ ${prefix}${s.label} failed (exit ${code}). The gate stops here.`);
+        log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
         return false;
       }
       events.push({ label: prefix + s.label, outcome: "ok", ms });
@@ -228,24 +234,44 @@ export function runGate(o) {
     }
     log(`\n▶ ${prefix}${s.label}`);
     const t0 = Date.now();
-    const code = run(cwd, script, s.rangeArg ? ["--range", range] : []);
+    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : []));
     const ms = Date.now() - t0;
-    if (code !== 0) {
+    if (res.errored) {
+      events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
+      log(
+        `\n✗ ${prefix}${s.label} could not run: npm run ${script} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+      );
+      return false;
+    }
+    if (res.code !== 0) {
       events.push({ label: prefix + s.label, outcome: "failed", ms });
-      log(`\n✗ ${prefix}${s.label} failed (exit ${code}). The gate stops here.`);
+      log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
       return false;
     }
     events.push({ label: prefix + s.label, outcome: "ok", ms });
     return true;
   };
 
+  // Which inputs changed is half the question; which workspaces can observe them is the other,
+  // and a path filter cannot answer it. Without this a change under a shared package left the
+  // application that imports it ungated, and said nothing.
+  const affected = affectedWorkspaces(repoDir, o.workspaces || [], selection);
+  if (affected.everything) log(`\n· every workspace is selected: ${affected.everything}`);
+
   /** The suites of a preset, path-aware under a folder. @param {import("../presets/index.mjs").Preset} p @param {string} under */
   const suites = (p, under) => {
     for (const suite of p.gate.suites) {
       const name = prefix + suite.name;
-      const hit = selection.some(
+      const byPath = selection.some(
         (f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)),
       );
+      const ws = under.replace(/\/$/, "");
+      const byGraph = Boolean(ws) && !byPath && affected.selected.has(ws);
+      if (byGraph)
+        log(
+          `\n· ${name}: selected by the workspace graph${affected.viaGraph.get(ws) ? ` · ${affected.viaGraph.get(ws)} changed and ${ws} depends on it` : ""}`,
+        );
+      const hit = byPath || byGraph;
       if (!hit) {
         events.push({
           label: name,
@@ -271,14 +297,23 @@ export function runGate(o) {
   };
 
   const gated = (o.workspaces || []).filter((w) => w.preset);
-  for (const s of preset.gate.always) if (!step(s)) return { ok: false, events, range };
+  // The verdict, with the instrument's own state beside it: a step that could not run is not a
+  // step that found something, and a caller that exits on the difference needs to see it.
+  const done = (/** @type {boolean} */ ok) => ({
+    ok,
+    events,
+    range,
+    errored: events.some((e) => e.outcome === "errored"),
+  });
+
+  for (const s of preset.gate.always) if (!step(s)) return done(false);
   for (const w of gated) {
     const p = /** @type {import("../presets/index.mjs").Preset} */ (w.preset);
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
-    log(`\n— workspace ${w.path} (${p.id})`);
-    for (const s of p.gate.always) if (!step(s)) return { ok: false, events, range };
+    log(`\n· workspace ${w.path} (${p.id})`);
+    for (const s of p.gate.always) if (!step(s)) return done(false);
   }
   cwd = repoDir;
   prefix = "";
@@ -291,17 +326,17 @@ export function runGate(o) {
     for (const w of gated)
       for (const suite of /** @type {any} */ (w.preset).gate.suites)
         events.push({ label: `${w.path} · ${suite.name}`, outcome: "skipped", detail: "--fast" });
-    return { ok: true, events, range };
+    return done(true);
   }
 
-  if (!suites(preset, "")) return { ok: false, events, range };
+  if (!suites(preset, "")) return done(false);
   for (const w of gated) {
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
-    if (!suites(/** @type {any} */ (w.preset), `${w.path}/`)) return { ok: false, events, range };
+    if (!suites(/** @type {any} */ (w.preset), `${w.path}/`)) return done(false);
   }
-  return { ok: true, events, range };
+  return done(true);
 }
 
 /**

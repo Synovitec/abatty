@@ -17,6 +17,7 @@ import { rules as security } from "../rules/families/security.mjs";
 import { rules as delivery } from "../rules/families/delivery.mjs";
 import { rules as platform } from "../rules/families/platform.mjs";
 import { rules as observability } from "../rules/families/observability.mjs";
+import { rules as agentSecurity } from "../rules/families/agent-security.mjs";
 
 /** The adoption plan's phases (ADOPTION_PLAN.md §B.2), as data. @type {import("./index.mjs").Phase[]} */
 export const PHASES = [
@@ -155,7 +156,7 @@ export const synovitec = {
   id: "synovitec",
   name: "The Synovitec engineering standard",
   description:
-    "The standard the package was built on and proved on two repositories: fifteen phases, the rules of fourteen families, four stack presets, the harness rule files per stack topic.",
+    "The standard the package was built on and proved on two repositories: fifteen phases, the rules of fifteen families, four stack presets, the harness rule files per stack topic.",
   rules: [
     ...documents,
     ...instrument,
@@ -170,6 +171,7 @@ export const synovitec = {
     ...delivery,
     ...platform,
     ...observability,
+    ...agentSecurity,
   ],
   phases: PHASES,
   presets: ["next", "astro", "vite-react", "node"],

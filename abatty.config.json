@@ -38,9 +38,24 @@
       "why": "a rule change regenerates the catalog (abatty rules --md)"
     },
     {
-      "when": "templates/harness/",
-      "then": ".claude/",
-      "why": "the harness the package ships and the harness this repository runs are the same files (abatty update)"
+      "when": "templates/harness/hooks/",
+      "then": ".claude/hooks/",
+      "why": "the hooks the package ships and the hooks this repository runs are the same files (abatty update)"
+    },
+    {
+      "when": "templates/harness/rules/",
+      "then": ".claude/rules/",
+      "why": "the path-scoped rules the package ships are installed here (abatty update)"
+    },
+    {
+      "when": "templates/harness/agents/",
+      "then": ".claude/agents/",
+      "why": "the agents the package ships are installed here (abatty update)"
+    },
+    {
+      "when": "templates/harness/settings.project.json",
+      "then": ".claude/settings.json",
+      "why": "the settings the package ships are installed here (abatty update)"
     }
   ],
   "protectedPaths": [
@@ -82,9 +97,10 @@
       "(^|/)[^/]*\\.config\\.[cm]?[jt]s$",
       "^scripts/",
       "^bin/",
-      "^\\.claude/hooks/",
+      "^\\.claude/(hooks|bin)/",
       "^(tests?|e2e)/",
-      "^templates/harness/(hooks|testing)/"
+      "^templates/harness/(hooks|testing|bin)/",
+      "^src/core/secret-corpus\\.mjs$"
     ],
     "citationsExempt": ["^docs/standard/"]
   },
@@ -95,5 +111,8 @@
   "phases": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   "stack": "node",
   "abatty": "0.2.0",
-  "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config."
+  "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config.",
+  "secrets": {
+    "allow": ["src/core/secret-corpus.mjs"]
+  }
 }

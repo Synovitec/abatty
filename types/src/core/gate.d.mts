@@ -1,15 +1,10 @@
 /**
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number }} GateEvent
- * @typedef {{ label: string, outcome: "ok" | "failed" | "skipped" | "deferred", detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: typeof runScript, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {import("./spawn.mjs").RunResult} RunResult
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
-/**
- * Run an npm script and return its exit code; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
- */
-export function runScript(repoDir: string, script: string, extraArgs?: string[]): number;
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv */
-export function runCommand(repoDir: string, argv: string[]): number;
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
  * a rebase or an amend it is not, and the diff would show the amend delta rather than the
@@ -22,6 +17,13 @@ export function pushRange(repoDir: string, base?: string, explicit?: string): st
 /** Files whose content on disk differs from HEAD: staged, unstaged, untracked. @param {string} repoDir */
 export function pendingPaths(repoDir: string): string[];
 /**
+ * The files a range changed, repository-relative. A finding in a file this change never touched
+ * is not this change's finding, however true it is, and telling the two apart is the difference
+ * between a gate a team acts on and a list they learn to scroll past.
+ * @param {string} repoDir @param {string} range
+ */
+export function changedPaths(repoDir: string, range: string): string[];
+/**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
  * @param {GateOptions} o
  */
@@ -29,32 +31,35 @@ export function runGate(o: GateOptions): {
     ok: boolean;
     events: GateEvent[];
     range: string;
+    errored: boolean;
 };
 /**
  * The always-on scripts the preset expects that package.json does not have (for doctor).
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
 export function missingGateScripts(repoDir: string, preset: import("../presets/index.mjs").Preset): (string | undefined)[];
+export type GateOutcome = "ok" | "failed" | "errored" | "skipped" | "deferred";
 export type GateEvent = {
     label: string;
-    outcome: "ok" | "failed" | "skipped" | "deferred";
+    outcome: GateOutcome;
     detail?: string;
     ms?: number;
 };
 export type GateEventW = {
     label: string;
-    outcome: "ok" | "failed" | "skipped" | "deferred";
+    outcome: GateOutcome;
     detail?: string;
     ms?: number;
     workspace?: string;
 };
+export type RunResult = import("./spawn.mjs").RunResult;
 export type GateOptions = {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;
     fast?: boolean;
     range?: string;
     base?: string;
-    run?: typeof runScript;
+    run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
     dockerUp?: () => boolean;
     log?: (line: string) => void;
     workspaces?: {

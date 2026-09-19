@@ -43,6 +43,7 @@ export function renderMarkdown(result: GapResult): string;
 export function renderSummary(result: GapResult, reportPath?: string): string;
 export type Finding = import("../rules/index.mjs").Finding;
 export type Enforced = ReturnType<typeof enforcedOf>;
+export type Waivers = ReturnType<typeof waiverOf>;
 export type GapResult = {
     repo: string;
     name: string;
@@ -53,6 +54,7 @@ export type GapResult = {
     findings: Finding[];
     families: string[];
     waived: number;
+    waivers?: Waivers;
     problems: string[];
     profiles: string[];
     stage: string;
@@ -61,3 +63,4 @@ export type GapResult = {
     phase: import("../rules/phases.mjs").PhaseCount | null;
 };
 import { enforcedOf } from "../rules/index.mjs";
+import { waiverOf } from "../rules/index.mjs";

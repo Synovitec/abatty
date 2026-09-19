@@ -13,6 +13,7 @@ import { packageVersion, readLock } from "./update.mjs";
 import { configFiles, configProblems } from "./config.mjs";
 import { runStepControls } from "./step-controls.mjs";
 import { readAdoption } from "./repo.mjs";
+import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -55,6 +56,7 @@ export function shippedFiles() {
   pairs.push(["skills/adopt-standards/SKILL.md", ".claude/skills/adopt-standards/SKILL.md"]);
   pairs.push(["harness/agents/standards-reviewer.md", ".claude/agents/standards-reviewer.md"]);
   pairs.push(["harness/agents/standards-adopter.md", ".claude/agents/standards-adopter.md"]);
+  for (const f of SHIM_FILES) pairs.push([`harness/bin/${f}`, `${SHIM_DIR}/${f}`]);
   pairs.push(["harness/settings.project.json", ".claude/settings.json"]);
   pairs.push(["harness/mcp.night.json", ".claude/mcp.night.json"]);
   return pairs;

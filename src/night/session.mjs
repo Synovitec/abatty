@@ -88,7 +88,14 @@ export function runSession(run, o) {
     name: run.name,
   });
   const w = o.sandbox
-    ? o.sandbox.wrap(o.agent, args, Object.keys(run.env))
+    ? // PATH is deliberately not forwarded by name: a container has its own, and handing it the
+      // host's would replace the image's tools with paths that do not exist inside it. The shim
+      // reaches a container run through the image, not through this variable.
+      o.sandbox.wrap(
+        o.agent,
+        args,
+        Object.keys(run.env).filter((n) => n !== "PATH"),
+      )
     : { cmd: o.agent, args };
   const win = process.platform === "win32";
   const r = spawnSync(win ? `"${w.cmd}"` : w.cmd, win ? w.args.map(quoteWin) : w.args, {

@@ -92,7 +92,7 @@ test("the scrub is opt-in: --message is a no-op where the repository did not opt
     "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
   });
   const r = cli(["scrub", on, "--message", msg], on);
-  assert.equal(r.code, 1);
+  assert.equal(r.code, 3);
   assert.match(r.out, /commit message names a tool/);
   const scan = cli(["scrub", off], off);
   assert.match(scan.out, /off in this repository \(scrub\.enabled\)/);

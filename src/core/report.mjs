@@ -5,12 +5,17 @@
  * receipts under the agent's night folder) and the report gathers what exists.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { measure } from "./gap-analysis.mjs";
 import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
+import { cacheKey, readCache, writeCache } from "./cache.mjs";
+import { bypassReading } from "./bypass.mjs";
+import { changelogPairs, commitsOf, coupledFindings } from "./coupled.mjs";
+import { pushRange } from "./gate.mjs";
 
 /**
  * @typedef {{
@@ -19,6 +24,7 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
  *   repo: string, name: string, date: string, at: string, branch: string, commit: string,
  *   score: number, applicable: number, waived: number,
  *   enforced: import("./gap-analysis.mjs").Enforced,
+ *   waivers?: import("./gap-analysis.mjs").Waivers,
  *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
  *   findings: import("../rules/index.mjs").Finding[],
  *   problems: string[],
@@ -30,6 +36,7 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
  *   harness: { present: boolean, drift: number, missing: number },
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
+ *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  * }} Report
  */
 
@@ -63,11 +70,46 @@ function nightFacts(repoDir) {
 }
 
 /**
+ * The commits of the pushed range that broke a rule the hook enforces at commit time: the hook
+ * cannot have run and let them through, so it was not installed or it was bypassed.
+ * @param {string} repoDir
+ */
+function bypassOf(repoDir) {
+  try {
+    const range = pushRange(repoDir);
+    const git = (/** @type {string[]} */ ...a) =>
+      String(execFileSync("git", a, { cwd: repoDir, encoding: "utf8" }) || "").trim();
+    const commits = commitsOf(git, range);
+    const violations = coupledFindings(
+      commits,
+      changelogPairs(/** @type {any} */ (readAdoption(repoDir) || {})),
+    ).map((f) => ({ sha: f.path, detail: f.detail }));
+    const r = bypassReading(commits, violations);
+    return {
+      commits: r.commits,
+      bypassed: r.bypassed.length,
+      reasoned: r.reasoned.length,
+      rate: r.rate,
+    };
+  } catch {
+    // A reading that cannot be taken is not a finding: a repository with no range, no git or no
+    // history says nothing rather than reporting a rate it invented.
+    return { commits: 0, bypassed: 0, reasoned: 0, rate: 0 };
+  }
+}
+
+/**
  * Measure the repository (its full catalog: built-in rules, its own, its waivers) and assemble
  * the report. Writes it under .abatty/reports/ unless `write` is false.
- * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string }} [o]
+ * @param {string} repoDir @param {{ write?: boolean, abattyVersion?: string, cache?: boolean }} [o]
  */
 export async function buildReport(repoDir, o = {}) {
+  // The reading of an unchanged tree is the reading. The key is the content of everything a rule
+  // could read, so a hit cannot turn a finding into a pass; anything it cannot account for is a
+  // miss and the catalog runs.
+  const key = o.cache === false ? null : cacheKey(repoDir, { version: o.abattyVersion });
+  const cached = key ? readCache(repoDir, key) : null;
+  if (cached) return /** @type {Report} */ (cached);
   const gap = await measure(repoDir);
   const families = gap.families.map((name) => ({
     name,
@@ -92,6 +134,7 @@ export async function buildReport(repoDir, o = {}) {
     score: gap.score,
     applicable: gap.applicable,
     enforced: gap.enforced,
+    waivers: gap.waivers,
     waived: gap.waived,
     families,
     findings: gap.findings,
@@ -121,7 +164,11 @@ export async function buildReport(repoDir, o = {}) {
         : 0,
     },
     night: nightFacts(repoDir),
+    // What got past the hook in this push, and at what rate. A bypass nobody can see afterwards
+    // is a gate with a hole nobody can measure.
+    bypass: bypassOf(repoDir),
   };
+  if (key) writeCache(repoDir, key, report);
   if (o.write !== false) {
     const dir = join(repoDir, REPORT_DIR);
     mkdirSync(dir, { recursive: true });

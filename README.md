@@ -1,8 +1,41 @@
 # abatty
 
-**abatty** (abatty.io) installs a gate your repository has to pass, and proves the gate can
-fail. Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map,
-the adoption plan, the lessons, the research - ships with the package under
+## The problem this is for
+
+Your team writes more code than it used to, and it reviews it at the same speed it always did.
+Somewhere in there, the things everybody agreed to - the file that should have been split, the
+test that should have gone red first, the doc that should have moved with the code - stopped
+being decisions and became a queue nobody reads. A model can now produce a week of plausible
+work in an afternoon, and the only thing standing between that and your main branch is a person
+reading a diff at the end of a Thursday.
+
+The usual answer is another report. Reports are where good analysis goes to die: the same
+finding, at the same precision, reached a **near-zero fix rate as a report** and passed
+**seventy per cent when it arrived on the change under review**. Placement beats precision. The
+sources are in
+[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
+
+So this is not a report. **abatty installs a gate your repository has to pass, and then proves
+the gate can fail** - it plants a violation in each step and calls a step that stays green
+_absent_, because a guard nobody has watched fail is not a guard.
+
+### What it is honest about
+
+It does not make anybody faster, and it is not sold as if it did. What a written, enforced
+standard does is **amplify whatever discipline is already there**: a team that agrees on how it
+builds gets an agent that builds that way and a reviewer who can read a diff instead of policing
+one. A team that has not agreed gets the same disagreements, produced faster. The instrument
+enforces a decision; it does not make it, and it will not save a team from not having made one.
+
+The reading it produces - the score, the phase, the trend - is a way to compare this repository
+against itself over time. It is not a grade, not a percentage of conformity, and not a number to
+put in front of anybody as one.
+
+What running it on itself actually produced, negative results included, is in
+[`docs/DOGFOOD.md`](docs/DOGFOOD.md).
+
+Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map, the
+adoption plan, the lessons, the research - ships with the package under
 [`docs/standard/`](docs/standard/README.md), versioned with it. Contributions under a DCO:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -24,11 +57,7 @@ the adoption plan, the lessons, the research - ships with the package under
 5. Then the reading. `npx abatty` says where the repository stands, `npx abatty measure` writes
    the dated report, and both are by-products of the gate rather than the point of it.
 
-**Why that order.** The same analysis, at the same precision, is acted on differently depending
-on where it fires: delivered as a report it reached a near-zero fix rate, and delivered on the
-change under review it passed seventy per cent. Placement beats precision, so the gate leads and
-the report follows. The sources are in
-[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
+**Why that order.** Placement beats precision, as above: the gate leads and the report follows.
 
 Everything else below is the same instrument in more depth.
 
@@ -137,7 +166,89 @@ configs (`eslintText`, `tsconfigText`, `ciText`), its sources (`sourceFiles`, `d
 `isTs`, `packs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
 `.claude/adoption.json` → `rules.waived` (`"CODE-DUP": "not measured on a prototype"`, or
 `{ "reason": ..., "until": "2026-12-31" }`): listed, not scored, and since that file is
-read-only to the night's worker, a waiver is a human's decision.
+read-only to the night's worker, a waiver is a human's decision. A waiver with a date that has
+passed stops waiving and does **not** disappear: the rule is measured again and the expired
+waiver is reported by name, because a repository that set something aside until March should be
+told when March is over. `abatty rules` and the gap analysis print the **waiver rate** over the
+rules that could apply here - a rule that repository after repository waives is, in all
+likelihood, a rule that is wrong, and this is the first input to a false-positive rate the
+catalog can be judged by.
+
+The secret scan is measured, not asserted. `abatty secrets --benchmark` runs it against a corpus
+published in the package (`src/core/secret-corpus.mjs`): documented credential shapes on one side,
+the look-alikes that get scanners uninstalled on the other, every case carrying the reason it is
+the verdict it is. Today it scores 100 per cent precision and 100 per cent recall over 41 cases,
+and a test holds both as a floor. That measurement is what found the six shapes it used to miss,
+the unquoted `API_KEY=...` of a `.env` file and the password inside a connection string among
+them. The corpus is this repository's own rather than a third-party benchmark, which
+`docs/SECRET_SCAN_BENCHMARK.md` says on the page with the number.
+
+The dependency audit is scoped before it is trusted, because an unscoped audit is the one people
+switch off: production dependencies only, a severity floor, and an advisory allowed by name or by
+id in `security.audit.allow` with a reason and, where the decision is not permanent, an `until`
+date. An allowance that has expired stops allowing and the gate names which one ran out; an
+allowance that is still live is printed on the green run, because a decision nobody is reminded of
+is a decision nobody revisits. `SEC-AUDIT` reads for that scoping rather than for the word
+`audit`: an unscoped audit reads partial, and a repository whose CI runs the gate has the
+built-in one, which is scoped by construction.
+
+`abatty attest` writes the conformance statement, ready to sign: what held, at which commit,
+under which version of which standard, the waivers with their owners and their expiry dates, the
+floors with who raised each one and why, and the proof from the last `abatty doctor --controls`
+run that each gate step has been watched going red. It is an **in-toto Statement with a custom
+predicate** (`https://abatty.dev/attestation/conformance/v1`), not a document of this package's
+invention, so every attestation store, policy engine and verifier that already exists can hold it
+and gate on it without a reader anybody has to write first. The subject is the git commit: a
+conformance statement is about a state of a source tree, not about a built file.
+
+The predicate says inside itself what it does **not** answer - the bill of materials, the
+vulnerability report, the licence inventory, the build provenance - because each of those is a
+solved problem with a decade of tooling behind it, and a record that quietly restated them would
+be a worse copy inviting the reader to trust one document for everything. It carries only what
+nothing else produces: which engineering rules hold, under which written standard, which were set
+aside and by whom, and whether the checks that say so have themselves been watched failing. A
+statement whose controls never ran says so and the command exits 3.
+
+**Signing is the pipeline's, and deliberately so.** A signature is worth exactly the identity
+behind it, and the only identity a measurement tool could offer is a key on somebody's laptop or
+a secret in a repository, which is the weakest of the options and the likeliest to leak. The
+pipeline already has a short-lived workload identity that no human can export, so the generated
+pipeline prints the statement and signs it with that, through the platform's own attestation
+action, into the transparency log every verifier already reads. `abatty ci --provider github`
+writes those steps; this repository's release workflow does the same for each published version,
+alongside the registry's own provenance.
+
+`abatty evidence` is the same facts for a person: the regulation's essential requirements mapped
+onto the rules of the catalog, as a document. The `cra` profile carries that mapping and **no
+rules of its own** - a profile that invented "CRA rules" would be selling the idea that holding
+them makes a product conform, which is not true and is not something a source-code tool can make
+true. It is a lens: name it beside a real profile and the mapping reads that profile's findings.
+
+The page is arranged to be read by a sceptic. The requirements **nothing here bears on** come
+first, before the ones with rules behind them, because the other arrangement is how a reader ends
+up believing something nobody claimed; of twenty-one requirements, seven have no rule in the
+catalog that touches them at all. Every remaining row says what the named rules evidence, what
+they do not, and how each reads today. A mapping is not a conformity assessment and is not legal
+advice, and the document says so three times.
+
+`abatty validate` asks the question a `why` cannot answer: do the files that break each rule turn
+out to be the files somebody later had to fix, **in this repository**? It reads the history for
+commits that fix something, and compares the fix rate among the files a probe reports against the
+files it does not. On this repository the honest answer today is _too few files to say_ for every
+probe, and that is what it prints: a tool that produced a confident number from two files would
+be worse than one that produced none.
+
+Every number comes with what it is not. It is a correlation, never a cause. Churn is printed
+beside every rate rather than removed, because a rule that merely tracks how often a file changes
+will look excellent and the commits-per-file column is where you see that happening. The tree is
+read as it is today against fixes from the whole range, so a file that was fixed and then cleaned
+up counts against its rule - an error that runs one way and flatters nothing. And it is one
+repository, which the reading names.
+
+Every command takes `--plain`: no colour, and ASCII markers (`[ok]`, `[FAIL]`, `[skip]`) that a
+log parser can match without knowing about Unicode. Colour is off anyway when stdout is not a
+terminal, when `NO_COLOR` is set or in CI; `--plain` is for when none of those is true and
+something is still reading the output.
 
 ## What `init` writes
 
@@ -202,6 +313,34 @@ their newest score and enforced share; `GET /api/reports/<name>` one repository'
 under the data folder, one per repository and day. `abatty publish --to <url> [--token <t>]`
 (or `ABATTY_DASHBOARD` and `ABATTY_TOKEN`) is the CI step: it posts the newest report, measuring
 first when there is none.
+
+`GET /api/events` and `GET /api/events/<name>` are the **adoption events**: what changed between
+readings rather than what the number is. A wall of scores tells an adopter nothing they can act on
+and nothing they can show anybody; "on the 14th CODE-SIZE-300 went from missing to present, on the
+15th FLOW-COMMITS was promoted from a checklist item to something a machine refuses" is the
+adoption story. They are derived from the readings the service already holds, so nothing new is
+collected and a repository cannot tell the service it adopted something. **Losses are events too
+and are not softened**: a rule that was present and is now missing is the most useful line the log
+carries, and `regressions` is counted on its own so a dashboard cannot bury it.
+
+## The catalogue, without a plugin
+
+`abatty portal [--out catalog-info.yaml] [--dashboard <url>] [--dry-run]` writes the conformance
+into the developer portal catalogue's **own entity descriptor**: the score, the phase, the check
+count and, where a hosted service exists, the report, events and badge endpoints, as annotations
+under `abatty.dev/`. Any portal that reads the descriptor gets the conformance with nothing
+installed, and a team with no portal has a file that does no harm.
+
+The obvious shape for this would be a portal plugin. A plugin is a separate package carrying that
+portal's framework as a dependency, it puts the work behind an install a whole organisation has to
+agree to, and it puts the conformance where only that portal can read it. The descriptor reaches
+the same place and asks for nothing.
+
+It **merges rather than overwrites**. A `catalog-info.yaml` is somebody's file, with an owner, a
+system and a lifecycle nothing here knows: it rewrites only the annotations under its own prefix,
+adds the ones that were missing, leaves the comments and everything else byte for byte, and
+leaves a shape it does not understand alone rather than guessing at it. It will not invent an
+owner: a new file says `unknown` and says why.
 
 ## The MCP server
 
@@ -400,21 +539,26 @@ item with the evidence that put it there.
 
 `abatty ratchet` measures every mechanical rule the linter cannot state and refuses a number
 that goes the wrong way; `abatty baseline` writes today's numbers as the floor. A **probe** is
-data with one function: `{ metric, kind, standard, title, why, scan(ctx), controls }`. Two
+data with one function: `{ metric, kind, standard, title, why, version, scan(ctx), controls }`. Two
 kinds: **hard** must be zero, now and forever; **ratchet** holds today's number and may only
 fall, by its total **and per file** (the `debt` in the baseline), so debt cannot relocate: a
 file may improve, never worsen, and a file not on the list carries none. A metric at zero is
 promoted to hard by the baseline writer; a hard metric above zero is never recorded; a floor
-that rose is refused without `--reason`, and the reason belongs in `docs/STANDARDS_PROGRESS.md`
-too. A probe that scans zero files where the baseline saw some fails the run, so a moved path
-never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
+that rose is refused without `--reason` and `--owner`, and the reason belongs in
+`docs/STANDARDS_PROGRESS.md` too. The reason and the owner are recorded **against the metric**,
+in the baseline's `entries`, not against the write: one metric's explanation is not erased by an
+unrelated rebaseline of another, and it is deleted when the debt it explained is gone. A probe
+also carries a `version`, the definition it counts under, written into the baseline beside the
+number; a probe that changes what it counts reports `REDEFINED` rather than comparing today's
+count against a floor that answered a different question. A probe that scans zero files where the
+baseline saw some fails the run, so a moved path never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
 among the others; the gate passes it the range.
 
 The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE.1, the budgets
 by kind of file and the 800 cap), `context.overCap` (AIR.1), `types.escapes` (CODE.3),
 `valid.rawEnv` (VALID.3), `code.barrels` (CODE.5), `docs.frontMatter`, `docs.indexDrift`,
 `docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC.2..5), `change.changelogMissing`
-(CHANGE.1). A readability score over the same numbers is printed as a trend, never a gate.
+(CHANGE.1), `context.unsourcedGrowth` (AIR.1: a push that grew the context file without touching the lessons it grew from). A readability score over the same numbers is printed as a trend, never a gate.
 
 Every probe carries its **control cases in both directions**, and `abatty ratchet --controls`
 runs them on throwaway repositories; the package's own test runs them on every push, so a probe

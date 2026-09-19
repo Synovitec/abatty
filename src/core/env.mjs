@@ -19,6 +19,11 @@ export function dashboardFromEnv() {
   return process.env.ABATTY_DASHBOARD || "";
 }
 
+/** The executable search path, or "": what a run's subprocesses will find, shim included. */
+export function pathFromEnv() {
+  return process.env.PATH || "";
+}
+
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";

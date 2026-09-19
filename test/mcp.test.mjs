@@ -33,7 +33,7 @@ test("the handler: initialize, ping, tools/list, a notification answered by noth
   const list = await handle(req("tools/list", undefined, 3));
   assert.deepEqual(
     list?.result.tools.map((/** @type {any} */ t) => t.name),
-    ["measure", "ratchet", "gate", "scrub", "report", "explain"],
+    ["measure", "ratchet", "gate", "scrub", "findings", "report", "explain"],
   );
   assert.ok(
     list?.result.tools.every(
@@ -63,6 +63,13 @@ test("the tools return data: report is null before a measure and the report afte
   assert.ok(Array.isArray(m.structuredContent.findings));
   assert.equal(typeof m.structuredContent.enforced.total, "number");
   assert.equal((await call("report")).structuredContent.score, m.structuredContent.score);
+  // The agent surface: every open finding with the command that proves its own fix.
+  const af = await call("findings");
+  assert.ok(Array.isArray(af.structuredContent.findings));
+  for (const f of af.structuredContent.findings) {
+    assert.equal(f.verify, `npx abatty check ${f.id}`);
+    assert.ok(f.status === "missing" || f.status === "partial", f.status);
+  }
   const e = await call("explain", { id: "code-deadcode" });
   assert.equal(e.structuredContent.rule.id, "CODE-DEADCODE");
   assert.ok(["present", "partial", "missing", "n/a"].includes(e.structuredContent.finding.status));
@@ -77,7 +84,7 @@ test("the tools return data: report is null before a measure and the report afte
   assert.ok(
     r.structuredContent.verdicts.some((/** @type {any} */ v) => v.metric === "size.overBudget"),
   );
-  assert.equal(tools(dir).length, 6);
+  assert.equal(tools(dir).length, 7);
 });
 
 test("the gate tool runs the repository's gate as a child and returns its outcome and output", async () => {
@@ -91,9 +98,11 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
   assert.equal(
     r?.result.structuredContent.ok,
     false,
-    "the dependencies are named, never installed: lint fails",
+    "the dependencies are named, never installed: the gate does not pass",
   );
-  assert.match(r?.result.structuredContent.output, /lint \(CODE.4\) failed/);
+  // Failed or could not run, depending on whether the machine happens to have the linter. The
+  // tool's job is to return the gate's outcome and its output, not to make one of the two.
+  assert.match(r?.result.structuredContent.output, /lint \(CODE\.4\) (failed|could not run)/);
 });
 
 test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing else to stdout", () => {
@@ -128,7 +137,7 @@ test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing el
   assert.equal(lines.length, 4, r.stdout);
   assert.equal(lines[0].id, 1);
   assert.equal(lines[1].error.code, -32700, "a parse error is answered, not fatal");
-  assert.equal(lines[2].result.tools.length, 6);
+  assert.equal(lines[2].result.tools.length, 7);
   assert.equal(lines[3].result.structuredContent.count, 0);
   assert.match(r.stderr, /\[abatty mcp\] serving/);
 });

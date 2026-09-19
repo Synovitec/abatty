@@ -2,15 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { presets, presetById } from "../src/presets/index.mjs";
-import {
-  ciSteps,
-  renderGithubActions,
-  renderPullRequestTemplate,
-  renderRuleset,
-  renderWoodpecker,
-} from "../src/ci/generate.mjs";
+import { ciSteps, renderGithubActions, renderWoodpecker } from "../src/ci/generate.mjs";
+import { renderPullRequestTemplate, renderRuleset } from "../src/ci/templates.mjs";
 import { FORBIDDEN, TERMS } from "../src/core/vocabulary.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { RULES, runCatalog } from "../src/rules/index.mjs";
@@ -129,7 +125,7 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0, "in step");
   writeFileSync(join(dir, ".github/workflows/checks.yml"), "name: old\n");
   const behind = cli(["ci", dir, "--provider", "github", "--check"], dir);
-  assert.equal(behind.code, 1);
+  assert.equal(behind.code, 3, "the check ran and found the pipeline behind");
   assert.match(behind.out, /behind\s+\.github\/workflows\/checks\.yml/);
   assert.equal(cli(["ci", dir, "--provider", "nope"], dir).code, 2);
   const findings = runCatalog(buildContext(dir), RULES);
@@ -144,4 +140,45 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.equal(init.code, 0, init.out);
   assert.ok(existsSync(join(fresh, ".github/workflows/checks.yml")));
   assert.match(init.out, /written\s+\.github\/workflows\/checks\.yml/);
+});
+
+test("the generated pipeline emits SARIF and uploads it, so findings land on the diff", () => {
+  // The strongest finding in the evidence base is about placement rather than precision: the same
+  // analysis reached a near-zero fix rate as a report and above seventy per cent on the change
+  // under review. This is that delivery, through a standard rather than through a bot we build.
+  const preset = presetById("next");
+  assert.ok(preset);
+  const yaml = renderGithubActions(preset, { base: "main" });
+  assert.match(yaml, /security-events: write/, "the upload needs the permission");
+  assert.match(yaml, /abatty ratchet --range auto --sarif > abatty\.sarif/);
+  assert.match(yaml, /github\/codeql-action\/upload-sarif@v3/);
+  assert.match(yaml, /sarif_file: abatty\.sarif/);
+  // Both steps run even when the gate went red, because that is the run whose findings matter.
+  const upload = yaml.slice(
+    yaml.indexOf("findings as SARIF"),
+    yaml.indexOf("the conformance statement"),
+  );
+  assert.equal((upload.match(/if: always\(\)/g) || []).length, 2);
+});
+
+test("the generated pipeline signs the conformance statement with the run's identity, never with a key", () => {
+  const preset = presetById("next");
+  assert.ok(preset);
+  const yaml = renderGithubActions(preset, { base: "main" });
+  assert.match(yaml, /id-token: write/, "the workload identity the signature is made with");
+  assert.match(yaml, /attestations: write/, "the write the transparency log needs");
+  assert.match(yaml, /npx abatty attest --out abatty-conformance\.json/);
+  assert.match(yaml, /uses: actions\/attest@v2/);
+  assert.match(yaml, /predicate-type: https:\/\/abatty\.dev\/attestation\/conformance\/v1/);
+  // The package prints and never signs: no key, no secret, nothing to leak out of a repository.
+  assert.equal(/cosign sign|--key |GPG|gpg --|secrets\.SIGNING/i.test(yaml), false);
+  // and the same in this repository's own release, which is the one that publishes
+  const release = readFileSync(
+    fileURLToPath(new URL("../.github/workflows/release.yml", import.meta.url)),
+    "utf8",
+  );
+  assert.match(release, /npm publish --provenance/);
+  assert.match(release, /attest --out abatty-conformance\.json/);
+  assert.match(release, /uses: actions\/attest@v2/);
+  assert.match(release, /attestations: write/);
 });

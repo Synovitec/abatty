@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { runNight } from "../night/runner.mjs";
 import { gatherNight, nightDates, renderNightReport } from "../night/report.mjs";
+import { describeGap } from "../night/holdout.mjs";
 import * as t from "../ui/term.mjs";
 
 /** @param {import("./ratchet.mjs").CliContext} c */
@@ -68,6 +69,29 @@ export function nightCommand(c) {
 }
 
 /** The `night-report` command: the night's facts and the lessons they propose. @param {import("./ratchet.mjs").CliContext} c */
+/**
+ * The night's own split, read back and measured. The seed is the night's date, so the slice is
+ * the same one the night withheld and a different one next time.
+ * @param {string} dir @param {{ date: string }} r
+ */
+async function holdoutOf(dir, r) {
+  try {
+    const { buildReport } = await import("../core/report.mjs");
+    const { splitSurface, holdoutGap } = await import("../night/holdout.mjs");
+    const report = await buildReport(dir, { write: false });
+    const ids = report.findings.map((f) => f.id);
+    if (ids.length < 8) return null;
+    return holdoutGap(report.findings, splitSurface(ids, r.date));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `abatty night-report`: the night's facts, the lessons they propose, and the gap between the
+ * surface the night was pointed at and the surface it was not.
+ * @param {import("./ratchet.mjs").CliContext} c
+ */
 export async function nightReportCommand(c) {
   const { dir, opt, flag, out, err, VERSION } = c;
   switch ("night-report") {
@@ -80,11 +104,15 @@ export async function nightReportCommand(c) {
         );
         process.exit(2);
       }
+      // The gap between what the night was pointed at and what it was not. A night measured only
+      // on the rules it was told about is marking its own paper.
+      const gap = await holdoutOf(dir, r);
       if (flag("--json")) {
-        out(JSON.stringify(r, null, 2) + "\n");
+        out(JSON.stringify({ ...r, holdout: gap }, null, 2) + "\n");
         break;
       }
-      const md = renderNightReport(r);
+      const md =
+        renderNightReport(r) + (gap ? `\n## The withheld surface\n\n${describeGap(gap)}\n` : "");
       if (opt("--out")) {
         const target = resolve(dir, opt("--out"));
         mkdirSync(dirname(target), { recursive: true });

@@ -191,3 +191,18 @@ export function sessionArgs(a, s) {
     ...h.name(s.name),
   ];
 }
+
+/**
+ * Which agent surfaces this repository actually covers: per adapter, whether the file it reads
+ * is on disk. An adapter named in the config whose file was never written is the gap this
+ * answers - the repository believes it is covered and the agent reads nothing.
+ * @param {(p: string) => boolean} exists @param {Adapter[]} [adapters]
+ */
+export function surfaceCover(exists, adapters = ADAPTERS) {
+  return adapters.map((a) => ({
+    id: a.id,
+    name: a.name,
+    contextFile: a.contextFile,
+    covered: exists(a.contextFile),
+  }));
+}

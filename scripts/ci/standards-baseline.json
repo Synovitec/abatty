@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-18",
+  "measuredAt": "2026-09-19",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
   "score": 98,
   "hard": [
@@ -7,6 +7,7 @@
     "change.coupledMissing",
     "code.barrels",
     "context.overCap",
+    "context.unsourcedGrowth",
     "docs.behindCode",
     "docs.citations",
     "docs.danglingSource",
@@ -21,6 +22,7 @@
     "change.coupledMissing": 0,
     "code.barrels": 0,
     "context.overCap": 0,
+    "context.unsourcedGrowth": 0,
     "docs.behindCode": 0,
     "docs.citations": 0,
     "docs.danglingSource": 0,
@@ -29,24 +31,30 @@
     "size.excessCode": 0,
     "size.overBudget": 0,
     "size.overRaw": 0,
+    "startup.eagerModules": 3,
     "types.escapes": 7,
     "valid.rawEnv": 7
   },
   "scanned": {
     "code.barrels": 7,
     "context.overCap": 1,
-    "docs.behindCode": 5,
-    "docs.citations": 33,
-    "docs.danglingSource": 10,
-    "docs.frontMatter": 23,
-    "docs.indexDrift": 22,
-    "size.excessCode": 81,
-    "size.overBudget": 81,
-    "size.overRaw": 93,
-    "types.escapes": 81,
-    "valid.rawEnv": 80
+    "docs.behindCode": 7,
+    "docs.citations": 69,
+    "docs.danglingSource": 14,
+    "docs.frontMatter": 33,
+    "docs.indexDrift": 32,
+    "size.excessCode": 109,
+    "size.overBudget": 109,
+    "size.overRaw": 124,
+    "types.escapes": 109,
+    "valid.rawEnv": 108
   },
   "debt": {
+    "startup.eagerModules": {
+      "src/cli/exit.mjs": 1,
+      "src/core/repo.mjs": 1,
+      "src/ui/term.mjs": 1
+    },
     "types.escapes": {
       "src/ratchet/probes/code.mjs": 4,
       "src/rules/families/types.mjs": 3
@@ -57,9 +65,23 @@
       "src/ui/term.mjs": 3
     }
   },
-  "lastReason": {
-    "at": "2026-09-15",
-    "reason": "the standard's documents joined docs/ (STANDARDS_PROGRESS 2026-09-15)",
-    "rises": []
-  }
+  "versions": {
+    "change.changelogMissing": 1,
+    "change.coupledMissing": 1,
+    "code.barrels": 1,
+    "context.overCap": 1,
+    "context.unsourcedGrowth": 1,
+    "docs.behindCode": 1,
+    "docs.citations": 1,
+    "docs.danglingSource": 1,
+    "docs.frontMatter": 1,
+    "docs.indexDrift": 1,
+    "size.excessCode": 1,
+    "size.overBudget": 1,
+    "size.overRaw": 1,
+    "startup.eagerModules": 1,
+    "types.escapes": 1,
+    "valid.rawEnv": 1
+  },
+  "entries": {}
 }

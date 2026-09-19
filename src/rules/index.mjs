@@ -41,11 +41,13 @@ export { validate };
  * @property {string} [when] where the rule applies, as a sentence for the catalog ("a repository with a database"); absent means always
  * @property {(ctx: RepoContext) => boolean | string} [applies] true where the rule applies; a string is the reason it does not (the finding is n/a with it), false a bare n/a
  * @property {import("./stage.mjs").Stage[]} [stages] the stages the rule belongs to (design, build, run); absent means every stage
+ * @property {{ at: Enforcement, why: string }} [ceiling] the strongest enforcement any machine can reach for this rule, and why it stops there; a rule already at its ceiling leaves the promotion queue instead of sitting in it forever
  * @property {(ctx: RepoContext) => Verdict} check the finding for a repository
  * @property {string} [source] "abatty" for the built-in rules, the file path for a repository's own
  *
- * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[] }} Finding
+ * @typedef {{ reason: string, until?: string, expired?: boolean }} Waiver
+ * @typedef {Rule & { waived?: Waiver }} CatalogRule
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver }} Finding
  */
 
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
@@ -124,7 +126,10 @@ export async function loadCatalog(repoDir, o = {}) {
     const reason = typeof w === "string" ? w : String(w.reason || "");
     const until = typeof w === "string" ? undefined : w.until;
     if (!reason) problems.push(`rules.waived: ${r.id} needs a reason`);
-    if (until && until < today) return r;
+    // An expired waiver stops waiving and does NOT disappear. The rule is measured again, as it
+    // should be, and the waiver stays on it marked expired: a repository that set a rule aside
+    // for six months should be told the six months are up, not quietly re-measured.
+    if (until && until < today) return { ...r, waived: { reason, until, expired: true } };
     return { ...r, waived: until ? { reason, until } : { reason } };
   });
   return {
@@ -148,7 +153,7 @@ export function runCatalog(ctx, catalog = RULES) {
   return catalog.map((r) => {
     /** @type {Verdict} */
     let v;
-    if (r.waived)
+    if (r.waived && !r.waived.expired)
       v = {
         status: "waived",
         evidence: `waived: ${r.waived.reason}${r.waived.until ? " (until " + r.waived.until + ")" : ""}`,
@@ -188,6 +193,8 @@ export function runCatalog(ctx, catalog = RULES) {
       standard: r.standard || [],
       when: r.when || "always",
       stages: r.stages || ["design", "build", "run"],
+      ...(r.ceiling ? { ceiling: r.ceiling } : {}),
+      ...(r.waived ? { waiver: r.waived } : {}),
     };
   });
 }
@@ -198,7 +205,7 @@ export function runCatalog(ctx, catalog = RULES) {
  * The number that says how much of a written standard is actually enforced; the rules under
  * review or prose are what a night moves up a level next.
  * @param {Finding[]} findings
- * @returns {{ share: number | null, total: number, hard: number, ratchet: number, review: number, prose: number, promotable: string[] }}
+ * @returns {{ share: number | null, total: number, hard: number, ratchet: number, review: number, prose: number, promotable: string[], atCeiling: string[] }}
  */
 export function enforcedOf(findings) {
   const held = findings.filter((f) => f.status === "present" || f.status === "partial");
@@ -217,9 +224,54 @@ export function enforcedOf(findings) {
     review,
     prose,
     promotable: held
-      .filter((f) => f.enforcement === "review" || f.enforcement === "prose")
+      .filter(unheldByAMachine)
+      .filter(belowCeiling)
+      .map((f) => f.id),
+    // The rules a night would keep trying to promote and keep failing to. A queue that never
+    // empties teaches its reader to ignore it, so a rule no machine can hold leaves it, once,
+    // with the reason on the rule rather than in somebody's head.
+    atCeiling: held
+      .filter(unheldByAMachine)
+      .filter((f) => !belowCeiling(f))
       .map((f) => f.id),
   };
+}
+
+/**
+ * The waiver reading: which rules this repository set aside, which of those set-asides have run
+ * out, and the share of the catalog it applies to.
+ *
+ * WHY a rate and not a list: a rule that repository after repository waives is, in all
+ * likelihood, a rule that is wrong, and nobody can measure a false-positive rate without first
+ * counting the times somebody said "not here". The denominator is the rules that could have been
+ * waived - a rule that does not apply to this stack was never a candidate, so counting it would
+ * flatter every repository with a narrow stack.
+ * @param {Finding[]} findings
+ * @returns {{ rate: number | null, considered: number, waived: Finding[], expired: Finding[] }}
+ */
+export function waiverOf(findings) {
+  const considered = findings.filter((f) => f.status !== "n/a");
+  const waived = considered.filter((f) => f.status === "waived");
+  return {
+    rate: considered.length ? Math.round((100 * waived.length) / considered.length) : null,
+    considered: considered.length,
+    waived,
+    // Set aside until a date that has passed: measured again, and said out loud rather than
+    // quietly reverted, because the repository made a promise with a date on it.
+    expired: findings.filter((f) => f.waiver?.expired),
+  };
+}
+
+/** A rule a machine does not hold today. @param {Finding} f */
+function unheldByAMachine(f) {
+  return f.enforcement === "review" || f.enforcement === "prose";
+}
+
+/** Whether a machine could still hold this rule harder than it does. @param {Finding} f */
+function belowCeiling(f) {
+  if (!f.ceiling) return true;
+  const ladder = ["prose", "review", "ratchet", "hard"];
+  return ladder.indexOf(f.enforcement) < ladder.indexOf(f.ceiling.at);
 }
 
 /** The score of a list of findings: present = 1, partial = 0.5, over the applicable ones. @param {Finding[]} findings */
@@ -236,4 +288,44 @@ export function scoreOf(findings) {
       )
     : 0;
   return { score, applicable: applicable.length };
+}
+
+/**
+ * The families whose rules steer before the agent acts rather than observing after it: the
+ * context file, the conventions, the decision log, the harness and its hooks. Everything else in
+ * the catalog is read off the tree once the work exists.
+ */
+const GUIDE_FAMILIES = new Set(["Documents", "Harness"]);
+
+/**
+ * Which kind of control a rule is, in the published vocabulary of the category.
+ *
+ * A **guide** is feedforward: it anticipates the agent's behaviour and steers it before it acts,
+ * which raises the chance the first attempt is right. A **sensor** is feedback: it observes after
+ * the act and lets the agent correct itself before a human is involved. Each is **computational**
+ * when a processor decides it, deterministically and fast, or **inferential** when a person or a
+ * model does, semantically and not deterministically.
+ *
+ * The two are not alternatives: feedback alone produces an agent that repeats its mistakes, and
+ * feedforward alone produces one that never finds out whether its rules worked. Labelling every
+ * rule makes the balance visible rather than accidental.
+ *
+ * Derived from the family and the enforcement, and a rule may state its own where the derivation
+ * is wrong for it.
+ * @param {Rule | CatalogRule} rule
+ * @returns {{ control: "guide" | "sensor", basis: "computational" | "inferential" }}
+ */
+export function controlOf(rule) {
+  const r =
+    /** @type {{ control?: "guide" | "sensor", basis?: "computational" | "inferential" }} */ (
+      /** @type {unknown} */ (rule)
+    );
+  return {
+    control: r.control || (GUIDE_FAMILIES.has(rule.family) ? "guide" : "sensor"),
+    basis:
+      r.basis ||
+      (rule.enforcement === "hard" || rule.enforcement === "ratchet"
+        ? "computational"
+        : "inferential"),
+  };
 }

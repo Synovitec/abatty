@@ -52,7 +52,7 @@ test("doctor names a hook edited beyond formatting, and a missing one", () => {
     readFileSync(guard, "utf8").replace("Force push is never allowed", "Force push is fine"),
   );
   const r = cli(["doctor", dir, "--skip-self-test", "--strict"], dir);
-  assert.equal(r.code, 1);
+  assert.equal(r.code, 3);
   assert.match(r.out, /differs\s+\.claude\/hooks\/guard\.mjs/);
 });
 
@@ -140,6 +140,59 @@ test("the gate runs the always-on steps in order, skips what has no script, stop
   assert.ok(lines.some((l) => /skipped import graph.*no "graph" script/.test(l)));
   assert.ok(lines.some((l) => /skipped dead code.*no knip/.test(l)));
   assert.ok(lines.some((l) => /✗ unit tests/.test(l)));
+});
+
+test("a step whose tool could not run is errored, not failed: the instrument, not the work", () => {
+  // A dead-code analyser that crashes and one that found dead code must not read the same. The
+  // gate stops for both, because an unproven step is not a passed step, but only one of them is
+  // a verdict on the work, and the exit code a pipeline branches on is different.
+  const dir = tempRepo("gate-errored", {
+    "package.json": JSON.stringify({
+      name: "app",
+      private: true,
+      scripts: { lint: "true", typecheck: "true", test: "true" },
+    }),
+  });
+  const preset = presetById("next");
+  assert.ok(preset);
+  /** @type {string[]} */
+  const lines = [];
+  const crashed = runGate({
+    repoDir: dir,
+    preset,
+    fast: true,
+    run: (_d, script) =>
+      script === "typecheck"
+        ? { code: 127, errored: true, detail: "command not found" }
+        : { code: 0 },
+    log: (l) => lines.push(l),
+  });
+  assert.equal(crashed.ok, false);
+  assert.equal(crashed.errored, true);
+  const step = crashed.events.find((e) => e.outcome === "errored");
+  assert.ok(step, JSON.stringify(crashed.events));
+  assert.equal(step.detail, "command not found");
+  assert.ok(
+    lines.some((l) => /could not run.*command not found.*instrument, not the work/.test(l)),
+    lines.join("\n"),
+  );
+  assert.ok(
+    !crashed.events.some((e) => e.outcome === "failed"),
+    "a step that could not run is not a step that failed",
+  );
+
+  // The control in the other direction: the same step exiting non-zero after it ran is a failure,
+  // and the gate does not report the instrument.
+  const failed = runGate({
+    repoDir: dir,
+    preset,
+    fast: true,
+    run: (_d, script) => (script === "typecheck" ? 1 : 0),
+    log: () => {},
+  });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.errored, false);
+  assert.ok(failed.events.some((e) => e.outcome === "failed"));
 });
 
 test("the gate's suites are path-aware and defer without Docker", () => {

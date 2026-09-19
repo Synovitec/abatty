@@ -15,7 +15,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
-    why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree.",
+    why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree. What the scan is worth is a measurement, not an assertion: `abatty secrets --benchmark` scores it against a published corpus, and the numbers are in docs/SECRET_SCAN_BENCHMARK.md.",
     next: "abatty init writes the pre-commit hook (abatty secrets --staged) and abatty ci the CI step; the gate runs the same scan",
     check: (c) => {
       const scanner = c.exists(".gitleaks.toml")
@@ -34,6 +34,33 @@ export const rules = [
     },
   },
   {
+    id: "SEC-DISCLOSURE",
+    family: "Security",
+    title: "A coordinated vulnerability disclosure policy, where a reporter looks for it",
+    standard: ["SEC.1"],
+    level: "should",
+    enforcement: "prose",
+    phase: "0",
+    ceiling: {
+      at: "review",
+      why: "A machine can see that the policy exists, that it names a contact and that it says how long a reporter should expect to wait. Whether anybody answers that contact is the only thing that matters about it, and no check can see an unanswered mail.",
+    },
+    why: "Somebody who finds a vulnerability in your product will spend about five minutes looking for where to send it. With no policy they either post it publicly or drop it, and both are worse for you than an email. The file also carries the promise a reporter is owed: who reads it, and how long they should expect to wait.",
+    next: "Publish SECURITY.md at the root, in .github/ or in docs/, naming a contact and the response time a reporter should expect",
+    check: (c) => {
+      const file = ["SECURITY.md", ".github/SECURITY.md", "docs/SECURITY.md"].find(c.exists);
+      if (!file) return { status: "missing", evidence: "no SECURITY.md" };
+      const text = c.read(file);
+      const contact = /@|https?:\/\/|mailto:/.test(text);
+      const expectation =
+        /within \d|\d+ (business |working )?(day|hour|week)|response time|acknowledg/i.test(text);
+      return {
+        status: contact && expectation ? "present" : "partial",
+        evidence: `${file}${contact ? ", a contact" : ", NO contact: a policy nobody can reply to"}${expectation ? ", a response time" : ", no response time a reporter can hold you to"}`,
+      };
+    },
+  },
+  {
     id: "SEC-AUDIT",
     family: "Security",
     title: "Dependency audit in CI",
@@ -42,14 +69,38 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     ...PACKAGE,
-    why: "The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident.",
-    next: "Add npm/pnpm audit on the shipped tree and audit signatures",
+    why: "The supply chain is part of the product; a known vulnerability in a dependency is refused by the audit, not discovered by an incident. An UNSCOPED audit is the reason teams switch audits off: it reports a dev-only advisory nobody ships, at a severity nobody would act on, with no fix available, on every push, until somebody adds the flag that kills it for good.",
+    next: "Scope the audit before you trust it: production dependencies only (--omit=dev / --prod), a severity floor (--audit-level), and an advisory allowed with a reason and an expiry date (security.audit.allow) rather than a flag that silences everything",
     check: (c) => {
       const ci = /audit/.test(c.ciText);
       const s = c.script(/audit/);
+      const text = [c.ciText, s?.[1] || ""].join("\n");
+      const allow = /** @type {any} */ (c.adoption)?.security?.audit?.allow;
+      // The gate's own audit step is scoped by construction: production dependencies, a severity
+      // floor, and allowances that expire. A repository whose CI runs the gate has it, and a rule
+      // that could not see that would be reading for a flag rather than for the practice.
+      if (/abatty(\.mjs)? gate\b/.test([c.ciText, ...Object.values(c.scripts || {})].join("\n")))
+        return {
+          status: "present",
+          evidence: `the gate's built-in audit: production only, a severity floor${Array.isArray(allow) && allow.length ? `, ${allow.length} allowance(s)` : ""}`,
+        };
+      if (!ci && !s) return { status: "missing", evidence: "none" };
+      // Two of the three scopes are readable from the command; the third is the allowance, which
+      // is a config key rather than a flag and is counted where the repository states it.
+      const scoped = /--omit=dev|--production\b|--prod\b|--groups=?\s*prod/.test(text);
+      const floor = /--audit-level|--severity|--fail-on/.test(text);
+      const where = ci ? "ci step" : s?.[0] || "script";
+      const has = [
+        scoped ? "production only" : "",
+        floor ? "a severity floor" : "",
+        Array.isArray(allow) && allow.length ? `${allow.length} allowance(s)` : "",
+      ].filter(Boolean);
+      const lacks = [scoped ? "" : "production scoping", floor ? "" : "a severity floor"].filter(
+        Boolean,
+      );
       return {
-        status: ci || s ? "present" : "missing",
-        evidence: ci ? "ci step" : s?.[0] || "none",
+        status: scoped && floor ? "present" : "partial",
+        evidence: `${where}${has.length ? ": " + has.join(", ") : ""}${lacks.length ? `; unscoped on ${lacks.join(" and ")}, which is the audit people end up switching off` : ""}`,
       };
     },
   },

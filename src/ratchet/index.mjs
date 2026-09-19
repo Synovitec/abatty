@@ -20,12 +20,14 @@ import { probes as sizeProbes } from "./probes/size.mjs";
 import { probes as docsProbes } from "./probes/docs.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
+import { probes as startupProbes } from "./probes/startup.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
 // the dead-code gate names once it runs (CODE.6). `config.mjs` remains their home.
 export { DEFAULT_CONFIG } from "./config.mjs";
 export { readBaseline, writeBaseline } from "./baseline.mjs";
+import { probeVersion } from "./baseline.mjs";
 
 /**
  * @typedef {import("../rules/context.mjs").RepoContext} RepoContext
@@ -43,6 +45,8 @@ export { readBaseline, writeBaseline } from "./baseline.mjs";
  *   why: string,
  *   axis?: string,
  *   lossAt?: number,
+ *   version?: number,
+ *   approximates?: string,
  *   emptyScanOk?: boolean,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
@@ -69,15 +73,20 @@ export { readBaseline, writeBaseline } from "./baseline.mjs";
  *   coupled: unknown[],
  * }} RatchetConfig
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
- * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "skipped"} VerdictStatus
- * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[] }} Verdict
- * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, [k: string]: unknown }} Baseline
+ * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped"} VerdictStatus
+ * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
+ * @typedef {{ at: string, was: number, now: number, reason: string, owner: string }} BaselineEntry
+ * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
  */
 
 /** @type {Probe[]} */
-export const BUILTIN_PROBES = [...sizeProbes, ...codeProbes, ...docsProbes, ...changeProbes].map(
-  (p) => ({ ...p, source: "abatty" }),
-);
+export const BUILTIN_PROBES = [
+  ...sizeProbes,
+  ...codeProbes,
+  ...docsProbes,
+  ...changeProbes,
+  ...startupProbes,
+].map((p) => ({ ...p, source: "abatty" }));
 
 /**
  * Validate a probe's shape. Returns the problems; an empty list is a valid probe.
@@ -96,6 +105,8 @@ export function validateProbe(p, builtin) {
   if (typeof p.title !== "string" || !p.title) problems.push(`${where}: title missing`);
   if (typeof p.why !== "string" || !p.why) problems.push(`${where}: why missing`);
   if (typeof p.scan !== "function") problems.push(`${where}: scan is not a function`);
+  if (p.approximates !== undefined && typeof p.approximates !== "string")
+    problems.push(`${where}: approximates must be a string (what the count stands in for)`);
   if (!Array.isArray(p.controls)) problems.push(`${where}: controls missing`);
   else {
     if (!p.controls.some((/** @type {any} */ c) => c && c.expect > 0))
@@ -212,6 +223,7 @@ export function compare(measurements, baseline, config) {
   return measurements.map((m) => {
     const floor = baseline?.metrics?.[m.metric];
     const lastScanned = baseline?.scanned?.[m.metric] ?? 0;
+    const entry = baseline?.entries?.[m.metric];
     /** @param {VerdictStatus} status @param {string[]} messages */
     const v = (status, messages) => ({
       metric: m.metric,
@@ -222,8 +234,25 @@ export function compare(measurements, baseline, config) {
       scanned: m.scanned,
       messages,
       findings: m.findings,
+      // A probe that stands in for something it cannot measure says so on every reading, not in
+      // a document nobody opens while the number is red.
+      ...(m.probe.approximates ? { approximates: m.probe.approximates } : {}),
+      ...(entry
+        ? {
+            floorNote: `floor raised on ${entry.at} by ${entry.owner}, ${entry.was} → ${entry.now}: ${entry.reason}`,
+          }
+        : {}),
     });
     if (m.skipped) return v("skipped", [m.skipped]);
+    // A floor is only comparable to a number counted the same way. A baseline that records no
+    // version at all predates the field and is taken at its word; one that records a different
+    // version is reported, because comparing it would be arithmetic on two different questions.
+    const wroteUnder = baseline?.versions?.[m.metric];
+    const now = probeVersion(m);
+    if (typeof wroteUnder === "number" && wroteUnder !== now)
+      return v("redefined", [
+        `the floor ${floor ?? "(none)"} was written under definition ${wroteUnder} of this metric and the probe now counts definition ${now}; the two numbers are not the same question. Re-read the probe, then run \`abatty baseline\` to record today's number under the current definition`,
+      ]);
     if (
       m.scanned === 0 &&
       !m.probe.emptyScanOk &&
@@ -293,7 +322,9 @@ function where(f) {
  */
 export function failed(verdicts) {
   return verdicts.some((v) =>
-    ["regressed", "hard-fail", "scanned-zero", "unbaselined", "improved"].includes(v.status),
+    ["regressed", "hard-fail", "scanned-zero", "unbaselined", "improved", "redefined"].includes(
+      v.status,
+    ),
   );
 }
 
@@ -332,4 +363,27 @@ export function scoreOf(measurements) {
 export function ratchetSetup(repoDir) {
   const adoption = readConfig(repoDir) || {};
   return { adoption, config: resolveConfig(adoption), baselineRel: baselinePath(adoption) };
+}
+
+/**
+ * A verdict's findings split by whether this change introduced them. A finding sits in a file the
+ * range touched, or it does not; the first is the author's to fix now and the second is the
+ * repository's standing debt, and a gate that reports them in one list teaches its readers to
+ * scroll past both.
+ *
+ * Touching a file is not the same as causing the finding, so the split is named for what it can
+ * actually know: `introduced` means the finding is in a file this change edited.
+ * @param {Verdict[]} verdicts @param {string[]} changed
+ * @returns {{ introduced: { metric: string, finding: Finding }[], standing: { metric: string, finding: Finding }[] }}
+ */
+export function splitByRange(verdicts, changed) {
+  const touched = new Set(changed);
+  /** @type {{ metric: string, finding: Finding }[]} */
+  const introduced = [];
+  /** @type {{ metric: string, finding: Finding }[]} */
+  const standing = [];
+  for (const v of verdicts)
+    for (const f of v.findings)
+      (touched.has(f.path) ? introduced : standing).push({ metric: v.metric, finding: f });
+  return { introduced, standing };
 }

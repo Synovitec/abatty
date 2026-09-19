@@ -58,6 +58,27 @@ export function ratchetSetup(repoDir: string): {
     config: RatchetConfig;
     baselineRel: string;
 };
+/**
+ * A verdict's findings split by whether this change introduced them. A finding sits in a file the
+ * range touched, or it does not; the first is the author's to fix now and the second is the
+ * repository's standing debt, and a gate that reports them in one list teaches its readers to
+ * scroll past both.
+ *
+ * Touching a file is not the same as causing the finding, so the split is named for what it can
+ * actually know: `introduced` means the finding is in a file this change edited.
+ * @param {Verdict[]} verdicts @param {string[]} changed
+ * @returns {{ introduced: { metric: string, finding: Finding }[], standing: { metric: string, finding: Finding }[] }}
+ */
+export function splitByRange(verdicts: Verdict[], changed: string[]): {
+    introduced: {
+        metric: string;
+        finding: Finding;
+    }[];
+    standing: {
+        metric: string;
+        finding: Finding;
+    }[];
+};
 export { DEFAULT_CONFIG } from "./config.mjs";
 /**
  * @typedef {import("../rules/context.mjs").RepoContext} RepoContext
@@ -75,6 +96,8 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   why: string,
  *   axis?: string,
  *   lossAt?: number,
+ *   version?: number,
+ *   approximates?: string,
  *   emptyScanOk?: boolean,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
@@ -101,9 +124,10 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   coupled: unknown[],
  * }} RatchetConfig
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
- * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "skipped"} VerdictStatus
- * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[] }} Verdict
- * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, [k: string]: unknown }} Baseline
+ * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped"} VerdictStatus
+ * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
+ * @typedef {{ at: string, was: number, now: number, reason: string, owner: string }} BaselineEntry
+ * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
  */
 /** @type {Probe[]} */
 export const BUILTIN_PROBES: Probe[];
@@ -145,6 +169,8 @@ export type Probe = {
     why: string;
     axis?: string;
     lossAt?: number;
+    version?: number;
+    approximates?: string;
     emptyScanOk?: boolean;
     scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult;
     controls: Control[];
@@ -184,7 +210,7 @@ export type Measurement = {
     skipped?: string;
     probe: Probe;
 };
-export type VerdictStatus = "ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "skipped";
+export type VerdictStatus = "ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped";
 export type Verdict = {
     metric: string;
     kind: Kind;
@@ -194,6 +220,15 @@ export type Verdict = {
     scanned: number;
     messages: string[];
     findings: Finding[];
+    floorNote?: string;
+    approximates?: string;
+};
+export type BaselineEntry = {
+    at: string;
+    was: number;
+    now: number;
+    reason: string;
+    owner: string;
 };
 export type Baseline = {
     measuredAt: string;
@@ -203,6 +238,8 @@ export type Baseline = {
     metrics: Record<string, number>;
     scanned?: Record<string, number>;
     debt: Record<string, Record<string, number>>;
+    versions?: Record<string, number>;
+    entries?: Record<string, BaselineEntry>;
     [k: string]: unknown;
 };
 export { readBaseline, writeBaseline } from "./baseline.mjs";

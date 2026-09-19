@@ -6,7 +6,9 @@ import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import {
   FAMILIES,
   RULES,
+  controlOf,
   enforcedOf,
+  waiverOf,
   loadCatalog,
   ruleById,
   runCatalog,
@@ -71,6 +73,7 @@ const IDS = [
   "TEST-E2E-CONFIG",
   "TEST-MUTATION",
   "SEC-SECRETS",
+  "SEC-DISCLOSURE",
   "SEC-AUDIT",
   "SEC-LOCKFILE",
   "SEC-ENVFILES",
@@ -91,15 +94,21 @@ const IDS = [
   "OBS-SIGTERM",
   "OBS-HEALTH",
   "OBS-TRACKER",
+  "SEC-AGENT-SANDBOX",
+  "SEC-AGENT-PERMISSIONS",
+  "SEC-AGENT-TRUST",
+  "SEC-AGENT-MCP",
+  "SEC-AGENT-SHIM",
+  "SEC-AGENT-BYPASS",
 ];
 
-test("the catalog is well-formed: 71 rules, unique IDs, every field, a reason on each", () => {
+test("the catalog is well-formed: 78 rules, unique IDs, every field, a reason on each", () => {
   assert.deepEqual(validate(RULES), []);
   assert.deepEqual(
     RULES.map((r) => r.id),
     IDS,
   );
-  assert.equal(FAMILIES.length, 14);
+  assert.equal(FAMILIES.length, 15);
   for (const r of RULES) {
     assert.ok(r.why.length > 40, `${r.id}: why is too short to be a reason`);
     assert.ok(r.title.length > 10, `${r.id}: title`);
@@ -130,6 +139,39 @@ test("validate names what a malformed rule lacks", () => {
   assert.ok(problems.some((p) => /level must be/.test(p)));
   assert.ok(problems.some((p) => /enforcement must be/.test(p)));
   assert.ok(problems.some((p) => /check must be a function/.test(p)));
+});
+
+test("a machine ceiling is a claim, so it carries its reason and never sits below where the rule already is", () => {
+  const ok = {
+    id: "X-Y",
+    family: "f",
+    title: "t",
+    phase: "0",
+    why: "w",
+    next: "n",
+    level: /** @type {const} */ ("must"),
+    enforcement: /** @type {const} */ ("review"),
+    check: () => ({ status: /** @type {const} */ ("present"), evidence: "e" }),
+  };
+  assert.deepEqual(
+    validate([{ ...ok, ceiling: { at: "review", why: "a drill, not a scan" } }]),
+    [],
+  );
+  assert.deepEqual(validate([ok]), [], "no ceiling is not a problem");
+  assert.match(
+    validate(/** @type {any} */ ([{ ...ok, ceiling: { at: "review" } }])).join(""),
+    /ceiling\.why must say what a machine cannot see/,
+  );
+  assert.match(
+    validate(/** @type {any} */ ([{ ...ok, ceiling: { at: "prose", why: "x" } }])).join(""),
+    /ceiling prose is below the enforcement review/,
+  );
+  // every declared ceiling in the catalog says what a machine cannot see, not that it is hard
+  for (const r of RULES.filter((x) => x.ceiling))
+    assert.ok(
+      String(r.ceiling?.why).length > 60,
+      `${r.id}: a ceiling without a reason is an excuse`,
+    );
 });
 
 test("a check that throws is a finding, never a crash of the measurement", () => {
@@ -250,11 +292,11 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   });
   const all = cli(["rules", dir], dir);
   assert.equal(all.code, 0, all.out);
-  assert.match(all.out, /71 of 71/);
+  assert.match(all.out, /78 of 78/);
   assert.match(all.out, /CODE-DEADCODE/);
   assert.match(all.out, /\d+ must · \d+ should · insured by: \d+ hard/);
   const fam = cli(["rules", dir, "--family", "Security", "--level", "must"], dir);
-  assert.match(fam.out, /4 of 71/);
+  assert.match(fam.out, /4 of 78/);
   assert.doesNotMatch(fam.out, /CODE-DEADCODE/);
   const ph = cli(["rules", dir, "--phase", "12", "--json"], dir);
   assert.deepEqual(
@@ -268,7 +310,7 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   );
   const json = cli(["rules", dir, "--json"], dir);
   const list = JSON.parse(json.out);
-  assert.equal(list.length, 71);
+  assert.equal(list.length, 78);
   assert.equal(list[0].check, undefined, "the function is not in the JSON");
   const nope = cli(["explain", "NOPE-1", dir], dir);
   assert.equal(nope.code, 2);
@@ -332,7 +374,180 @@ test("the enforced share counts what the repository has by what insures it, and 
   assert.equal(e.share, 50);
   assert.deepEqual([e.hard, e.ratchet, e.review, e.prose], [1, 1, 1, 1]);
   assert.deepEqual(e.promotable, ["C", "D"]);
+  assert.deepEqual(e.atCeiling, [], "no ceiling declared: nothing leaves the queue");
   assert.equal(enforcedOf([]).share, null);
+
+  // The ceiling: a rule already as hard as any machine can hold it leaves the promotion queue,
+  // and one still a level below its ceiling stays in it. A queue that never empties is ignored.
+  const ceiling = /** @type {const} */ ({ at: "review", why: "a drill, not a scan" });
+  const c = enforcedOf([
+    { ...f("AT", "present", "review"), ceiling },
+    { ...f("BELOW", "present", "prose"), ceiling },
+    { ...f("FREE", "present", "review") },
+    { ...f("HELD", "present", "hard"), ceiling },
+  ]);
+  assert.deepEqual(c.atCeiling, ["AT"]);
+  assert.deepEqual(c.promotable, ["BELOW", "FREE"], "one step left, and one with no ceiling");
+  assert.equal(c.share, 25, "the ceiling changes the queue, never the share");
   const out = cli(["rules", "--enforcement", "prose", "--json"], process.cwd()).out;
   assert.ok(JSON.parse(out).every((/** @type {any} */ r) => r.enforcement === "prose"));
+});
+
+test("every rule says which control it is: guide or sensor, computational or inferential", () => {
+  // The category's published vocabulary. A guide is feedforward and steers before the agent acts;
+  // a sensor is feedback and observes after it. Each is computational when a processor decides it
+  // and inferential when a person or a model does. Feedback alone produces an agent that repeats
+  // its mistakes and feedforward alone produces one that never learns whether its rules worked,
+  // so the balance has to be readable rather than accidental.
+  for (const r of RULES) {
+    const c = controlOf(r);
+    assert.ok(["guide", "sensor"].includes(c.control), `${r.id}: ${c.control}`);
+    assert.ok(["computational", "inferential"].includes(c.basis), `${r.id}: ${c.basis}`);
+  }
+  // The derivation, in both directions.
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Documents", enforcement: "prose" })), {
+    control: "guide",
+    basis: "inferential",
+  });
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Code", enforcement: "hard" })), {
+    control: "sensor",
+    basis: "computational",
+  });
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Code", enforcement: "review" })), {
+    control: "sensor",
+    basis: "inferential",
+  });
+  // A rule whose derivation is wrong for it says so itself.
+  assert.deepEqual(
+    controlOf(/** @type {any} */ ({ family: "Code", enforcement: "hard", control: "guide" })),
+    { control: "guide", basis: "computational" },
+  );
+  // This catalog is sensor-heavy, which is the honest reading of a package built around a gate.
+  const sensors = RULES.filter((r) => controlOf(r).control === "sensor").length;
+  assert.ok(sensors > RULES.length / 2, `${sensors} of ${RULES.length}`);
+});
+
+test("a waiver is counted per rule: the rate, and a waiver that has run out is measured again and said out loud", async () => {
+  const dir = tempRepo("waiver-rate", {
+    "package.json": NEXT_PKG,
+    "src/index.ts": "export const x = 1;\n",
+    "abatty.config.json": JSON.stringify({
+      rules: {
+        waived: {
+          "DOC-ADR": { reason: "the decisions live in the wiki", until: "2999-01-01" },
+          "DOC-CONVENTIONS": "no second stack to describe yet",
+          "SEC-AUDIT": { reason: "was meant to be revisited", until: "2020-01-01" },
+        },
+      },
+    }),
+  });
+  const catalog = await loadCatalog(dir, { today: "2026-09-19" });
+  assert.deepEqual(catalog.problems, []);
+  const findings = runCatalog(buildContext(dir), catalog.rules);
+  const w = waiverOf(findings);
+
+  assert.deepEqual(
+    w.waived.map((f) => f.id).sort(),
+    ["DOC-ADR", "DOC-CONVENTIONS"],
+    "the live waivers, and not the one that ran out",
+  );
+  assert.equal(w.considered > 2, true);
+  assert.equal(w.rate, Math.round((100 * 2) / w.considered));
+
+  // the expired one is measured again rather than silently reverted, and keeps saying so
+  const audit = findings.find((f) => f.id === "SEC-AUDIT");
+  assert.notEqual(audit?.status, "waived", "an expired waiver does not waive");
+  assert.equal(audit?.waiver?.expired, true);
+  assert.equal(audit?.waiver?.until, "2020-01-01");
+  assert.deepEqual(
+    w.expired.map((f) => f.id),
+    ["SEC-AUDIT"],
+  );
+
+  // the control in the other direction: a repository that waives nothing has a rate of zero
+  const clean = tempRepo("waiver-none", {
+    "package.json": NEXT_PKG,
+    "src/index.ts": "export const x = 1;\n",
+  });
+  const none = waiverOf(runCatalog(buildContext(clean), (await loadCatalog(clean)).rules));
+  assert.equal(none.rate, 0);
+  assert.deepEqual(none.expired, []);
+
+  const out = cli(["rules", dir], dir).out;
+  assert.match(out, /waived: 2 of \d+ \(\d+%\)/);
+  assert.match(out, /1 waiver\(s\) expired and measured again: SEC-AUDIT/);
+});
+
+test("coverage is read for the gate on the change, not for the word coverage", () => {
+  /** @param {Record<string, string>} files @param {string} id */
+  const find = (files, id) => {
+    const dir = tempRepo("cov-" + Math.random().toString(36).slice(2, 8), {
+      "package.json": NEXT_PKG,
+      "src/index.ts": "export const x = 1;\n",
+      ...files,
+    });
+    const f = runCatalog(buildContext(dir), RULES).find((x) => x.id === id);
+    assert.ok(f, id);
+    return f;
+  };
+  const wf = (/** @type {string} */ run) => ({
+    ".github/workflows/ci.yml": `jobs:\n  a:\n    steps:\n      - run: ${run}\n`,
+  });
+
+  assert.equal(find({}, "TEST-COVERAGE").status, "missing");
+  const total = find(
+    {
+      "vitest.config.ts": "export default { test: { coverage: { thresholds: { lines: 80 } } } }\n",
+    },
+    "TEST-COVERAGE",
+  );
+  assert.equal(total.status, "partial");
+  assert.match(total.evidence, /no gate on the changed lines/);
+
+  // the same practice in another ecosystem's spelling holds the rule just as well
+  const patch = find(
+    {
+      "codecov.yml": "coverage:\n  status:\n    patch:\n      default:\n        target: 80\n",
+      ".coveragerc": "[report]\nfail_under = 80\n",
+      ...wf("pytest --cov --cov-report=xml && diff-cover coverage.xml"),
+    },
+    "TEST-COVERAGE",
+  );
+  assert.equal(patch.status, "present", patch.evidence);
+  assert.match(patch.evidence, /a gate on the change/);
+});
+
+test("mutation testing is read for its two bounds, not for the runner's name", () => {
+  /** @param {Record<string, string>} files */
+  const find = (files) => {
+    const dir = tempRepo("mut-" + Math.random().toString(36).slice(2, 8), {
+      "package.json": NEXT_PKG,
+      "src/index.ts": "export const x = 1;\n",
+      ...files,
+    });
+    const f = runCatalog(buildContext(dir), RULES).find((x) => x.id === "TEST-MUTATION");
+    assert.ok(f);
+    return f;
+  };
+
+  assert.equal(find({}).status, "missing");
+  const unbounded = find({ "stryker.conf.json": '{ "testRunner": "vitest" }\n' });
+  assert.equal(unbounded.status, "partial");
+  assert.match(unbounded.evidence, /mutates the whole tree on every run/);
+  assert.match(unbounded.evidence, /a log line counts as a surviving mutant/);
+
+  const bounded = find({
+    "stryker.conf.json":
+      '{ "testRunner": "vitest", "incremental": true, "ignorers": ["console"], "thresholds": { "break": 60 } }\n',
+  });
+  assert.equal(bounded.status, "present", bounded.evidence);
+  assert.match(bounded.evidence, /bounded to the change/);
+
+  // one bound without the other is still partial, and the evidence says which one is missing
+  const half = find({
+    "stryker.conf.json": '{ "testRunner": "vitest", "incremental": true, "thresholds": {} }\n',
+  });
+  assert.equal(half.status, "partial");
+  assert.equal(/mutates the whole tree/.test(half.evidence), false);
+  assert.match(half.evidence, /nothing is ignored/);
 });

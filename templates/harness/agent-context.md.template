@@ -21,15 +21,14 @@ Violating one of these is an incident, not a bug.
 
 ## 2. Commands
 
+The four that matter, and whatever else this repository runs. `abatty init` wrote the ones the
+preset names into `package.json`; delete the lines that are not true here.
+
 ```bash
-npm run dev                # dev server
-npm run gate               # THE pre-push gate: format, lint, typecheck, unit, standards, changelog range,
-                           # then the heavy suites when the change touches them (same file as the hook)
-npm run gate:fast          # the same without Docker or browsers (they still run in CI)
-npm run standards          # the ratchet alone; --verbose lists findings; :baseline rewrites the floor
-npm test                   # unit, no database         npm run test:integration   # real Postgres
-npm run e2e                # Playwright + axe          npm run typecheck          # tsc --noEmit
-npm run lint               # eslint --max-warnings=0   npm run hooks:install      # core.hooksPath
+npm run gate               # THE pre-push gate; the hook and CI run this same one
+npm run gate:fast          # the same without the heavy suites (they still run in CI)
+npm test                   # the unit suite
+npm run standards          # the ratchet alone, against the committed floor
 ```
 
 ## 3. Boundary map
@@ -54,11 +53,9 @@ long a change takes to be live.>
 
 ## 6. Size, shape and quality limits
 
-Function: 60 lines (150 in a component file), complexity 12, 4 parameters. File: the per-kind
-table in `docs/CODE_CONVENTIONS.md` §8; 800 lines is the hard cap for anything. Lint at zero
-warnings. JSDoc on every export in <lib/, services/, packages/> that says WHY. Every boundary
-parses with Zod. Coverage floors are pinned in the test config and only ever rise. All of
-this is measured by `npm run standards`; a number that must go up is a decision written in
+The numbers are in `.claude/rules/size-limits.md` and the per-kind table in
+`docs/CODE_CONVENTIONS.md`; `npm run standards` measures them. Written here they would be a
+second copy that drifts. A number that must go up is a decision written in
 `docs/STANDARDS_PROGRESS.md` in the same commit.
 
 ## 7. Delivery rules - every change is recorded

@@ -1,3 +1,5 @@
+/** Ask for plain output: no colour, and glyphs a byte-oriented reader can match on. @param {boolean} on */
+export function setPlain(on: boolean): void;
 /** A status word, coloured the way every screen colours it. @param {string} s */
 export function status(s: string): string;
 /**
@@ -32,12 +34,12 @@ export function magenta(s: string): string;
 export function cyan(s: string): string;
 export function gray(s: string): string;
 export namespace glyph {
-    let ok: string;
-    let fail: string;
-    let skip: string;
-    let defer: string;
-    let run: string;
-    let warn: string;
-    let dot: string;
-    let arrow: string;
+    const ok: string;
+    const fail: string;
+    const skip: string;
+    const defer: string;
+    const run: string;
+    const warn: string;
+    const dot: string;
+    const arrow: string;
 }

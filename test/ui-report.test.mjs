@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
-import { bar, stacked, table, duration } from "../src/ui/term.mjs";
+import { bar, bold, duration, glyph, setPlain, stacked, table } from "../src/ui/term.mjs";
 import { allReports, buildReport, latestReport } from "../src/core/report.mjs";
 import { renderDashboard } from "../src/ui/dashboard.mjs";
 
@@ -68,4 +68,47 @@ test("the dashboard embeds the reports, both themes and the score dial", async (
   assert.equal(out.code, 0, out.out);
   assert.ok(existsSync(join(dir, "d.html")));
   assert.match(readFileSync(join(dir, "d.html"), "utf8"), /fixture-next/);
+});
+
+test("--plain reaches every command: no colour, and markers a byte-oriented reader can match", () => {
+  const dir = process.cwd();
+  const plain = cli(["presets", "--plain"], dir).out;
+  assert.match(plain, /\[ok\] next/, "an ASCII marker, not a tick");
+  assert.match(plain, /\[!\] astro/);
+  assert.equal(/\u001b\[/.test(plain), false, "no escape sequences");
+  assert.equal(/[✓✗▶↷•→]/.test(plain), false, "no glyphs a log parser cannot match");
+
+  // and the control in the other direction: without it the words are the same
+  const normal = cli(["presets"], dir).out;
+  assert.match(normal, /next\s+Next\.js/);
+  assert.match(plain, /next\s+Next\.js/);
+
+  // it is not a command's flag: a command that never heard of it is plain too
+  const rules = cli(["rules", dir, "--family", "Security", "--plain"], dir).out;
+  assert.equal(/[✓✗•]/.test(rules), false, rules.slice(0, 200));
+  assert.match(rules, /SEC-SECRETS/);
+});
+
+test("--plain turns colour off even where a terminal would have had it", () => {
+  // A spawned test process is never a TTY, so the colour half of --plain cannot be watched
+  // failing from the outside. It is watched here instead, by pretending to be one.
+  const was = process.stdout.isTTY;
+  const wasNoColor = process.env.NO_COLOR;
+  const wasCi = process.env.CI;
+  try {
+    process.stdout.isTTY = true;
+    delete process.env.NO_COLOR;
+    delete process.env.CI;
+    setPlain(false);
+    assert.notEqual(bold("x"), "x", "a TTY without --plain has colour, or this proves nothing");
+    assert.match(glyph.ok, /✓/);
+    setPlain(true);
+    assert.equal(bold("x"), "x");
+    assert.equal(glyph.ok, "[ok]");
+  } finally {
+    setPlain(false);
+    process.stdout.isTTY = was;
+    if (wasNoColor !== undefined) process.env.NO_COLOR = wasNoColor;
+    if (wasCi !== undefined) process.env.CI = wasCi;
+  }
 });

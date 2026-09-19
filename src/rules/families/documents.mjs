@@ -84,6 +84,10 @@ export const rules = [
   },
   {
     id: "DOC-CONVENTIONS",
+    ceiling: {
+      at: "review",
+      why: "A machine can see the file and its headings. Whether it describes how THIS stack applies the standard, rather than repeating the standard, is a reading; a check that asserted it would be asserting that prose is good.",
+    },
     family: "Documents",
     title: "A CODE_CONVENTIONS.md under docs: how this stack applies the standard",
     level: "should",
@@ -157,6 +161,10 @@ export const rules = [
   },
   {
     id: "DOC-ADR",
+    ceiling: {
+      at: "review",
+      why: "A machine can count the entries and read their front matter. Whether the decisions that actually shaped the system are among them is knowable only to somebody who was there: the missing entry leaves no trace to scan for.",
+    },
     family: "Documents",
     title: "A decisions record (MADR entries or a decision log)",
     standard: ["FLOW.4"],

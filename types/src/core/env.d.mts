@@ -9,5 +9,7 @@ export function agentFromEnv(): string;
 export function tokenFromEnv(): string;
 /** The hosted dashboard's URL for `publish`, or "". */
 export function dashboardFromEnv(): string;
+/** The executable search path, or "": what a run's subprocesses will find, shim included. */
+export function pathFromEnv(): string;
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;

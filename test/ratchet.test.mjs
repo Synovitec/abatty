@@ -11,6 +11,7 @@ import {
   loadProbes,
   measureAll,
   readBaseline,
+  splitByRange,
   validateProbe,
   writeBaseline,
 } from "../src/ratchet/index.mjs";
@@ -156,7 +157,7 @@ test("the baseline writer refuses a rise without a reason, a HARD metric above z
   assert.equal(refused.ok, false);
   assert.match(
     refused.refusals.join("\n"),
-    /a floor never rises without a reason: size\.overBudget 1 → 2/,
+    /a floor never rises without a reason and an owner: size\.overBudget 1 → 2/,
   );
   assert.equal(readBaseline(dir, rel)?.measuredAt, "2026-09-15", "nothing written when refused");
   const allowed = writeBaseline({
@@ -168,11 +169,31 @@ test("the baseline writer refuses a rise without a reason, a HARD metric above z
     today: "2026-09-16",
     reason: "the split of a.ts is phase 8",
   });
-  assert.equal(allowed.ok, true);
+  assert.equal(allowed.ok, false, "a reason without an owner is still a floor nobody signed");
+  const signed = writeBaseline({
+    repoDir: dir,
+    rel,
+    measurements: measure(dir, prev),
+    config,
+    previous: prev,
+    today: "2026-09-16",
+    reason: "the split of a.ts is phase 8",
+    owner: "the platform team",
+  });
+  assert.equal(signed.ok, true);
   assert.equal(readBaseline(dir, rel)?.metrics["size.overBudget"], 2);
+  const entry = readBaseline(dir, rel)?.entries?.["size.overBudget"];
+  assert.deepEqual(entry, {
+    at: "2026-09-16",
+    was: 1,
+    now: 2,
+    reason: "the split of a.ts is phase 8",
+    owner: "the platform team",
+  });
   assert.equal(
-    /** @type {any} */ (readBaseline(dir, rel))?.lastReason?.reason,
-    "the split of a.ts is phase 8",
+    /** @type {any} */ (readBaseline(dir, rel))?.lastReason,
+    undefined,
+    "the one-per-write field is gone, not left to be read as this metric's reason",
   );
   // a HARD metric (promoted at zero) that now reads above zero is refused, not recorded
   writeFileSync(join(dir, "src/c.ts"), "export const x: any = 1;\n");
@@ -225,7 +246,7 @@ test("the CLI: ratchet is red without a floor, baseline writes it, ratchet is gr
     "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n",
   });
   const red = cli(["ratchet", dir], dir);
-  assert.equal(red.code, 1, red.out);
+  assert.equal(red.code, 3, red.out);
   assert.match(red.out, /NO FLOOR/);
   assert.match(red.out, /ratchet red/);
   const base = cli(["baseline", dir], dir);
@@ -265,7 +286,7 @@ test("the changelog range: a source commit after the last changelog touch fails 
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "feat: six");
   const red = cli(["ratchet", dir, "--range", "auto"], dir);
-  assert.equal(red.code, 1, red.out);
+  assert.equal(red.code, 3, red.out);
   assert.match(red.out, /change\.changelogMissing/);
   assert.match(red.out, /HARD FAIL/);
   assert.match(red.out, /feat: six: src\/a\.ts changed, CHANGELOG\.md not touched after it/);
@@ -343,4 +364,160 @@ test("C7 bidirectional: a floor above the current value is a finding until the i
   writeFileSync(join(dir, "src/b.ts"), LONG(310));
   const back = compare(measure(dir, locked), locked, config);
   assert.equal(back.find((x) => x.metric === "size.overBudget")?.status, "regressed");
+});
+
+test("the findings a change introduced are separated from the debt it inherited", () => {
+  // A finding in a file this change never touched is not this change's finding, however true it
+  // is. Reported in one list, an author learns to scroll past both.
+  const verdicts = /** @type {any} */ ([
+    {
+      metric: "size.overBudget",
+      kind: "hard",
+      status: "hard-fail",
+      value: 2,
+      floor: 0,
+      scanned: 9,
+      messages: [],
+      findings: [
+        { path: "src/mine.mjs", line: 12, detail: "301 > 300" },
+        { path: "src/theirs.mjs", detail: "400 > 300" },
+      ],
+    },
+    {
+      metric: "types.escapes",
+      kind: "ratchet",
+      status: "ok",
+      value: 1,
+      floor: 1,
+      scanned: 9,
+      messages: [],
+      findings: [{ path: "src/mine.mjs", detail: "one any" }],
+    },
+  ]);
+  const split = splitByRange(verdicts, ["src/mine.mjs", "docs/README.md"]);
+  assert.deepEqual(
+    split.introduced.map((x) => [x.metric, x.finding.path]),
+    [
+      ["size.overBudget", "src/mine.mjs"],
+      ["types.escapes", "src/mine.mjs"],
+    ],
+  );
+  assert.deepEqual(
+    split.standing.map((x) => x.finding.path),
+    ["src/theirs.mjs"],
+  );
+  // The control in the other direction: a range that touched nothing the probes found leaves
+  // every finding standing, and none of them is reported as this author's.
+  const none = splitByRange(verdicts, ["README.md"]);
+  assert.equal(none.introduced.length, 0);
+  assert.equal(none.standing.length, 3);
+});
+
+test("a reason is recorded against its metric: an unrelated rebaseline keeps it, and the debt going away removes it", () => {
+  const dir = tempRepo("ratchet-entries", {
+    "package.json": PKG,
+    "src/a.ts": LONG(310),
+    "docs/x.md": "# x\n",
+  });
+  const config = DEFAULT_CONFIG;
+  const rel = "scripts/ci/standards-baseline.json";
+  const write = (/** @type {any} */ extra) =>
+    writeBaseline({
+      repoDir: dir,
+      rel,
+      measurements: measure(dir, readBaseline(dir, rel)),
+      config,
+      previous: readBaseline(dir, rel),
+      today: "2026-09-16",
+      ...extra,
+    });
+  assert.equal(write({ today: "2026-09-15" }).ok, true);
+
+  // size.overBudget rises, and is explained.
+  writeFileSync(join(dir, "src/b.ts"), LONG(310));
+  assert.equal(write({ reason: "phase 8 splits these two", owner: "platform" }).ok, true);
+  assert.equal(readBaseline(dir, rel)?.entries?.["size.overBudget"]?.owner, "platform");
+
+  // a later write that touches nothing keeps the explanation on the metric it belongs to
+  assert.equal(write({ today: "2026-09-17" }).ok, true);
+  assert.equal(
+    readBaseline(dir, rel)?.entries?.["size.overBudget"]?.reason,
+    "phase 8 splits these two",
+    "an unrelated write does not erase another metric's reason",
+  );
+
+  // the debt is paid: the reason for it goes with it rather than covering the next rise
+  writeFileSync(join(dir, "src/b.ts"), LONG(10));
+  assert.equal(write({ today: "2026-09-18" }).ok, true);
+  assert.equal(readBaseline(dir, rel)?.metrics["size.overBudget"], 1);
+  assert.equal(readBaseline(dir, rel)?.entries?.["size.overBudget"], undefined);
+});
+
+test("a floor written under an older definition of a metric is reported, never compared", () => {
+  const dir = tempRepo("ratchet-version", { "package.json": PKG, "src/a.ts": LONG(310) });
+  const config = DEFAULT_CONFIG;
+  const rel = "scripts/ci/standards-baseline.json";
+  writeBaseline({
+    repoDir: dir,
+    rel,
+    measurements: measure(dir, null),
+    config,
+    previous: null,
+    today: "2026-09-16",
+  });
+  const baseline = readBaseline(dir, rel);
+  assert.equal(baseline?.versions?.["size.overBudget"], 1, "the definition is recorded");
+
+  // the control in the clean direction: the same definition still compares
+  assert.equal(
+    compare(measure(dir, baseline), baseline, config).find((v) => v.metric === "size.overBudget")
+      ?.status,
+    "ok",
+  );
+
+  // and in the other: the probe now counts something else, so the floor answers another question
+  const redefined = BUILTIN_PROBES.map((p) =>
+    p.metric === "size.overBudget" ? { ...p, version: 2 } : p,
+  );
+  const measured = measureAll(redefined, buildContext(dir), { config, range: "" }, baseline);
+  const v = compare(measured, baseline, config).find((x) => x.metric === "size.overBudget");
+  assert.equal(v?.status, "redefined");
+  assert.match(v?.messages.join("\n") || "", /written under definition 1 .* definition 2/);
+  assert.equal(
+    failed(compare(measured, baseline, config)),
+    true,
+    "the run is red until rebaselined",
+  );
+
+  // a baseline from before the field exists is taken at its word rather than declared stale
+  const older = { ...baseline, versions: undefined };
+  assert.equal(
+    compare(measured, older, config).find((x) => x.metric === "size.overBudget")?.status,
+    "ok",
+  );
+});
+
+test("a probe that stands in for something it cannot measure says so where the number is read", () => {
+  const proxies = BUILTIN_PROBES.filter((p) => p.approximates);
+  assert.ok(proxies.length >= 2, "docs.behindCode and startup.eagerModules at least");
+  for (const p of proxies)
+    assert.match(
+      String(p.approximates),
+      /stands in for|instead|it is wrong|belong to the machine/,
+      `${p.metric}: the field says what the count is not, or it is decoration`,
+    );
+
+  const dir = tempRepo("ratchet-proxy", {
+    "package.json": PKG,
+    "docs/x.md": "---\ntitle: x\nsource_truth: [src/a.ts]\nlast_verified: '2020-01-01'\n---\n# x\n",
+    "src/a.ts": "export const x = 1;\n",
+  });
+  const v = compare(measure(dir, null), null, DEFAULT_CONFIG);
+  const behind = v.find((x) => x.metric === "docs.behindCode");
+  assert.match(String(behind?.approximates), /never as a verdict/);
+  assert.equal(
+    v.find((x) => x.metric === "types.escapes")?.approximates,
+    undefined,
+    "a probe that measures what it says carries none",
+  );
 });

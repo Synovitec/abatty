@@ -9,6 +9,7 @@
  * Hand-written on purpose: the package has no runtime dependency, and the subset of the
  * protocol a tool server needs is small (initialize, ping, tools/list, tools/call).
  */
+import { agentFinding, agentFindings } from "../rules/agent.mjs";
 import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import { dirname, join, resolve } from "node:path";
@@ -133,6 +134,17 @@ export function tools(repoDir) {
       },
     },
     {
+      name: "findings",
+      description:
+        "Every finding an agent should act on, shaped for one: where it is, what edit to make, a verify command whose exit code proves the edit worked, and why the rule exists. Missing and partial only; what already holds is not returned.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        const catalog = await loadCatalog(dir);
+        const findings = runCatalog(buildContext(dir), catalog.rules);
+        return { findings: agentFindings(findings, catalog.rules) };
+      },
+    },
+    {
       name: "report",
       description:
         "The newest report on disk (.abatty/reports/latest.json), or null when the repository was never measured.",
@@ -154,9 +166,10 @@ export function tools(repoDir) {
         const rule = ruleById(String(a.id || "").toUpperCase(), catalog.rules);
         if (!rule) throw new Error(`no rule ${a.id}; abatty rules lists the catalog`);
         const finding = runCatalog(buildContext(dir), [rule])[0];
+        if (!finding) throw new Error(`${rule.id} produced no finding`);
         const { check, ...data } = rule;
         void check;
-        return { rule: data, finding };
+        return { rule: data, finding, agent: agentFinding(finding, rule) };
       },
     },
   ];

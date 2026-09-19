@@ -1,4 +1,13 @@
 /**
+ * The executable bit on a file git must be able to run. git skips a hook that is not executable
+ * and says so only as a hint, so a pre-push hook written 644 means the gate never runs and a red
+ * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
+ * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
+ * the file may not be tracked yet.
+ * @param {string} target
+ */
+export function makeExecutable(target: string): void;
+/**
  * @param {object} o
  * @param {string} o.repoDir
  * @param {import("../presets/index.mjs").Preset} o.preset

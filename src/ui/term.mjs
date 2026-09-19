@@ -4,7 +4,20 @@
  * so a log file or a pipe reads the same words without the escapes.
  */
 
+/**
+ * `--plain` asked for explicitly. It is a variable rather than an argument to every helper
+ * because the alternative is threading a flag through every screen in the package, and a screen
+ * that forgot to thread it would be the one a script was parsing.
+ */
+let plain = false;
+
+/** Ask for plain output: no colour, and glyphs a byte-oriented reader can match on. @param {boolean} on */
+export function setPlain(on) {
+  plain = Boolean(on);
+}
+
 const enabled = () =>
+  !plain &&
   Boolean(process.stdout.isTTY) &&
   !process.env.NO_COLOR &&
   !process.env.CI &&
@@ -22,15 +35,36 @@ export const magenta = wrap(35, 39);
 export const cyan = wrap(36, 39);
 export const gray = wrap(90, 39);
 
+/**
+ * The glyphs, as getters so `--plain` reaches them after this module was loaded. In plain mode
+ * they are ASCII: a pipeline that greps for a tick mark in a UTF-8 terminal and finds nothing in
+ * a log file is the failure this avoids.
+ */
 export const glyph = {
-  ok: green("✓"),
-  fail: red("✗"),
-  skip: gray("·"),
-  defer: yellow("↷"),
-  run: cyan("▶"),
-  warn: yellow("!"),
-  dot: gray("•"),
-  arrow: gray("→"),
+  get ok() {
+    return plain ? "[ok]" : green("✓");
+  },
+  get fail() {
+    return plain ? "[FAIL]" : red("✗");
+  },
+  get skip() {
+    return plain ? "[skip]" : gray("·");
+  },
+  get defer() {
+    return plain ? "[defer]" : yellow("↷");
+  },
+  get run() {
+    return plain ? ">" : cyan("▶");
+  },
+  get warn() {
+    return plain ? "[!]" : yellow("!");
+  },
+  get dot() {
+    return plain ? "*" : gray("•");
+  },
+  get arrow() {
+    return plain ? "->" : gray("→");
+  },
 };
 
 /** A status word, coloured the way every screen colours it. @param {string} s */

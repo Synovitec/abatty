@@ -90,7 +90,7 @@ export function scanPullRequests(repoDir, limit = 300) {
   const r = spawnSync(
     "gh",
     ["pr", "list", "--state", "all", "--limit", String(limit), "--json", "number,title,body"],
-    { cwd: repoDir, encoding: "utf8", shell: true },
+    { cwd: repoDir, encoding: "utf8" },
   );
   if (r.status !== 0) return { ok: false, findings: [], error: (r.stderr || "gh failed").trim() };
   /** @type {ScrubFinding[]} */

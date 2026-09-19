@@ -401,3 +401,76 @@ blocked phases in `docs/ADOPTION_STATE.json`, then `git log --oneline main..adop
 Run the full gate once yourself (`npm run gate`, with Docker). Then merge, or open the PR, or
 send the branch back for another night with the decisions taken. Nothing the run did is on
 `main` until you do that.
+
+## 9. The threat model, published rather than implied
+
+A sandbox nobody can describe is a claim. This section says what the boundary holds, what it does
+not, and what is left to the layers above and below it, so a reader can decide whether it is
+enough for their repository rather than trusting the word "sandbox".
+
+### 9.1 What is being defended against
+
+Three things, in the order they are likely:
+
+1. **The model doing something wrong by accident.** A command that was right for another
+   repository, a path that resolved somewhere unexpected, a script with an argument in the wrong
+   place. This is the common case and the cheapest to contain.
+2. **The repository telling the model to do something wrong.** Text in a file an agent reads is an
+   instruction in exactly the way a prompt is, and a repository is a place other people can write:
+   a dependency's README, a generated file, a pull request's description pulled into the tree. The
+   pre-flight scans for this and refuses the night rather than filtering it.
+3. **A command reaching outside the work.** Whatever the command was called, in whatever shell,
+   through whatever script: the guard is a text match and text matching is defeated by a rename.
+
+### 9.2 What the boundary is
+
+Per night, built before the first session and then proven:
+
+| Region                                         | Access     | Why                                                        |
+| ---------------------------------------------- | ---------- | ---------------------------------------------------------- |
+| The repository tree                            | read-write | It is the work.                                            |
+| `.claude/` and the root config                 | read-only  | The harness may not rewrite the rules it runs under.       |
+| The protected paths the config names           | read-only  | What the repository says is not the agent's to change.     |
+| `.claude/night/` (denials, receipts, counters) | read-write | The record of the night has to be writable to be a record. |
+| The agent's own folder in the home directory   | read-write | Its session state.                                         |
+| Everything else on the machine                 | no write   | Outside the work.                                          |
+
+Drivers: `bwrap` on Linux, `sandbox-exec` on macOS, a container where an image is named. `auto`
+takes what the machine has and says loudly when it finds nothing; `required` refuses the night
+without one; `off` is a deliberate statement, recorded as such.
+
+### 9.3 How the boundary is proven
+
+A Node process inside it tries, and the night refuses unless every answer is the expected one:
+write into the tree (must succeed), write into the night's log folder (must succeed), write beside
+the runtime outside the work (must fail), write into each read-only path (must fail). A read-only
+file is opened for append and closed, which changes nothing when it is refused and proves the hole
+when it is not.
+
+**A sandbox that is present but does not hold refuses the night**, because a night that claims a
+boundary it lacks is worse than one that says it has none.
+
+### 9.4 What it does not contain
+
+Stated plainly, because these are the reasons to decide it is not enough:
+
+- **The network.** The agent reaches whatever the machine reaches. A model that can read the tree
+  and make a request can move the tree's content off the machine, and no filesystem boundary
+  stops it. Run the night on a machine whose egress you are willing to give it.
+- **Credentials the environment already holds.** A token in the environment, a configured
+  credential helper, an ssh agent: inside the boundary, all of it is in scope.
+- **What the gate allows.** The gate is the stop, and a change that passes every check is a change
+  the night may push. The boundary is about reach, not about judgement.
+- **The model's own behaviour.** Nothing here makes the model correct. It makes the consequences
+  of it being wrong recoverable and visible.
+- **A driver that is absent.** In `auto` with no driver on the machine, there is no OS boundary at
+  all: the guard's text matching is what remains, and the night says so in its first lines rather
+  than implying more.
+
+### 9.5 What is left to the layers around it
+
+- **Above:** the guard (a dangerous command refused before it runs), the Stop gate (done only when
+  the gate says so), the pre-flight's trust scan, and the controls, which must have been watched
+  going red before a night starts at all.
+- **Below:** the machine. Run a night on a machine you would be willing to hand to the repository
+  it is working on, because for the length of the night that is what you have done.

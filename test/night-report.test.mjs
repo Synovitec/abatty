@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
+import { recordControls } from "./night-helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
 import { distil, gatherNight, nightDates, renderNightReport } from "../src/night/report.mjs";
 
@@ -20,6 +21,8 @@ function nightRepo(name) {
   // Two phases: each session leaves the tree dirty once, and twice is a recurrence.
   cfg.phases = [11, 12];
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
+  // A night is refused until the gate steps have been watched failing, so the fixture records it.
+  recordControls(dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");
   return dir;

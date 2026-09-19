@@ -33,6 +33,7 @@ import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
+import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
@@ -79,7 +80,7 @@ const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(order
  * the file may not be tracked yet.
  * @param {string} target
  */
-function makeExecutable(target) {
+export function makeExecutable(target) {
   try {
     chmodSync(target, 0o755);
   } catch {
@@ -143,6 +144,14 @@ export function initRepo(o) {
   // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
   for (const f of walk(join(TEMPLATES, "harness", "hooks")))
     put(`.claude/hooks/${f}`, tpl(`harness/hooks/${f}`));
+  // The bypass layer outside the agent: a `git` the shell finds before the real one, so the two
+  // things the guard refuses inside the agent's session are refused in a terminal and a script
+  // too. shim.mjs is read by node, never executed, so only the wrappers carry the mode.
+  for (const f of SHIM_FILES)
+    put(`${SHIM_DIR}/${f}`, tpl(`harness/bin/${f}`), {
+      merge: false,
+      executable: f !== "shim.mjs",
+    });
   // The skill, in the open agent-skills format, at every configured adapter's skills folder.
   const skillText = tpl("skills/adopt-standards/SKILL.md");
   const skillAdapters = configuredAdapters(
@@ -284,11 +293,13 @@ export function initRepo(o) {
   const configured = configuredAdapters(o.agents?.length ? { agents: o.agents } : merged);
   const adapters = configured.adapters.length ? configured.adapters : [PRIMARY];
   const others = adapters.filter((a) => a.id !== PRIMARY.id);
+  // The interoperable file is written always, not only when another adapter asked for it. It
+  // costs one file, and it is the only way an agent this repository never configured can read the
+  // context; the primary's file imports it so there is one source rather than two copies that
+  // drift. A rule that reads the context follows that import.
   const context = tpl("harness/agent-context.md.template");
-  if (others.some((a) => a.contextFile === "AGENTS.md")) {
-    put("AGENTS.md", context);
-    if (adapters.some((a) => a.id === PRIMARY.id)) put(PRIMARY.contextFile, "@AGENTS.md\n");
-  } else put(PRIMARY.contextFile, context);
+  put("AGENTS.md", context);
+  put(PRIMARY.contextFile, "@AGENTS.md\n");
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
       for (const r of rules)

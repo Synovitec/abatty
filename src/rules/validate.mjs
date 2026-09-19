@@ -5,6 +5,31 @@
 
 /** @typedef {import("./index.mjs").Rule} Rule */
 
+const LADDER = ["prose", "review", "ratchet", "hard"];
+
+/**
+ * A ceiling is a claim that no machine can go further, so it carries its reason and it sits at
+ * or above where the rule already is: a ceiling below the current enforcement would say the rule
+ * is held harder than is possible, which is a typo, not a limit.
+ * @param {Rule} r @param {string} where @returns {string[]}
+ */
+function ceilingProblems(r, where) {
+  const c = r.ceiling;
+  if (c === undefined) return [];
+  if (!c || typeof c !== "object") return [`${where}: ceiling must be { at, why }`];
+  /** @type {string[]} */
+  const problems = [];
+  if (!LADDER.includes(c.at))
+    problems.push(`${where}: ceiling.at must be hard|ratchet|review|prose`);
+  if (typeof c.why !== "string" || !c.why)
+    problems.push(`${where}: ceiling.why must say what a machine cannot see`);
+  if (LADDER.includes(c.at) && LADDER.indexOf(c.at) < LADDER.indexOf(r.enforcement))
+    problems.push(
+      `${where}: ceiling ${c.at} is below the enforcement ${r.enforcement} this rule already has`,
+    );
+  return problems;
+}
+
 /** The problems a rule list has, as messages; none for a well-formed catalog. @param {Rule[]} list */
 export function validate(list) {
   /** @type {string[]} */
@@ -37,6 +62,7 @@ export function validate(list) {
         problems.push(`${where}: stages must be an array of design, build, run`);
       if (r.standard && !Array.isArray(r.standard))
         problems.push(`${where}: standard must be an array`);
+      problems.push(...ceilingProblems(r, where));
     }
   }
   return problems;

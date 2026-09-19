@@ -29,16 +29,41 @@ export const SHAPES = [
   ["payment key", /\b[sr]k_(?:live|test)_[A-Za-z0-9]{20,}\b/],
   ["chat token", /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/],
   ["signed web token", /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/],
+  ["cloud API key", /\bAIza[0-9A-Za-z_\-]{35}\b/],
+  ["package registry token", /\bnpm_[A-Za-z0-9]{36}\b/],
+  ["mail provider key", /\bSG\.[A-Za-z0-9_\-]{16,}\.[A-Za-z0-9_\-]{16,}\b/],
+  // The password inside a connection string: the capture is the password alone, so the
+  // placeholder rules below judge `${PGPASSWORD}` and `pass` the way they judge any other value.
+  [
+    "a connection string carrying a password",
+    /\b[a-z][a-z0-9+.\-]*:\/\/([^\s:/@]+):([^\s:/@]{8,})@/,
+  ],
   [
     "a long literal assigned to a secret-like name",
-    /\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|password|passwd)\b\s*[:=]\s*["'`]([A-Za-z0-9+/=_\-.]{16,})["'`]/i,
+    /\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|account[_-]?key|access[_-]?token|auth[_-]?token|password|passwd)\b\s*[:=]\s*["'`]([A-Za-z0-9+/=_\-.]{16,})["'`]/i,
+  ],
+  // The same name, UNQUOTED: a .env file, an npmrc, a connection string's own segments. Without
+  // this the most common shape of all was the one shape the scan could not see.
+  [
+    "a long value assigned to a secret-like name",
+    /\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|account[_-]?key|access[_-]?token|auth[_-]?token|authToken|_authToken|password|passwd)\b\s*[:=]\s*([A-Za-z0-9+/=_\-.]{16,})\s*[;,]?\s*$/im,
   ],
 ];
 
 /** Placeholders and samples nobody would use: a value that is only x's, stars or one digit, or one that starts like a template. */
 const PLACEHOLDER_WHOLE = /^(?:x+|\*+|0+|1+)$/i;
 const PLACEHOLDER_START =
-  /^(?:<[^>]+>|\$\{|\{\{|your[-_ ]|change[-_ ]?me|example|placeholder|dummy|sample|test|redacted)/i;
+  /^(?:<[^>]+>|\$\{|\$[A-Za-z_]|\{\{|your[-_ ]|change[-_ ]?me|example|placeholder|dummy|sample|test|redacted)/i;
+/**
+ * A throwaway credential in a connection string: the password is the user name, or it is one of
+ * the values every service container in every pipeline uses. Flagging these is how a scan trains
+ * its reader to scroll past it, and the day a real one appears they scroll past that too.
+ */
+const THROWAWAY = /^(?:postgres|mysql|mariadb|mongo|redis|root|admin|guest|test|user|example)$/i;
+
+/** A value that is an expression, not a literal: the correct pattern must never be a finding. */
+const EXPRESSION =
+  /^(?:process\.env|import\.meta|os\.environ|System\.getenv|Deno\.env|config\.|env\.|secrets\.|vars\.)/i;
 
 /** Scan one text. @param {string} path @param {string} text */
 export function scanText(path, text) {
@@ -51,8 +76,13 @@ export function scanText(path, text) {
     for (const [kind, re] of SHAPES) {
       const m = line.match(re);
       if (!m) continue;
-      const value = m[1] || m[0];
+      // The connection-string shape captures the user and the password; everything else captures
+      // the value alone in group 1, or matches wholesale.
+      const isUrl = kind === "a connection string carrying a password";
+      const value = isUrl ? String(m[2]) : m[1] || m[0];
+      if (isUrl && (value === m[1] || THROWAWAY.test(value))) continue;
       if (PLACEHOLDER_WHOLE.test(value) || PLACEHOLDER_START.test(value)) continue;
+      if (EXPRESSION.test(value)) continue;
       out.push({ path, line: i + 1, kind, sample: value.slice(0, 6) + "…" + value.slice(-3) });
       break;
     }
@@ -111,30 +141,4 @@ export function scanSecrets(repoDir, o = {}) {
     }
   }
   return { scanned, findings };
-}
-
-/**
- * The audit, as the gate runs it: `npm audit --audit-level=high` when a lockfile exists. No
- * network is a deferral to CI, said loudly, never a red gate and never a green one.
- * @param {string} repoDir @param {(cmd: string, args: string[]) => { status: number | null, output: string }} run
- * @returns {{ outcome: "ok" | "failed" | "skipped" | "deferred", detail: string }}
- */
-export function auditOutcome(repoDir, run) {
-  if (
-    !existsSync(join(repoDir, "package-lock.json")) &&
-    !existsSync(join(repoDir, "npm-shrinkwrap.json"))
-  )
-    return { outcome: "skipped", detail: "no package-lock.json (an npm audit needs one)" };
-  const r = run("npm", ["audit", "--audit-level=high", "--omit=dev"]);
-  if (r.status === 0) return { outcome: "ok", detail: "" };
-  if (
-    /ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ETIMEDOUT|ENETUNREACH|network|registry.*(unreachable|offline)/i.test(
-      r.output,
-    )
-  )
-    return { outcome: "deferred", detail: "the registry is unreachable; CI runs the audit" };
-  return {
-    outcome: "failed",
-    detail: r.output.split(/\r?\n/).filter(Boolean).slice(-8).join("\n"),
-  };
 }

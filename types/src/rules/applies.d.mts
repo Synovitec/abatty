@@ -21,6 +21,13 @@ export const SERVICE: Applies;
 export const TEXT: Applies;
 /** @type {Applies} */
 export const PWA: Applies;
+/**
+ * A repository an agent works in unattended: the harness is installed, so the rules about the
+ * sandbox, the permission surface and the trust boundary have a subject. A repository nobody
+ * points a model at overnight is not failing them; it is not running them.
+ * @type {Applies}
+ */
+export const HARNESSED: Applies;
 export type RepoContext = import("./context.mjs").RepoContext;
 export type Applies = {
     when: string;

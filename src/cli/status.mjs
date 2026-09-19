@@ -124,7 +124,7 @@ export async function statusCommand(c, preset) {
 export function enforcedLine(e) {
   if (!e || e.share === null) return `  ${t.gray("enforced: nothing present yet")}`;
   const colour = e.share >= 90 ? t.green : e.share >= 70 ? t.yellow : t.red;
-  return `  ${t.bar(e.share)}  ${t.bold(colour(e.share + "%"))} ${t.gray(`of ${e.total} present rules held by a machine · ${e.hard} hard · ${e.ratchet} ratchet · ${e.review} review · ${e.prose} prose${e.promotable.length ? " · next up a level: " + e.promotable.slice(0, 3).join(", ") : ""}`)}`;
+  return `  ${t.bar(e.share)}  ${t.bold(colour(e.share + "%"))} ${t.gray(`of ${e.total} present rules held by a machine · ${e.hard} hard · ${e.ratchet} ratchet · ${e.review} review · ${e.prose} prose${e.promotable.length ? " · next up a level: " + e.promotable.slice(0, 3).join(", ") : ""}${(e.atCeiling || []).length ? " · " + (e.atCeiling || []).length + " at the machine ceiling" : ""}`)}`;
 }
 
 /** Phase "0" sorts first, "A.1 / 0" by its number, "-" last. @param {string} p */

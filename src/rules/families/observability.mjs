@@ -60,6 +60,10 @@ export const rules = [
   },
   {
     id: "OBS-REDACTION",
+    ceiling: {
+      at: "review",
+      why: "A machine can see that the logger redacts by field path and can list the paths. Whether that list names every field that would hurt if it were logged is a judgement about this system's data, and the field nobody thought of is invisible to a scan.",
+    },
     family: "Observability",
     title: "Redaction by field path at the logger, never at the call sites",
     standard: ["OBS.1"],
@@ -119,6 +123,10 @@ export const rules = [
   },
   {
     id: "OBS-SIGTERM",
+    ceiling: {
+      at: "review",
+      why: "A machine can see that a handler is registered and that the server is asked to close. Whether the work in flight actually finishes before the process goes is proven by sending the signal under load and watching, which is a drill, not a scan.",
+    },
     family: "Observability",
     title: "SIGTERM drains the work in flight; it never exits on the spot",
     standard: ["OBS.1"],

@@ -156,8 +156,8 @@ when two readings of the request lead to materially different work.
   night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
 - The `node` preset is proven by this repository as of 2026-09-18; `astro`, `python` and `docs`
   are still proven by nobody.
-- `abatty help` lists fewer commands than the README documents, and the README claims
-  `abatty ci --provider github` writes a pull-request template, which no code does.
+- `abatty help` lists fewer commands than the README documents. The pull-request template claim
+  is no longer a gap: `abatty ci --provider github` writes one (`src/cli/ci.mjs`).
 - The `lint` step is skipped here: this repository has no `lint` script, because it has not
   adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
   gap analysis names it, so it is visible rather than silently green.

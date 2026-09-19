@@ -15,19 +15,6 @@ export function scanSecrets(repoDir: string, o?: {
     scanned: number;
     findings: SecretFinding[];
 };
-/**
- * The audit, as the gate runs it: `npm audit --audit-level=high` when a lockfile exists. No
- * network is a deferral to CI, said loudly, never a red gate and never a green one.
- * @param {string} repoDir @param {(cmd: string, args: string[]) => { status: number | null, output: string }} run
- * @returns {{ outcome: "ok" | "failed" | "skipped" | "deferred", detail: string }}
- */
-export function auditOutcome(repoDir: string, run: (cmd: string, args: string[]) => {
-    status: number | null;
-    output: string;
-}): {
-    outcome: "ok" | "failed" | "skipped" | "deferred";
-    detail: string;
-};
 /** @type {[kind: string, re: RegExp][]} */
 export const SHAPES: [kind: string, re: RegExp][];
 export type SecretFinding = {
