@@ -7,6 +7,25 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The cold start is a number the ratchet holds** (C32). `startup.eagerModules` counts the
+  modules the entry point parses before it knows which command was asked for - the floor under
+  every command in the inner loop - and it may only fall. It lands at **3**, from 89 before the
+  commands were split. The metric is the module graph rather than the milliseconds on purpose: a
+  timing belongs to the machine that ran it, and a ratchet on a number that moves on its own is a
+  ratchet nobody trusts. Two control cases hold the distinction the whole split depends on: an
+  eager graph is counted, and the same graph behind an `await import()` costs nothing.
+
+### Changed
+
+- **The suite is 81 s, from 225 s** (C43, in part). The runner already parallelises files, so the
+  suite was never serialised work - it was one file: `night.test.mjs` was 151 s of the 225 s, and
+  nothing else could finish before it. It is now three files that run at once, split by what each
+  group proves (a night that runs, the aborts and refusals, the spend and the resume), with the
+  fixture they share in `test/night-helpers.mjs`. The number to watch is the longest file, now
+  70 s. What is left of C43 is the gate's own steps, which still run one after another.
+
+### Added
+
 - **What this change introduced, before what the repository already carried** (C2). The ratchet
   reported every finding in one list, so an author reading a red gate could not tell the two lines
   they added from the four hundred the repository has carried for a year - and a reader who cannot

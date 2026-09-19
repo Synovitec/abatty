@@ -20,6 +20,7 @@ import { probes as sizeProbes } from "./probes/size.mjs";
 import { probes as docsProbes } from "./probes/docs.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
+import { probes as startupProbes } from "./probes/startup.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
@@ -75,9 +76,13 @@ export { readBaseline, writeBaseline } from "./baseline.mjs";
  */
 
 /** @type {Probe[]} */
-export const BUILTIN_PROBES = [...sizeProbes, ...codeProbes, ...docsProbes, ...changeProbes].map(
-  (p) => ({ ...p, source: "abatty" }),
-);
+export const BUILTIN_PROBES = [
+  ...sizeProbes,
+  ...codeProbes,
+  ...docsProbes,
+  ...changeProbes,
+  ...startupProbes,
+].map((p) => ({ ...p, source: "abatty" }));
 
 /**
  * Validate a probe's shape. Returns the problems; an empty list is a valid probe.

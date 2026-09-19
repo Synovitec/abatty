@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-18",
+  "measuredAt": "2026-09-19",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
   "score": 98,
   "hard": [
@@ -29,6 +29,7 @@
     "size.excessCode": 0,
     "size.overBudget": 0,
     "size.overRaw": 0,
+    "startup.eagerModules": 3,
     "types.escapes": 7,
     "valid.rawEnv": 7
   },
@@ -36,17 +37,22 @@
     "code.barrels": 7,
     "context.overCap": 1,
     "docs.behindCode": 5,
-    "docs.citations": 33,
+    "docs.citations": 59,
     "docs.danglingSource": 10,
-    "docs.frontMatter": 23,
-    "docs.indexDrift": 22,
-    "size.excessCode": 81,
-    "size.overBudget": 81,
-    "size.overRaw": 93,
-    "types.escapes": 81,
-    "valid.rawEnv": 80
+    "docs.frontMatter": 28,
+    "docs.indexDrift": 27,
+    "size.excessCode": 94,
+    "size.overBudget": 94,
+    "size.overRaw": 107,
+    "types.escapes": 94,
+    "valid.rawEnv": 93
   },
   "debt": {
+    "startup.eagerModules": {
+      "src/cli/exit.mjs": 1,
+      "src/core/repo.mjs": 1,
+      "src/ui/term.mjs": 1
+    },
     "types.escapes": {
       "src/ratchet/probes/code.mjs": 4,
       "src/rules/families/types.mjs": 3
@@ -58,8 +64,8 @@
     }
   },
   "lastReason": {
-    "at": "2026-09-15",
-    "reason": "the standard's documents joined docs/ (STANDARDS_PROGRESS 2026-09-15)",
+    "at": "2026-09-19",
+    "reason": "the cold-start probe lands with today's graph as its floor: three modules parsed before the command is known",
     "rises": []
   }
 }

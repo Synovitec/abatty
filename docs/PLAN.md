@@ -136,11 +136,11 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 
 | ID  | Change                                                                              | State   | Size |
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
-| C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | open    | M    |
+| C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | partial | M    |
 | C44 | Measurement is cached on the git tree of the paths a rule reads                     | open    | M    |
 | C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | open    | M    |
 | C47 | The first run needs no configuration, no `--stack` and no profile                   | open    | S    |
-| C32 | The latency tiers become a probe: a regression in cold start is a finding           | open    | S    |
+| C32 | The latency tiers become a probe: a regression in cold start is a finding           | landed  | S    |
 | C9  | The context-file template ships near-empty by default                               | open    | S    |
 | C8  | `init` always writes the interoperable context file, and `agents` reports the cover | partial | S    |
 

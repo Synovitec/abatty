@@ -184,3 +184,18 @@ The rules read the tools per pack; Python is the first pack beyond JavaScript. T
 ### 2026-09-15 - Distribution
 
 The version pinned in the config, the two-minute README. Tests 135 -> 136.
+
+### 2026-09-19 - The cold start becomes a number
+
+`startup.eagerModules` counts the modules the entry point parses before it knows which command
+was asked for. It lands at **3** (`src/cli/exit.mjs`, `src/core/repo.mjs`, `src/ui/term.mjs`),
+which is the floor from today; it was 89 before the commands were split, and the three that are
+left are each needed before the dispatch.
+
+The metric is the graph rather than the milliseconds on purpose. A timing belongs to the machine
+that ran it - a busy laptop and a cold runner disagree by a factor of three - and a ratchet on a
+number that moves on its own is a ratchet nobody trusts. The count of modules is the cause, it is
+identical on every machine, and it only moves when somebody adds an import.
+
+The suite went from 225 s to 81 s in the same change, by splitting the one file that was 151 s of
+it into three that run at once. The number to watch is the longest file, now 70 s.
