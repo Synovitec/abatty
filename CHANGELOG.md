@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty validate`: which rules precede the commits that fix things, here** (C4). Every rule
+  carries a `why`, and a `why` is an argument rather than evidence. This asks the only question a
+  repository can answer on its own: do the files that break a rule turn out to be the files
+  somebody later had to fix? It reads the history for fixing commits and compares the fix rate
+  among the files each probe reports against the files it does not. On this repository the honest
+  answer today is **too few files to say**, for every probe, and that is what it prints: below a
+  sample floor the lift is `null` rather than `0`, because zero reads as "no effect" and the truth
+  is "no idea". Every number carries what it is not, on the same screen: a correlation and not a
+  cause; churn printed beside every rate rather than removed, since a rule that merely tracks how
+  often a file changes would look excellent; a tree read as it is today against fixes from the
+  whole range, an error that runs one way and flatters nothing; and one repository, named.
+
 - **The context file grows only from a lesson** (C10). A context file grows one reasonable line at
   a time until it hits the cap and stops being read whole, and every one of those lines was
   reasonable to whoever added it. The discipline that keeps it short is not a budget, it is a

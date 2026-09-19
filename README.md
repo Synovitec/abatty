@@ -231,6 +231,20 @@ catalog that touches them at all. Every remaining row says what the named rules 
 they do not, and how each reads today. A mapping is not a conformity assessment and is not legal
 advice, and the document says so three times.
 
+`abatty validate` asks the question a `why` cannot answer: do the files that break each rule turn
+out to be the files somebody later had to fix, **in this repository**? It reads the history for
+commits that fix something, and compares the fix rate among the files a probe reports against the
+files it does not. On this repository the honest answer today is _too few files to say_ for every
+probe, and that is what it prints: a tool that produced a confident number from two files would
+be worse than one that produced none.
+
+Every number comes with what it is not. It is a correlation, never a cause. Churn is printed
+beside every rate rather than removed, because a rule that merely tracks how often a file changes
+will look excellent and the commits-per-file column is where you see that happening. The tree is
+read as it is today against fixes from the whole range, so a file that was fixed and then cleaned
+up counts against its rule - an error that runs one way and flatters nothing. And it is one
+repository, which the reading names.
+
 ## What `init` writes
 
 | Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |

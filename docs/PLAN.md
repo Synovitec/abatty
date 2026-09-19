@@ -233,7 +233,7 @@ already be finished.
 | C36 | The record is scoped to what the compliance ring cannot produce                | landed | S    |
 | C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed | L    |
 | C27 | An evidence export fit for technical documentation                             | landed | M    |
-| C4  | `abatty validate`: which rules precede defect-fixing commits here              | open   | L    |
+| C4  | `abatty validate`: which rules precede defect-fixing commits here              | landed | L    |
 | C19 | The harness reports its own token footprint per session                        | landed | M    |
 | C10 | The context file grows only from the night's lessons                           | landed | M    |
 | C20 | The hosted service records adoption events                                     | open   | M    |
@@ -305,7 +305,7 @@ files; `D` is `DESIGN.md`.
 | C1  | -    | landed   | 07   | C26 | 6    | landed  | 08   |
 | C2  | 2    | open     | 07   | C27 | 6    | landed  | 08   |
 | C3  | 5    | landed   | 07   | C28 | -    | landed  | 08   |
-| C4  | 6    | open     | 07   | C29 | 1    | open    | 08   |
+| C4  | 6    | landed   | 07   | C29 | 1    | open    | 08   |
 | C5  | 5    | landed   | 07   | C30 | 1    | partial | 08   |
 | C6  | 5    | landed   | 07   | C31 | 2    | open    | 09   |
 | C7  | -    | landed   | 07   | C32 | 3    | open    | 09   |
