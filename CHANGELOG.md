@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The night is measured on a surface it was not pointed at** (C11). A night is told which rules
+  to work on and then measured on those rules, which is marking your own paper: an agent that
+  fixes exactly what it was aimed at scores perfectly and may have learned nothing about the
+  standard. A deterministic, date-seeded slice of the checkable surface is withheld from the
+  instruction, and `abatty night-report` prints both sides and the gap. Work that generalised
+  moves both; work fitted to the list moves one, and at twenty points or more the report says so
+  in those words. A rule that does not apply counts on neither side, and a slice too small to read
+  says that rather than producing a number.
+
+  What "withheld" honestly means, and the document says it: withheld from the instruction, not
+  hidden from the repository. The tree is readable. The claim is not containment - it is that the
+  night's own instructions never name these rules, so nothing aims at them.
+
+### Added
+
 - **The bypass rate, in the report and in the generated pipeline** (C25). The guard refuses a
   bypass at the moment it is attempted, which leaves the one that happened where the guard was
   not: a machine whose hooks were never installed, a commit made before the harness landed, a

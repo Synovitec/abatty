@@ -174,7 +174,7 @@ Evidence: `09` F31 · `07` F6 · `DESIGN.md` §3.2, §3.3, §4.1, §4.3
 | C23 | A published threat model for the sandbox: what it holds and what it does not      | landed  | S    |
 | C21 | A rule family for agent security: sandbox, permissions, hooks, the trust boundary | landed  | M    |
 | C12 | `doctor --controls` becomes a precondition of the first night, not a suggestion   | landed  | S    |
-| C11 | The night withholds a slice of the checkable surface and evaluates on it after    | open    | M    |
+| C11 | The night withholds a slice of the checkable surface and evaluates on it after    | landed  | M    |
 | C24 | The shim layer, so a bypass is refused outside the agent as well as inside it     | partial | M    |
 | C25 | Generated CI detects a bypassed commit; the report carries the bypass rate        | landed  | S    |
 
