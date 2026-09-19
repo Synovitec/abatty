@@ -19,6 +19,7 @@ import { spawnSync } from "node:child_process";
 import { git, hasScript, readPackage } from "./repo.mjs";
 import { auditOutcome, scanSecrets } from "./secrets.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
+import { affectedWorkspaces } from "../presets/workspaces.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -280,13 +281,26 @@ export function runGate(o) {
     return true;
   };
 
+  // Which inputs changed is half the question; which workspaces can observe them is the other,
+  // and a path filter cannot answer it. Without this a change under a shared package left the
+  // application that imports it ungated, and said nothing.
+  const affected = affectedWorkspaces(repoDir, o.workspaces || [], selection);
+  if (affected.everything) log(`\n· every workspace is selected: ${affected.everything}`);
+
   /** The suites of a preset, path-aware under a folder. @param {import("../presets/index.mjs").Preset} p @param {string} under */
   const suites = (p, under) => {
     for (const suite of p.gate.suites) {
       const name = prefix + suite.name;
-      const hit = selection.some(
+      const byPath = selection.some(
         (f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)),
       );
+      const ws = under.replace(/\/$/, "");
+      const byGraph = Boolean(ws) && !byPath && affected.selected.has(ws);
+      if (byGraph)
+        log(
+          `\n· ${name}: selected by the workspace graph${affected.viaGraph.get(ws) ? ` · ${affected.viaGraph.get(ws)} changed and ${ws} depends on it` : ""}`,
+        );
+      const hit = byPath || byGraph;
       if (!hit) {
         events.push({
           label: name,

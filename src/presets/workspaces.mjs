@@ -77,3 +77,112 @@ export function detectWorkspaces(repoDir, config) {
     };
   });
 }
+
+/**
+ * Which workspace a repository-relative path belongs to, or null for the root.
+ * @param {string} file @param {{ path: string }[]} workspaces
+ */
+function ownerOf(file, workspaces) {
+  let best = null;
+  for (const w of workspaces)
+    if (file === w.path || file.startsWith(w.path + "/"))
+      if (!best || w.path.length > best.path.length) best = w;
+  return best;
+}
+
+/**
+ * The internal dependency graph: per workspace, the workspaces it names in its own manifest.
+ * A name that is not another workspace's name is a registry dependency and is not an edge.
+ * The name is read from each workspace's own manifest rather than taken from the caller, so the
+ * graph is correct for any caller that knows only the folders.
+ * @param {string} repoDir @param {{ path: string }[]} workspaces
+ * @returns {{ edges: Map<string, Set<string>>, read: number }} edges: dependent → dependencies
+ */
+export function workspaceGraph(repoDir, workspaces) {
+  /** @type {Map<string, string>} */
+  const byName = new Map();
+  for (const w of workspaces) {
+    const name = readPackage(join(repoDir, w.path)).name;
+    if (name) byName.set(String(name), w.path);
+  }
+  /** @type {Map<string, Set<string>>} */
+  const edges = new Map();
+  let read = 0;
+  for (const w of workspaces) {
+    const pkg = readPackage(join(repoDir, w.path));
+    if (Object.keys(pkg).length) read++;
+    const any = /** @type {Record<string, Record<string, string> | undefined>} */ (
+      /** @type {unknown} */ (pkg)
+    );
+    const names = [
+      ...Object.keys(any.dependencies || {}),
+      ...Object.keys(any.devDependencies || {}),
+      ...Object.keys(any.peerDependencies || {}),
+      ...Object.keys(any.optionalDependencies || {}),
+    ];
+    /** @type {string[]} */
+    const inside = [];
+    for (const n of names) {
+      const path = byName.get(n);
+      if (path && path !== w.path) inside.push(path);
+    }
+    edges.set(w.path, new Set(inside));
+  }
+  return { edges, read };
+}
+
+/**
+ * The workspaces a change reaches. Selection by path answers half the question: which inputs
+ * changed. The other half is which workspaces can observe them, and a path filter cannot see it,
+ * so a change under a shared package let the application that imports it through ungated. That
+ * is a silent pass, which is the worst thing a gate can do, because nothing in the output says
+ * the check did not happen.
+ *
+ * A workspace is selected when a changed file is under it, or when it depends, at any depth, on
+ * a workspace that is. A changed file outside every workspace selects them all, and so does a
+ * tree whose manifests could not be read: conservative and slow is a correct gate, fast and
+ * silent is not, and the reason is returned so the output can say which of the two happened.
+ * @param {string} repoDir @param {{ path: string }[]} workspaces @param {string[]} changed
+ * @returns {{ selected: Set<string>, viaGraph: Map<string, string>, everything: string | null }}
+ */
+export function affectedWorkspaces(repoDir, workspaces, changed) {
+  const paths = workspaces.map((w) => w.path);
+  const all = () => new Set(paths);
+  if (!workspaces.length) return { selected: new Set(), viaGraph: new Map(), everything: null };
+  const { edges, read } = workspaceGraph(repoDir, workspaces);
+  if (read < workspaces.length)
+    return {
+      selected: all(),
+      viaGraph: new Map(),
+      everything: "a workspace manifest could not be read, so every workspace is selected",
+    };
+  /** @type {Set<string>} */
+  const direct = new Set();
+  for (const f of changed) {
+    const owner = ownerOf(f, workspaces);
+    if (!owner)
+      return {
+        selected: all(),
+        viaGraph: new Map(),
+        everything: `${f} is outside every workspace, so every workspace is selected`,
+      };
+    direct.add(owner.path);
+  }
+  // Walk the edges the other way: a changed workspace selects everything that depends on it.
+  const selected = new Set(direct);
+  /** @type {Map<string, string>} */
+  const viaGraph = new Map();
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [dependent, deps] of edges)
+      if (!selected.has(dependent))
+        for (const d of deps)
+          if (selected.has(d)) {
+            selected.add(dependent);
+            viaGraph.set(dependent, d);
+            grew = true;
+            break;
+          }
+  }
+  return { selected, viaGraph, everything: null };
+}

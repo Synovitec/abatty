@@ -5,6 +5,21 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A change under a shared package left the application that imports it ungated** (C29). The
+  gate selected work by path, which answers only half of what a monorepo has to ask: which inputs
+  changed, but not which workspaces can observe them. A change under `packages/ui` did not select
+  `apps/store`, so its suites were skipped with "no matching path" and the push went through
+  unchecked - a silent pass, which is the worst failure a gate can have, because nothing in the
+  output says the check did not happen. The workspaces now carry a dependency graph read from
+  their own manifests, and a changed workspace selects every workspace that depends on it, at any
+  depth. Where the graph cannot be built, or a changed file sits outside every workspace, the gate
+  runs everything and **says which of the two happened**: conservative and slow is a correct gate,
+  fast and silent is not. Four control cases: one hop, two hops, a leaf nothing depends on, and
+  the root-level change that widens to all; plus a gate-level case, watched failing first, where
+  the application's suites run although its folder was never touched.
+
 ### Changed
 
 - **Every command loads only what it uses, and the entry point is a dispatcher again** (C41).

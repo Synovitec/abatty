@@ -5,7 +5,13 @@ import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
-import { detectWorkspaces, workspaceFolders, workspaceGlobs } from "../src/presets/workspaces.mjs";
+import {
+  affectedWorkspaces,
+  detectWorkspaces,
+  workspaceFolders,
+  workspaceGlobs,
+  workspaceGraph,
+} from "../src/presets/workspaces.mjs";
 
 /** @param {string} name @param {Record<string, unknown>} [rootExtra] */
 function monorepo(name, rootExtra = {}) {
@@ -211,5 +217,93 @@ test("the docs preset: chosen for a repository with no package and no sources, i
       ["abatty ratchet: the do", "ok"],
       ["secret scan", "ok"],
     ],
+  );
+});
+
+test("a change under a shared package selects the application that imports it", () => {
+  // Selection by path answers which inputs changed. Which workspaces can observe them is the
+  // other half, and without it the gate let work through it was installed to refuse, silently.
+  const dir = tempRepo("affected", {
+    "package.json": JSON.stringify({
+      name: "mono",
+      private: true,
+      workspaces: ["apps/*", "packages/*"],
+    }),
+    "apps/store/package.json": JSON.stringify({ name: "@m/store", dependencies: { "@m/ui": "*" } }),
+    "apps/docs/package.json": JSON.stringify({ name: "@m/docs" }),
+    "packages/ui/package.json": JSON.stringify({ name: "@m/ui", dependencies: { "@m/core": "*" } }),
+    "packages/core/package.json": JSON.stringify({ name: "@m/core" }),
+  });
+  const ws = detectWorkspaces(dir, null);
+  const graph = workspaceGraph(dir, ws);
+  assert.deepEqual([...(graph.edges.get("apps/store") || [])], ["packages/ui"]);
+  assert.deepEqual([...(graph.edges.get("packages/ui") || [])], ["packages/core"]);
+
+  // One hop: the package changed, the application that imports it is selected.
+  const one = affectedWorkspaces(dir, ws, ["packages/ui/src/button.tsx"]);
+  assert.deepEqual([...one.selected].sort(), ["apps/store", "packages/ui"]);
+  assert.equal(one.viaGraph.get("apps/store"), "packages/ui");
+  assert.equal(one.everything, null);
+
+  // Two hops: the transitive dependent is selected too, which is the case a one-level check misses.
+  const two = affectedWorkspaces(dir, ws, ["packages/core/index.ts"]);
+  assert.deepEqual([...two.selected].sort(), ["apps/store", "packages/core", "packages/ui"]);
+
+  // The control in the other direction: a workspace nothing depends on selects only itself.
+  const leaf = affectedWorkspaces(dir, ws, ["apps/docs/page.mdx"]);
+  assert.deepEqual([...leaf.selected], ["apps/docs"]);
+
+  // A change outside every workspace is not narrowed, and the reason is stated rather than implied.
+  const root = affectedWorkspaces(dir, ws, ["tsconfig.json"]);
+  assert.equal(root.selected.size, 4);
+  assert.match(String(root.everything), /outside every workspace/);
+});
+
+test("the gate runs the application's suites when only the package it imports changed", () => {
+  // The end of the same story, at the gate rather than at the selection: the suite of an
+  // application whose own folder nobody touched still runs, and the output says why it was
+  // selected rather than leaving a reader to infer it.
+  const dir = tempRepo("affected-gate", {
+    "package.json": JSON.stringify({
+      name: "mono",
+      private: true,
+      workspaces: ["apps/*", "packages/*"],
+      scripts: { test: "true" },
+    }),
+    "apps/store/package.json": JSON.stringify({
+      name: "@m/store",
+      dependencies: { "@m/ui": "*", next: "15" },
+      scripts: { test: "true" },
+    }),
+    "packages/ui/package.json": JSON.stringify({ name: "@m/ui", scripts: { test: "true" } }),
+    "apps/store/e2e/checkout.spec.ts": "test('x', () => {});\n",
+  });
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "chore: the tree");
+  // The only change is inside the package the application imports.
+  writeFileSync(join(dir, "packages/ui/button.tsx"), "export const Button = () => null;\n");
+  const preset = presetById("node");
+  assert.ok(preset);
+  /** @type {string[]} */
+  const lines = [];
+  const r = runGate({
+    repoDir: dir,
+    preset,
+    workspaces: detectWorkspaces(dir, null),
+    run: () => 0,
+    dockerUp: () => false,
+    log: (l) => lines.push(l),
+  });
+  assert.equal(r.ok, true, JSON.stringify(r.events));
+  const said = lines.join("\n");
+  assert.match(said, /apps\/store.*selected by the workspace graph/s);
+  assert.match(said, /packages\/ui changed and apps\/store depends on it/);
+  assert.ok(
+    !r.events.some(
+      (e) =>
+        e.label.startsWith("apps/store · ") &&
+        e.detail === "no matching path in the push or the tree",
+    ),
+    "the application's suites are not skipped: " + JSON.stringify(r.events),
   );
 });
