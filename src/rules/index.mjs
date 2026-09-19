@@ -237,3 +237,43 @@ export function scoreOf(findings) {
     : 0;
   return { score, applicable: applicable.length };
 }
+
+/**
+ * The families whose rules steer before the agent acts rather than observing after it: the
+ * context file, the conventions, the decision log, the harness and its hooks. Everything else in
+ * the catalog is read off the tree once the work exists.
+ */
+const GUIDE_FAMILIES = new Set(["Documents", "Harness"]);
+
+/**
+ * Which kind of control a rule is, in the published vocabulary of the category.
+ *
+ * A **guide** is feedforward: it anticipates the agent's behaviour and steers it before it acts,
+ * which raises the chance the first attempt is right. A **sensor** is feedback: it observes after
+ * the act and lets the agent correct itself before a human is involved. Each is **computational**
+ * when a processor decides it, deterministically and fast, or **inferential** when a person or a
+ * model does, semantically and not deterministically.
+ *
+ * The two are not alternatives: feedback alone produces an agent that repeats its mistakes, and
+ * feedforward alone produces one that never finds out whether its rules worked. Labelling every
+ * rule makes the balance visible rather than accidental.
+ *
+ * Derived from the family and the enforcement, and a rule may state its own where the derivation
+ * is wrong for it.
+ * @param {Rule | CatalogRule} rule
+ * @returns {{ control: "guide" | "sensor", basis: "computational" | "inferential" }}
+ */
+export function controlOf(rule) {
+  const r =
+    /** @type {{ control?: "guide" | "sensor", basis?: "computational" | "inferential" }} */ (
+      /** @type {unknown} */ (rule)
+    );
+  return {
+    control: r.control || (GUIDE_FAMILIES.has(rule.family) ? "guide" : "sensor"),
+    basis:
+      r.basis ||
+      (rule.enforcement === "hard" || rule.enforcement === "ratchet"
+        ? "computational"
+        : "inferential"),
+  };
+}

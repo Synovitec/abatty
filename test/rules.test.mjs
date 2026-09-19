@@ -6,6 +6,7 @@ import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import {
   FAMILIES,
   RULES,
+  controlOf,
   enforcedOf,
   loadCatalog,
   ruleById,
@@ -335,4 +336,38 @@ test("the enforced share counts what the repository has by what insures it, and 
   assert.equal(enforcedOf([]).share, null);
   const out = cli(["rules", "--enforcement", "prose", "--json"], process.cwd()).out;
   assert.ok(JSON.parse(out).every((/** @type {any} */ r) => r.enforcement === "prose"));
+});
+
+test("every rule says which control it is: guide or sensor, computational or inferential", () => {
+  // The category's published vocabulary. A guide is feedforward and steers before the agent acts;
+  // a sensor is feedback and observes after it. Each is computational when a processor decides it
+  // and inferential when a person or a model does. Feedback alone produces an agent that repeats
+  // its mistakes and feedforward alone produces one that never learns whether its rules worked,
+  // so the balance has to be readable rather than accidental.
+  for (const r of RULES) {
+    const c = controlOf(r);
+    assert.ok(["guide", "sensor"].includes(c.control), `${r.id}: ${c.control}`);
+    assert.ok(["computational", "inferential"].includes(c.basis), `${r.id}: ${c.basis}`);
+  }
+  // The derivation, in both directions.
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Documents", enforcement: "prose" })), {
+    control: "guide",
+    basis: "inferential",
+  });
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Code", enforcement: "hard" })), {
+    control: "sensor",
+    basis: "computational",
+  });
+  assert.deepEqual(controlOf(/** @type {any} */ ({ family: "Code", enforcement: "review" })), {
+    control: "sensor",
+    basis: "inferential",
+  });
+  // A rule whose derivation is wrong for it says so itself.
+  assert.deepEqual(
+    controlOf(/** @type {any} */ ({ family: "Code", enforcement: "hard", control: "guide" })),
+    { control: "guide", basis: "computational" },
+  );
+  // This catalog is sensor-heavy, which is the honest reading of a package built around a gate.
+  const sensors = RULES.filter((r) => controlOf(r).control === "sensor").length;
+  assert.ok(sensors > RULES.length / 2, `${sensors} of ${RULES.length}`);
 });

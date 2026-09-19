@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Every rule says which kind of control it is** (C33). The category has a published vocabulary
+  and the catalog did not use it: a **guide** is feedforward and steers the agent before it acts,
+  a **sensor** is feedback and observes after, and each is **computational** when a processor
+  decides it or **inferential** when a person or a model does. `abatty rules --json` now carries
+  both for all 71 rules, derived from the family and the enforcement, and a rule may state its own
+  where the derivation is wrong for it. The reading is 56 sensors to 15 guides, 52 computational
+  to 19 inferential - honest for a package built around a gate, and now visible rather than
+  accidental, which matters because feedback alone produces an agent that repeats its mistakes and
+  feedforward alone produces one that never learns whether its rules worked.
+
+### Added
+
 - **A finding now carries the command that proves it was fixed** (C31). The published definition
   of a sensor in an agent harness is a signal optimised for the model and carrying the instruction
   for its own correction; measured against it this package emitted reports, because

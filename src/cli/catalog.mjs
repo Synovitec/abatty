@@ -2,7 +2,7 @@
  * The `profiles` command: the profiles this repository follows, what each brings, and the
  * problems loading them.
  */
-import { loadCatalog, ruleById, runCatalog } from "../rules/index.mjs";
+import { controlOf, loadCatalog, ruleById, runCatalog } from "../rules/index.mjs";
 import { buildContext } from "../rules/context.mjs";
 import { renderCatalogMarkdown } from "../ui/catalog.mjs";
 import { stdIds } from "../core/gap-analysis.mjs";
@@ -78,9 +78,11 @@ export async function rulesCommand(cx) {
       (!phase || r.phase.split(/\s*\/\s*/).includes(phase)),
   );
   if (flag("--json")) {
+    // Every rule says which kind of control it is, so the balance of feedforward and feedback is
+    // readable rather than accidental.
     out(
       JSON.stringify(
-        list.map(({ check, ...r }) => r),
+        list.map(({ check, ...r }) => ({ ...r, ...controlOf(/** @type {any} */ (r)) })),
         null,
         2,
       ) + "\n",

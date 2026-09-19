@@ -116,7 +116,7 @@ The largest change in the plan, and the one that most changes what the tool is f
 | C45 | A SARIF 2.1.0 emitter, and the upload step in the CI that `abatty ci` generates            | landed | M    |
 | C31 | Every finding carries the edit and a `verify` command whose exit code proves it worked     | open   | M    |
 | C2  | `abatty gate` reports the findings the range introduced, separately from the standing ones | open   | M    |
-| C33 | Each rule is labelled a guide or a sensor, computational or inferential                    | open   | S    |
+| C33 | Each rule is labelled a guide or a sensor, computational or inferential                    | landed | S    |
 
 **Done when**
 

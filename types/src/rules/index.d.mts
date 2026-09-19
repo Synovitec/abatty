@@ -59,6 +59,28 @@ export function scoreOf(findings: Finding[]): {
     score: number;
     applicable: number;
 };
+/**
+ * Which kind of control a rule is, in the published vocabulary of the category.
+ *
+ * A **guide** is feedforward: it anticipates the agent's behaviour and steers it before it acts,
+ * which raises the chance the first attempt is right. A **sensor** is feedback: it observes after
+ * the act and lets the agent correct itself before a human is involved. Each is **computational**
+ * when a processor decides it, deterministically and fast, or **inferential** when a person or a
+ * model does, semantically and not deterministically.
+ *
+ * The two are not alternatives: feedback alone produces an agent that repeats its mistakes, and
+ * feedforward alone produces one that never finds out whether its rules worked. Labelling every
+ * rule makes the balance visible rather than accidental.
+ *
+ * Derived from the family and the enforcement, and a rule may state its own where the derivation
+ * is wrong for it.
+ * @param {Rule | CatalogRule} rule
+ * @returns {{ control: "guide" | "sensor", basis: "computational" | "inferential" }}
+ */
+export function controlOf(rule: Rule | CatalogRule): {
+    control: "guide" | "sensor";
+    basis: "computational" | "inferential";
+};
 export { validate };
 /**
  * @typedef {"present" | "partial" | "missing" | "n/a" | "waived"} Status
