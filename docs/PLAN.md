@@ -226,21 +226,21 @@ Evidence: `07` F3, F5, F9, F10, F11, F12, F13, F14 · `DESIGN.md` §0
 Worth doing, none of it worth doing first. Each item records or exports a tool that should
 already be finished.
 
-| ID  | Change                                                                         | State  | Size |
-| --- | ------------------------------------------------------------------------------ | ------ | ---- |
-| C38 | `abatty attest` emits a custom predicate in the established attestation format | landed | M    |
-| C39 | Signing uses the established ecosystem and the release's identity mechanism    | landed | S    |
-| C36 | The record is scoped to what the compliance ring cannot produce                | landed | S    |
-| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed | L    |
-| C27 | An evidence export fit for technical documentation                             | landed | M    |
-| C4  | `abatty validate`: which rules precede defect-fixing commits here              | landed | L    |
-| C19 | The harness reports its own token footprint per session                        | landed | M    |
-| C10 | The context file grows only from the night's lessons                           | landed | M    |
-| C20 | The hosted service records adoption events                                     | landed | M    |
-| C37 | A portal plugin publishes conformance into an existing catalogue               | open   | M    |
-| C34 | The README opens with the reader's problem and the practitioners' framing      | landed | S    |
-| C35 | The measurement story is told as amplification, not as a promise of speed      | landed | S    |
-| C40 | One outward artefact: this repository's dogfood, negative results included     | landed | S    |
+| ID  | Change                                                                         | State    | Size |
+| --- | ------------------------------------------------------------------------------ | -------- | ---- |
+| C38 | `abatty attest` emits a custom predicate in the established attestation format | landed   | M    |
+| C39 | Signing uses the established ecosystem and the release's identity mechanism    | landed   | S    |
+| C36 | The record is scoped to what the compliance ring cannot produce                | landed   | S    |
+| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed   | L    |
+| C27 | An evidence export fit for technical documentation                             | landed   | M    |
+| C4  | `abatty validate`: which rules precede defect-fixing commits here              | landed   | L    |
+| C19 | The harness reports its own token footprint per session                        | landed   | M    |
+| C10 | The context file grows only from the night's lessons                           | landed   | M    |
+| C20 | The hosted service records adoption events                                     | landed   | M    |
+| C37 | A portal plugin publishes conformance into an existing catalogue               | reshaped | M    |
+| C34 | The README opens with the reader's problem and the practitioners' framing      | landed   | S    |
+| C35 | The measurement story is told as amplification, not as a promise of speed      | landed   | S    |
+| C40 | One outward artefact: this repository's dogfood, negative results included     | landed   | S    |
 
 Evidence: `09` F37, F38, F39, F40 · `08` F21 · `07` F4, F15
 
@@ -283,6 +283,27 @@ repeated the size table that is in `.claude/rules/size-limits.md`, and §2 liste
 stack the adopter may not have. Both now point rather than copy, and the file is 141 lines from 144. What is left of the idea belongs to a different item: a shorter set of required sections
 would have to change the rule first, and that is a change to the standard, not to a template.
 
+**C37, reshaped rather than done, 2026-09-19.** "A portal plugin publishes conformance into an
+existing catalogue" cannot be done as written without breaking the first non-negotiable. A portal
+plugin is a separate package carrying that portal's framework as a dependency, it puts the work
+behind an install a whole organisation has to agree to, and it puts the conformance where only
+that one portal can read it.
+
+The goal behind the item is reached without any of that. A catalogue already has a format that it
+ingests on its own: an entity descriptor in the repository. `abatty portal` writes it, with the
+score, the phase, the check count and - where a hosted service exists - the report, events and
+badge endpoints as annotations. Any portal that reads the descriptor gets the conformance, nothing
+is installed, and a team with no portal has a file that does no harm.
+
+It merges rather than overwrites, and that is most of the work. A `catalog-info.yaml` is somebody
+else's file, with an owner, a system and a lifecycle nothing in this package knows; it rewrites
+only the annotations under its own prefix, adds the ones that were missing, and leaves a shape it
+does not understand alone rather than guessing at it. It refuses to invent an owner: a new file
+says `unknown` and says why.
+
+What is genuinely left of the item, and is not done: a plugin would let a portal render the
+findings rather than link to them. That is a separate package for somebody who wants it.
+
 ## 11. What is already there, so it is not rebuilt
 
 Checked at `e043e66`. Each entry says what exists and what is actually missing.
@@ -300,30 +321,30 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 Every change, its wave, its state and where it came from. `07`, `08` and `09` are the research
 files; `D` is `DESIGN.md`.
 
-| ID  | Wave | State    | From | ID  | Wave | State   | From |
-| --- | ---- | -------- | ---- | --- | ---- | ------- | ---- |
-| C1  | -    | landed   | 07   | C26 | 6    | landed  | 08   |
-| C2  | 2    | open     | 07   | C27 | 6    | landed  | 08   |
-| C3  | 5    | landed   | 07   | C28 | -    | landed  | 08   |
-| C4  | 6    | landed   | 07   | C29 | 1    | open    | 08   |
-| C5  | 5    | landed   | 07   | C30 | 1    | partial | 08   |
-| C6  | 5    | landed   | 07   | C31 | 2    | open    | 09   |
-| C7  | -    | landed   | 07   | C32 | 3    | open    | 09   |
-| C8  | 3    | partial  | 07   | C33 | 2    | open    | 09   |
-| C9  | 3    | reshaped | 07   | C34 | 6    | landed  | 09   |
-| C10 | 6    | landed   | 07   | C35 | 6    | landed  | 09   |
-| C11 | 4    | landed   | 07   | C36 | 6    | landed  | 09   |
-| C12 | 4    | landed   | 07   | C37 | 6    | open    | 09   |
-| C13 | 5    | landed   | 07   | C38 | 6    | landed  | 09   |
-| C14 | 5    | landed   | 07   | C39 | 6    | landed  | 09   |
-| C15 | 5    | partial  | 07   | C40 | 6    | landed  | 09   |
-| C16 | 5    | landed   | 07   | C41 | 1    | open    | D    |
-| C17 | 5    | landed   | 07   | C42 | 1    | open    | D    |
-| C18 | 5    | landed   | 07   | C43 | 3    | partial | D    |
-| C19 | 6    | landed   | 07   | C44 | 3    | landed  | D    |
-| C20 | 6    | landed   | 07   | C45 | 2    | landed  | D    |
-| C21 | 4    | landed   | 08   | C46 | 3    | landed  | D    |
-| C22 | 4    | landed   | 08   | C47 | 3    | landed  | D    |
-| C23 | 4    | landed   | 08   | C48 | 1    | landed  | D    |
-| C24 | 4    | landed   | 08   | C49 | 5    | partial | D    |
-| C25 | 4    | landed   | 08   |     |      |         |      |
+| ID  | Wave | State    | From | ID  | Wave | State    | From |
+| --- | ---- | -------- | ---- | --- | ---- | -------- | ---- |
+| C1  | -    | landed   | 07   | C26 | 6    | landed   | 08   |
+| C2  | 2    | open     | 07   | C27 | 6    | landed   | 08   |
+| C3  | 5    | landed   | 07   | C28 | -    | landed   | 08   |
+| C4  | 6    | landed   | 07   | C29 | 1    | open     | 08   |
+| C5  | 5    | landed   | 07   | C30 | 1    | partial  | 08   |
+| C6  | 5    | landed   | 07   | C31 | 2    | open     | 09   |
+| C7  | -    | landed   | 07   | C32 | 3    | open     | 09   |
+| C8  | 3    | partial  | 07   | C33 | 2    | open     | 09   |
+| C9  | 3    | reshaped | 07   | C34 | 6    | landed   | 09   |
+| C10 | 6    | landed   | 07   | C35 | 6    | landed   | 09   |
+| C11 | 4    | landed   | 07   | C36 | 6    | landed   | 09   |
+| C12 | 4    | landed   | 07   | C37 | 6    | reshaped | 09   |
+| C13 | 5    | landed   | 07   | C38 | 6    | landed   | 09   |
+| C14 | 5    | landed   | 07   | C39 | 6    | landed   | 09   |
+| C15 | 5    | partial  | 07   | C40 | 6    | landed   | 09   |
+| C16 | 5    | landed   | 07   | C41 | 1    | open     | D    |
+| C17 | 5    | landed   | 07   | C42 | 1    | open     | D    |
+| C18 | 5    | landed   | 07   | C43 | 3    | partial  | D    |
+| C19 | 6    | landed   | 07   | C44 | 3    | landed   | D    |
+| C20 | 6    | landed   | 07   | C45 | 2    | landed   | D    |
+| C21 | 4    | landed   | 08   | C46 | 3    | landed   | D    |
+| C22 | 4    | landed   | 08   | C47 | 3    | landed   | D    |
+| C23 | 4    | landed   | 08   | C48 | 1    | landed   | D    |
+| C24 | 4    | landed   | 08   | C49 | 5    | partial  | D    |
+| C25 | 4    | landed   | 08   |     |      |          |      |

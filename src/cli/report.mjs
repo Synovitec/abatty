@@ -9,6 +9,9 @@ import { allReports, buildReport } from "../core/report.mjs";
 import { PREDICATE_TYPE, attestation } from "../core/attest.mjs";
 import { renderEvidence } from "../ui/evidence.mjs";
 import { mappingShape } from "../profiles/cra-requirements.mjs";
+import { mergePortalEntity, portalFacts } from "../ui/portal.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import { dashboardFromEnv } from "../core/env.mjs";
 import { git } from "../core/repo.mjs";
 import { EXIT } from "./exit.mjs";
 import { repoRoot } from "../core/repo.mjs";
@@ -97,6 +100,52 @@ export async function evidenceCommand(cx) {
   const shape = mappingShape();
   out(
     `${t.glyph.ok} evidence written: ${to} ${t.gray(`· ${shape.total} requirement(s), ${shape.withoutRules} with no rule behind them · a mapping, never a conformity assessment`)}\n`,
+  );
+  return EXIT.clean;
+}
+
+/**
+ * `abatty portal`: the conformance in the catalogue's own entity descriptor, so a developer
+ * portal ingests it with nothing installed. Merges into an existing descriptor rather than
+ * taking it over: the file is somebody's, with an owner and a lifecycle nothing here knows.
+ * @param {import("./ratchet.mjs").CliContext} cx
+ */
+export async function portalCommand(cx) {
+  const { dir, opt, flag, out, VERSION } = cx;
+  const report = await buildReport(dir, { abattyVersion: VERSION });
+  const to = opt("--out") || "catalog-info.yaml";
+  const target = resolve(dir, to);
+  const facts = portalFacts({
+    name: report.name || report.repo,
+    score: report.score,
+    phase: report.phase?.id ? String(report.phase.id) : undefined,
+    applicable: report.applicable,
+    date: report.date,
+    dashboard: opt("--dashboard") || dashboardFromEnv(),
+  });
+  const existing = existsSync(target) ? readFileSync(target, "utf8") : null;
+  const r = mergePortalEntity(
+    existing,
+    {
+      name: report.name || report.repo,
+      description: `Measured against the engineering standard: ${report.score}/100 over ${report.applicable} applicable check(s) on ${report.date}.`,
+    },
+    facts,
+  );
+  if (flag("--dry-run")) {
+    out(r.text);
+    return EXIT.clean;
+  }
+  if (existing && !r.replaced.length && !r.added.length) {
+    out(
+      `${t.glyph.warn} ${to} has no annotations block and no metadata to add one to: left untouched\n`,
+    );
+    return EXIT.findings;
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, r.text);
+  out(
+    `${t.glyph.ok} ${r.created ? "written" : "merged"}: ${to} ${t.gray(`· ${r.replaced.length} annotation(s) rewritten, ${r.added.length} added${r.created ? " · fill in the owner: nothing here knows who owns your repository" : " · the rest of the file is untouched"}`)}\n`,
   );
   return EXIT.clean;
 }

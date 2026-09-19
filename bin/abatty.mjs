@@ -20,6 +20,7 @@
  *   abatty attest [dir] [--out <file>] [--json]                        the conformance statement as an in-toto predicate, ready to sign
  *   abatty evidence [dir] [--out <file>]                               the requirement mapping as a document: a mapping, never a conformity assessment
  *   abatty validate [dir] [--since <rev>] [--json]                     which rules precede defect-fixing commits in this repository's own history
+ *   abatty portal [dir] [--out <file>] [--dashboard <url>] [--dry-run]  the conformance as a portal catalogue entity, no plugin to install
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
  *   abatty rules [dir] [--family <name>] [--level must|should] [--enforcement <e>] [--phase <n>] [--json|--md]   the rule catalog
@@ -59,6 +60,7 @@ const KNOWN = [
   "attest",
   "evidence",
   "validate",
+  "portal",
   "dashboard",
   "rules",
   "explain",
@@ -263,6 +265,10 @@ switch (command) {
     const { validateCommand } = await import("../src/cli/validate.mjs");
     process.exit(await validateCommand(ctx));
   }
+  case "portal": {
+    const { portalCommand } = await import("../src/cli/report.mjs");
+    process.exit(await portalCommand(ctx));
+  }
   case "dashboard": {
     const { dashboardCommand } = await import("../src/cli/report.mjs");
     await dashboardCommand(ctx, positional);
@@ -334,6 +340,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty attest")} [dir] [--out <file>] [--json]                 the conformance statement, ready to sign: an in-toto predicate with what held, the waivers and their owners, and the proof each gate step can fail
   ${t.bold("abatty evidence")} [dir] [--out <file>]                         the requirement mapping for a person: what the rules evidence, and the requirements nothing here bears on
   ${t.bold("abatty validate")} [dir] [--since <rev>] [--json]                do the files that break each rule turn out to be the files somebody had to fix HERE: a correlation, with its confounder printed beside it
+  ${t.bold("abatty portal")} [dir] [--out catalog-info.yaml] [--dashboard <url>] [--dry-run]   the conformance in the catalogue's own entity descriptor, merged into an existing one rather than over it
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
   ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--phase <n>] [--json|--md]  the rule catalog: what must hold, why, what insures it
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository

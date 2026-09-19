@@ -20,6 +20,13 @@ export function attestCommand(cx: import("./ratchet.mjs").CliContext): Promise<0
  */
 export function evidenceCommand(cx: import("./ratchet.mjs").CliContext): Promise<0>;
 /**
+ * `abatty portal`: the conformance in the catalogue's own entity descriptor, so a developer
+ * portal ingests it with nothing installed. Merges into an existing descriptor rather than
+ * taking it over: the file is somebody's, with an owner and a lifecycle nothing here knows.
+ * @param {import("./ratchet.mjs").CliContext} cx
+ */
+export function portalCommand(cx: import("./ratchet.mjs").CliContext): Promise<0 | 3>;
+/**
  * @param {import("./ratchet.mjs").CliContext} cx @param {string[]} [positional] the repositories named on the command line
  */
 export function dashboardCommand(cx: import("./ratchet.mjs").CliContext, positional?: string[]): Promise<void>;

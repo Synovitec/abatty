@@ -318,6 +318,25 @@ collected and a repository cannot tell the service it adopted something. **Losse
 and are not softened**: a rule that was present and is now missing is the most useful line the log
 carries, and `regressions` is counted on its own so a dashboard cannot bury it.
 
+## The catalogue, without a plugin
+
+`abatty portal [--out catalog-info.yaml] [--dashboard <url>] [--dry-run]` writes the conformance
+into the developer portal catalogue's **own entity descriptor**: the score, the phase, the check
+count and, where a hosted service exists, the report, events and badge endpoints, as annotations
+under `abatty.dev/`. Any portal that reads the descriptor gets the conformance with nothing
+installed, and a team with no portal has a file that does no harm.
+
+The obvious shape for this would be a portal plugin. A plugin is a separate package carrying that
+portal's framework as a dependency, it puts the work behind an install a whole organisation has to
+agree to, and it puts the conformance where only that portal can read it. The descriptor reaches
+the same place and asks for nothing.
+
+It **merges rather than overwrites**. A `catalog-info.yaml` is somebody's file, with an owner, a
+system and a lifecycle nothing here knows: it rewrites only the annotations under its own prefix,
+adds the ones that were missing, leaves the comments and everything else byte for byte, and
+leaves a shape it does not understand alone rather than guessing at it. It will not invent an
+owner: a new file says `unknown` and says why.
+
 ## The MCP server
 
 `abatty mcp [dir]` speaks the Model Context Protocol over stdio and exposes the package as

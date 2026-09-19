@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty portal`: the conformance in the catalogue's own entity descriptor** (C37, reshaped).
+  The item asked for a portal plugin. A plugin is a separate package carrying that portal's
+  framework as a dependency, it puts the work behind an install a whole organisation has to agree
+  to, and it puts the conformance where only that portal can read it. The catalogue already has a
+  format it ingests on its own, so this writes that instead: the score, the phase, the check count
+  and, where a hosted service exists, the report, events and badge endpoints, as annotations.
+  Nothing is installed and a team with no portal has a file that does no harm. It merges rather
+  than overwrites, which is most of the work: a `catalog-info.yaml` is somebody's file, so it
+  rewrites only the annotations under its own prefix, leaves the comments and everything else byte
+  for byte, leaves a shape it does not understand alone rather than guessing, and refuses to
+  invent an owner. `docs/PLAN.md` §10 records what is genuinely left of the original item.
+
 - **The hosted service records adoption events** (C20). `GET /api/events` and
   `/api/events/<name>`: what changed between readings, rather than what the number is. A wall of
   scores tells an adopter nothing they can act on; "on the 14th CODE-SIZE-300 went from missing to
