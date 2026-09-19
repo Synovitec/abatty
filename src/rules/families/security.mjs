@@ -34,6 +34,33 @@ export const rules = [
     },
   },
   {
+    id: "SEC-DISCLOSURE",
+    family: "Security",
+    title: "A coordinated vulnerability disclosure policy, where a reporter looks for it",
+    standard: ["SEC.1"],
+    level: "should",
+    enforcement: "prose",
+    phase: "0",
+    ceiling: {
+      at: "review",
+      why: "A machine can see that the policy exists, that it names a contact and that it says how long a reporter should expect to wait. Whether anybody answers that contact is the only thing that matters about it, and no check can see an unanswered mail.",
+    },
+    why: "Somebody who finds a vulnerability in your product will spend about five minutes looking for where to send it. With no policy they either post it publicly or drop it, and both are worse for you than an email. The file also carries the promise a reporter is owed: who reads it, and how long they should expect to wait.",
+    next: "Publish SECURITY.md at the root, in .github/ or in docs/, naming a contact and the response time a reporter should expect",
+    check: (c) => {
+      const file = ["SECURITY.md", ".github/SECURITY.md", "docs/SECURITY.md"].find(c.exists);
+      if (!file) return { status: "missing", evidence: "no SECURITY.md" };
+      const text = c.read(file);
+      const contact = /@|https?:\/\/|mailto:/.test(text);
+      const expectation =
+        /within \d|\d+ (business |working )?(day|hour|week)|response time|acknowledg/i.test(text);
+      return {
+        status: contact && expectation ? "present" : "partial",
+        evidence: `${file}${contact ? ", a contact" : ", NO contact: a policy nobody can reply to"}${expectation ? ", a response time" : ", no response time a reporter can hold you to"}`,
+      };
+    },
+  },
+  {
     id: "SEC-AUDIT",
     family: "Security",
     title: "Dependency audit in CI",

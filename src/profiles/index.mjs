@@ -13,6 +13,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { validate } from "../rules/index.mjs";
 import { synovitec } from "./synovitec.mjs";
+import { cra } from "./cra.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Rule} Rule
@@ -32,7 +33,7 @@ import { synovitec } from "./synovitec.mjs";
  */
 
 /** The built-in profiles. @type {Profile[]} */
-export const PROFILES = [synovitec];
+export const PROFILES = [synovitec, cra];
 export const DEFAULT_PROFILES = ["synovitec"];
 
 /** @param {string} id */

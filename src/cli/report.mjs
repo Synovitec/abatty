@@ -7,6 +7,9 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { allReports, buildReport } from "../core/report.mjs";
 import { PREDICATE_TYPE, attestation } from "../core/attest.mjs";
+import { renderEvidence } from "../ui/evidence.mjs";
+import { mappingShape } from "../profiles/cra-requirements.mjs";
+import { git } from "../core/repo.mjs";
 import { EXIT } from "./exit.mjs";
 import { repoRoot } from "../core/repo.mjs";
 import { renderDashboard } from "../ui/dashboard.mjs";
@@ -65,6 +68,37 @@ export async function attestCommand(cx) {
 /** A statement whose controls never ran is written and reported, never passed off as complete. @param {any} statement */
 function p0(statement) {
   return statement.predicate.controls.ran ? EXIT.clean : EXIT.findings;
+}
+
+/**
+ * `abatty evidence`: the requirement mapping as a document for a person, with the requirements
+ * nothing bears on listed first. The counterpart of `attest`, which is the same facts for a
+ * machine. Neither is a conformity assessment and both say so.
+ * @param {import("./ratchet.mjs").CliContext} cx
+ */
+export async function evidenceCommand(cx) {
+  const { dir, opt, out, VERSION } = cx;
+  const report = await buildReport(dir, { abattyVersion: VERSION });
+  const md = renderEvidence({
+    findings: report.findings,
+    name: report.name || report.repo,
+    date: report.date,
+    commit: git(dir, "rev-parse", "HEAD"),
+    version: VERSION,
+    score: report.score,
+  });
+  const to = opt("--out");
+  if (!to) {
+    out(md);
+    return EXIT.clean;
+  }
+  mkdirSync(dirname(resolve(dir, to)), { recursive: true });
+  writeFileSync(resolve(dir, to), md);
+  const shape = mappingShape();
+  out(
+    `${t.glyph.ok} evidence written: ${to} ${t.gray(`· ${shape.total} requirement(s), ${shape.withoutRules} with no rule behind them · a mapping, never a conformity assessment`)}\n`,
+  );
+  return EXIT.clean;
 }
 
 /**

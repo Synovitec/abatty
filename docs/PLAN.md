@@ -231,8 +231,8 @@ already be finished.
 | C38 | `abatty attest` emits a custom predicate in the established attestation format | landed  | M    |
 | C39 | Signing uses the established ecosystem and the release's identity mechanism    | open    | S    |
 | C36 | The record is scoped to what the compliance ring cannot produce                | landed  | S    |
-| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | open    | L    |
-| C27 | An evidence export fit for technical documentation                             | open    | M    |
+| C26 | A `cra` profile mapping rules to the regulation's essential requirements       | landed  | L    |
+| C27 | An evidence export fit for technical documentation                             | landed  | M    |
 | C4  | `abatty validate`: which rules precede defect-fixing commits here              | open    | L    |
 | C19 | The harness reports its own token footprint per session                        | partial | M    |
 | C10 | The context file grows only from the night's lessons                           | open    | M    |
@@ -304,8 +304,8 @@ files; `D` is `DESIGN.md`.
 
 | ID  | Wave | State    | From | ID  | Wave | State   | From |
 | --- | ---- | -------- | ---- | --- | ---- | ------- | ---- |
-| C1  | -    | landed   | 07   | C26 | 6    | open    | 08   |
-| C2  | 2    | open     | 07   | C27 | 6    | open    | 08   |
+| C1  | -    | landed   | 07   | C26 | 6    | landed  | 08   |
+| C2  | 2    | open     | 07   | C27 | 6    | landed  | 08   |
 | C3  | 5    | landed   | 07   | C28 | -    | landed  | 08   |
 | C4  | 6    | open     | 07   | C29 | 1    | open    | 08   |
 | C5  | 5    | landed   | 07   | C30 | 1    | partial | 08   |

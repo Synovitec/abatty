@@ -47,7 +47,8 @@ function repoWith(name, profiles, profileText = ACME) {
 test("the built-in profile is the catalog: its rules are RULES, its phases the plan's, and it is well-formed", () => {
   assert.deepEqual(
     PROFILES.map((p) => p.id),
-    ["synovitec"],
+    ["synovitec", "cra"],
+    "the standard, and the lens that adds no rules of its own",
   );
   assert.deepEqual(validateProfile(synovitec), []);
   assert.deepEqual(

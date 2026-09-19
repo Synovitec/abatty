@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The regulation's requirements as a lens, and the evidence export that reads it** (C26, C27).
+  A new `cra` profile carries a mapping of the Cyber Resilience Act's twenty-one essential
+  requirements onto rules that already exist, and carries **no rules of its own**: a profile that
+  invented "CRA rules" would be selling the idea that holding them makes a product conform, which
+  is not true and is not something a source-code tool can make true. `abatty evidence` renders it
+  as a document, arranged to be read by a sceptic: the seven requirements no rule in the catalog
+  bears on at all come FIRST, before the fourteen with rules behind them, because the other
+  arrangement is how a reader ends up believing something nobody claimed. Every row says what the
+  named rules evidence, in words, and what they do not. A rule that does not apply to the
+  repository is neither held nor broken and says so rather than reading as a failure, and a rule
+  the catalog does not carry is reported absent rather than skipped into a better figure. None of
+  the words the mapping can print is "met". Writing it exposed one real gap, now a rule:
+  `SEC-DISCLOSURE`, a coordinated vulnerability disclosure policy with a contact and a response
+  time a reporter can hold you to. This repository now has one, in `SECURITY.md`.
+
 - **`abatty attest`: the conformance statement, ready to sign** (C38, C36). What held, at which
   commit, under which version of which standard, the waivers with their owners and their expiry
   dates, the floors with who raised each one and why, and the proof from the last

@@ -181,6 +181,19 @@ aside and by whom, and whether the checks that say so have themselves been watch
 statement whose controls never ran says so and the command exits 3. Signing is the pipeline's:
 this package does not hold a key.
 
+`abatty evidence` is the same facts for a person: the regulation's essential requirements mapped
+onto the rules of the catalog, as a document. The `cra` profile carries that mapping and **no
+rules of its own** - a profile that invented "CRA rules" would be selling the idea that holding
+them makes a product conform, which is not true and is not something a source-code tool can make
+true. It is a lens: name it beside a real profile and the mapping reads that profile's findings.
+
+The page is arranged to be read by a sceptic. The requirements **nothing here bears on** come
+first, before the ones with rules behind them, because the other arrangement is how a reader ends
+up believing something nobody claimed; of twenty-one requirements, seven have no rule in the
+catalog that touches them at all. Every remaining row says what the named rules evidence, what
+they do not, and how each reads today. A mapping is not a conformity assessment and is not legal
+advice, and the document says so three times.
+
 ## What `init` writes
 
 | Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |

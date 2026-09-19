@@ -18,6 +18,7 @@
  *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
  *   abatty attest [dir] [--out <file>] [--json]                        the conformance statement as an in-toto predicate, ready to sign
+ *   abatty evidence [dir] [--out <file>]                               the requirement mapping as a document: a mapping, never a conformity assessment
  *   abatty report [dir] [--json]                                       the JSON report under .abatty/reports/
  *   abatty dashboard [dir ...] [--out <file>] [--open]                 one HTML page over the reports
  *   abatty rules [dir] [--family <name>] [--level must|should] [--enforcement <e>] [--phase <n>] [--json|--md]   the rule catalog
@@ -55,6 +56,7 @@ const KNOWN = [
   "scrub",
   "report",
   "attest",
+  "evidence",
   "dashboard",
   "rules",
   "explain",
@@ -251,6 +253,10 @@ switch (command) {
     const { attestCommand } = await import("../src/cli/report.mjs");
     process.exit(await attestCommand(ctx));
   }
+  case "evidence": {
+    const { evidenceCommand } = await import("../src/cli/report.mjs");
+    process.exit(await evidenceCommand(ctx));
+  }
   case "dashboard": {
     const { dashboardCommand } = await import("../src/cli/report.mjs");
     await dashboardCommand(ctx, positional);
@@ -320,6 +326,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/
   ${t.bold("abatty attest")} [dir] [--out <file>] [--json]                 the conformance statement, ready to sign: an in-toto predicate with what held, the waivers and their owners, and the proof each gate step can fail
+  ${t.bold("abatty evidence")} [dir] [--out <file>]                         the requirement mapping for a person: what the rules evidence, and the requirements nothing here bears on
   ${t.bold("abatty dashboard")} [dir ...] [--out <file>] [--open]               one HTML page over the reports, light and dark
   ${t.bold("abatty rules")} [dir] [--family <f>] [--level must|should] [--phase <n>] [--json|--md]  the rule catalog: what must hold, why, what insures it
   ${t.bold("abatty explain")} <ID> [dir]                                       one rule, its reason, and its finding in this repository
