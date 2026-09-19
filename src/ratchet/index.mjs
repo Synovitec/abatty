@@ -333,3 +333,26 @@ export function ratchetSetup(repoDir) {
   const adoption = readConfig(repoDir) || {};
   return { adoption, config: resolveConfig(adoption), baselineRel: baselinePath(adoption) };
 }
+
+/**
+ * A verdict's findings split by whether this change introduced them. A finding sits in a file the
+ * range touched, or it does not; the first is the author's to fix now and the second is the
+ * repository's standing debt, and a gate that reports them in one list teaches its readers to
+ * scroll past both.
+ *
+ * Touching a file is not the same as causing the finding, so the split is named for what it can
+ * actually know: `introduced` means the finding is in a file this change edited.
+ * @param {Verdict[]} verdicts @param {string[]} changed
+ * @returns {{ introduced: { metric: string, finding: Finding }[], standing: { metric: string, finding: Finding }[] }}
+ */
+export function splitByRange(verdicts, changed) {
+  const touched = new Set(changed);
+  /** @type {{ metric: string, finding: Finding }[]} */
+  const introduced = [];
+  /** @type {{ metric: string, finding: Finding }[]} */
+  const standing = [];
+  for (const v of verdicts)
+    for (const f of v.findings)
+      (touched.has(f.path) ? introduced : standing).push({ metric: v.metric, finding: f });
+  return { introduced, standing };
+}

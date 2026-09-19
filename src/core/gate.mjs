@@ -62,6 +62,17 @@ export function pendingPaths(repoDir) {
 }
 
 /**
+ * The files a range changed, repository-relative. A finding in a file this change never touched
+ * is not this change's finding, however true it is, and telling the two apart is the difference
+ * between a gate a team acts on and a list they learn to scroll past.
+ * @param {string} repoDir @param {string} range
+ */
+export function changedPaths(repoDir, range) {
+  if (!range) return [];
+  return git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
+}
+
+/**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
  * @param {GateOptions} o
  */

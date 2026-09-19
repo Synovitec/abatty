@@ -112,6 +112,24 @@ export async function ratchetCommand(command, c) {
         for (const m of v.messages)
           out(`      ${v.status === "skipped" ? t.gray(m) : t.yellow(m)}\n`);
       }
+      // What this change introduced, before what the repository already carried. A gate that
+      // reports both in one list teaches its reader to scroll past both.
+      if (range) {
+        const { splitByRange } = await import("../ratchet/index.mjs");
+        const { changedPaths } = await import("../core/gate.mjs");
+        const split = splitByRange(verdicts, changedPaths(dir, range));
+        if (split.introduced.length || split.standing.length) {
+          out(
+            `\n  ${t.bold("in this change")} ${t.gray(`${split.introduced.length} finding(s)`)}${t.gray(` · standing ${split.standing.length}`)}\n`,
+          );
+          for (const { metric, finding } of split.introduced.slice(0, 20))
+            out(
+              `    ${t.glyph.fail} ${t.gray(metric.padEnd(24))} ${finding.path}${finding.line ? t.gray(":" + finding.line) : ""}${finding.detail ? t.gray(" · " + finding.detail) : ""}\n`,
+            );
+          if (!split.introduced.length)
+            out(`    ${t.gray("nothing this change touched; every finding is standing debt")}\n`);
+        }
+      }
       const red = failed(verdicts);
       out(
         `\n  ${t.gray("readability")} ${t.bold(String(score))}${t.gray("/100")} ${t.gray(

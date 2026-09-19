@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **What this change introduced, before what the repository already carried** (C2). The ratchet
+  reported every finding in one list, so an author reading a red gate could not tell the two lines
+  they added from the four hundred the repository has carried for a year - and a reader who cannot
+  tell learns to scroll past both. `abatty ratchet --range` now splits them: a finding in a file
+  the range touched is reported first, under `in this change`, and the standing debt is counted
+  beside it. The split is named for what it can actually know - touching a file is not the same as
+  causing the finding - so `introduced` means the finding sits in a file this change edited.
+
+### Added
+
 - **Every rule says which kind of control it is** (C33). The category has a published vocabulary
   and the catalog did not use it: a **guide** is feedforward and steers the agent before it acts,
   a **sensor** is feedback and observes after, and each is **computational** when a processor

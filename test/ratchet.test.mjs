@@ -11,6 +11,7 @@ import {
   loadProbes,
   measureAll,
   readBaseline,
+  splitByRange,
   validateProbe,
   writeBaseline,
 } from "../src/ratchet/index.mjs";
@@ -343,4 +344,51 @@ test("C7 bidirectional: a floor above the current value is a finding until the i
   writeFileSync(join(dir, "src/b.ts"), LONG(310));
   const back = compare(measure(dir, locked), locked, config);
   assert.equal(back.find((x) => x.metric === "size.overBudget")?.status, "regressed");
+});
+
+test("the findings a change introduced are separated from the debt it inherited", () => {
+  // A finding in a file this change never touched is not this change's finding, however true it
+  // is. Reported in one list, an author learns to scroll past both.
+  const verdicts = /** @type {any} */ ([
+    {
+      metric: "size.overBudget",
+      kind: "hard",
+      status: "hard-fail",
+      value: 2,
+      floor: 0,
+      scanned: 9,
+      messages: [],
+      findings: [
+        { path: "src/mine.mjs", line: 12, detail: "301 > 300" },
+        { path: "src/theirs.mjs", detail: "400 > 300" },
+      ],
+    },
+    {
+      metric: "types.escapes",
+      kind: "ratchet",
+      status: "ok",
+      value: 1,
+      floor: 1,
+      scanned: 9,
+      messages: [],
+      findings: [{ path: "src/mine.mjs", detail: "one any" }],
+    },
+  ]);
+  const split = splitByRange(verdicts, ["src/mine.mjs", "docs/README.md"]);
+  assert.deepEqual(
+    split.introduced.map((x) => [x.metric, x.finding.path]),
+    [
+      ["size.overBudget", "src/mine.mjs"],
+      ["types.escapes", "src/mine.mjs"],
+    ],
+  );
+  assert.deepEqual(
+    split.standing.map((x) => x.finding.path),
+    ["src/theirs.mjs"],
+  );
+  // The control in the other direction: a range that touched nothing the probes found leaves
+  // every finding standing, and none of them is reported as this author's.
+  const none = splitByRange(verdicts, ["README.md"]);
+  assert.equal(none.introduced.length, 0);
+  assert.equal(none.standing.length, 3);
 });

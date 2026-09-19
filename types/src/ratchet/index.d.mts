@@ -58,6 +58,27 @@ export function ratchetSetup(repoDir: string): {
     config: RatchetConfig;
     baselineRel: string;
 };
+/**
+ * A verdict's findings split by whether this change introduced them. A finding sits in a file the
+ * range touched, or it does not; the first is the author's to fix now and the second is the
+ * repository's standing debt, and a gate that reports them in one list teaches its readers to
+ * scroll past both.
+ *
+ * Touching a file is not the same as causing the finding, so the split is named for what it can
+ * actually know: `introduced` means the finding is in a file this change edited.
+ * @param {Verdict[]} verdicts @param {string[]} changed
+ * @returns {{ introduced: { metric: string, finding: Finding }[], standing: { metric: string, finding: Finding }[] }}
+ */
+export function splitByRange(verdicts: Verdict[], changed: string[]): {
+    introduced: {
+        metric: string;
+        finding: Finding;
+    }[];
+    standing: {
+        metric: string;
+        finding: Finding;
+    }[];
+};
 export { DEFAULT_CONFIG } from "./config.mjs";
 /**
  * @typedef {import("../rules/context.mjs").RepoContext} RepoContext
