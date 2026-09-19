@@ -61,6 +61,83 @@ export const probes = [
     ],
   },
   {
+    metric: "context.unsourcedGrowth",
+    kind: "hard",
+    standard: ["AIR.1"],
+    title: "Lines added to the context file in this push with no lesson behind them",
+    why: "A context file grows one reasonable line at a time until it hits the cap and stops being read whole, and every one of those lines was reasonable to whoever added it. The discipline that keeps it short is not a budget, it is a source: a line goes in because something went wrong and was written down, not because it seemed useful at the time. So a push that grows the file must also touch the lessons it grew from.",
+    emptyScanOk: true,
+    approximates:
+      "whether each added line traces to a lesson. It checks something narrower and mechanical instead: that a push which grew the context file also touched the lessons catalogue, or said which lesson in a commit message. A push can satisfy that and still add a line nobody learned - which is a conversation for review, and a far smaller conversation than the one about a file that has quietly doubled.",
+    scan: (c, o) => {
+      if (!o.range)
+        return { scanned: 0, findings: [], skipped: "no range (a rule about a push, not a tree)" };
+      const file = c.contextFile;
+      if (!file) return { scanned: 0, findings: [], skipped: "no context file" };
+      const [from] = String(o.range).split("..");
+      const stat = c.git("diff", "--numstat", String(o.range), "--", file).trim();
+      if (!stat) return { scanned: 1, findings: [] };
+      const added = Number(stat.split(/\s+/)[0]) || 0;
+      const removed = Number(stat.split(/\s+/)[1]) || 0;
+      const grew = added - removed;
+      if (grew <= 0) return { scanned: 1, findings: [] };
+      // The two ways a push says where the growth came from: it moved the lessons catalogue in
+      // the same range, or a commit message named the lesson.
+      const lessons = c
+        .git("diff", "--name-only", String(o.range))
+        .split("\n")
+        .some((f) => /LESSONS\.md$|(^|\/)lessons\//i.test(f.trim()));
+      const cited = /\blesson\b/i.test(c.git("log", "--format=%B", String(o.range)));
+      if (lessons || cited) return { scanned: 1, findings: [] };
+      return {
+        scanned: 1,
+        findings: [
+          {
+            path: file,
+            detail: `+${grew} line(s) since ${from || "the base"} with no lesson behind them: touch the lessons catalogue in the same push, or name the lesson in the commit`,
+            weight: grew,
+          },
+        ],
+      };
+    },
+    controls: [
+      {
+        name: "the context file grows and nothing says why",
+        files: { "CLAUDE.md": "# c\n\nrule one\n", "docs/standard/LESSONS.md": "# lessons\n" },
+        commits: [
+          {
+            files: { "CLAUDE.md": "# c\n\nrule one\nrule two\nrule three\n" },
+            message: "docs: more",
+          },
+        ],
+        range: "HEAD~1..HEAD",
+        expect: 2,
+      },
+      {
+        name: "it grows in a push that also wrote the lesson down",
+        files: { "CLAUDE.md": "# c\n\nrule one\n", "docs/standard/LESSONS.md": "# lessons\n" },
+        commits: [
+          {
+            files: {
+              "CLAUDE.md": "# c\n\nrule one\nrule two\n",
+              "docs/standard/LESSONS.md": "# lessons\n\n- the night kept doing X\n",
+            },
+            message: "docs: rule two",
+          },
+        ],
+        range: "HEAD~1..HEAD",
+        expect: 0,
+      },
+      {
+        name: "a push that shortens the context file is never a finding",
+        files: { "CLAUDE.md": "# c\n\none\ntwo\nthree\n", "docs/standard/LESSONS.md": "# l\n" },
+        commits: [{ files: { "CLAUDE.md": "# c\n\none\n" }, message: "docs: shorter" }],
+        range: "HEAD~1..HEAD",
+        expect: 0,
+      },
+    ],
+  },
+  {
     metric: "change.coupledMissing",
     kind: "hard",
     standard: ["CHANGE.2"],

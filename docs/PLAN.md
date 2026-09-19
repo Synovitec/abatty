@@ -235,7 +235,7 @@ already be finished.
 | C27 | An evidence export fit for technical documentation                             | landed | M    |
 | C4  | `abatty validate`: which rules precede defect-fixing commits here              | open   | L    |
 | C19 | The harness reports its own token footprint per session                        | landed | M    |
-| C10 | The context file grows only from the night's lessons                           | open   | M    |
+| C10 | The context file grows only from the night's lessons                           | landed | M    |
 | C20 | The hosted service records adoption events                                     | open   | M    |
 | C37 | A portal plugin publishes conformance into an existing catalogue               | open   | M    |
 | C34 | The README opens with the reader's problem and the practitioners' framing      | landed | S    |
@@ -311,7 +311,7 @@ files; `D` is `DESIGN.md`.
 | C7  | -    | landed   | 07   | C32 | 3    | open    | 09   |
 | C8  | 3    | partial  | 07   | C33 | 2    | open    | 09   |
 | C9  | 3    | reshaped | 07   | C34 | 6    | landed  | 09   |
-| C10 | 6    | open     | 07   | C35 | 6    | landed  | 09   |
+| C10 | 6    | landed   | 07   | C35 | 6    | landed  | 09   |
 | C11 | 4    | landed   | 07   | C36 | 6    | landed  | 09   |
 | C12 | 4    | landed   | 07   | C37 | 6    | open    | 09   |
 | C13 | 5    | landed   | 07   | C38 | 6    | landed  | 09   |

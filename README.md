@@ -511,7 +511,7 @@ The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE.
 by kind of file and the 800 cap), `context.overCap` (AIR.1), `types.escapes` (CODE.3),
 `valid.rawEnv` (VALID.3), `code.barrels` (CODE.5), `docs.frontMatter`, `docs.indexDrift`,
 `docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC.2..5), `change.changelogMissing`
-(CHANGE.1). A readability score over the same numbers is printed as a trend, never a gate.
+(CHANGE.1), `context.unsourcedGrowth` (AIR.1: a push that grew the context file without touching the lessons it grew from). A readability score over the same numbers is printed as a trend, never a gate.
 
 Every probe carries its **control cases in both directions**, and `abatty ratchet --controls`
 runs them on throwaway repositories; the package's own test runs them on every push, so a probe

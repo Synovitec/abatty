@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The context file grows only from a lesson** (C10). A context file grows one reasonable line at
+  a time until it hits the cap and stops being read whole, and every one of those lines was
+  reasonable to whoever added it. The discipline that keeps it short is not a budget, it is a
+  source: a line goes in because something went wrong and was written down. A new hard probe,
+  `context.unsourcedGrowth`, refuses a push that grew the context file without also touching the
+  lessons catalogue or naming the lesson in a commit message. It declares what it approximates:
+  it cannot see whether each added line traces to a lesson, only that the push which grew the file
+  said where the growth came from. That is a far smaller conversation than the one about a file
+  which has quietly doubled. Three control cases, including the one that matters - a push which
+  SHORTENS the file is never a finding.
+
 - **The harness reports what it costs to carry** (C19). Every unattended session reads the
   harness before it reads any code: the context file, the path-scoped rules, the skill, the agent
   personas. That is a bill the adopter pays on every session of every night, and nothing was
