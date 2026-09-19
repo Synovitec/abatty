@@ -284,11 +284,13 @@ export function initRepo(o) {
   const configured = configuredAdapters(o.agents?.length ? { agents: o.agents } : merged);
   const adapters = configured.adapters.length ? configured.adapters : [PRIMARY];
   const others = adapters.filter((a) => a.id !== PRIMARY.id);
+  // The interoperable file is written always, not only when another adapter asked for it. It
+  // costs one file, and it is the only way an agent this repository never configured can read the
+  // context; the primary's file imports it so there is one source rather than two copies that
+  // drift. A rule that reads the context follows that import.
   const context = tpl("harness/agent-context.md.template");
-  if (others.some((a) => a.contextFile === "AGENTS.md")) {
-    put("AGENTS.md", context);
-    if (adapters.some((a) => a.id === PRIMARY.id)) put(PRIMARY.contextFile, "@AGENTS.md\n");
-  } else put(PRIMARY.contextFile, context);
+  put("AGENTS.md", context);
+  put(PRIMARY.contextFile, "@AGENTS.md\n");
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
       for (const r of rules)

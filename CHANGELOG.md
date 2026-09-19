@@ -5,6 +5,24 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The interoperable context file is always written, and `agents` says which surfaces are
+  covered** (C8). `AGENTS.md` was written only when another configured adapter asked for it, so a
+  repository that named one agent was invisible to every other - the interoperability objection,
+  for the cost of one file. `init` now writes it always and the primary's file imports it, so
+  there is one source rather than two copies that drift, and a rule that reads the context follows
+  that import rather than reporting the sections missing from a pointer. `abatty agents` lists,
+  per adapter, the file it reads and whether that file is on disk: an adapter named in the config
+  whose file was never written is a repository that believes it is covered while the agent reads
+  nothing.
+
+- **The context template points where it used to copy** (C9, reshaped). Its size section repeated
+  the table in `.claude/rules/size-limits.md` and its command block listed commands for a stack an
+  adopter may not have; both now point. 144 lines to 141. The item as written - "ships near-empty"
+  - is recorded as withdrawn in the plan with the reason: `DOC-CONTEXT-SECTIONS` requires six
+  sections, so a near-empty template would fail the package's own rule the moment `init` wrote it.
+
 ### Added
 
 - **The second reading of an unchanged tree is nearly free** (C44). Every `measure` read the whole

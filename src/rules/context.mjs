@@ -89,9 +89,29 @@ const AGENT_ROOT = ".claude";
  */
 
 /**
+ * A context file whose whole body is `@other.md` names another file as the context. Returns the
+ * file a reader should actually read: the import's target when that is all there is, else the
+ * file itself. Two agents reading two names is the reason the import exists, and a rule that read
+ * the pointer and reported the sections missing would punish a repository for keeping one source
+ * instead of two copies.
+ * @param {string | null} named @param {(p: string) => boolean} exists @param {(p: string) => string} read
+ */
+export function followImport(named, exists, read) {
+  if (!named) return null;
+  const body = read(named)
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("<!--"));
+  const only = body.length === 1 ? /^@(\S+)$/.exec(String(body[0])) : null;
+  const target = only ? String(only[1]) : "";
+  return target && exists(target) ? target : named;
+}
+
+/**
  * Build the context of a repository. @param {string} repoDir @param {{ today?: string }} [o]
  * @returns {RepoContext}
  */
+
 export function buildContext(repoDir, o = {}) {
   const REPO = resolve(repoDir);
   const today = o.today || new Date().toISOString().slice(0, 10);
@@ -251,13 +271,17 @@ export function buildContext(repoDir, o = {}) {
   const adoption = readAdoption(REPO);
   const staged = stageOf(adoption, stack, files, scripts);
   const contextName = "CLAUDE.md";
-  const contextFile = exists(contextName)
+  const named = exists(contextName)
     ? contextName
     : exists(`${AGENT_ROOT}/${contextName}`)
       ? `${AGENT_ROOT}/${contextName}`
       : exists("AGENTS.md")
         ? "AGENTS.md"
         : null;
+  // A context file that is one import line is a pointer, not the context. Two agents reading two
+  // names is the reason the import exists; a rule that reads the pointer and reports the sections
+  // missing would punish the repository for having one source instead of two copies.
+  const contextFile = followImport(named, exists, read);
 
   return {
     repo: REPO,

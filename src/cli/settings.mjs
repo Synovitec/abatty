@@ -3,7 +3,7 @@
  * this repository named with what each of them gives and costs.
  */
 import { join } from "node:path";
-import { ADAPTERS, configuredAdapters, lostGuarantees } from "../agents/index.mjs";
+import { ADAPTERS, configuredAdapters, lostGuarantees, surfaceCover } from "../agents/index.mjs";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
@@ -12,6 +12,7 @@ import {
   migrateConfig,
   readConfig,
 } from "../core/config.mjs";
+import { existsSync } from "node:fs";
 import { EXIT } from "./exit.mjs";
 import { readAdoption } from "../core/repo.mjs";
 import * as t from "../ui/term.mjs";
@@ -75,6 +76,15 @@ export async function agentsCommand(cx) {
   }
   for (const u of unknown)
     out(`  ${t.glyph.fail} ${t.red(`unknown adapter in the config: ${u}`)}\n`);
+  // Which surfaces are actually covered, rather than which were named: an adapter whose file was
+  // never written is a repository that believes it is covered while the agent reads nothing.
+  const cover = surfaceCover((p) => existsSync(join(dir, p)));
+  out(`\n  ${t.gray("the files an agent would read")}\n`);
+  for (const c of cover)
+    out(
+      `  ${c.covered ? t.glyph.ok : t.glyph.skip} ${t.gray(c.contextFile.padEnd(12))} ${c.covered ? t.green("written") : t.gray("absent")} ${t.gray("· " + c.name)}\n`,
+    );
+
   out(
     `\n  ${t.gray(`this repository: ${adapters.map((a) => a.id).join(", ") || "none"} (config → agents)${adapters.some((a) => a.guarantees.night) ? "" : " · no adapter with hooks: no night, the gate and CI by day"}`)}\n\n`,
   );

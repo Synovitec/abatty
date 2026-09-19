@@ -134,15 +134,15 @@ Evidence: `07` F2 · `09` F28, F29 · `DESIGN.md` §2
 
 ## 4. Wave 3 · fast enough not to be worked around, easy enough not to be read about
 
-| ID  | Change                                                                              | State   | Size |
-| --- | ----------------------------------------------------------------------------------- | ------- | ---- |
-| C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | partial | M    |
-| C44 | Measurement is cached on the git tree of the paths a rule reads                     | landed  | M    |
-| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | landed  | M    |
-| C47 | The first run needs no configuration, no `--stack` and no profile                   | landed  | S    |
-| C32 | The latency tiers become a probe: a regression in cold start is a finding           | landed  | S    |
-| C9  | The context-file template ships near-empty by default                               | open    | S    |
-| C8  | `init` always writes the interoperable context file, and `agents` reports the cover | partial | S    |
+| ID  | Change                                                                              | State    | Size |
+| --- | ----------------------------------------------------------------------------------- | -------- | ---- |
+| C43 | Independent gate steps run together; the suite runs with the runner's concurrency   | partial  | M    |
+| C44 | Measurement is cached on the git tree of the paths a rule reads                     | landed   | M    |
+| C46 | `abatty fix --phase 0` writes the mechanical day-zero items and shows the diff      | landed   | M    |
+| C47 | The first run needs no configuration, no `--stack` and no profile                   | landed   | S    |
+| C32 | The latency tiers become a probe: a regression in cold start is a finding           | landed   | S    |
+| C9  | The context-file template ships near-empty by default                               | reshaped | S    |
+| C8  | `init` always writes the interoperable context file, and `agents` reports the cover | landed   | S    |
 
 **Done when**
 
@@ -265,8 +265,19 @@ Seven conditions. Six are the repository's own rules; the seventh is this plan's
 
 ## 10. Withdrawn
 
-Nothing yet. An item lands here when later work shows the research that asked for it was wrong
-for this package, with the reason and the date.
+An item lands here when later work shows the research that asked for it was wrong for this
+package, with the reason and the date.
+
+**C9, reshaped rather than done, 2026-09-19.** "The context-file template ships near-empty by
+default" cannot be done as written: `DOC-CONTEXT-SECTIONS` requires six sections in the context
+file, so a near-empty template would fail the package's own rule the moment `init` wrote it, and
+the first thing an adopter would see is a finding the tool created. The template was also already
+placeholders rather than content - the premise that it restates a codebase was wrong for it.
+
+What was right in the item, and is done: two sections restated things that live elsewhere. §6
+repeated the size table that is in `.claude/rules/size-limits.md`, and §2 listed commands for a
+stack the adopter may not have. Both now point rather than copy, and the file is 141 lines from 144. What is left of the idea belongs to a different item: a shorter set of required sections
+would have to change the rule first, and that is a change to the standard, not to a template.
 
 ## 11. What is already there, so it is not rebuilt
 

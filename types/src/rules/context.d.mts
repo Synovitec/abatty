@@ -52,6 +52,15 @@
  * @property {boolean} docsOnly no sources and no package: documents, decisions, a schema, a mockup
  */
 /**
+ * A context file whose whole body is `@other.md` names another file as the context. Returns the
+ * file a reader should actually read: the import's target when that is all there is, else the
+ * file itself. Two agents reading two names is the reason the import exists, and a rule that read
+ * the pointer and reported the sections missing would punish a repository for keeping one source
+ * instead of two copies.
+ * @param {string | null} named @param {(p: string) => boolean} exists @param {(p: string) => string} read
+ */
+export function followImport(named: string | null, exists: (p: string) => boolean, read: (p: string) => string): string | null;
+/**
  * Build the context of a repository. @param {string} repoDir @param {{ today?: string }} [o]
  * @returns {RepoContext}
  */
