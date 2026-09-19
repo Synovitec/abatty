@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The waiver rate, and a waiver that has run out** (C3). A waiver used to be a line in a list.
+  It is now a number: `abatty rules` and the gap analysis report the share of the rules that could
+  apply to this repository which it has set aside, over a denominator that excludes the rules that
+  never applied, so a narrow stack is not flattered. The point of the rate is the catalog, not the
+  repository: a rule that repository after repository waives is in all likelihood a rule that is
+  wrong, and nobody can measure a false-positive rate without first counting the times somebody
+  said "not here". A waiver whose `until` date has passed no longer quietly vanishes, taking the
+  promise with it: the rule is measured again AND the expired waiver is named, with its date, its
+  reason and what the rule reads now.
+
 - **A rule says how far a machine can hold it** (C17). The enforced share has always named the
   rules a night should move up a level, and some of them were never going anywhere: no check can
   prove a restore would actually come back, or that a redaction list names every field that would

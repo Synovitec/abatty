@@ -100,14 +100,23 @@ export async function rulesCommand(cx) {
     out(t.heading(fam));
     for (const r of list.filter((x) => x.family === fam))
       out(
-        `  ${r.waived ? t.glyph.skip : r.level === "must" ? t.glyph.ok : t.glyph.warn} ${t.bold(r.id.padEnd(22))} ${t.gray(r.level.padEnd(7))} ${t.gray(r.enforcement.padEnd(8))} ${t.gray(("phase " + r.phase).padEnd(12))} ${r.waived ? t.gray(r.title + " · waived") : stdIds(r.title)}${r.source && r.source !== "abatty" ? t.gray(" · " + r.source) : ""}\n`,
+        `  ${r.waived && !r.waived.expired ? t.glyph.skip : r.level === "must" ? t.glyph.ok : t.glyph.warn} ${t.bold(r.id.padEnd(22))} ${t.gray(r.level.padEnd(7))} ${t.gray(r.enforcement.padEnd(8))} ${t.gray(("phase " + r.phase).padEnd(12))} ${r.waived ? t.gray(r.title + (r.waived.expired ? ` · waiver expired ${r.waived.until}` : " · waived")) : stdIds(r.title)}${r.source && r.source !== "abatty" ? t.gray(" · " + r.source) : ""}\n`,
       );
   }
   const counts = ["hard", "ratchet", "review", "prose"].map(
     (e) => `${list.filter((r) => r.enforcement === e).length} ${e}`,
   );
+  // The waiver rate on the same screen as the catalog: it is a reading OF the catalog, and a
+  // rule this repository set aside is the first evidence that the rule, not the repository, is
+  // what needs looking at.
+  const set = list.filter((r) => r.waived && !r.waived.expired).length;
+  const expired = list.filter((r) => r.waived?.expired);
+  const rate = list.length ? Math.round((100 * set) / list.length) : 0;
   out(
-    `\n  ${t.gray(`${list.filter((r) => r.level === "must").length} must · ${list.filter((r) => r.level === "should").length} should · insured by: ${counts.join(", ")} · abatty explain <ID>`)}\n\n`,
+    `\n  ${t.gray(`${list.filter((r) => r.level === "must").length} must · ${list.filter((r) => r.level === "should").length} should · insured by: ${counts.join(", ")} · abatty explain <ID>`)}\n`,
+  );
+  out(
+    `  ${t.gray(`waived: ${set} of ${list.length} (${rate}%)${expired.length ? ` · ${expired.length} waiver(s) expired and measured again: ${expired.map((r) => r.id).join(", ")}` : ""}`)}\n\n`,
   );
   return;
 }

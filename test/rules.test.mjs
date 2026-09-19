@@ -8,6 +8,7 @@ import {
   RULES,
   controlOf,
   enforcedOf,
+  waiverOf,
   loadCatalog,
   ruleById,
   runCatalog,
@@ -423,4 +424,55 @@ test("every rule says which control it is: guide or sensor, computational or inf
   // This catalog is sensor-heavy, which is the honest reading of a package built around a gate.
   const sensors = RULES.filter((r) => controlOf(r).control === "sensor").length;
   assert.ok(sensors > RULES.length / 2, `${sensors} of ${RULES.length}`);
+});
+
+test("a waiver is counted per rule: the rate, and a waiver that has run out is measured again and said out loud", async () => {
+  const dir = tempRepo("waiver-rate", {
+    "package.json": NEXT_PKG,
+    "src/index.ts": "export const x = 1;\n",
+    "abatty.config.json": JSON.stringify({
+      rules: {
+        waived: {
+          "DOC-ADR": { reason: "the decisions live in the wiki", until: "2999-01-01" },
+          "DOC-CONVENTIONS": "no second stack to describe yet",
+          "SEC-AUDIT": { reason: "was meant to be revisited", until: "2020-01-01" },
+        },
+      },
+    }),
+  });
+  const catalog = await loadCatalog(dir, { today: "2026-09-19" });
+  assert.deepEqual(catalog.problems, []);
+  const findings = runCatalog(buildContext(dir), catalog.rules);
+  const w = waiverOf(findings);
+
+  assert.deepEqual(
+    w.waived.map((f) => f.id).sort(),
+    ["DOC-ADR", "DOC-CONVENTIONS"],
+    "the live waivers, and not the one that ran out",
+  );
+  assert.equal(w.considered > 2, true);
+  assert.equal(w.rate, Math.round((100 * 2) / w.considered));
+
+  // the expired one is measured again rather than silently reverted, and keeps saying so
+  const audit = findings.find((f) => f.id === "SEC-AUDIT");
+  assert.notEqual(audit?.status, "waived", "an expired waiver does not waive");
+  assert.equal(audit?.waiver?.expired, true);
+  assert.equal(audit?.waiver?.until, "2020-01-01");
+  assert.deepEqual(
+    w.expired.map((f) => f.id),
+    ["SEC-AUDIT"],
+  );
+
+  // the control in the other direction: a repository that waives nothing has a rate of zero
+  const clean = tempRepo("waiver-none", {
+    "package.json": NEXT_PKG,
+    "src/index.ts": "export const x = 1;\n",
+  });
+  const none = waiverOf(runCatalog(buildContext(clean), (await loadCatalog(clean)).rules));
+  assert.equal(none.rate, 0);
+  assert.deepEqual(none.expired, []);
+
+  const out = cli(["rules", dir], dir).out;
+  assert.match(out, /waived: 2 of \d+ \(\d+%\)/);
+  assert.match(out, /1 waiver\(s\) expired and measured again: SEC-AUDIT/);
 });

@@ -137,7 +137,13 @@ configs (`eslintText`, `tsconfigText`, `ciText`), its sources (`sourceFiles`, `d
 `isTs`, `packs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
 `.claude/adoption.json` → `rules.waived` (`"CODE-DUP": "not measured on a prototype"`, or
 `{ "reason": ..., "until": "2026-12-31" }`): listed, not scored, and since that file is
-read-only to the night's worker, a waiver is a human's decision.
+read-only to the night's worker, a waiver is a human's decision. A waiver with a date that has
+passed stops waiving and does **not** disappear: the rule is measured again and the expired
+waiver is reported by name, because a repository that set something aside until March should be
+told when March is over. `abatty rules` and the gap analysis print the **waiver rate** over the
+rules that could apply here - a rule that repository after repository waives is, in all
+likelihood, a rule that is wrong, and this is the first input to a false-positive rate the
+catalog can be judged by.
 
 ## What `init` writes
 

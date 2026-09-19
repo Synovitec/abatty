@@ -45,8 +45,9 @@ export { validate };
  * @property {(ctx: RepoContext) => Verdict} check the finding for a repository
  * @property {string} [source] "abatty" for the built-in rules, the file path for a repository's own
  *
- * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string } }} Finding
+ * @typedef {{ reason: string, until?: string, expired?: boolean }} Waiver
+ * @typedef {Rule & { waived?: Waiver }} CatalogRule
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver }} Finding
  */
 
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
@@ -125,7 +126,10 @@ export async function loadCatalog(repoDir, o = {}) {
     const reason = typeof w === "string" ? w : String(w.reason || "");
     const until = typeof w === "string" ? undefined : w.until;
     if (!reason) problems.push(`rules.waived: ${r.id} needs a reason`);
-    if (until && until < today) return r;
+    // An expired waiver stops waiving and does NOT disappear. The rule is measured again, as it
+    // should be, and the waiver stays on it marked expired: a repository that set a rule aside
+    // for six months should be told the six months are up, not quietly re-measured.
+    if (until && until < today) return { ...r, waived: { reason, until, expired: true } };
     return { ...r, waived: until ? { reason, until } : { reason } };
   });
   return {
@@ -149,7 +153,7 @@ export function runCatalog(ctx, catalog = RULES) {
   return catalog.map((r) => {
     /** @type {Verdict} */
     let v;
-    if (r.waived)
+    if (r.waived && !r.waived.expired)
       v = {
         status: "waived",
         evidence: `waived: ${r.waived.reason}${r.waived.until ? " (until " + r.waived.until + ")" : ""}`,
@@ -190,6 +194,7 @@ export function runCatalog(ctx, catalog = RULES) {
       when: r.when || "always",
       stages: r.stages || ["design", "build", "run"],
       ...(r.ceiling ? { ceiling: r.ceiling } : {}),
+      ...(r.waived ? { waiver: r.waived } : {}),
     };
   });
 }
@@ -229,6 +234,31 @@ export function enforcedOf(findings) {
       .filter(unheldByAMachine)
       .filter((f) => !belowCeiling(f))
       .map((f) => f.id),
+  };
+}
+
+/**
+ * The waiver reading: which rules this repository set aside, which of those set-asides have run
+ * out, and the share of the catalog it applies to.
+ *
+ * WHY a rate and not a list: a rule that repository after repository waives is, in all
+ * likelihood, a rule that is wrong, and nobody can measure a false-positive rate without first
+ * counting the times somebody said "not here". The denominator is the rules that could have been
+ * waived - a rule that does not apply to this stack was never a candidate, so counting it would
+ * flatter every repository with a narrow stack.
+ * @param {Finding[]} findings
+ * @returns {{ rate: number | null, considered: number, waived: Finding[], expired: Finding[] }}
+ */
+export function waiverOf(findings) {
+  const considered = findings.filter((f) => f.status !== "n/a");
+  const waived = considered.filter((f) => f.status === "waived");
+  return {
+    rate: considered.length ? Math.round((100 * waived.length) / considered.length) : null,
+    considered: considered.length,
+    waived,
+    // Set aside until a date that has passed: measured again, and said out loud rather than
+    // quietly reverted, because the repository made a promise with a date on it.
+    expired: findings.filter((f) => f.waiver?.expired),
   };
 }
 

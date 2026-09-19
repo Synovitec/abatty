@@ -8,14 +8,15 @@
  * partial = 0.5 over the applicable checks (not n/a, not waived) - a trend, not a verdict.
  */
 import { buildContext } from "../rules/context.mjs";
-import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf } from "../rules/index.mjs";
+import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf, waiverOf } from "../rules/index.mjs";
 import { phaseOf, standing } from "../rules/phases.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, problems: string[], profiles: string[], stage: string, stageFrom: string, plan: import("../rules/phases.mjs").PhaseCount[], phase: import("../rules/phases.mjs").PhaseCount | null }} GapResult
+ * @typedef {ReturnType<typeof waiverOf>} Waivers
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, waivers?: Waivers, problems: string[], profiles: string[], stage: string, stageFrom: string, plan: import("../rules/phases.mjs").PhaseCount[], phase: import("../rules/phases.mjs").PhaseCount | null }} GapResult
  */
 
 /** @param {import("../rules/phases.mjs").PhaseStanding} p the counts a reader sees, without the list behind them */
@@ -51,6 +52,7 @@ export function analyze(repoDir, o = {}) {
     findings,
     families: [...new Set(findings.map((f) => f.family))],
     waived: findings.filter((f) => f.status === "waived").length,
+    waivers: waiverOf(findings),
     problems: o.problems || [],
     profiles: o.profiles || ["synovitec"],
     stage: ctx.stage,
@@ -165,10 +167,19 @@ export function renderMarkdown(result) {
   for (const f of todo)
     md.push(`- **${f.id}** (phase ${f.phase}, ${f.status}, ${f.level}): ${stdIds(f.next)}`);
   md.push("");
-  if (waived.length) {
+  const waivers = result.waivers || waiverOf(findings);
+  if (waived.length || waivers.expired.length) {
     md.push("## Waived");
     md.push("");
+    md.push(
+      `**Waiver rate ${waivers.rate}%**: ${waived.length} of the ${waivers.considered} rules that could apply here are set aside. The rate is worth watching rather than the list: a rule that repository after repository waives is, in all likelihood, a rule that is wrong, and this count is the first input to a false-positive rate the catalog can be judged by. A rule that does not apply to this stack is not counted, because it was never a candidate.`,
+    );
+    md.push("");
     for (const f of waived) md.push(`- **${f.id}**: ${f.evidence.replace(/^waived: /, "")}`);
+    for (const f of waivers.expired)
+      md.push(
+        `- **${f.id}**: EXPIRED ${f.waiver?.until} and measured again since. It reads **${f.status}**. The reason given was: ${f.waiver?.reason}`,
+      );
     md.push("");
   }
   if (result.problems.length) {

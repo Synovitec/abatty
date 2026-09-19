@@ -55,6 +55,24 @@ export function enforcedOf(findings: Finding[]): {
     promotable: string[];
     atCeiling: string[];
 };
+/**
+ * The waiver reading: which rules this repository set aside, which of those set-asides have run
+ * out, and the share of the catalog it applies to.
+ *
+ * WHY a rate and not a list: a rule that repository after repository waives is, in all
+ * likelihood, a rule that is wrong, and nobody can measure a false-positive rate without first
+ * counting the times somebody said "not here". The denominator is the rules that could have been
+ * waived - a rule that does not apply to this stack was never a candidate, so counting it would
+ * flatter every repository with a narrow stack.
+ * @param {Finding[]} findings
+ * @returns {{ rate: number | null, considered: number, waived: Finding[], expired: Finding[] }}
+ */
+export function waiverOf(findings: Finding[]): {
+    rate: number | null;
+    considered: number;
+    waived: Finding[];
+    expired: Finding[];
+};
 /** The score of a list of findings: present = 1, partial = 0.5, over the applicable ones. @param {Finding[]} findings */
 export function scoreOf(findings: Finding[]): {
     score: number;
@@ -107,8 +125,9 @@ export { validate };
  * @property {(ctx: RepoContext) => Verdict} check the finding for a repository
  * @property {string} [source] "abatty" for the built-in rules, the file path for a repository's own
  *
- * @typedef {Rule & { waived?: { reason: string, until?: string } }} CatalogRule
- * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string } }} Finding
+ * @typedef {{ reason: string, until?: string, expired?: boolean }} Waiver
+ * @typedef {Rule & { waived?: Waiver }} CatalogRule
+ * @typedef {{ id: string, family: string, rule: string, status: Status, evidence: string, next: string, phase: string, level: Level, enforcement: Enforcement, standard: string[], when?: string, stages?: string[], ceiling?: { at: Enforcement, why: string }, waiver?: Waiver }} Finding
  */
 /** The built-in rules (the `synovitec` profile's), in the order the reports print them. @type {Rule[]} */
 export const RULES: Rule[];
@@ -188,11 +207,13 @@ export type Rule = {
      */
     source?: string | undefined;
 };
+export type Waiver = {
+    reason: string;
+    until?: string;
+    expired?: boolean;
+};
 export type CatalogRule = Rule & {
-    waived?: {
-        reason: string;
-        until?: string;
-    };
+    waived?: Waiver;
 };
 export type Finding = {
     id: string;
@@ -211,5 +232,6 @@ export type Finding = {
         at: Enforcement;
         why: string;
     };
+    waiver?: Waiver;
 };
 import { validate } from "./validate.mjs";

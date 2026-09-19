@@ -199,7 +199,7 @@ Evidence: `08` F16, F17, F18, F19, F20 · `07` F8 · `DESIGN.md` §1.3
 | ID  | Change                                                                              | State   | Size |
 | --- | ----------------------------------------------------------------------------------- | ------- | ---- |
 | C49 | Every preset run across the portfolio; what breaks is fixed and the preset is named | open    | L    |
-| C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | partial | S    |
+| C3  | A waiver is counted per rule, and `abatty rules` reports the waiver rate            | landed  | S    |
 | C5  | `abatty baseline` writes a reason and an owner per entry, not per write             | landed  | S    |
 | C6  | The baseline carries a schema version per metric                                    | landed  | S    |
 | C17 | Each rule carries a machine-ceiling flag; the unpromotable leave the queue          | landed  | S    |
@@ -289,7 +289,6 @@ Checked at `e043e66`. Each entry says what exists and what is actually missing.
 
 | ID  | Already built                                                                                                                                   | Missing                                                                                 |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| C3  | `loadCatalog` refuses a waiver without a reason and supports an `until` date that stops waiving when it passes (`src/rules/index.mjs`)          | The count per rule, and the rate in the report                                          |
 | C8  | `init` writes the interoperable context file when another configured adapter asks for it, and imports it from the primary (`src/core/init.mjs`) | It should be written always, and `agents` should report which surfaces are covered      |
 | C12 | `doctor --controls` plants a violation per gate step and reports a step that stays green as absent (`src/core/step-controls.mjs`)               | It is not a precondition: `src/night/preflight.mjs` never asks whether it ran           |
 | C13 | TEST-MUTATION exists in the catalog at hard, phase 10 (`src/rules/families/tests.mjs`)                                                          | Arid-node suppression before generation, and a per-diff mutant cap                      |
@@ -308,7 +307,7 @@ files; `D` is `DESIGN.md`.
 | --- | ---- | ------- | ---- | --- | ---- | ------- | ---- |
 | C1  | -    | landed  | 07   | C26 | 6    | open    | 08   |
 | C2  | 2    | open    | 07   | C27 | 6    | open    | 08   |
-| C3  | 5    | partial | 07   | C28 | -    | landed  | 08   |
+| C3  | 5    | landed  | 07   | C28 | -    | landed  | 08   |
 | C4  | 6    | open    | 07   | C29 | 1    | open    | 08   |
 | C5  | 5    | landed  | 07   | C30 | 1    | partial | 08   |
 | C6  | 5    | landed  | 07   | C31 | 2    | open    | 09   |
