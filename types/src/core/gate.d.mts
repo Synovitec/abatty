@@ -1,10 +1,10 @@
 /**
- * Run an npm script and say how it went; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
+ * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {import("./spawn.mjs").RunResult} RunResult
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
-export function runScript(repoDir: string, script: string, extraArgs?: string[]): RunResult;
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
-export function runCommand(repoDir: string, argv: string[]): RunResult;
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
  * a rebase or an amend it is not, and the diff would show the amend delta rather than the
@@ -31,7 +31,6 @@ export function runGate(o: GateOptions): {
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
 export function missingGateScripts(repoDir: string, preset: import("../presets/index.mjs").Preset): (string | undefined)[];
-export function asResult(r: RunResult | number): RunResult;
 export type GateOutcome = "ok" | "failed" | "errored" | "skipped" | "deferred";
 export type GateEvent = {
     label: string;
@@ -46,11 +45,7 @@ export type GateEventW = {
     ms?: number;
     workspace?: string;
 };
-export type RunResult = {
-    code: number;
-    errored?: boolean;
-    detail?: string;
-};
+export type RunResult = import("./spawn.mjs").RunResult;
 export type GateOptions = {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;

@@ -5,6 +5,18 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The shell is gone from every spawn site that did not need it** (C42). Eleven sites passed a
+  command and an argument array and then handed both to a shell, which only added a layer that
+  re-parses quoting, behaves differently on Windows, and sits exactly where a repository's own
+  scripts run during an unattended night. What the shell was actually covering is narrower: on
+  Windows the node tool launchers are batch files and the bare name does not resolve, so
+  `src/core/spawn.mjs` names the launcher instead, which does the same job without handing the
+  arguments to a parser. Two sites keep a shell and say why in a comment: the night's pre-flight
+  and the Stop hook each run one command string the repository configured, not a command and its
+  arguments, and that string comes from the config the hooks trust.
+
 ### Fixed
 
 - **A change under a shared package left the application that imports it ungated** (C29). The

@@ -230,6 +230,9 @@ export function preflight(o, c) {
 
   // Pre-flight: the gate is green before anything is asked of the model.
   log(`[${clock()}] pre-flight: ${gateCmd}`);
+  // The gate is one command string the repository configured ("npm run gate"), not a command and
+  // its arguments, so a shell is what runs it. This is the one site in the package where that is
+  // load-bearing, and the string comes from the config the hooks trust, never from a session.
   const gate = spawnSync(gateCmd, {
     cwd: repoDir,
     shell: true,

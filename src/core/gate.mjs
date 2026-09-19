@@ -16,6 +16,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { asResult, bin, dockerRunning, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readPackage } from "./repo.mjs";
 import { auditOutcome, scanSecrets } from "./secrets.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
@@ -25,58 +26,9 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {{ code: number, errored?: boolean, detail?: string }} RunResult
+ * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
-
-/**
- * Did the tool run and report, or did it never get to report? A tool that exits non-zero has
- * judged the work; a tool that could not be spawned, was killed by a signal, or that the shell
- * could not find or execute has judged nothing, and calling that a failure tells the reader
- * their work is bad when the instrument is what broke.
- * @param {import("node:child_process").SpawnSyncReturns<string | Buffer>} r @returns {RunResult}
- */
-function resultOf(r) {
-  if (r.error)
-    return {
-      code: r.status ?? 1,
-      errored: true,
-      detail: /** @type {NodeJS.ErrnoException} */ (r.error).code
-        ? `${/** @type {NodeJS.ErrnoException} */ (r.error).code}: ${r.error.message}`
-        : r.error.message,
-    };
-  if (r.signal) return { code: 1, errored: true, detail: `killed by ${r.signal}` };
-  if (r.status === 127) return { code: 127, errored: true, detail: "command not found" };
-  if (r.status === 126) return { code: 126, errored: true, detail: "command not executable" };
-  return { code: r.status ?? 1 };
-}
-
-/** A runner may answer with a bare exit code; read it as one that ran. @param {RunResult | number} r @returns {RunResult} */
-export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
-
-/**
- * Run an npm script and say how it went; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
- */
-export function runScript(repoDir, script, extraArgs = []) {
-  return resultOf(
-    spawnSync("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])], {
-      cwd: repoDir,
-      stdio: "inherit",
-      shell: true,
-    }),
-  );
-}
-
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
-export function runCommand(repoDir, argv) {
-  const [cmd, ...args] = argv;
-  return resultOf(spawnSync(String(cmd), args, { cwd: repoDir, stdio: "inherit", shell: true }));
-}
-
-function dockerRunning() {
-  return spawnSync("docker", ["info"], { stdio: "ignore", shell: true }).status === 0;
-}
 
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
@@ -197,10 +149,9 @@ export function runGate(o) {
       log(`\n▶ ${s.label}`);
       const t0 = Date.now();
       const a = auditOutcome(repoDir, (cmd, args) => {
-        const r = spawnSync(cmd, args, {
+        const r = spawnSync(bin(cmd), args, {
           cwd: repoDir,
           encoding: "utf8",
-          shell: true,
           maxBuffer: 16 * 1024 * 1024,
         });
         return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };

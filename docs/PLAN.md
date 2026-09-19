@@ -102,7 +102,8 @@ C48 landed with the exit codes of C30: 0 clean, 2 bad input, 3 found violations,
   repository that installs the package and is its own item.
 - In a fixture monorepo where an application imports a shared package, a change to the package
   alone selects the application. Where the graph cannot be read, the output names the fallback.
-- `grep -rn "shell: true" src bin` returns only sites with a comment saying why.
+- `grep -rn "shell: true" src bin templates` returns only sites with a comment saying why: two,
+  both a command string the repository configured rather than a command and its arguments.
 
 Evidence: `08` F19, F23, F24 · `DESIGN.md` §1.1, §1.2, §1.4, §3.1, §4.2
 
