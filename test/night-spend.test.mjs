@@ -6,6 +6,7 @@ import { STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { night, nightRepo, setGate } from "./night-helpers.mjs";
 import { prepareSandbox } from "../src/night/sandbox.mjs";
 import { runNight } from "../src/night/runner.mjs";
+import { localToday } from "../src/core/today.mjs";
 
 test("under the sandbox the tamper cannot happen: the filesystem refuses the write, the night goes on, the config is what it was", (t) => {
   const dir = nightRepo("night-sandboxed");
@@ -35,7 +36,7 @@ test("under the sandbox the tamper cannot happen: the filesystem refuses the wri
   );
   const run = JSON.parse(readFileSync(join(dir, ".claude/night/run.json"), "utf8"));
   assert.notEqual(run.sandbox, "none");
-  const nightDir = join(dir, ".claude/night", new Date().toISOString().slice(0, 10));
+  const nightDir = join(dir, ".claude/night", localToday());
   const stderr = readdirSync(nightDir)
     .filter((f) => /^phase-11-.*stderr\.txt$/.test(f))
     .map((f) => readFileSync(join(nightDir, f), "utf8"))

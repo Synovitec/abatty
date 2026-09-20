@@ -19,6 +19,7 @@ import { synovitec } from "../profiles/synovitec.mjs";
 import { catalogOf, loadProfiles, phasesOf } from "../profiles/index.mjs";
 import { whereOf } from "./agent.mjs";
 import { validate } from "./validate.mjs";
+import { localToday } from "../core/today.mjs";
 
 export { validate };
 
@@ -114,7 +115,7 @@ export async function loadCatalog(repoDir, o = {}) {
   const loaded = await loadProfiles(repoDir, adoption);
   const base = catalogOf(loaded.profiles);
   const local = await loadLocalRules(repoDir, adoption, base);
-  const today = o.today || new Date().toISOString().slice(0, 10);
+  const today = o.today || localToday();
   /** @type {Record<string, { reason?: string, until?: string } | string>} */
   const waived = adoption?.rules?.waived || {};
   const problems = [...loaded.problems, ...local.problems];

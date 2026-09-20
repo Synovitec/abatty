@@ -6,6 +6,7 @@ import { STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { night, nightRepo, setGate } from "./night-helpers.mjs";
 import { deadlineOf } from "../src/night/session.mjs";
 import { judgeMcp } from "../src/night/canary.mjs";
+import { localToday } from "../src/core/today.mjs";
 
 test("the deadline: HH:MM is today or tomorrow, +Nmin is relative", () => {
   const now = new Date("2026-09-15T22:00:00");
@@ -34,7 +35,7 @@ test("a stub night: pre-flight green, the canary green, the phase done, the wrap
   assert.equal(r.code, 0);
   assert.match(r.out, /canary ok/);
   assert.match(r.out, /night-run done/);
-  assert.equal(r.branch, `adopt/standards-${new Date().toISOString().slice(0, 10)}`);
+  assert.equal(r.branch, `adopt/standards-${localToday()}`);
   assert.equal(git(dir, "rev-parse", "--abbrev-ref", "HEAD"), r.branch);
   const state = JSON.parse(readFileSync(join(dir, "docs/ADOPTION_STATE.json"), "utf8"));
   assert.equal(state.phases[0].status, "done");
@@ -47,11 +48,7 @@ test("a stub night: pre-flight green, the canary green, the phase done, the wrap
     0,
     "clean tree",
   );
-  assert.ok(
-    existsSync(
-      join(dir, ".claude/night", new Date().toISOString().slice(0, 10), "preflight-gate.txt"),
-    ),
-  );
+  assert.ok(existsSync(join(dir, ".claude/night", localToday(), "preflight-gate.txt")));
   assert.ok(r.spent > 0 && r.spent < 10, `spent ${r.spent}`);
   assert.equal(r.pushed, false);
   // the numbers are JSON, never a locale: the run file reads back

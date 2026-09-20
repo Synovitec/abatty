@@ -18,6 +18,7 @@ import {
 import { buildContext } from "../src/rules/context.mjs";
 import { analyze, measure } from "../src/core/gap-analysis.mjs";
 import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
+import { localToday } from "../src/core/today.mjs";
 
 // The checks of the first days, by ID: a rule renamed or dropped by accident would break every
 // dated report that cites it. Adding one appends here.
@@ -339,10 +340,7 @@ test("the markdown report carries the level and the insurance of every check", (
   const dir = tempRepo("md", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
   const r = cli(["measure", dir, "--quiet"], dir);
   assert.equal(r.code, 0, r.out);
-  const md = readFileSync(
-    join(dir, "docs", `GAP_ANALYSIS_${new Date().toISOString().slice(0, 10)}.md`),
-    "utf8",
-  );
+  const md = readFileSync(join(dir, "docs", `GAP_ANALYSIS_${localToday()}.md`), "utf8");
   assert.match(md, /\| ID \| Family \| Rule \| Level \| Insured by \| Status \|/);
   assert.match(md, /\| CODE-DEADCODE \| Code \| [^|]+ \| must \| hard \| \*\*missing\*\* \|/);
   assert.match(md, /abatty explain <ID>/);

@@ -13,6 +13,7 @@
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { localToday } from "./today.mjs";
 
 /** @typedef {{ id: string, reason: string, until?: string }} Allowance */
 /** @typedef {{ outcome: "ok" | "failed" | "skipped" | "deferred", detail: string, allowed?: string[], expired?: string[] }} AuditOutcome */
@@ -86,7 +87,7 @@ export function auditOutcome(repoDir, run, o = {}) {
   )
     return { outcome: "skipped", detail: "no package-lock.json (an npm audit needs one)" };
   const level = SEVERITY.includes(String(o.level)) ? String(o.level) : "high";
-  const today = o.today || new Date().toISOString().slice(0, 10);
+  const today = o.today || localToday();
   const { live, expired } = splitAllowances(o.allow || [], today);
   const expiredNote = expired.length
     ? `allowance(s) expired: ${expired.map((a) => `${a.id} on ${a.until}`).join(", ")}`

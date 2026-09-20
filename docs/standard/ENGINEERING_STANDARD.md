@@ -17,7 +17,7 @@ related:
     "../README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-18"
+last_verified: "2026-09-20"
 source_truth:
   - "./research/*.md"
   - "./guides/*.md"
@@ -199,6 +199,15 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
   so the hook's own cap stays below that), a `SessionStart` brief, and an optional
   lint-on-edit. Hooks are Node scripts in exec form; a Bash rule text-match is not a security
   boundary, the hook reads the whole command.
+- **A hook guards one tool's shell; the repository needs the same refusal in every shell.** A
+  guard that lives in a `PreToolUse` hook is a property of that tool, not of the repository: the
+  same force push goes through from a second terminal, a script, a CI step or another assistant.
+  The harness therefore also installs a `git` earlier on `PATH` than the real one
+  (`.claude/bin/`), refusing exactly the two things the guard always denies, reading argv so a
+  quoted flag and a shell variable arrive already expanded, and handing everything else through
+  with its exit code, signals and stdio unchanged. It refuses those two and nothing else: a shim
+  that second-guesses the rest of git is a shim people uninstall, and an uninstalled layer
+  refuses nothing. The deliberate way past it says so on stderr.
 - **The harness is read-only to the worker it constrains.** A control the constrained actor
   can rewrite is prose. At night nothing under `.claude/` is writable from any tool, the Stop
   gate reads the root config from the base branch rather than the tree, a direction check
@@ -518,6 +527,17 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   customer table whose address survives elsewhere has not been forgotten. The Article 15
   export reads the same list. Production data never enters a lower environment; fixtures are
   synthetic; a diagnostic script masks names because its output ends up in a ticket.
+- **SEC.7 (MUST) - A repository an agent reads is hostile input, and the agent's own permissions
+  are a control.** An unattended run is a session with no reviewer, and the two directions of
+  trust are both open by default. So: the run is sandboxed and the sandbox proves its own
+  boundary with a probe that writes where it must not reach; the permission surface is written
+  down rather than whatever the tool defaulted to, with the force push, the history rewrite and
+  the hook bypass denied; the tree's own text is scanned before a model is pointed at it, because
+  text in a file an agent reads is an instruction in exactly the way a prompt is and a repository
+  is a place other people can write; the servers a run may reach are named and only those; the
+  refusals hold in every shell and not only the agent's, which is a `git` earlier on `PATH` than
+  the real one; and a commit that got past the hook is visible afterwards rather than invisible.
+  Each of those is a control the constrained actor must not be able to rewrite.
 - **CONFIG.1 (MUST) - Config precedence is written down.** A database row that silently
   beats an environment variable is documented in `CLAUDE.md` with the invalidation delay. A
   rate limiter that is in-memory is correct for ONE instance and says so beside the switch

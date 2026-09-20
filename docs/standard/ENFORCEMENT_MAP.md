@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-18"
+last_verified: "2026-09-20"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -35,9 +35,11 @@ and this page says which layer each rule sits in.
 | **Review**  | The `standards-reviewer` agent's checklist item before every phase commit, and a human in the morning                         | The reviewer is a model; a `must` it misses ships                                  |
 | **Prose**   | Written in the standard, checked by nothing                                                                                   | Anyone, silently                                                                   |
 
-The night run adds three controls that sit above every rule: the **guard hook** (denies the
-dangerous commands before they run), the **stop-gate hook** (the session cannot end while the
-gate is red, the tree is dirty, the changelog is untouched or the state file is stale), and
+The night run adds four controls that sit above every rule: the **guard hook** (denies the
+dangerous commands before they run), the **git shim** on `PATH` (refuses the same force push and
+hook bypass in every other shell, because a guard that lives in one tool's hook is a property of
+that tool rather than of the repository), the **stop-gate hook** (the session cannot end while
+the gate is red, the tree is dirty, the changelog is untouched or the state file is stale), and
 **CI on the pushed branch** (re-runs every gate independently of the model). A rule enforced
 by the gate is therefore enforced three times: at the stop, at the push, and in CI.
 

@@ -6,6 +6,7 @@ import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { recordControls } from "./night-helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
 import { distil, gatherNight, nightDates, renderNightReport } from "../src/night/report.mjs";
+import { localToday } from "../src/core/today.mjs";
 
 /** A repository with the harness committed, a no-op gate and one phase. @param {string} name */
 function nightRepo(name) {
@@ -39,7 +40,7 @@ test("after a stub night: the facts are gathered, the recurring dirty-tree block
     log: () => {},
   });
   assert.equal(r.ok, true);
-  const date = new Date().toISOString().slice(0, 10);
+  const date = localToday();
   assert.deepEqual(nightDates(dir), [date]);
   const n = gatherNight(dir);
   assert.ok(n);
@@ -82,6 +83,16 @@ test("no night, no report: the command says so and names the folders it knows", 
   assert.equal(gatherNight(dir), null);
 });
 
+/**
+ * An instant on the night's date, in the zone the night's folder is named for.
+ *
+ * `${date}T22:01:00Z` is not that: it is a UTC instant, and at UTC+12 it lands on the following
+ * local day, so the night's own reader correctly refuses it. Dropping the `Z` makes the string
+ * a LOCAL time, which is what "22:01 on the night of <date>" means to everybody who writes it.
+ * @param {string} date @param {string} clock
+ */
+const on = (date, clock) => new Date(`${date}T${clock}`).toISOString();
+
 test("the heuristics, on synthetic evidence: a refused command shape, a denial storm, a crash, a blocked phase, a recurring decision, a direction finding, a failed canary", () => {
   const dir = tempRepo("nr-synthetic", {
     "package.json": NEXT_PKG,
@@ -94,7 +105,7 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
   writeFileSync(
     join(night, "run.json"),
     JSON.stringify({
-      startedAt: `${date}T22:00:00Z`,
+      startedAt: on(date, "22:00:00"),
       branch: "adopt/standards-2026-09-15",
       base: "main",
       until: "07:00",
@@ -120,19 +131,21 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
     join(night, "guard-denials.jsonl"),
     [
       JSON.stringify({
-        at: `${date}T22:01:00.000Z`,
+        at: on(date, "22:01:00"),
         tool: "Bash",
         command: "git push --force origin main",
         reason: "force",
       }),
       JSON.stringify({
-        at: `${date}T22:02:00.000Z`,
+        at: on(date, "22:02:00"),
         tool: "Bash",
         command: "git push --force origin feat",
         reason: "force",
       }),
       JSON.stringify({
-        at: `2026-09-14T22:02:00.000Z`,
+        // The previous night, and LOCAL like the others: as a UTC instant it lands on the 15th
+        // at UTC+12, so the thing this entry exists to prove would have stopped being proved.
+        at: on("2026-09-14", "22:02:00"),
         tool: "Bash",
         command: "rm -rf x",
         reason: "old night",
@@ -142,7 +155,7 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
   writeFileSync(
     join(night, "stop-gate-s1.json"),
     JSON.stringify({
-      at: `${date}T22:03:00.000Z`,
+      at: on(date, "22:03:00"),
       sessionId: "s1",
       phase: "1",
       decision: "block",
@@ -159,7 +172,7 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
     [1, 2, 3]
       .map((n) =>
         JSON.stringify({
-          at: `${date}T22:0${n}:30.000Z`,
+          at: on(date, `22:0${n}:30`),
           sessionId: "s1",
           phase: "1",
           check: "gate",
@@ -172,7 +185,7 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
   writeFileSync(
     join(dir, "docs/ADOPTION_STATE.json"),
     JSON.stringify({
-      startedAt: `${date}T22:00:00Z`,
+      startedAt: on(date, "22:00:00"),
       phases: [
         { id: 1, status: "blocked", reason: "still in_progress after 2 sessions (1 no-op)" },
       ],

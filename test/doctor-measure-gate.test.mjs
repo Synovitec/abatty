@@ -9,6 +9,7 @@ import { presetById } from "../src/presets/index.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 import { normalise } from "../src/core/doctor.mjs";
 import { sampleTrailer } from "../src/core/vocabulary.mjs";
+import { localToday } from "../src/core/today.mjs";
 
 test("doctor after init: the repository's self-test runs and every shipped file is in step", () => {
   const dir = tempRepo("doctor", { "package.json": NEXT_PKG });
@@ -70,10 +71,7 @@ test("measure writes the dated report with the standard's front matter and a sco
   const r = cli(["measure", dir, "--quiet"], dir);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /Score \d+\/100 over \d+ applicable checks/);
-  const report = readFileSync(
-    join(dir, "docs", `GAP_ANALYSIS_${new Date().toISOString().slice(0, 10)}.md`),
-    "utf8",
-  );
+  const report = readFileSync(join(dir, "docs", `GAP_ANALYSIS_${localToday()}.md`), "utf8");
   assert.match(report, /^---\ntitle: "Gap analysis/);
   assert.match(report, /\| INST-GATE \|/);
   assert.doesNotMatch(

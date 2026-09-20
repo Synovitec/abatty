@@ -149,6 +149,37 @@ is worth nothing if it only contains what its author noticed.
   over four cores, so about 64 s is the theoretical best. A concurrency flag moves it by two
   seconds and splitting the longest file moves it by none, both measured.
 
+## A second review, 2026-09-20: a timezone bug, found by a control
+
+The same reviewer ran the suite at 01:55 CEST and two cases failed that pass at UTC.
+`docs.behindCode` reported a document as behind code it had been verified against **on the same
+day**: the probe's same-day guard compared a UTC "today" against git's `%cs`, which is the
+committer's local day. A hard metric, so it failed a gate, for every user east of Greenwich in
+the hours before midnight and west of it after.
+
+Three things about this are worth recording.
+
+**A control case caught it, on something nobody was looking for.** `docs.behindCode`'s own
+"a doc verified today holds" case is what went red. That is the entire argument for the control
+mechanism, and this is the first time in this repository's history that it earned its keep on an
+unknown rather than on a regression somebody expected.
+
+**The fix was a class, not a line.** One `localToday()` and seven call sites moved onto it, so
+the mistake is unavailable rather than patched. Then the suite was run across five timezones,
+which found four more instances in the tests themselves and two nobody had looked at: the night
+report matched hooks' UTC timestamps against a local folder name by string prefix, silently
+dropping every Stop receipt for anybody not at Greenwich, and its own fixtures built UTC instants
+out of local dates. None of that was in the review; all of it was the same bug.
+
+**The suite could not see any of it.** It only ever ran at UTC, where the defect does not exist.
+The regression cases now pin a zone whose calendar day differs from UTC's at whatever hour they
+run, because named cities agree with UTC for several hours a day and a test that is only
+sometimes a test is not one.
+
+The same round found six agent-security rules citing `SEC.5`, which the published standard
+defines as outbound webhook signing. The standard gained `SEC.7` for what those rules are
+actually about.
+
 ## Two targets that were restated rather than met
 
 Honest failure is still failure, and the record should read that way.

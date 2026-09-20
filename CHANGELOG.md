@@ -7,6 +7,37 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Dates were derived in UTC and compared against local ones** (from an outside review). The
+  reviewer's `npm test` failed two cases at 01:55 CEST that pass at UTC: `docs.behindCode`
+  reported a document as behind code it had been verified against on the same day, because the
+  probe's same-day guard compared a UTC "today" against git's `%cs`, which is the committer's
+  local day. It is a HARD metric, so it failed a gate, for every user east of Greenwich in the
+  hours before midnight and west of it after. The probe's own control case is what caught it.
+  Every date is now derived by one `localToday()`, so the mistake is unavailable rather than
+  merely fixed, and seven call sites were moved onto it. Running the suite across five timezones
+  found four more of the same defect in the tests themselves and two deeper ones nobody had
+  looked at: the night report matched hooks' UTC timestamps against a local folder name with a
+  string prefix, which silently dropped every Stop receipt for anybody not at Greenwich, and its
+  fixtures built UTC instants out of local dates. The suite now passes in UTC, Paris, Auckland,
+  Los Angeles and Kolkata, and the regression cases pin a zone whose calendar day differs from
+  UTC's at whatever hour they run, because a suite that only runs at UTC cannot see any of this.
+- **Six agent-security rules cited `SEC.5`, which the published standard defines as outbound
+  webhook signing.** A collision introduced when the family was added. The standard gains
+  `SEC.7`, which says what those rules are actually about, and the six now cite it.
+
+### Changed
+
+- **The standard documents say what the harness now ships.** `docs.behindCode` flagged four of
+  them once the day rolled over, correctly: they describe a harness that moved under them. The
+  git shim is now in the enforcement map's night controls (three became four), in the adoption
+  plan's inventory of what `init` writes, as an invariant of its own in the engineering standard,
+  and with a section in the autonomous-adoption guide explaining why a `PreToolUse` hook is a
+  property of one tool rather than of the repository. The adoption plan also said "the seven
+  hooks" when there are nine. Each date was bumped because the document was re-read and changed,
+  which is the only reason §7 allows for bumping one.
+
+### Fixed
+
 - **The trust scanner fired on its own repository, and would have blocked a night here** (from an
   outside review). Ten findings on this tree, every one a false positive: the scanner's own
   pattern table, its own test fixtures, the permission deny-list that forbids `rm -rf /`, and

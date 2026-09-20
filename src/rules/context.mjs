@@ -12,6 +12,7 @@ import { basename, join, relative, resolve, sep } from "node:path";
 import { readAdoption } from "../core/repo.mjs";
 import { stageOf } from "./stage.mjs";
 import { detectPacks } from "../packs/index.mjs";
+import { localToday } from "../core/today.mjs";
 
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -114,7 +115,7 @@ export function followImport(named, exists, read) {
 
 export function buildContext(repoDir, o = {}) {
   const REPO = resolve(repoDir);
-  const today = o.today || new Date().toISOString().slice(0, 10);
+  const today = o.today || localToday();
 
   /** @param {string} p */
   const exists = (p) => existsSync(join(REPO, p));
