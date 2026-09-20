@@ -22,6 +22,22 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Two gate steps here had never once been watched going red** (found while proving the date
+  metric). `abatty doctor --controls` plants a violation per gate step and reports a step that
+  stays green as ABSENT, and on this repository it had been reporting typecheck and unit tests
+  as absent on every run. Two causes, both the same mistake: the plant assumed a convention the
+  repository does not keep. The typecheck control wrote a `.ts` file, and this tsconfig includes
+  `**/*.mjs` only, so the compiler never read it; the test control wrote `src/*.test.ts`, and the
+  test script globs `test/*.test.mjs`, so the runner never ran it. The plant now follows the
+  repository: the extension its own tsconfig covers, with the type error written as JSDoc where
+  that is JavaScript, and the folder and name its own test script globs. A second hole in the
+  same mechanism: a planted step inherited `NODE_TEST_CONTEXT` from whatever spawned it, and a
+  `node --test` that sees it exits 0 on a test that threw, so the control watched a failure and
+  called the step green. The planted step now runs with that variable and the coverage one
+  removed. Both fixes are mutation-tested against a fixture whose typecheck and runner are
+  deliberately narrow. The mechanism was not silent about any of this: it printed ABSENT and
+  exited 3 every time. CI runs the self-test skipped, so nothing downstream acted on it.
+
 - **Dates were derived in UTC and compared against local ones** (from an outside review). The
   reviewer's `npm test` failed two cases at 01:55 CEST that pass at UTC: `docs.behindCode`
   reported a document as behind code it had been verified against on the same day, because the

@@ -36,7 +36,12 @@ function fixture(name) {
 test("every step has a control that means something; planted, run, removed: a step that goes red is proven, one that stays green is absent, one without a script is skipped", () => {
   for (const [key, c] of Object.entries(STEP_CONTROLS)) {
     assert.ok(c.means, `${key} says what it plants`);
-    const files = c.files(new Set(["vitest"]), "javascript");
+    const files = c.files({
+      deps: new Set(["vitest"]),
+      pack: "javascript",
+      dir: process.cwd(),
+      scripts: {},
+    });
     assert.ok(
       Object.keys(files).every((f) => f.includes("abatty-control.__")),
       `${key} plants under the control name`,
@@ -112,4 +117,80 @@ test("doctor --controls prints the verdict per step and is not ok while a step i
   const proven = analyze(fresh).findings.find((f) => f.id === "INST-CONTROLS");
   assert.equal(proven?.status, "present", proven?.evidence);
   assert.match(proven?.evidence || "", /\d+ step\(s\) went red on a planted violation/);
+});
+
+/**
+ * A repository whose typecheck reads JavaScript and whose test runner reads one folder: the shape
+ * abatty itself has, and the shape a planted `src/*.test.ts` is invisible to. Both scripts stand
+ * in for the real tools the way the fixture above does, and both are DELIBERATELY narrow, so a
+ * control planted anywhere other than where the script looks leaves the step green.
+ * @param {string} name
+ */
+function narrowFixture(name) {
+  const dir = tempRepo(name, {
+    "package.json":
+      JSON.stringify({
+        name: "narrow",
+        private: true,
+        scripts: {
+          typecheck: "node typecheck.mjs",
+          test: 'node --test "test/*.test.mjs"',
+        },
+      }) + "\n",
+    "tsconfig.json": JSON.stringify({ include: ["src/**/*.mjs"] }) + "\n",
+    // Reads src/*.mjs alone, and refuses a JSDoc type that the value contradicts.
+    "typecheck.mjs":
+      'import { readFileSync, readdirSync } from "node:fs";\n' +
+      'for (const f of readdirSync("src").filter((n) => n.endsWith(".mjs")))\n' +
+      '  if (/@type \\{number\\}[\\s\\S]*?= "/.test(readFileSync("src/" + f, "utf8"))) process.exit(1);\n',
+    "src/a.mjs": "export const a = 1;\n",
+    "test/a.test.mjs": 'import { test } from "node:test";\ntest("holds", () => {});\n',
+    ".prettierrc": "{}\n",
+  });
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "chore: the tree");
+  return dir;
+}
+
+test("the plant follows the repository: the typecheck's own extension and the test script's own folder, not a convention the repository does not keep", () => {
+  const ctx = {
+    deps: new Set(),
+    pack: "javascript",
+    dir: narrowFixture("controls-paths"),
+    scripts: { test: 'node --test "test/*.test.mjs"' },
+  };
+  assert.deepEqual(Object.keys(STEP_CONTROLS.typecheck?.files(ctx) || {}), [
+    "src/abatty-control.__.mjs",
+  ]);
+  assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(ctx) || {}), [
+    "test/abatty-control.__.test.mjs",
+  ]);
+  // A tsconfig that covers TypeScript, and a runner with no glob of its own, keep the convention.
+  const tsCtx = { ...ctx, dir: process.cwd() + "/no-such-dir", scripts: { test: "vitest run" } };
+  assert.deepEqual(Object.keys(STEP_CONTROLS.typecheck?.files(tsCtx) || {}), [
+    "src/abatty-control.__.ts",
+  ]);
+  assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(tsCtx) || {}), [
+    "src/abatty-control.__.test.ts",
+  ]);
+});
+
+test("against a narrow typecheck and a one-folder test runner, both steps go red: the control the old plant could not reach", () => {
+  const dir = narrowFixture("controls-narrow");
+  const preset = presetById("node");
+  assert.ok(preset);
+  const r = runStepControls({ repoDir: dir, preset });
+  const by = Object.fromEntries(r.steps.map((s) => [s.label.replace(/ \(.*/, ""), s]));
+  assert.equal(by["typecheck"]?.outcome, "red", JSON.stringify(by["typecheck"]));
+  assert.equal(by["unit tests"]?.outcome, "red", JSON.stringify(by["unit tests"]));
+  assert.deepEqual(r.absent, [], "nothing stayed green");
+  // Planted, run, removed: a control that leaves its file behind is a control that breaks the tree.
+  assert.deepEqual(
+    readdirSync(join(dir, "src")).filter((f) => f.includes("abatty-control")),
+    [],
+  );
+  assert.deepEqual(
+    readdirSync(join(dir, "test")).filter((f) => f.includes("abatty-control")),
+    [],
+  );
 });
