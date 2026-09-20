@@ -5,6 +5,7 @@
  */
 import { dirname, posix } from "node:path";
 import { frontMatter, matchesAny, regexes } from "./lib.mjs";
+import { localToday } from "../../core/today.mjs";
 
 const CITATION =
   /`([^`\s]+\/[^`\s]*\.(?:mjs|cjs|js|ts|tsx|jsx|json|jsonc|md|ya?ml|sql|ps1|sh|toml|css)(?::\d+)?)`/g;
@@ -235,9 +236,7 @@ export const probes = [
       {
         name: "a doc verified today holds",
         files: {
-          "docs/a.md": FM(
-            `last_verified: "${new Date().toISOString().slice(0, 10)}"\nsource_truth:\n  - "src/x.ts"\n`,
-          ),
+          "docs/a.md": FM(`last_verified: "${localToday()}"\nsource_truth:\n  - "src/x.ts"\n`),
           "src/x.ts": "export {};\n",
         },
         expect: 0,

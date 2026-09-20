@@ -29,6 +29,7 @@ import {
   writeJsonFile,
 } from "./repo.mjs";
 import { presetRules } from "../presets/index.mjs";
+import { localToday } from "./today.mjs";
 
 export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
@@ -115,7 +116,7 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     writeFileSync(base, text);
   }
   /** @type {Lock} */
-  const lock = { abatty: version, installedAt: new Date().toISOString().slice(0, 10), files };
+  const lock = { abatty: version, installedAt: localToday(), files };
   writeJsonFile(repoDir, LOCK, lock);
   return lock;
 }

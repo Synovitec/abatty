@@ -14,6 +14,7 @@ import { distil } from "./lessons.mjs";
 export { distil } from "./lessons.mjs";
 export { renderNightReport } from "./report-render.mjs";
 import { footprintShare, harnessFootprint } from "./footprint.mjs";
+import { localToday } from "../core/today.mjs";
 
 /**
  * @typedef {{ name: string, phase: string, cost: number, denials: number, crashed: boolean, isError: boolean, sessionId: string }} SessionFact
@@ -39,6 +40,21 @@ function listDir(p) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Whether a hook's timestamp falls on the night's date.
+ *
+ * The hooks write `at` as a UTC instant and the night's folder is named for the LOCAL day, so a
+ * string prefix match silently drops every receipt for anybody not at Greenwich: under UTC-7 a
+ * receipt written at 18:00 local carries tomorrow's UTC date. The instant is converted to the
+ * local calendar and compared there, which is the calendar the folder was named in.
+ * @param {unknown} at @param {string} date
+ */
+function onDate(at, date) {
+  if (typeof at !== "string") return false;
+  const when = new Date(at);
+  return Number.isNaN(when.getTime()) ? at.startsWith(date) : localToday(when) === date;
 }
 
 /** The night folders a repository has, newest first. @param {string} repoDir */
@@ -85,7 +101,7 @@ export function gatherNight(repoDir, date) {
   const receipts = [];
   for (const f of listDir(night).filter((x) => /^stop-gate-.*\.json$/.test(x))) {
     const r = readJsonOrNull(join(night, f));
-    if (!r || typeof r.at !== "string" || !r.at.startsWith(d)) continue;
+    if (!r || !onDate(r.at, d)) continue;
     const failed = Array.isArray(r.checks)
       ? r.checks.find((/** @type {any} */ c) => c && c.ok === false)
       : null;
@@ -105,7 +121,7 @@ export function gatherNight(repoDir, date) {
     for (const line of readFileSync(blocksLog, "utf8").split(/\r?\n/)) {
       if (!line.trim()) continue;
       const x = readJsonOrNullText(line);
-      if (!x || typeof x.at !== "string" || !x.at.startsWith(d)) continue;
+      if (!x || !onDate(x.at, d)) continue;
       blocks.push({
         at: x.at,
         sessionId: String(x.sessionId || ""),
@@ -122,7 +138,7 @@ export function gatherNight(repoDir, date) {
     for (const line of readFileSync(log, "utf8").split(/\r?\n/)) {
       if (!line.trim()) continue;
       const x = readJsonOrNullText(line);
-      if (!x || typeof x.at !== "string" || !x.at.startsWith(d)) continue;
+      if (!x || !onDate(x.at, d)) continue;
       denials.push({
         at: x.at,
         tool: String(x.tool || ""),

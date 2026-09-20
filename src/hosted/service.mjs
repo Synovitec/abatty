@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from "node:path";
 import { renderDashboard } from "../ui/dashboard.mjs";
 import { eventsOf, summariseEvents } from "./events.mjs";
+import { localToday } from "../core/today.mjs";
 
 /**
  * @typedef {{ dataDir: string, token: string, noAuth?: boolean, abattyVersion?: string }} ServiceOptions
@@ -53,7 +54,7 @@ export function createStore(dataDir) {
       const name = safeName(report.name);
       const date = /^\d{4}-\d{2}-\d{2}$/.test(String(report.date))
         ? String(report.date)
-        : new Date().toISOString().slice(0, 10);
+        : localToday();
       const dir = join(root, name);
       mkdirSync(dir, { recursive: true });
       const text = JSON.stringify(report, null, 2) + "\n";

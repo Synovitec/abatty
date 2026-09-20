@@ -7,7 +7,7 @@ audience: ["architect", "developer", "agent"]
 tags: ["agent-code", "settings", "hooks", "skills", "agents", "autonomy", "ratchet"]
 related: ["./ENGINEERING_STANDARD.md", "./ADOPTION_PLAN.md", "../../templates/harness/README.md"]
 scope: synovitec
-last_verified: "2026-09-18"
+last_verified: "2026-09-20"
 source_truth:
   - "../../templates/harness/**"
 ---
@@ -205,6 +205,25 @@ a CI step can only move the way the standard moves, or with a decision naming it
 The guard denies a daytime push to the base branch only when the root config says the repo
 is PR-only (`directPushToBase: false`); force push and `--no-verify` are denied everywhere;
 at night every push goes to the adoption branch or nowhere.
+
+### 5.1 The layer outside the agent
+
+Everything above is a `PreToolUse` hook, which means it holds in one tool's shell and nowhere
+else. The same force push goes through from a second terminal, a script, a CI step or another
+assistant, which makes the refusal a property of that tool rather than of the repository.
+
+`init` therefore also writes `.claude/bin/`: a `git` that a shell finds before the real one,
+refusing exactly the two things the guard always denies. It reads argv rather than a command
+string, so a quoted flag, a shell variable and an alias arrive already expanded - the one thing
+a hook reading a command line cannot see. Everything else is handed straight through with its
+exit code, its signals and its stdio unchanged, because a layer that alters ordinary work is one
+people take back out, and an uninstalled layer refuses nothing. `ABATTY_SHIM=off` is the
+deliberate way past it and says so on stderr: a silent escape hatch is indistinguishable from a
+broken one.
+
+The runner puts that directory on the night's `PATH`, so every subprocess a session starts meets
+the same refusal. A container sandbox keeps the image's `PATH`, which is why `PATH` is the one
+variable the runner does not forward by name.
 
 ---
 

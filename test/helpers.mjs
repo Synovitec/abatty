@@ -25,6 +25,25 @@ export function tempRepo(name, files = {}) {
   return dir;
 }
 
+/**
+ * Run something in a named timezone, and put the old one back whatever happens.
+ *
+ * Every date this package compares is a local date, so a suite that only ever runs at UTC cannot
+ * see a whole class of defect: it is invisible at Greenwich and real for everybody else in the
+ * offset window either side of midnight. Cases that care pin a zone with this.
+ * @template T @param {string} tz @param {() => T} fn @returns {T}
+ */
+export function inTimezone(tz, fn) {
+  const was = process.env.TZ;
+  process.env.TZ = tz;
+  try {
+    return fn();
+  } finally {
+    if (was === undefined) delete process.env.TZ;
+    else process.env.TZ = was;
+  }
+}
+
 /** @param {string} dir @param {string[]} args */
 export function git(dir, ...args) {
   const r = spawnSync("git", args, { cwd: dir, encoding: "utf8" });

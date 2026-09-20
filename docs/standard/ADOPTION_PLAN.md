@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-18"
+last_verified: "2026-09-20"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -101,8 +101,10 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
 12. **The the agent harness**, from `templates/harness/`: `.claude/settings.json` (guard,
     protect, stop-gate, brief and lint-on-edit hooks; the repo's allow/deny rules),
     `abatty.config.json` at the root (commands, files, push policy, phases; the older
-    `.claude/adoption.json` is still read and `abatty config --migrate` moves it), the seven hooks (the
-    guards, the direction check and their self-test), the path-scoped `.claude/rules/` for the stack (graphql,
+    `.claude/adoption.json` is still read and `abatty config --migrate` moves it), the nine hooks (the
+    guards, the direction check and their self-test), `.claude/bin/` (a `git` earlier on `PATH`
+    than the real one, refusing the force push and the hook bypass in shells the agent's own
+    guard never sees), the path-scoped `.claude/rules/` for the stack (graphql,
     sequelize, mui, testing, i18n, a11y, pwa, size-limits - `init` takes the ones that apply:
     the practice files always, the library files only where the repository depends on the
     library, reported as n/a with the dependencies it looked for. Fixed 2026-09-18; before that

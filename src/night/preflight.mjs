@@ -16,6 +16,7 @@ import { agentCommand, clock } from "./session.mjs";
 import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
 import { prepareSandbox } from "./sandbox.mjs";
 import { capsOf, describeCaps, nothingSpent, spentOf } from "./allowance.mjs";
+import { localToday } from "../core/today.mjs";
 
 export const HARNESS_FILES = [
   ".claude/settings.json",
@@ -132,7 +133,7 @@ export function preflight(o, c) {
   const phases = (o.phases && o.phases.length ? o.phases : (config.phases || []).map(String)).map(
     String,
   );
-  const date = new Date().toISOString().slice(0, 10);
+  const date = localToday();
   let branch = `${prefix}-${date}`;
 
   if (o.canaryOnly) branch = git(repoDir, "rev-parse", "--abbrev-ref", "HEAD");
