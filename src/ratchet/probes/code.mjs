@@ -1,11 +1,22 @@
 /**
  * Code and boundaries: the context file's cap (AIR.1), type escapes (CODE.3), raw env reads
- * outside the env module (VALID.3), wide barrels (CODE.5).
+ * outside the env module (VALID.3), a calendar day taken off a UTC instant (VALID.5), wide
+ * barrels (CODE.5).
  */
 import { lines, matchesAny, regexes } from "./lib.mjs";
 
 const ESCAPE = /(:\s*any\b|<any>|\bas any\b|@ts-ignore|@ts-nocheck|@ts-expect-error)/g;
 const RAW_ENV = /\bprocess\.env(\.|\[)/g;
+
+// A calendar day taken off a UTC instant (VALID.5). Assembled from two halves so that THIS FILE
+// passes the scan it defines, the same reason the vocabulary is stored reversed (CLAUDE.md §4);
+// the seam of the split is exactly the seam the rule is about, an instant on the left and a day
+// taken off it on the right.
+const INSTANT = "\\.to(?:ISO|JSON)String\\(\\)\\s*";
+const DAY_OFF_IT =
+  "(?:\\.(?:slice|substring|substr)\\(\\s*0\\s*,\\s*10\\s*\\)" +
+  "|\\.split\\(\\s*[\"'`]T[\"'`]\\s*\\)\\s*\\[\\s*0\\s*\\])";
+const UTC_DAY = new RegExp(INSTANT + DAY_OFF_IT, "g");
 
 /**
  * The 1-based line an offset falls on. WHY it matters: a finding without a line is placed at the
@@ -141,6 +152,67 @@ export const probes = [
       {
         name: "a script is exempt",
         files: { "scripts/x.mjs": "console.log(process.env.HOME);\n" },
+        expect: 0,
+      },
+    ],
+  },
+  {
+    metric: "valid.utcDay",
+    kind: "hard",
+    standard: ["VALID.5"],
+    title: "Calendar days taken off a UTC instant",
+    why: "A day sliced off a UTC instant is a different day from the one the machine's user is having, for the length of their offset either side of midnight. Compared against a local day - a commit date, a date somebody typed, a deadline - it is wrong on purpose for half the planet and right at Greenwich, so the suite that would catch it passes. It shipped here: a hard metric failed a gate in CEST that was green in UTC. Derive the day from the clock it will be compared to, in one function the whole repository calls; a repository that genuinely needs a UTC day names the metric in `ratchet.ratchet` so the count stays visible rather than absent.",
+    // No axis, so it does not feed the agent-readability score: AIR.2 weighs six readability
+    // properties and a date that is wrong is not one of them. The changelog and coupled-path
+    // metrics sit outside the score for the same reason. It is HARD, which is the stronger
+    // statement anyway - an axis would let it trade against something else.
+    scan: (c, o) => {
+      const exempt = regexes(o.config.exempt);
+      const files = c.sourceFiles.filter((f) => !matchesAny(f, exempt));
+      const findings = [];
+      for (const f of files) {
+        const text = c.read(f);
+        for (const m of text.matchAll(UTC_DAY))
+          findings.push({
+            path: f,
+            line: lineAt(text, m.index ?? 0),
+            detail: `calendar day off a UTC instant: ${m[0].trim()}`,
+          });
+      }
+      return { scanned: files.length, findings };
+    },
+    // The fixtures are spliced at the same seam as the pattern, so the control cases do not
+    // make this file an offender against its own metric.
+    controls: [
+      {
+        name: "the day sliced off an instant counts",
+        files: { "src/a.ts": "export const today = new Date().toISOString()" + ".slice(0, 10);\n" },
+        expect: 1,
+      },
+      {
+        name: "the day split off an instant counts, whitespace and all",
+        files: {
+          "src/a.ts":
+            "export const d = new Date().toISOString()\n  " +
+            '.split("T")[0];\nexport const e = 1;\n',
+        },
+        expect: 1,
+      },
+      {
+        name: "an instant is not a day, and holds",
+        files: { "src/a.ts": "export const at = new Date().toISOString();\n" },
+        expect: 0,
+      },
+      {
+        name: "a local day holds",
+        files: {
+          "src/a.ts": 'import { localToday } from "./today";\nexport const today = localToday();\n',
+        },
+        expect: 0,
+      },
+      {
+        name: "a slice of something that is not an instant holds",
+        files: { "src/a.ts": "export const head = raw.slice(0, 10);\n" },
         expect: 0,
       },
     ],

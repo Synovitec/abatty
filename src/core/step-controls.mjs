@@ -16,14 +16,15 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { bin } from "./spawn.mjs";
-import { readPackage, writeJsonFile } from "./repo.mjs";
+import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 
 export const CONTROLS_FILE = ".abatty/controls.json";
 const MARK = "abatty-control.__";
 
 /**
- * @typedef {{ files: (deps: Set<string>, pack: string) => Record<string, string>, means: string }} StepControl
+ * @typedef {{ deps: Set<string>, pack: string, dir: string, scripts: Record<string, string> }} PlantContext
+ * @typedef {{ files: (c: PlantContext) => Record<string, string>, means: string }} StepControl
  * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
  */
 
@@ -34,53 +35,129 @@ const file = (path, text) => ({ [path]: text });
 const longFile = (n) =>
   Array.from({ length: n }, (_, i) => `export const line${i} = ${i};`).join("\n") + "\n";
 
+/**
+ * The environment a planted step runs in: this process's, minus the variables that tell a test
+ * runner it is a CHILD of another one.
+ *
+ * WHY: `node --test` sets NODE_TEST_CONTEXT for the processes it spawns, and a `node --test` that
+ * sees it reports its results upward and exits 0 even when a test threw. A control that inherits
+ * it therefore watches a failing test and calls the step green, which is the one thing a control
+ * must never do. It costs nothing when nobody is above us, and it is exactly the case a control
+ * exists to survive.
+ */
+function childEnv() {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  delete env.NODE_V8_COVERAGE;
+  return env;
+}
+
+/**
+ * Where a planted file has to sit for the REPOSITORY'S OWN script to read it, and in what
+ * language.
+ *
+ * WHY this is derived rather than assumed. A control planted where the step does not look stays
+ * green, and the runner then reports the step as absent - which is the finding, not the fix. It
+ * was wrong here, in the package that sells the idea: abatty's typecheck reads `src/**\/*.mjs`
+ * and its test script reads `test/*.test.mjs`, so a `.ts` file under `src/` was invisible to
+ * both, and two of its own gate steps had never once been watched going red. `doctor --controls`
+ * said so on every run; nothing downstream acted on it, because CI runs the self-test skipped.
+ */
+
+/**
+ * The extension a repository's typecheck actually covers, from its tsconfig include patterns.
+ * `.ts` when there is no tsconfig to read, which is the shape a repository adopting one gets.
+ * @param {string} dir
+ */
+function checkedExt(dir) {
+  /** @type {string[]} */
+  let include = [];
+  try {
+    const cfg = readJsonFile(dir, "tsconfig.json");
+    include = Array.isArray(cfg?.include) ? cfg.include.map(String) : [];
+  } catch {
+    /* a tsconfig with comments in it is not a reason to plant nothing */
+  }
+  for (const ext of [".ts", ".mts", ".mjs", ".js"])
+    if (include.some((pattern) => pattern.endsWith(ext))) return ext;
+  return ".ts";
+}
+
+/**
+ * The path a failing test has to take for the repository's own test script to run it: the first
+ * globbed argument of that script decides both the folder and the name. A script with no glob
+ * (`vitest run`) keeps the convention-based path, because the runner's own default finds it.
+ * @param {string} script @param {string} fallbackExt
+ */
+function testPlantPath(script, fallbackExt) {
+  const glob = String(script || "")
+    .split(/\s+/)
+    .map((token) => token.replace(/^['"]|['"]$/g, ""))
+    .find((token) => token.includes("*") && /\.[cm]?[jt]sx?$/.test(token));
+  if (!glob) return `src/${MARK}.test${fallbackExt}`;
+  const parts = glob.split("/");
+  const name = String(parts.pop() || "").replace(/\*+/g, MARK);
+  const dir = parts.filter((part) => !part.includes("*")).join("/");
+  return dir ? `${dir}/${name}` : name;
+}
+
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS = {
   format: {
     means: "an unformatted file",
-    files: (_d, pack) =>
+    files: ({ pack }) =>
       pack === "python"
         ? file(`src/${MARK}.py`, "x    =   {  'a':1 }\n")
         : file(`src/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
   },
   lint: {
     means: "a debugger statement (an unused import for Python)",
-    files: (_d, pack) =>
+    files: ({ pack }) =>
       pack === "python"
         ? file(`src/${MARK}.py`, "import os\n")
         : file(`src/${MARK}.ts`, "debugger;\nexport const abattyControl = 1;\n"),
   },
   typecheck: {
     means: "a type error",
-    files: (_d, pack) =>
-      pack === "python"
-        ? file(`src/${MARK}.py`, 'abatty_control: int = "not a number"\n')
-        : file(`src/${MARK}.ts`, 'export const abattyControl: number = "not a number";\n'),
+    files: ({ pack, dir }) => {
+      if (pack === "python")
+        return file(`src/${MARK}.py`, 'abatty_control: int = "not a number"\n');
+      const ext = checkedExt(dir);
+      // A tsconfig that only includes JavaScript is checking JavaScript (`checkJs`), where the
+      // annotation is a JSDoc type rather than a colon. Planting the colon form there is a
+      // SYNTAX error the compiler never reaches, or a file it never reads: either way the step
+      // stays green and the control lies about the step rather than about the file.
+      const annotated = /[jm]js?$/.test(ext)
+        ? '/** @type {number} */\nexport const abattyControl = "not a number";\n'
+        : 'export const abattyControl: number = "not a number";\n';
+      return file(`src/${MARK}${ext}`, annotated);
+    },
   },
   test: {
     means: "a test that throws",
-    files: (deps, pack) =>
+    files: ({ deps, pack, dir, scripts }) =>
       pack === "python"
         ? {
             [`tests/test_abatty_control__.py`]:
               'def test_abatty_control():\n    raise Exception("planted")\n',
           }
         : file(
-            `src/${MARK}.test.ts`,
+            testPlantPath(scripts.test || "", checkedExt(dir)),
             (deps.has("vitest") ? 'import { test } from "vitest";\n' : "") +
+              (deps.has("vitest") ? "" : 'import { test } from "node:test";\n') +
               'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
           ),
   },
   dead: {
     means: "an unused export in an unreferenced file",
-    files: (_d, pack) =>
+    files: ({ pack }) =>
       pack === "python"
         ? file(`src/${MARK}.py`, "def abatty_unused():\n    return 1\n")
         : file(`src/${MARK}.ts`, "export const abattyUnused = 1;\n"),
   },
   standards: {
     means: "a file over the 800-line cap",
-    files: (_d, pack) => file(`src/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
+    files: ({ pack }) => file(`src/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
   },
   secrets: {
     means: "a planted cloud access key",
@@ -102,6 +179,7 @@ export function runStepControls(o) {
       const r = spawnSync(bin("npm"), ["run", "-s", script], {
         cwd,
         encoding: "utf8",
+        env: childEnv(),
         maxBuffer: 16 * 1024 * 1024,
       });
       return r.status ?? 1;
@@ -143,7 +221,12 @@ export function runStepControls(o) {
       });
       continue;
     }
-    const files = control.files(deps, preset.pack || "javascript");
+    const files = control.files({
+      deps,
+      pack: preset.pack || "javascript",
+      dir: repoDir,
+      scripts,
+    });
     const clash = Object.keys(files).find((f) => existsSync(join(repoDir, f)));
     if (clash) {
       steps.push({
@@ -168,6 +251,7 @@ export function runStepControls(o) {
         const r = spawnSync(bin(String(cmd)), args, {
           cwd: repoDir,
           encoding: "utf8",
+          env: childEnv(),
           maxBuffer: 16 * 1024 * 1024,
         });
         code = r.status ?? 1;

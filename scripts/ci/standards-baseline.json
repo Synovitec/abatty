@@ -15,7 +15,8 @@
     "docs.indexDrift",
     "size.excessCode",
     "size.overBudget",
-    "size.overRaw"
+    "size.overRaw",
+    "valid.utcDay"
   ],
   "metrics": {
     "change.changelogMissing": 0,
@@ -33,7 +34,8 @@
     "size.overRaw": 0,
     "startup.eagerModules": 3,
     "types.escapes": 7,
-    "valid.rawEnv": 7
+    "valid.rawEnv": 7,
+    "valid.utcDay": 0
   },
   "scanned": {
     "code.barrels": 7,
@@ -47,7 +49,8 @@
     "size.overBudget": 109,
     "size.overRaw": 124,
     "types.escapes": 109,
-    "valid.rawEnv": 108
+    "valid.rawEnv": 108,
+    "valid.utcDay": 115
   },
   "debt": {
     "startup.eagerModules": {
@@ -81,7 +84,8 @@
     "size.overRaw": 1,
     "startup.eagerModules": 1,
     "types.escapes": 1,
-    "valid.rawEnv": 1
+    "valid.rawEnv": 1,
+    "valid.utcDay": 1
   },
   "entries": {}
 }

@@ -37,3 +37,30 @@ jobs:
         with:
           sarif_file: abatty.sarif
           category: abatty
+
+  # The gate above runs at UTC, which is the one clock on which a date bug derived from UTC is
+  # invisible: a day sliced off a UTC instant is correct there and wrong everywhere else. The
+  # regression cases pin their own zone internally, so they catch it wherever they run; this job
+  # is the second net, and it is what makes the whole SUITE - including every case written from
+  # now on by somebody who has not read VALID.5 - run once on a clock whose calendar day is not
+  # UTC's. A named city would not do: it agrees with UTC for most of the day, so the job would
+  # read green against the very defect it exists for.
+  skewed-clock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: a zone whose calendar day is never today's UTC one
+        run: |
+          # Etc/GMT+12 is UTC-12 and Etc/GMT-12 is UTC+12: the sign is inverted, by POSIX. Before
+          # noon UTC the western one is on yesterday; from noon the eastern one is on tomorrow.
+          if [ "$(date -u +%H)" -lt 12 ]; then tz=Etc/GMT+12; else tz=Etc/GMT-12; fi
+          echo "TZ=$tz" >> "$GITHUB_ENV"
+          echo "suite clock $tz · local day $(TZ=$tz date +%F) · UTC day $(date -u +%F)"
+      - run: npm test

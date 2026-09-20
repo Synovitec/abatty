@@ -237,3 +237,69 @@ as effectively as from a scan; a split at the prefix makes the shape MORE legibl
 because the line now says which vendor's format it is before it says the body. A corpus nobody
 can read is a corpus nobody can argue with, and being arguable is the whole reason it is
 published.
+
+### 2026-09-20 - A fourteenth hard metric, and the first one the pipeline could not have caught
+
+`valid.utcDay` joins the hard metrics at zero, and the score moved 75 -> 76 over 55 applicable
+checks because `VALID-LOCAL-DAY` is a present rule the repository already holds. A number that
+rises is a decision, so here is the decision: the timezone defect was fixed the day before by
+routing every date through one `localToday()`, which closed every site that existed and no site
+written after it. That is a rule held by memory, and this package's whole argument is that a rule
+held by memory is a rule held by nobody.
+
+What is worth writing down is why the metric alone was not enough. The probe runs in the gate, and
+the gate runs in CI, and CI runs at UTC - the single clock on which a day sliced off a UTC instant
+is the right answer. A pipeline that only ever ran there would have gone green through the
+original bug and through every repeat of it. So the guard is two things, not one: the metric,
+which refuses the expression, and a second job that runs the whole suite on a clock whose calendar
+day is never the UTC one, which catches the forms the regex does not know about. The zone is
+picked at job start from the UTC hour, because a fixed named city agrees with UTC for most of the
+day and a test that is only sometimes a test is not one.
+
+The probe is spliced at the seam it forbids - an instant on one side, the day taken off it on the
+other - so its own source and its own fixtures pass the scan it defines. That is the same device
+as the reversed vocabulary, for the same reason, and it is preferred here to an exemption by path:
+an exemption would have taken this file out of every other probe as well.
+
+The division of labour between the two is worth stating, because neither covers the other's
+ground. The probe reads `src/` and not `test/`, which is exempt from every metric, so the four
+UTC-derived dates that were in the tests themselves would not be caught by it if they came back -
+they would be caught by the skewed clock, because a test that derives the expected day in UTC
+fails there. And the skewed clock only sees what a test exercises, so a UTC day in a code path
+with no test is the probe's to find. Two guards, two blind spots, and the blind spots do not
+overlap.
+
+The form neither closes: a day taken off an instant in two statements, through a variable, in
+code no test runs. It is written here rather than implied, because a guard whose limits are
+undocumented gets trusted past them.
+
+### 2026-09-20 - The controls mechanism was right and nobody was listening
+
+Proving the new date metric meant running `abatty doctor --controls`, and it said what it had been
+saying all along: typecheck and unit tests **stayed GREEN on a planted violation: the check is
+absent**. Two of this repository's own gate steps had never once been watched going red, in the
+package whose first non-negotiable is that a guard nobody has watched fail is not a guard.
+
+Both causes are the same mistake, made by the planter rather than by the steps. The typecheck
+control wrote its planted file into src with a .ts extension; this tsconfig includes
+`src/**/*.mjs` and nothing else, so the compiler never opened it. The test control wrote a
+.test.ts file into src; the test script globs `test/*.test.mjs`, so the runner never found it. A control planted where the
+step does not look is indistinguishable from a step that checks nothing, and the runner reported
+the second because it cannot tell them apart.
+
+A third one turned up while writing the regression test, and it is the worst of the three: the
+planted step inherited `NODE_TEST_CONTEXT` from whatever spawned it, and `node --test` that sees
+that variable reports upward and exits 0 on a test that threw. So the control could watch a
+failing test and call the step green. It only bites when a control runs inside another runner,
+which is exactly what a regression test for a control is.
+
+The fix is to derive rather than assume: the extension the repository's own tsconfig covers (with
+the type error written as JSDoc where that is JavaScript, because a colon annotation in a `.mjs`
+file is a syntax error the compiler never reaches), the folder and name its own test script globs,
+and a child environment with the runner's context removed.
+
+What this cost and what it did not. The mechanism was never silent: it printed ABSENT on every
+run and exited 3. What was missing is that nothing downstream acts on it, because CI runs the
+self-test skipped (§10) and the two machine-setup failures make a red `doctor` the expected
+result on any machine not set up for a night. A permanent red is a red nobody reads. That is the
+open item this leaves behind, and it is a harness change rather than a code one.

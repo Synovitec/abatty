@@ -412,6 +412,20 @@ value?: X }` cast is an unparsed boundary: the check and the TYPE have nothing t
   tells absent from a deliberate zero; a falsy check swallows both. An opt-in that widens
   reach (an `allowX: true` argument) is passed explicitly at the call site so that forgetting
   is the safe direction.
+- **VALID.5 (MUST) - A calendar day is derived from the clock it will be compared to.**
+  A date is not an instant. An instant is a point on a universal line; a date is a question
+  about somebody's calendar, and the answer depends whose. Slicing the day off a UTC timestamp
+  answers it for Greenwich and for nobody else, and the error is exactly the machine's offset,
+  once a day, in a window whose length is that offset. Every day the repository compares to a
+  commit date, to a date a person typed, to a deadline or a `last_verified` line is a LOCAL
+  day, so it comes from one function the whole repository calls, never an expression written
+  again at each site. A day that must be UTC (a vendor's billing window, a partner's cutoff) is
+  named as such at its own boundary and is not the default.
+  The test for this is a test that pins a zone whose calendar day differs from UTC's at the hour
+  it runs. A suite pinned to one named city agrees with UTC for most of the day and reads green
+  against the very defect it exists for: a test that is only sometimes a test is not one. The
+  same holds of the pipeline, which runs at UTC unless it is told otherwise.
+
 - **AUTH.1 (MUST) - Deny by default, on the server, per resource.** Every endpoint checks
   authentication AND authorisation scoped to the tenant it targets; "caller has some role" is
   not authorisation for THIS resource, and a URL segment is not authorisation. Identity comes

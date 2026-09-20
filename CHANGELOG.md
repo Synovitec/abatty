@@ -5,7 +5,38 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **A date derived from UTC is now refused by a machine, not by memory** (from the same review).
+  The fix for the timezone bug left the rule held by whoever remembered `localToday()`, and this
+  package's own argument is that a rule held by memory is a rule held by nobody. The standard
+  gains **VALID.5**: a calendar day is derived from the clock it will be compared to. It is
+  enforced by `valid.utcDay`, a HARD metric at zero, which finds a day sliced or split off a UTC
+  instant and reports it on its line; by `VALID-LOCAL-DAY` in the catalog, which states the
+  practice and reads the Python form of it as well as the JavaScript one; and by a second CI job
+  that runs the whole suite on a clock whose calendar day is never the UTC one. The pipeline ran
+  at UTC, which is the single clock on which this class of defect is invisible; a named city
+  would not have fixed that, because it agrees with UTC for most of the day. Five control cases
+  in both directions, and the probe is spliced at the seam it forbids so that it passes the scan
+  it defines.
+
 ### Fixed
+
+- **Two gate steps here had never once been watched going red** (found while proving the date
+  metric). `abatty doctor --controls` plants a violation per gate step and reports a step that
+  stays green as ABSENT, and on this repository it had been reporting typecheck and unit tests
+  as absent on every run. Two causes, both the same mistake: the plant assumed a convention the
+  repository does not keep. The typecheck control wrote a `.ts` file, and this tsconfig includes
+  `**/*.mjs` only, so the compiler never read it; the test control wrote `src/*.test.ts`, and the
+  test script globs `test/*.test.mjs`, so the runner never ran it. The plant now follows the
+  repository: the extension its own tsconfig covers, with the type error written as JSDoc where
+  that is JavaScript, and the folder and name its own test script globs. A second hole in the
+  same mechanism: a planted step inherited `NODE_TEST_CONTEXT` from whatever spawned it, and a
+  `node --test` that sees it exits 0 on a test that threw, so the control watched a failure and
+  called the step green. The planted step now runs with that variable and the coverage one
+  removed. Both fixes are mutation-tested against a fixture whose typecheck and runner are
+  deliberately narrow. The mechanism was not silent about any of this: it printed ABSENT and
+  exited 3 every time. CI runs the self-test skipped, so nothing downstream acted on it.
 
 - **Dates were derived in UTC and compared against local ones** (from an outside review). The
   reviewer's `npm test` failed two cases at 01:55 CEST that pass at UTC: `docs.behindCode`

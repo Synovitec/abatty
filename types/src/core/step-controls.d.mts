@@ -16,8 +16,14 @@ export function runStepControls(o: {
 export const CONTROLS_FILE: ".abatty/controls.json";
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS: Record<string, StepControl>;
+export type PlantContext = {
+    deps: Set<string>;
+    pack: string;
+    dir: string;
+    scripts: Record<string, string>;
+};
 export type StepControl = {
-    files: (deps: Set<string>, pack: string) => Record<string, string>;
+    files: (c: PlantContext) => Record<string, string>;
     means: string;
 };
 export type StepOutcome = {
