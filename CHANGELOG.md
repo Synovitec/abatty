@@ -5,6 +5,21 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **A date derived from UTC is now refused by a machine, not by memory** (from the same review).
+  The fix for the timezone bug left the rule held by whoever remembered `localToday()`, and this
+  package's own argument is that a rule held by memory is a rule held by nobody. The standard
+  gains **VALID.5**: a calendar day is derived from the clock it will be compared to. It is
+  enforced by `valid.utcDay`, a HARD metric at zero, which finds a day sliced or split off a UTC
+  instant and reports it on its line; by `VALID-LOCAL-DAY` in the catalog, which states the
+  practice and reads the Python form of it as well as the JavaScript one; and by a second CI job
+  that runs the whole suite on a clock whose calendar day is never the UTC one. The pipeline ran
+  at UTC, which is the single clock on which this class of defect is invisible; a named city
+  would not have fixed that, because it agrees with UTC for most of the day. Five control cases
+  in both directions, and the probe is spliced at the seam it forbids so that it passes the scan
+  it defines.
+
 ### Fixed
 
 - **Dates were derived in UTC and compared against local ones** (from an outside review). The
