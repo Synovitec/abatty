@@ -103,7 +103,11 @@ test("the gate: the secret scan is a built-in step that stops the gate on a find
     "package.json": JSON.stringify({
       name: "g",
       version: "0.1.0",
-      scripts: { test: 'node -e "process.exit(0)"', standards: 'node -e "process.exit(0)"' },
+      scripts: {
+        test: 'node -e "process.exit(0)"',
+        typecheck: 'node -e "process.exit(0)"',
+        standards: 'node -e "process.exit(0)"',
+      },
       dependencies: { next: "15" },
     }),
     "src/leak.ts": `export const k = "${KEY_ID}";\n`,

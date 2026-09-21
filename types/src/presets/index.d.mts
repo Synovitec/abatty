@@ -28,10 +28,11 @@ export function presetRules(preset: Preset | null, deps: Set<string>): {
 /** @type {Preset[]} */
 export const presets: Preset[];
 /**
- * The stack presets. A preset is proven by a repository (the standard's rule for a reference
- * implementation); one that no repository has run is marked `proven: false` and `init` says so.
- * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
- * its own folder, the repository-level steps once.
+ * `required`: the step is the instrument, not an option. Without its script the gate cannot
+ * run rather than passing with the step skipped: a repository whose every step is skipped for
+ * want of a script read "gate green" and exit 0 (an outside trial's finding). What is required
+ * is the preset's word: the tests and the ratchet everywhere code is, the typecheck where the
+ * preset is TypeScript-native; a linter or a graph is a dependency decision the repository makes.
  */
 export type GateStep = {
     label: string;
@@ -41,6 +42,7 @@ export type GateStep = {
     requires?: string[];
     alternatives?: string[];
     rangeArg?: boolean;
+    required?: boolean;
 };
 /**
  * The stack presets. A preset is proven by a repository (the standard's rule for a reference
@@ -56,7 +58,7 @@ export type GateSuite = {
 };
 /**
  * a rule file that applies only where the
- * repository depends on one of `needs`. A bare string always applies.
+ *  repository depends on one of `needs`. A bare string always applies.
  */
 export type PresetRule = {
     file: string;

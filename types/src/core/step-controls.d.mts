@@ -1,6 +1,7 @@
 /**
- * Run the controls of a preset's always-on steps in a repository: plant, run, remove, judge.
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number }} o
+ * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
+ * plant, run, remove, confirm clean, judge.
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
  * @returns {{ at: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o: {
@@ -8,24 +9,14 @@ export function runStepControls(o: {
     preset: import("../presets/index.mjs").Preset;
     log?: (line: string) => void;
     run?: (cwd: string, script: string) => number;
+    dockerUp?: () => boolean;
 }): {
     at: string;
     steps: StepOutcome[];
     absent: string[];
 };
+export { STEP_CONTROLS } from "./step-plants.mjs";
 export const CONTROLS_FILE: ".abatty/controls.json";
-/** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
-export const STEP_CONTROLS: Record<string, StepControl>;
-export type PlantContext = {
-    deps: Set<string>;
-    pack: string;
-    dir: string;
-    scripts: Record<string, string>;
-};
-export type StepControl = {
-    files: (c: PlantContext) => Record<string, string>;
-    means: string;
-};
 export type StepOutcome = {
     label: string;
     outcome: "red" | "green" | "skipped" | "none";

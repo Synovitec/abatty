@@ -198,7 +198,15 @@ test("the gate's suites are path-aware and defer without Docker", () => {
   const dir = tempRepo("gate2", {
     "package.json": JSON.stringify({
       name: "g",
-      scripts: { test: "true", "test:rls": "true", coverage: "true", build: "true", e2e: "true" },
+      scripts: {
+        test: "true",
+        typecheck: "true",
+        standards: "true",
+        "test:rls": "true",
+        coverage: "true",
+        build: "true",
+        e2e: "true",
+      },
     }),
     "package-lock.json": "{}\n",
   });
@@ -372,6 +380,8 @@ test("a range the gate cannot trust selects everything, never nothing: in CI an 
   // Both directions: the same tree, the same empty range, judged locally and in CI.
   const scripts = {
     test: "true",
+    typecheck: "true",
+    standards: "true",
     build: "true",
     e2e: "true",
     "test:rls": "true",
@@ -429,6 +439,82 @@ test("a range the gate cannot trust selects everything, never nothing: in CI an 
   assert.equal(orphan.r.blind, true);
   assert.match(orphan.out, /no upstream and no main to fork from/);
   assert.ok(orphan.calls.includes("e2e"));
+});
+
+test("a step the preset requires cannot be skipped for want of a script: the gate could not run, and a green with steps not run says how many", () => {
+  // The reviewer's repro, the other half of the false green: a repository with a lockfile and no
+  // scripts read "gate green · 2 step(s)" with seven steps skipped and exit 0. `errored` covered
+  // the instrument breaking; it did not cover the instrument never being installed.
+  const scriptless = tempRepo("gate-scriptless", {
+    "package.json": JSON.stringify({
+      name: "g",
+      version: "0.1.0",
+      private: true,
+      dependencies: { next: "15.0.0" },
+    }),
+    "package-lock.json": "{}\n",
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const bare = cli(["gate", scriptless, "--fast", "--stack", "next"], scriptless);
+  assert.equal(bare.code, 4, bare.out);
+  assert.match(
+    bare.out,
+    /typecheck \(CODE\.3\) could not run: no "typecheck" script, and the next preset requires this step/,
+  );
+  assert.match(bare.out, /gate could not run/);
+  assert.ok(!/gate green/.test(bare.out));
+
+  // The required steps present, the optional ones still absent: green, and the headline says
+  // what did not run before it says the colour.
+  const partial = tempRepo("gate-partial", {
+    "package.json": JSON.stringify({
+      name: "g",
+      version: "0.1.0",
+      private: true,
+      scripts: { typecheck: "node -e 0", test: "node -e 0", standards: "node -e 0 --" },
+      dependencies: { next: "15.0.0" },
+    }),
+    "package-lock.json": "{}\n",
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const some = cli(["gate", partial, "--fast", "--stack", "next"], partial);
+  assert.equal(some.code, 0, some.out);
+  assert.match(
+    some.out,
+    /gate green with 4 of 9 step\(s\) not run \(format, lint, import graph, dead code: no script or config\)/,
+  );
+
+  // Every step present: the plain verdict, so the warning above is not noise on a full gate.
+  const full = tempRepo("gate-full", {
+    "package.json":
+      JSON.stringify(
+        {
+          name: "g",
+          version: "0.1.0",
+          private: true,
+          scripts: {
+            lint: "node -e 0",
+            typecheck: "node -e 0",
+            graph: "node -e 0",
+            dead: "node -e 0",
+            test: "node -e 0",
+            standards: "node -e 0 --",
+          },
+          dependencies: { next: "15.0.0" },
+        },
+        null,
+        2,
+      ) + "\n",
+    "package-lock.json": "{}\n",
+    ".prettierrc": "{}\n",
+    ".dependency-cruiser.cjs": "module.exports = {};\n",
+    "knip.jsonc": "{}\n",
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const all = cli(["gate", full, "--fast", "--stack", "next"], full);
+  assert.equal(all.code, 0, all.out);
+  assert.match(all.out, /gate green ·/);
+  assert.ok(!/not run/.test(all.out));
 });
 
 test("end to end, through real npm: a tool that ran and failed exits 3, one that could not run exits 4", () => {

@@ -71,8 +71,14 @@ export const python = {
         label: "unit tests (TEST.1)",
         command: ["pytest", "-q"],
         requires: ["pytest.ini", "conftest.py", "pyproject.toml", "tests"],
+        required: true,
       },
-      { label: "abatty ratchet + changelog range (CHANGE.2)", script: "standards", rangeArg: true },
+      {
+        label: "abatty ratchet + changelog range (CHANGE.2)",
+        script: "standards",
+        rangeArg: true,
+        required: true,
+      },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
     ],
     suites: [

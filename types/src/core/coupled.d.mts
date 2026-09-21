@@ -7,8 +7,8 @@
  * without a `then` path is an offender until a later commit of the range touches the `then`
  * path, so the cure is always a new commit, never a rewrite.
  */
-/** @typedef {{ when: string[], then: string[], why: string }} Pair */
-/** @typedef {{ sha: string, subject: string, files: string[] }} Commit chronological order */
+/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done */
+/** @typedef {{ sha: string, subject: string, body?: string, files: string[] }} Commit chronological order */
 /** @typedef {{ path: string, detail: string }} Offender */
 /**
  * A matcher for a path pattern: a prefix (`src/`, `docs/AUTH.md`), or a glob where `*` is a
@@ -57,10 +57,14 @@ export function changelogPairs(c: {
 export function commitsOf(git: (...args: string[]) => string, range: string): Commit[];
 /** A message that says why the counterpart is untouched: a decision, not a hole. */
 export const REASON: RegExp;
+/**
+ * `excuse`: a line in a commit's message that stands for the counterpart, said rather than done
+ */
 export type Pair = {
     when: string[];
     then: string[];
     why: string;
+    excuse?: RegExp;
 };
 /**
  * chronological order
@@ -68,6 +72,7 @@ export type Pair = {
 export type Commit = {
     sha: string;
     subject: string;
+    body?: string;
     files: string[];
 };
 export type Offender = {

@@ -46,6 +46,17 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The package's own CI runs on every Node it claims and on pnpm as well as npm on Windows.**
+  The Linux job is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had ever run):
+  the whole gate on 22, the suite and the typecheck on 20, because the matrix's first run
+  showed the repository's graph tooling refuses Node 20 (`dependency-cruiser` runs on
+  `^22||^24||>=26`), which is that tool's floor and not the package's, whose claim rests on no
+  runtime dependency. The findings are uploaded once per commit. The Windows job is a matrix over npm
+  and pnpm, the pnpm leg installing pnpm on the runner, and the launcher case in the suite now
+  spawns every launcher it finds on PATH (npm always; pnpm, yarn and bun where installed, named
+  in the output) rather than npm alone: the trial's repository is pnpm on Windows, and nothing
+  here had ever run `pnpm.cmd` there.
+
 - **Two modules went over the module budget with the fixes above and are split by what they
   are for.** What a push contains (the range, how it was found, the files it and the tree
   change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the
@@ -58,6 +69,63 @@ under Unreleased in the same commit.
   but for the import paths.
 
 ### Fixed
+
+- **The push-time changelog check reads the same `no-changelog:` line the commit-time hook
+  accepts.** The hook let a reasoned commit through and the ratchet refused the push a step
+  later, on this repository, on the day the hook landed: the escape was a promise the range
+  check broke. `commitsOf` now reads the whole message, and the changelog pair carries the
+  excuse; an excused commit is not an offender and cures nothing before it, and the bypass
+  reading still counts it as reasoned, so the decision is on the record in three places rather
+  than accepted in one and refused in another. The night's Stop gate stays as it was: a night
+  does not excuse itself.
+
+- **`npm test` runs on Node 20, the oldest Node the package claims** (the matrix's second
+  finding on its first day: `node --test "test/*.test.mjs"` relies on `--test` expanding the
+  glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
+  never once run there). `scripts/test.mjs` expands the glob itself and hands `node --test` the
+  files, node's flags first; the pattern stays in the script's text because the step controls
+  read it to learn where a planted test has to sit. The same leg then found the suite's own
+  fixture for the controls carrying the glob form, "proven" red on Node 20 for the wrong
+  reason until the confirm-clean run said so; it carries a runner of the same shape now, and
+  the plant path also reads a folder handed to a runner (`vitest run tests/`), which is a form
+  Windows' `node --test` does not take, so no single `node --test` argument runs on every
+  machine this suite does.
+
+- **The controls pass judges the suites too, and a step red without a plant proves nothing**
+  (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and
+  database steps, precisely the ones that vanished from the trial's empty-range run, were the
+  ones it could not see). Every suite step is now planted and judged under its suite's name, a
+  suite that needs Docker is skipped out loud when the daemon is down, and two plants are
+  declared for what a plant can prove: a browser test that throws where the Playwright config's
+  `testDir` says (or `e2e`), an integration test that throws where the script looks. What no
+  plant can prove is reported as `none` with the reason (a build is proven by its output, a
+  coverage floor by a drop no single file causes, the audit by the registry) rather than left
+  out. And a step that went red on its plant is run once more clean: red without the plant too
+  is the environment failing, not the guard holding, and reading it as proof was the trial's
+  first-day false red inside the mechanism that exists to catch false greens. That protocol
+  found two in this package's own suite at once: a fixture whose `package.json` was never
+  formatted had been "proving" the format step red on an unformatted file it did not need, and
+  `init` wrote a `docs/README.md` with no front matter, so every freshly initialised repository
+  was red on its first clean ratchet and its ratchet control was "proven" the same way. Both
+  fixed at the root. A tool that cannot be spawned reads as not installed on every platform
+  (127), where on Windows a missing `ruff` had read as a red control. The plants moved to
+  `src/core/step-plants.mjs`; the runner keeps `step-controls.mjs`.
+
+- **A step the preset requires cannot be skipped for want of a script, and a green with steps
+  not run says how many** (the reviewer's second pass, the other half of the false green: a
+  repository with a lockfile and no scripts read "gate green · 2 step(s)" with seven skipped and
+  exit 0). `errored` covered the instrument breaking; it did not cover the instrument never
+  being installed. A gate step now carries `required`, the preset's word on what is the
+  instrument rather than an option: the tests and the ratchet wherever there is code, the
+  typecheck where the preset is TypeScript-native (next, vite-react, astro), pytest for python.
+  Without its script or its config such a step is `errored` and the gate cannot run, the same
+  verdict as a tool that is not installed; a linter or a graph remains a dependency decision and
+  is skipped as before. And the verdict no longer leads with the colour when steps did not run:
+  "gate green with 4 of 9 step(s) not run (format, lint, import graph, dead code: no script or
+  config)", in yellow, so the reader is made to finish the sentence. The generated pipeline's
+  comment for an absent step says when the preset requires it. Three controls: the reviewer's
+  repro exits 4, the required steps alone are green with the count, every step present is the
+  plain verdict.
 
 - **The suite runs green on Windows, and two of its eight red cases were the code's fault**
   (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were

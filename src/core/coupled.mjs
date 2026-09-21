@@ -8,8 +8,8 @@
  * path, so the cure is always a new commit, never a rewrite.
  */
 
-/** @typedef {{ when: string[], then: string[], why: string }} Pair */
-/** @typedef {{ sha: string, subject: string, files: string[] }} Commit chronological order */
+/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done */
+/** @typedef {{ sha: string, subject: string, body?: string, files: string[] }} Commit chronological order */
 /** @typedef {{ path: string, detail: string }} Offender */
 
 /**
@@ -76,6 +76,11 @@ export function coupledFindings(commits, pairs) {
         pending = [];
         continue;
       }
+      // A commit whose message says why the counterpart is untouched is a decision on the
+      // record, and the same line the commit-msg hook accepted: refusing it a push later would
+      // make the hook's escape a promise the range check breaks. It excuses itself alone; it
+      // cures nothing before it.
+      if (pair.excuse && pair.excuse.test(c.body || "")) continue;
       const hit = c.files.filter((f) => whenHit.some((m) => m(f)));
       if (hit.length)
         pending.push({
@@ -129,6 +134,7 @@ export function changelogPairs(c) {
       when: c.changelogRequiredFor,
       then: [c.changelog],
       why: "a change is written in the changelog of the same push",
+      excuse: REASON,
     },
   ];
 }
@@ -139,14 +145,21 @@ export function changelogPairs(c) {
  * @returns {Commit[]}
  */
 export function commitsOf(git, range) {
-  const log = git("log", "--reverse", "--no-merges", "--format=%h%x00%s", range);
+  // The whole message, one record per commit on a separator no message carries: the excuse a
+  // pair accepts is a line of the body, and the subject alone could not show it.
+  const log = git("log", "--reverse", "--no-merges", "--format=%h%x00%s%x00%B%x1e", range);
   if (!log) return [];
-  return log.split("\n").map((l) => {
-    const [sha, subject] = l.split("\0");
-    return {
-      sha: String(sha),
-      subject: String(subject || ""),
-      files: git("show", "--name-only", "--format=", String(sha)).split("\n").filter(Boolean),
-    };
-  });
+  return log
+    .split("\x1e")
+    .map((r) => r.replace(/^\s+/, ""))
+    .filter(Boolean)
+    .map((r) => {
+      const [sha, subject, body] = r.split("\0");
+      return {
+        sha: String(sha),
+        subject: String(subject || ""),
+        body: String(body || ""),
+        files: git("show", "--name-only", "--format=", String(sha)).split("\n").filter(Boolean),
+      };
+    });
 }

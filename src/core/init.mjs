@@ -328,7 +328,11 @@ export function initRepo(o) {
   );
   put(
     "docs/README.md",
-    "# Documentation index\n\nEvery document under docs/ is listed here (DOC.3): what it is for, its category and status.\n\n| Document | What it is for | Category | Status |\n|---|---|---|---|\n| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |\n| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |\n",
+    // With the front matter the ratchet's own docs.frontMatter probe asks of every document: an
+    // index written without it made every freshly initialised repository red on its first clean
+    // ratchet, and a controls pass that read that red as a proof.
+    '---\ntitle: "Documentation index"\ndescription: "Every document under docs/ with what it is for, its category and its status; the one entry point, kept equal to the tree by the ratchet."\ncategory: reference\nstatus: living\naudience: ["developer", "agent"]\ntags: ["index", "docs"]\n---\n\n' +
+      "# Documentation index\n\nEvery document under docs/ is listed here (DOC.3): what it is for, its category and status.\n\n| Document | What it is for | Category | Status |\n|---|---|---|---|\n| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |\n| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |\n",
   );
   put(
     "docs/STANDARDS_PROGRESS.md",

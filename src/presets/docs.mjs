@@ -57,6 +57,7 @@ export const docs = {
         label: "abatty ratchet: the document probes + changelog range (DOC.2, DOC.5, CHANGE.2)",
         script: "standards",
         rangeArg: true,
+        required: true,
       },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
     ],

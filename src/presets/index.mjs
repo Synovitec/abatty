@@ -4,7 +4,12 @@
  * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
  * its own folder, the repository-level steps once.
  *
- * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit" | "scrub", requires?: string[], alternatives?: string[], rangeArg?: boolean }} GateStep
+ * @typedef {{ label: string, script?: string, command?: string[], builtin?: "secrets" | "audit" | "scrub", requires?: string[], alternatives?: string[], rangeArg?: boolean, required?: boolean }} GateStep
+ *   `required`: the step is the instrument, not an option. Without its script the gate cannot
+ *   run rather than passing with the step skipped: a repository whose every step is skipped for
+ *   want of a script read "gate green" and exit 0 (an outside trial's finding). What is required
+ *   is the preset's word: the tests and the ratchet everywhere code is, the typecheck where the
+ *   preset is TypeScript-native; a linter or a graph is a dependency decision the repository makes.
  * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
  * @typedef {{ file: string, needs: string[] }} PresetRule a rule file that applies only where the
  *   repository depends on one of `needs`. A bare string always applies.
