@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty report` says which floors were raised, by whom, and that nobody has verified it.**
+  The baseline already recorded a raise's date, reason and owner; the report never showed them,
+  and a reviewer who wanted the row assembled it by hand from commit messages for two days. The
+  JSON carries `floors.raised`, one row per raised metric with `verified: false` on every row,
+  and the terminal prints each as "floor raised (unverified)". Unverified is the honest word:
+  the owner is a string the command was given, and an agent session can type a person's name
+  as easily as a person can. A raise that needs an approval the raiser cannot give itself is
+  the next step; withholding the row until then would keep the whole picture dark. Control
+  cases: a raise appears, the debt paid removes it.
+
 - **The changelog rule at commit time, and the package's gate on Windows in its own CI** (two
   of the reviewer's asks, one file each). `abatty changelog --message <file>` is the commit-msg
   hook's second command: the staged files are judged against the same pair the push is judged
