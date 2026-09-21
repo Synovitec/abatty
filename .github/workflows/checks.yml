@@ -12,27 +12,33 @@ permissions:
   # under review rather than in a report nobody opens.
   security-events: write
 jobs:
+  # Every Node the package claims (`engines`), not only the newest: a launcher spawned the way
+  # only one version accepts is exactly what one runner cannot see.
   gate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run -s gate
       - name: the tarball a third party installs
         run: npm pack --dry-run
       # Emitted and uploaded even when a step above went red: a run that failed is exactly the run
-      # whose findings a reviewer needs on the diff.
+      # whose findings a reviewer needs on the diff. Uploaded once per commit, from the newest Node.
       - name: findings as SARIF
-        if: always()
+        if: always() && matrix.node == '22'
         run: npx abatty ratchet --range auto --sarif > abatty.sarif || true
       - name: upload the findings
-        if: always()
+        if: always() && matrix.node == '22'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: abatty.sarif
@@ -70,12 +76,23 @@ jobs:
   # went red three ways that no run could see, because every run was on Linux: a false green one
   # level up from the ones the gate refuses. This job is what keeps that from coming back; the
   # eight cases that were pinned to a POSIX machine are the ones it would have caught first.
+  # Once per package manager the package spawns: the launcher fix is proved on the real
+  # `pnpm.cmd` as well as on `npm.cmd` (the suite spawns every launcher it finds on PATH), because
+  # the trial's repository is pnpm on Windows and nothing here had ever run pnpm there.
   windows:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pm: [npm, pnpm]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        if: matrix.pm == 'pnpm'
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

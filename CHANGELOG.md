@@ -46,6 +46,14 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The package's own CI runs the gate on every Node it claims and on pnpm as well as npm on
+  Windows.** The Linux gate is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had
+  ever run), with the findings uploaded once per commit. The Windows job is a matrix over npm
+  and pnpm, the pnpm leg installing pnpm on the runner, and the launcher case in the suite now
+  spawns every launcher it finds on PATH (npm always; pnpm, yarn and bun where installed, named
+  in the output) rather than npm alone: the trial's repository is pnpm on Windows, and nothing
+  here had ever run `pnpm.cmd` there.
+
 - **Two modules went over the module budget with the fixes above and are split by what they
   are for.** What a push contains (the range, how it was found, the files it and the tree
   change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the

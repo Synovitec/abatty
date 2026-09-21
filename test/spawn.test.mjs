@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 import { launch, quoteForCmd, runCommand } from "../src/core/spawn.mjs";
 
 // The launcher fix is proved on the platform it is for and on the platforms it must leave alone:
@@ -39,10 +40,21 @@ test("quoting for cmd.exe: what the shell would read is fenced, what it would no
   assert.equal(quoteForCmd(""), '""', "an empty argument must survive the join");
 });
 
-test("the launcher starts here: npm --version is a tool that ran, on every platform the suite runs on", () => {
+test("every launcher on this machine's PATH starts through launch(): npm always, pnpm, yarn and bun where they are installed", () => {
   // Before this fix the same call answered `EINVAL: spawnSync npm.cmd EINVAL` on Windows, and the
-  // gate stopped at its first step with "the instrument, not the work" for two days.
-  const r = runCommand(tmpdir(), ["npm", "--version"]);
-  assert.equal(r.errored, undefined, r.detail);
-  assert.equal(r.code, 0);
+  // gate stopped at its first step with "the instrument, not the work" for two days. npm is on
+  // every machine the suite runs on; the others are proved wherever they are found (the Windows
+  // job in CI installs pnpm for exactly this case), and named as absent otherwise rather than
+  // silently passed over.
+  const onPath = (/** @type {string} */ name) =>
+    spawnSync(process.platform === "win32" ? "where" : "which", [name], { stdio: "ignore" })
+      .status === 0;
+  const found = ["npm", "pnpm", "yarn", "bun"].filter(onPath);
+  assert.ok(found.includes("npm"), "npm is the floor");
+  for (const name of found) {
+    const r = runCommand(tmpdir(), [name, "--version"]);
+    assert.equal(r.errored, undefined, `${name}: ${r.detail}`);
+    assert.equal(r.code, 0, `${name} --version`);
+  }
+  console.log(`launchers proved: ${found.join(", ")}`);
 });
