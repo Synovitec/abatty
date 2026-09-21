@@ -16,7 +16,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { asResult, bin, dockerRunning, runCommand, runScript } from "./spawn.mjs";
+import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { auditOutcome } from "./audit.mjs";
@@ -164,9 +164,11 @@ export function runGate(o) {
       const a = auditOutcome(
         repoDir,
         (cmd, args) => {
-          const r = spawnSync(bin(cmd), args, {
+          const l = launch(cmd, args);
+          const r = spawnSync(l.file, l.args, {
             cwd: repoDir,
             encoding: "utf8",
+            shell: l.shell,
             maxBuffer: 16 * 1024 * 1024,
           });
           return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };

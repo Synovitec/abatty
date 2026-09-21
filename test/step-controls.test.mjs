@@ -2,12 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { presetById } from "../src/presets/index.mjs";
 import { CONTROLS_FILE, STEP_CONTROLS, runStepControls } from "../src/core/step-controls.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 
-const BIN = new URL("../bin/abatty.mjs", import.meta.url).pathname;
+const BIN = fileURLToPath(new URL("../bin/abatty.mjs", import.meta.url));
 
 /** A repository whose scripts stand in for the tools: a linter that refuses a debugger statement, a typecheck that checks nothing, no test runner, the real ratchet. @param {string} name */
 function fixture(name) {

@@ -517,10 +517,13 @@ try {
 try {
   const agent = agentCommand();
   if (!agent) throw new Error("no agent command: set ABATTY_AGENT or agent.command in ~/.abatty/config.json");
-  // No shell: the arguments are an array and a shell would only re-parse them. On Windows a
-  // tool launcher is a batch file, so the name carries the suffix that makes it resolvable.
-  const exe = process.platform === "win32" && /^(npm|npx|yarn|pnpm|bun)$/.test(agent) ? `${agent}.cmd` : agent;
-  const v = execFileSync(exe, ["--version"], { encoding: "utf8" }).trim();
+  // No shell, except where one is load-bearing: on Windows a tool launcher and a .cmd stub are
+  // batch files, which are scripts for cmd.exe, and Node refuses to spawn one without a shell
+  // (EINVAL since 20.12). The path is quoted for that shell; the one argument has nothing to quote.
+  const win = process.platform === "win32";
+  const batch = win && (/^(npm|npx|yarn|pnpm|bun)$/.test(agent) || /\.(cmd|bat)$/i.test(agent));
+  const exe = batch && !/\.(cmd|bat)$/i.test(agent) ? `${agent}.cmd` : agent;
+  const v = execFileSync(batch ? `"${exe}"` : exe, ["--version"], { encoding: "utf8", shell: batch }).trim();
   const m = v.match(/(\d+)\.(\d+)\.(\d+)/);
   const ok = m && (Number(m[1]) > 2 || (Number(m[1]) === 2 && (Number(m[2]) > 1 || (Number(m[2]) === 1 && Number(m[3]) >= 259))));
   check("agent >= 2.1.259 (--permission-prompts none)", Boolean(ok), v);

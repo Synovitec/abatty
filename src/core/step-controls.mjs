@@ -15,7 +15,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { bin } from "./spawn.mjs";
+import { launch } from "./spawn.mjs";
 import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 
@@ -176,9 +176,11 @@ export function runStepControls(o) {
   const run =
     o.run ||
     ((cwd, script) => {
-      const r = spawnSync(bin("npm"), ["run", "-s", script], {
+      const l = launch("npm", ["run", "-s", script]);
+      const r = spawnSync(l.file, l.args, {
         cwd,
         encoding: "utf8",
+        shell: l.shell,
         env: childEnv(),
         maxBuffer: 16 * 1024 * 1024,
       });
@@ -248,9 +250,11 @@ export function runStepControls(o) {
         code = scanSecrets(repoDir, { mode: "tree" }).findings.length ? 1 : 0;
       else if (s.command) {
         const [cmd, ...args] = s.command;
-        const r = spawnSync(bin(String(cmd)), args, {
+        const l = launch(String(cmd), args);
+        const r = spawnSync(l.file, l.args, {
           cwd: repoDir,
           encoding: "utf8",
+          shell: l.shell,
           env: childEnv(),
           maxBuffer: 16 * 1024 * 1024,
         });

@@ -154,7 +154,7 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
       // runs, and it fails. What the test is about - the skeleton reaches lint and stops there -
       // is unchanged, and the exit code is exact again.
       const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-      pkg.scripts.lint = "node -e 'process.exit(1)'";
+      pkg.scripts.lint = 'node -e "process.exit(1)"';
       writeFileSync(join(dir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
       const exact = cli(["gate", dir, "--fast"], dir);
       assert.equal(exact.code, 3, exact.out);

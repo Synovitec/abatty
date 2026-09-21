@@ -22,6 +22,22 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The gate runs again on Windows: a tool launcher is a batch file, and a batch file needs
+  cmd.exe** (the first of nine defects an outside trial on a pnpm + Windows product reported).
+  The commit that took the shell off every spawn site named the launcher instead (`npm.cmd`),
+  which Node has refused to start without a shell since 20.12 (EINVAL, the fix for
+  CVE-2024-27980), so this package's own gate stopped at its first step with "format could not
+  run: EINVAL" for two days. `launch()` in `src/core/spawn.mjs` is now the one place that
+  decides: on Windows a launcher runs under cmd.exe with its arguments quoted for it, once;
+  everywhere else and for everything else there is still no shell. The harness self-test's agent
+  probe had the same belief and the same failure on a `.cmd` stub, and carries the same fix. A
+  control case spawns the real launcher on every platform the suite runs on. Two limits are
+  written where they hold rather than papered over: cmd.exe exits 1 both for a tool that failed
+  and for a tool it could not find, so on Windows a missing tool inside an npm script is reported
+  as failed with the shell's own line above it (POSIX keeps 127 and "could not run"); and five
+  test fixtures were POSIX-shaped (single quotes in a script, a URL's pathname as a path) and
+  answered the wrong thing on Windows before the fix could be seen.
+
 - **Two gate steps here had never once been watched going red** (found while proving the date
   metric). `abatty doctor --controls` plants a violation per gate step and reports a step that
   stays green as ABSENT, and on this repository it had been reporting typecheck and unit tests

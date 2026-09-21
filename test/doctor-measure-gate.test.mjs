@@ -314,7 +314,7 @@ test("end to end, through real npm: a tool that ran and failed exits 3, one that
     return cli(["gate", dir, "--fast"], dir);
   };
 
-  const ran = gateOf("gate-exit-3", "node -e 'process.exit(1)'");
+  const ran = gateOf("gate-exit-3", 'node -e "process.exit(1)"');
   assert.equal(ran.code, 3, ran.out);
   assert.match(ran.out, /✗ lint \(CODE\.4\)/);
   assert.equal(
@@ -324,7 +324,15 @@ test("end to end, through real npm: a tool that ran and failed exits 3, one that
   );
 
   const absent = gateOf("gate-exit-4", "abatty-no-such-binary-__ .");
-  assert.equal(absent.code, 4, absent.out);
-  assert.match(absent.out, /lint \(CODE\.4\) could not run/);
-  assert.match(absent.out, /the instrument, not the work/);
+  if (process.platform === "win32") {
+    // cmd.exe exits 1 for a tool it cannot find, the code a tool that ran and failed returns, so
+    // through npm on Windows the two are one answer. The shell prints its own "not recognized"
+    // line above the verdict; the classification stops at its door. Asserted as the limit it
+    // is, not widened to accept either answer everywhere.
+    assert.equal(absent.code, 3, absent.out);
+  } else {
+    assert.equal(absent.code, 4, absent.out);
+    assert.match(absent.out, /lint \(CODE\.4\) could not run/);
+    assert.match(absent.out, /the instrument, not the work/);
+  }
 });
