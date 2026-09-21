@@ -297,7 +297,12 @@ export function initRepo(o) {
   // costs one file, and it is the only way an agent this repository never configured can read the
   // context; the primary's file imports it so there is one source rather than two copies that
   // drift. A rule that reads the context follows that import.
-  const context = tpl("harness/agent-context.md.template");
+  // What a machine can fill, it fills: the name is the package's or the folder's. The rest are
+  // the questions; DOC-CONTEXT names every one still standing until somebody answers them.
+  const context = tpl("harness/agent-context.md.template").replaceAll(
+    "<project name>",
+    String(readPackage(repoDir).name || basename(repoDir)),
+  );
   put("AGENTS.md", context);
   put(PRIMARY.contextFile, "@AGENTS.md\n");
   for (const a of others)

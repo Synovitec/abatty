@@ -4,6 +4,9 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
+import { buildContext } from "../src/rules/context.mjs";
+import { RULES, runCatalog } from "../src/rules/index.mjs";
+import { templatePlaceholders } from "../src/rules/families/documents.mjs";
 
 test("init --stack next writes the harness, the tooling, the scripts and the day-0 documents", () => {
   const dir = tempRepo("init", {
@@ -183,4 +186,37 @@ test("a preset's library rule files are written only where the repository depend
   );
   const again = cli(["update", plain], plain);
   assert.doesNotMatch(again.out, /added\s+\.claude\/rules\/(graphql|sequelize|mui)\.md/, again.out);
+});
+
+test("the context file is not the template: init fills the name, and DOC-CONTEXT names every placeholder still standing", () => {
+  // A trial repository ran two days on an AGENTS.md that was the unfilled template, `<project
+  // name>` and all, and every check said present because the sections were all there.
+  const dir = tempRepo("init-placeholders", { "package.json": NEXT_PKG });
+  assert.equal(cli(["init", dir, "--stack", "next"], dir).code, 0);
+  const written = readFileSync(join(dir, "AGENTS.md"), "utf8");
+  assert.match(written, /^# CLAUDE\.md - fixture-next$/m, "the name a machine can fill is filled");
+  assert.ok(!written.includes("<project name>"));
+  const left = templatePlaceholders(written);
+  assert.ok(left.length >= 10, `the questions are still there: ${left.length}`);
+  assert.ok(left.some((l) => /^<e\.g\. /.test(l)));
+  // A convention written with angle brackets is not a placeholder.
+  assert.deepEqual(
+    templatePlaceholders(
+      "`.claude/rules/<topic>.md`, `<type>/<short-description>`, <!-- a comment --> and <br />",
+    ),
+    [],
+  );
+
+  const before = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
+  assert.equal(before?.status, "partial");
+  assert.match(before?.evidence || "", /\d+ template placeholder\(s\) left: <Two sentences/);
+  assert.match(before?.next || "", /Fill the placeholders/);
+
+  // Filled in, the same file is present: the control in the other direction.
+  writeFileSync(
+    join(dir, "AGENTS.md"),
+    written.replace(/<(?![!/])[^<>\n]*\s[^<>\n]*>/g, "answered"),
+  );
+  const after = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
+  assert.equal(after?.status, "present", after?.evidence);
 });

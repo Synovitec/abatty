@@ -35,11 +35,22 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A context file that is still the template is a description of one, and the catalog now
+  says so** (the ninth defect of the trial: `AGENTS.md` shipped with `<project name>` and
+  twelve other placeholders, and nobody noticed for two days because every section was there).
+  `init` fills what a machine can, the project's name from `package.json` or the folder; the
+  rest are the questions, and `DOC-CONTEXT` reads as partial for as long as any stands, naming
+  the first three with the fix ("fill the placeholders in <>: they are the questions, not the
+  answers"). A placeholder is angle-bracketed text with a space in it; a convention written the
+  same way (`<topic>`, `<type>/<short-description>`), an HTML comment or a tag is not one.
+  Control cases in both directions, and the catalog regenerated.
+
 - **The front matter reads the same with CRLF as with LF** (the eighth defect of the trial: a
   document checked out with CRLF on Windows lost the last key of its front matter, and the
   ratchet went red on one operating system only). The closing `---` was found across the
   `
-`, but the line before it kept its `` and the key pattern could not cross it. The
+`, but the line before it kept its `
+` and the key pattern could not cross it. The
   reader now normalises line endings once, before anything is read; every other parser in the
   package reads git's own output, which is LF. A control case reads one document both ways
   and expects the same map, byte-order mark included.
