@@ -68,7 +68,7 @@ export const astro = {
         ],
       },
       { label: "lint (CODE.4)", script: "lint" },
-      { label: "typecheck (CODE.3, astro check)", script: "typecheck" },
+      { label: "typecheck (CODE.3, astro check)", script: "typecheck", required: true },
       {
         label: "import graph (CODE.5)",
         script: "graph",
@@ -79,11 +79,12 @@ export const astro = {
         script: "dead",
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
-      { label: "unit tests (TEST.1)", script: "test" },
+      { label: "unit tests (TEST.1)", script: "test", required: true },
       {
         label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",
         rangeArg: true,
+        required: true,
       },
       { label: "secret scan (SEC.1)", builtin: "secrets" },
       { label: "audit (SEC.1)", builtin: "audit" },

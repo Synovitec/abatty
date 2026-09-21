@@ -60,6 +60,7 @@ export function runGate(o) {
   let pkgScripts = rootScripts;
   let cwd = repoDir;
   let prefix = "";
+  let presetId = preset.id;
 
   const info = pushRangeInfo(repoDir, o.base, o.range);
   const range = info.range;
@@ -179,7 +180,24 @@ export function runGate(o) {
       });
       return true;
     }
+    // A step the preset requires is the instrument itself: without its script or its config the
+    // gate cannot run, and says so, rather than passing with the step skipped. A repository
+    // whose every step was skipped for want of a script read "gate green" and exited 0; the
+    // reviewer who found it called it the other half of the false green, and it was.
+    const absent = (/** @type {string} */ what) => {
+      if (!s.required) return false;
+      events.push({
+        label: prefix + s.label,
+        outcome: "errored",
+        detail: `${what}: a step the ${presetId} preset requires`,
+      });
+      log(
+        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write the script (init writes the preset's), or the gate cannot run. This is the instrument, not the work.`,
+      );
+      return true;
+    };
     if (s.requires && !s.requires.some((f) => existsSync(join(cwd, f)))) {
+      if (absent(`no ${s.requires[0]}`)) return false;
       events.push({ label: prefix + s.label, outcome: "skipped", detail: `no ${s.requires[0]}` });
       log(
         `· skipped ${prefix}${s.label}: no ${s.requires[0]} in ${prefix ? "the workspace" : "the repository"}`,
@@ -209,6 +227,7 @@ export function runGate(o) {
     if (s.rangeArg && prefix) return true; // the ratchet runs once, at the root
     const script = resolveScript(s);
     if (!script) {
+      if (absent(`no "${s.script}" script`)) return false;
       events.push({
         label: prefix + s.label,
         outcome: "skipped",
@@ -300,12 +319,14 @@ export function runGate(o) {
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
+    presetId = p.id;
     log(`\n· workspace ${w.path} (${p.id})`);
     for (const s of p.gate.always) if (!step(s)) return done(false);
   }
   cwd = repoDir;
   prefix = "";
   pkgScripts = rootScripts;
+  presetId = preset.id;
 
   if (o.fast) {
     log("\n--fast: skipped the conditional suites. CI still runs them.");
@@ -322,6 +343,7 @@ export function runGate(o) {
     cwd = join(repoDir, w.path);
     prefix = `${w.path} · `;
     pkgScripts = readPackage(cwd).scripts || {};
+    presetId = /** @type {any} */ (w.preset).id;
     if (!suites(/** @type {any} */ (w.preset), `${w.path}/`)) return done(false);
   }
   return done(true);

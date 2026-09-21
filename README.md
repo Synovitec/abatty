@@ -409,8 +409,12 @@ allowance can name an advisory (yarn's is deferred loudly to CI until somebody h
 It is deferred loudly when the registry is unreachable, and a repository with no lockfile has no
 audit: the step could not run, and the gate stops on it as it stops on a linter that is not
 installed, never silently green. A step whose script the repository does not have yet is
-reported as skipped, so a fresh repository can run the gate before everything exists; the gap
-analysis names what is missing.
+reported as skipped, so a fresh repository can run the gate before everything exists, and the
+verdict then leads with how many steps did not run rather than with the colour; the gap
+analysis names what is missing. The steps a preset requires (the tests and the ratchet wherever
+there is code, the typecheck where the preset is TypeScript-native) cannot be skipped: without
+their script the gate could not run, the same verdict as a tool that is not installed, because
+a gate that is green over two steps of nine is not a gate.
 
 **Every gate step proves it can go red.** The ratchet's probes carry their controls; the
 gate steps are scripts a repository owns, and one that never went red may be checking

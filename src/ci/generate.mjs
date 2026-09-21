@@ -79,7 +79,7 @@ export function ciSteps(preset, o = {}) {
         name,
         command: "",
         when,
-        absent: `no "${s.script}" script in package.json; the gap analysis names it`,
+        absent: `no "${s.script}" script in package.json; ${s.required ? "the preset requires this step, and the gate cannot run without it" : "the gap analysis names it"}`,
       };
     if (script === "standards")
       return {

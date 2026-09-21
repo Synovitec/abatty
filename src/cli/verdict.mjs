@@ -44,8 +44,26 @@ export async function gateCommand(cx, preset) {
   const ran = r.events.filter(
     (e) => e.outcome === "ok" || e.outcome === "failed" || e.outcome === "errored",
   );
+  // A step skipped for want of a script did not run, and a verdict that leads with the colour
+  // hides how much of the gate that was: "gate green" over two steps of nine is a sentence a
+  // reader has to be made to finish.
+  const unrun = r.events.filter(
+    (e) => e.outcome === "skipped" && /^no (".*" script|\S+)$/.test(e.detail || ""),
+  );
+  const headline = r.ok
+    ? unrun.length
+      ? t.yellow(
+          `gate green with ${unrun.length} of ${unrun.length + ran.length} step(s) not run`,
+        ) +
+        t.gray(
+          ` (${unrun.map((e) => e.label.replace(/ \(.*/, "")).join(", ")}: no script or config)`,
+        )
+      : t.green("gate green")
+    : r.errored
+      ? t.red("gate could not run")
+      : t.red("gate red");
   out(
-    `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green("gate green") : r.errored ? t.red("gate could not run") : t.red("gate red")} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}\n`,
+    `\n${r.ok ? (unrun.length ? t.glyph.warn : t.glyph.ok) : t.glyph.fail} ${headline} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}\n`,
   );
   for (const e of r.events)
     out(

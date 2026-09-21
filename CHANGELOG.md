@@ -59,6 +59,22 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A step the preset requires cannot be skipped for want of a script, and a green with steps
+  not run says how many** (the reviewer's second pass, the other half of the false green: a
+  repository with a lockfile and no scripts read "gate green · 2 step(s)" with seven skipped and
+  exit 0). `errored` covered the instrument breaking; it did not cover the instrument never
+  being installed. A gate step now carries `required`, the preset's word on what is the
+  instrument rather than an option: the tests and the ratchet wherever there is code, the
+  typecheck where the preset is TypeScript-native (next, vite-react, astro), pytest for python.
+  Without its script or its config such a step is `errored` and the gate cannot run, the same
+  verdict as a tool that is not installed; a linter or a graph remains a dependency decision and
+  is skipped as before. And the verdict no longer leads with the colour when steps did not run:
+  "gate green with 4 of 9 step(s) not run (format, lint, import graph, dead code: no script or
+  config)", in yellow, so the reader is made to finish the sentence. The generated pipeline's
+  comment for an absent step says when the preset requires it. Three controls: the reviewer's
+  repro exits 4, the required steps alone are green with the count, every step present is the
+  plain verdict.
+
 - **The suite runs green on Windows, and two of its eight red cases were the code's fault**
   (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were
   committed without their executable bit on Windows, because the bit was set on an index entry

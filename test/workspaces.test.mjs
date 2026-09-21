@@ -21,7 +21,7 @@ function monorepo(name, rootExtra = {}) {
         name: "mono",
         private: true,
         workspaces: ["apps/*", "services/*", "packages/*"],
-        scripts: { test: "node -e process.exit(0)" },
+        scripts: { test: "node -e process.exit(0)", standards: "node -e process.exit(0)" },
         ...rootExtra,
       }) + "\n",
     "package-lock.json": "{}\n",
@@ -110,6 +110,7 @@ test("the gate composes: the root's steps, then each workspace's preset in its o
   assert.equal(r.ok, true, JSON.stringify(r.events));
   assert.deepEqual(calls, [
     ["", "test"],
+    ["", "standards"],
     ["/apps/web", "lint"],
     ["/apps/web", "typecheck"],
     ["/apps/web", "test"],
@@ -272,13 +273,13 @@ test("the gate runs the application's suites when only the package it imports ch
       name: "mono",
       private: true,
       workspaces: ["apps/*", "packages/*"],
-      scripts: { test: "true" },
+      scripts: { test: "true", standards: "true" },
     }),
     "package-lock.json": "{}\n",
     "apps/store/package.json": JSON.stringify({
       name: "@m/store",
       dependencies: { "@m/ui": "*", next: "15" },
-      scripts: { test: "true" },
+      scripts: { test: "true", typecheck: "true" },
     }),
     "packages/ui/package.json": JSON.stringify({ name: "@m/ui", scripts: { test: "true" } }),
     "apps/store/e2e/checkout.spec.ts": "test('x', () => {});\n",
