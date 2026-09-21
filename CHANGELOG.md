@@ -22,6 +22,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A pipeline is credited for the scripts it can run, not for the words it names** (the fourth
+  defect of the trial: a generated CI file naming five scripts the package lacked was red from
+  its first run and still lifted the score by six points). `INST-CI` read any pipeline file as
+  present and `INST-CI-STEPS` grepped its text for `lint`; now both read the scripts the pipeline
+  invokes (`npm run`, `pnpm run`, `yarn`, `bun run`) against `package.json`, a step whose script
+  is missing is reported as "NAMED, no script", and the phantom scripts are listed in the
+  evidence with the fix. Control cases in both directions, and the catalog regenerated.
+
 - **A push range the gate cannot trust selects everything, never nothing** (the third defect of
   the trial: `abatty gate` in a pipeline without `--range` read "0 pushed files", skipped the
   build, browser and database suites and printed green). Two cases were read as an empty push:

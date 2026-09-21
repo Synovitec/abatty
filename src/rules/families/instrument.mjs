@@ -3,6 +3,27 @@
  * gate, the pre-commit hook, CI and its steps. Standard §2.2-2.4, P.1, P.2, SEC.1.
  */
 
+/**
+ * The package scripts a pipeline's text invokes (`npm run x`, `pnpm run x`, `yarn x`, `bun run
+ * x`, with or without `-s`/`--silent`), and which of them the package does not have. A pipeline
+ * is credited for what it can run, not for what it names: the generated one on a trial repository
+ * named five scripts the package lacked, was red from its first run, and still counted as
+ * "present" for six points of score.
+ * @param {string} ciText @param {Record<string, string>} scripts
+ */
+export function phantomScripts(ciText, scripts) {
+  const named = new Set();
+  const re =
+    /\b(?:npm|pnpm|bun)\s+run\s+(?:-s\s+|--silent\s+)?([\w:.-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:.-]+)/g;
+  for (const m of String(ciText).matchAll(re)) {
+    const name = m[1] || m[2] || "";
+    // `yarn install`, `yarn npm audit`: yarn's own verbs are not scripts.
+    if (name && !/^(install|add|npm|exec|dlx|audit|cache|config|--\S*)$/.test(name))
+      named.add(name);
+  }
+  return [...named].filter((n) => typeof scripts[n] !== "string");
+}
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -124,14 +145,26 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
-    why: "The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped.",
+    why: "The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. A pipeline is credited for the scripts it can run, not for the words it names: one that names a script the package lacks is red or never ran.",
     next: "abatty ci generates the pipeline from the gate (Woodpecker, GitHub Actions)",
-    check: (c) => ({
-      status: c.ciFiles.length > 0 ? "present" : "missing",
-      evidence:
-        c.ciFiles.join(", ") ||
-        "no CI pipeline found (the providers the package reads: Woodpecker, GitHub Actions)",
-    }),
+    check: (c) => {
+      if (!c.ciFiles.length)
+        return {
+          status: "missing",
+          evidence:
+            "no CI pipeline found (the providers the package reads: Woodpecker, GitHub Actions)",
+        };
+      // A pipeline that names a script the package does not have is a pipeline that is red, or
+      // one that was never run; either way it is not the gate re-run on another machine.
+      const phantom = phantomScripts(c.ciText, c.scripts);
+      return {
+        status: phantom.length ? "partial" : "present",
+        evidence: `${c.ciFiles.join(", ")}${phantom.length ? `; names script(s) package.json does not have: ${phantom.join(", ")}` : ""}`,
+        next: phantom.length
+          ? "Add the scripts the pipeline names, or regenerate it from the scripts that exist (abatty ci)"
+          : undefined,
+      };
+    },
   },
   {
     id: "INST-CI-STEPS",
@@ -142,9 +175,12 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     stages: ["build", "run"],
-    why: "A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less.",
+    why: "A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. A step whose script the package does not have is named, not counted.",
     next: "Add the missing steps; a secret scan and an audit are one step each",
     check: (c) => {
+      // A step is read for the word AND for the script behind it: `npm run -s lint` in a pipeline
+      // whose package has no `lint` script is a red step, not a lint step.
+      const phantom = new Set(phantomScripts(c.ciText, c.scripts));
       const steps = [
         "lint",
         "typecheck|type-check",
@@ -152,12 +188,19 @@ export const rules = [
         "standards|check-limits|invariants",
         "gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets",
         "audit",
-      ].map((re) => [re, new RegExp(re, "i").test(c.ciText)]);
+      ].map((re) => {
+        const named = new RegExp(re, "i").test(c.ciText);
+        const runnable = named && !re.split("|").some((n) => phantom.has(n));
+        return [re, runnable, named && !runnable];
+      });
       return {
         status:
           c.ciFiles.length === 0 ? "missing" : steps.every(([, ok]) => ok) ? "present" : "partial",
         evidence: steps
-          .map(([re, ok]) => `${ok ? "ok" : "MISSING"} ${String(re).split("|")[0]}`)
+          .map(
+            ([re, ok, ghost]) =>
+              `${ok ? "ok" : ghost ? "NAMED, no script" : "MISSING"} ${String(re).split("|")[0]}`,
+          )
           .join(", "),
       };
     },

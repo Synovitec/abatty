@@ -10,6 +10,7 @@ import { renderPullRequestTemplate, renderRuleset } from "../src/ci/templates.mj
 import { FORBIDDEN, TERMS } from "../src/core/vocabulary.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { RULES, runCatalog } from "../src/rules/index.mjs";
+import { phantomScripts } from "../src/rules/families/instrument.mjs";
 
 test("the CI steps are the gate's steps in the gate's order, then the secret scan, the audit and the publish step; the suites follow by kind", () => {
   for (const p of presets) {
@@ -128,13 +129,17 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.equal(behind.code, 3, "the check ran and found the pipeline behind");
   assert.match(behind.out, /behind\s+\.github\/workflows\/checks\.yml/);
   assert.equal(cli(["ci", dir, "--provider", "nope"], dir).code, 2);
+  // The fixture has `test` and `build` and nothing else: a pipeline that names `lint`,
+  // `typecheck` and `standards` is a pipeline that is red, and it is credited for what it can
+  // run, not for what it names (it was "present" on both rules for six points of score).
   const findings = runCatalog(buildContext(dir), RULES);
-  assert.equal(findings.find((f) => f.id === "INST-CI")?.status, "present");
-  assert.equal(
-    findings.find((f) => f.id === "INST-CI-STEPS")?.status,
-    "present",
-    "lint, typecheck, test, standards, secret scan, audit are all in the generated pipeline",
-  );
+  const ci = findings.find((f) => f.id === "INST-CI");
+  assert.equal(ci?.status, "partial");
+  assert.match(ci?.evidence || "", /names script\(s\) package\.json does not have: .*lint/);
+  const steps = findings.find((f) => f.id === "INST-CI-STEPS");
+  assert.equal(steps?.status, "partial");
+  assert.match(steps?.evidence || "", /NAMED, no script lint/);
+  assert.match(steps?.evidence || "", /ok test/);
   const fresh = tempRepo("ci-init", { "package.json": NEXT_PKG });
   const init = cli(["init", fresh, "--stack", "next", "--ci", "github"], fresh);
   assert.equal(init.code, 0, init.out);
@@ -181,4 +186,50 @@ test("the generated pipeline signs the conformance statement with the run's iden
   assert.match(release, /attest --out abatty-conformance\.json/);
   assert.match(release, /uses: actions\/attest@v2/);
   assert.match(release, /attestations: write/);
+});
+
+test("a CI step is credited for the script behind it, not for the word: phantom scripts are named in both directions", () => {
+  const CI = [
+    "steps:",
+    "  - run: npm ci",
+    "  - run: npm run -s lint",
+    "  - run: pnpm run typecheck",
+    "  - run: yarn test",
+    "  - run: bun run --silent standards -- --range auto",
+    "  - run: yarn install --frozen-lockfile",
+    "  - run: npx abatty secrets --range origin/main..HEAD",
+    "  - run: npm audit --audit-level=high",
+    "",
+  ].join("\n");
+  assert.deepEqual(phantomScripts(CI, { test: "x", standards: "y" }).sort(), ["lint", "typecheck"]);
+  assert.deepEqual(
+    phantomScripts(CI, { test: "x", standards: "y", lint: "z", typecheck: "w" }),
+    [],
+  );
+
+  const pkg = (/** @type {Record<string, string>} */ scripts) =>
+    JSON.stringify({ name: "p", private: true, scripts, dependencies: { next: "15" } });
+  const verdicts = (/** @type {string} */ name, /** @type {Record<string, string>} */ scripts) => {
+    const dir = tempRepo(name, {
+      "package.json": pkg(scripts),
+      ".github/workflows/checks.yml": CI,
+    });
+    const f = runCatalog(buildContext(dir), RULES);
+    return {
+      ci: f.find((x) => x.id === "INST-CI"),
+      steps: f.find((x) => x.id === "INST-CI-STEPS"),
+    };
+  };
+  const ghost = verdicts("ci-phantom", { test: "x", standards: "y" });
+  assert.equal(ghost.ci?.status, "partial");
+  assert.match(ghost.ci?.evidence || "", /does not have: lint, typecheck/);
+  assert.equal(ghost.steps?.status, "partial");
+  assert.match(
+    ghost.steps?.evidence || "",
+    /NAMED, no script lint, NAMED, no script typecheck, ok test, ok standards/,
+  );
+
+  const real = verdicts("ci-real", { test: "x", standards: "y", lint: "z", typecheck: "w" });
+  assert.equal(real.ci?.status, "present", real.ci?.evidence);
+  assert.equal(real.steps?.status, "present", real.steps?.evidence);
 });
