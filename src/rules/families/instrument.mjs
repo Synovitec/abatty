@@ -175,7 +175,7 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     stages: ["build", "run"],
-    why: "A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. A step whose script the package does not have is named, not counted.",
+    why: "A CI that runs the tests but not the ratchet lets the numbers rise unseen; the six steps are the gate, no less. A step whose script the package does not have is named, not counted, and a comment that names a step is not a step.",
     next: "Add the missing steps; a secret scan and an audit are one step each",
     check: (c) => {
       // A step is read for the word AND for the script behind it: `npm run -s lint` in a pipeline

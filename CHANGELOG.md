@@ -35,6 +35,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The practices page was behind the standard it describes** (`docs.behindCode`, red on
+  `main` since VALID.5 landed on 2026-09-20: the standard gained a rule and
+  `docs/standard/BEST_PRACTICES.md` still carried the day before). Re-read against the
+  standard, the runtime table gains the VALID.5 row, and the date moves because the reading was
+  done, not because the number was red. The catalog's INST-CI-STEPS entry says the rule as the
+  check now reads it: a comment that names a step is not a step.
+
 - **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of
   the trial: `npm ci` and five `npm run` steps for scripts the package lacked, on a pnpm
   repository, red from the first run). The install, the audit, every `run` and every `npx`
