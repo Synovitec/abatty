@@ -11,7 +11,8 @@ import { spawnSync } from "node:child_process";
 function expand(arg) {
   const m = arg.match(/^([^*]+)\/\*(\.[^/*]+)$/);
   if (!m) return [arg];
-  const [, dir, suffix] = m;
+  const dir = String(m[1]);
+  const suffix = String(m[2]);
   return readdirSync(dir)
     .filter((f) => f.endsWith(suffix))
     .sort()
