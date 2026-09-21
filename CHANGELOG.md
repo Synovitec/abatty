@@ -35,6 +35,15 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The front matter reads the same with CRLF as with LF** (the eighth defect of the trial: a
+  document checked out with CRLF on Windows lost the last key of its front matter, and the
+  ratchet went red on one operating system only). The closing `---` was found across the
+  `
+`, but the line before it kept its `` and the key pattern could not cross it. The
+  reader now normalises line endings once, before anything is read; every other parser in the
+  package reads git's own output, which is LF. A control case reads one document both ways
+  and expects the same map, byte-order mark included.
+
 - **The practices page was behind the standard it describes** (`docs.behindCode`, red on
   `main` since VALID.5 landed on 2026-09-20: the standard gained a rule and
   `docs/standard/BEST_PRACTICES.md` still carried the day before). Re-read against the

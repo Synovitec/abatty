@@ -16,6 +16,7 @@ import {
   writeBaseline,
 } from "../src/ratchet/index.mjs";
 import { runControls } from "../src/ratchet/controls.mjs";
+import { frontMatter } from "../src/ratchet/probes/lib.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 
 /** A file of n export lines. @param {number} n */
@@ -552,4 +553,19 @@ test("a probe that counts occurrences reports each one on its line, and the tota
   assert.equal(env?.value, 2);
   assert.equal(env?.debt["src/a.ts"], 2);
   assert.equal(esc?.value, 1);
+});
+
+test("the front matter reads the same with CRLF as with LF: the last key is not dropped on Windows", () => {
+  // Checked out with CRLF, the closing `---` was found but the line before it kept its `\r`,
+  // and `(.*)$` stopped before it: the last key of every document vanished, and the ratchet
+  // went red on one operating system only (an outside trial, on Windows, found it in a day).
+  const lf = '---\ntitle: T\nstatus: living\nlast_verified: "2026-09-21"\n---\n# T\n';
+  const crlf = lf.replace(/\n/g, "\r\n");
+  assert.deepEqual(frontMatter(crlf), frontMatter(lf));
+  assert.equal(frontMatter(crlf)?.last_verified, "2026-09-21", "the last key survives CRLF");
+  assert.equal(frontMatter("\ufeff" + crlf)?.title, "T", "and a byte-order mark before it");
+  assert.deepEqual(frontMatter("---\r\ntags: [a, b]\r\nrelated:\r\n  - ./x.md\r\n---\r\n"), {
+    tags: ["a", "b"],
+    related: ["./x.md"],
+  });
 });
