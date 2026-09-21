@@ -9,7 +9,7 @@ export type PackageManager = {
     id: PackageManagerId;
     lockfile: string;
     install: string[];
-    run: (script: string) => string[];
+    run: (script: string, args?: string[]) => string[];
     exec: (tool: string) => string[];
     audit: ((level: string) => {
         check: string[];

@@ -22,6 +22,20 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of
+  the trial: `npm ci` and five `npm run` steps for scripts the package lacked, on a pnpm
+  repository, red from the first run). The install, the audit, every `run` and every `npx`
+  are now the package manager's the lockfile names (`src/core/package-manager.mjs`: npm, pnpm,
+  yarn classic or berry, bun), with the runner's toolchain to match (`pnpm/action-setup`,
+  `oven-sh/setup-bun`, `corepack enable` on the node image, the cache keyed on the manager). A
+  gate step whose script the package does not have is written as a comment that names it, in
+  the words the gap analysis uses, and a job with no runnable step is a comment block rather
+  than an empty job the forge refuses to parse. `--check` compares against the same rendering,
+  so a generated file is in step with itself. INST-CI-STEPS reads commands and not comments, so
+  the comment that names a missing step does not count as the step. Control cases: pnpm and npm
+  on one preset, an alternative script found under its own name, and the preset alone rendered
+  whole for a reader.
+
 - **A trailing redirection no longer hides a push to the base branch, and the forge's API is
   read as the same door** (the sixth defect of the trial: `git push origin main 2>&1` passed the
   PR-only guard, and `gh api` ref writes were never looked at). The guard took the last non-flag

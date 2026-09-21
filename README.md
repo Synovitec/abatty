@@ -293,9 +293,13 @@ gate definition: the same steps in the same order (format, lint, typecheck, the 
 dead code, unit tests, the ratchet with the changelog over `origin/<base>..HEAD`), then the
 secret scan, the audit, and the publish step to the hosted dashboard, guarded by the secret;
 the suites follow as their own pipeline or job, the database one on a real Postgres, the
-browser one with the browsers installed. Because it is generated, the gate and CI cannot list
-different steps, and `--check` says when a pipeline file is behind the gate; `init --ci
-<provider>` (or `ci.providers` in the config) writes it on day 0. GitHub also gets a
+browser one with the browsers installed. It is the repository's pipeline, not a template's: the
+install, the audit and every `run` are the package manager's the lockfile names (npm, pnpm,
+yarn or bun), and a gate step whose script the package does not have yet is written as a
+comment that names it, in the words the gap analysis uses, rather than as a step that is red
+from the first run. Because it is generated, the gate and CI cannot list different steps, and
+`--check` says when a pipeline file is behind the gate; `init --ci <provider>` (or
+`ci.providers` in the config) writes it on day 0. GitHub also gets a
 pull-request template with the reviewer's checklist. `abatty ci --ruleset` prints a ruleset
 for the organisation (branch names naming a tool refused, a pull request required, the checks
 required); it is printed for import, never written into a repository, because it carries the

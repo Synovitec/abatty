@@ -20,7 +20,7 @@ import { readPackage } from "./repo.mjs";
  *   id: PackageManagerId,
  *   lockfile: string,
  *   install: string[],
- *   run: (script: string) => string[],
+ *   run: (script: string, args?: string[]) => string[],
  *   exec: (tool: string) => string[],
  *   audit: ((level: string) => { check: string[], json: string[] }) | null,
  *   auditCommand: string,
@@ -68,7 +68,7 @@ export function packageManager(repoDir) {
 const MANAGERS = {
   npm: () => ({
     install: ["npm", "ci"],
-    run: (s) => ["npm", "run", "-s", s],
+    run: (s, args = []) => ["npm", "run", "-s", s, ...(args.length ? ["--", ...args] : [])],
     exec: (t) => ["npx", t],
     audit: (level) => ({
       check: ["npm", "audit", `--audit-level=${level}`, "--omit=dev"],
@@ -78,7 +78,7 @@ const MANAGERS = {
   }),
   pnpm: () => ({
     install: ["pnpm", "install", "--frozen-lockfile"],
-    run: (s) => ["pnpm", "run", "-s", s],
+    run: (s, args = []) => ["pnpm", "run", "-s", s, ...args],
     exec: (t) => ["pnpm", "exec", t],
     audit: (level) => ({
       check: ["pnpm", "audit", `--audit-level=${level}`, "--prod"],
@@ -88,7 +88,7 @@ const MANAGERS = {
   }),
   bun: () => ({
     install: ["bun", "install", "--frozen-lockfile"],
-    run: (s) => ["bun", "run", "--silent", s],
+    run: (s, args = []) => ["bun", "run", "--silent", s, ...args],
     exec: (t) => ["bunx", t],
     audit: (level) => ({
       check: ["bun", "audit", `--audit-level=${level}`, "--prod"],
@@ -100,14 +100,14 @@ const MANAGERS = {
     yarnIsBerry(repoDir)
       ? {
           install: ["yarn", "install", "--immutable"],
-          run: (s) => ["yarn", "run", s],
+          run: (s, args = []) => ["yarn", "run", s, ...args],
           exec: (t) => ["yarn", "exec", t],
           audit: null,
           auditCommand: "yarn npm audit --environment production --severity high",
         }
       : {
           install: ["yarn", "install", "--frozen-lockfile"],
-          run: (s) => ["yarn", "run", "-s", s],
+          run: (s, args = []) => ["yarn", "run", "-s", s, ...args],
           exec: (t) => ["yarn", "exec", t],
           audit: null,
           auditCommand: "yarn audit --groups dependencies --level high",

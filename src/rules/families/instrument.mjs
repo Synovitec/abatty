@@ -181,6 +181,9 @@ export const rules = [
       // A step is read for the word AND for the script behind it: `npm run -s lint` in a pipeline
       // whose package has no `lint` script is a red step, not a lint step.
       const phantom = new Set(phantomScripts(c.ciText, c.scripts));
+      // Commands, not comments: a generated pipeline writes the step it could not emit as a
+      // comment that names it, and a word in a comment is not a step that runs.
+      const text = c.ciText.replace(/^\s*#.*$/gm, "");
       const steps = [
         "lint",
         "typecheck|type-check",
@@ -189,7 +192,7 @@ export const rules = [
         "gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets",
         "audit",
       ].map((re) => {
-        const named = new RegExp(re, "i").test(c.ciText);
+        const named = new RegExp(re, "i").test(text);
         const runnable = named && !re.split("|").some((n) => phantom.has(n));
         return [re, runnable, named && !runnable];
       });

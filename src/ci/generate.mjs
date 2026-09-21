@@ -12,55 +12,109 @@ import { TERMS } from "../core/vocabulary.mjs";
 
 /**
  * @typedef {import("../presets/index.mjs").Preset} Preset
- * @typedef {{ base?: string, node?: string, publish?: boolean }} CiOptions
- * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser" }} CiStep
+ * @typedef {import("../presets/index.mjs").GateStep} GateStep
+ * @typedef {import("../core/package-manager.mjs").PackageManager} PackageManager
+ * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null }} CiOptions
+ * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser", absent?: string }} CiStep
  */
 
 export const PROVIDERS = ["woodpecker", "github"];
 
-/** The steps of a preset's CI, in the gate's order, provider-neutral. @param {Preset} preset @param {CiOptions} [o] */
+/**
+ * The commands of the package manager a pipeline is written for: the repository's, read from
+ * its lockfile, or npm where nothing says otherwise. A pipeline that said `npm ci` to a pnpm
+ * repository was red from its first run (the trial's seventh defect).
+ * @param {CiOptions} o
+ */
+function tooling(o) {
+  const pm = o.pm || null;
+  const join = (/** @type {string[]} */ a) => a.join(" ");
+  return {
+    id: pm?.id || "npm",
+    install: pm ? join(pm.install) : "npm ci",
+    run: (/** @type {string} */ script, /** @type {string[]} */ args = []) =>
+      pm
+        ? join(pm.run(script, args))
+        : join(["npm", "run", "-s", script, ...(args.length ? ["--", ...args] : [])]),
+    exec: (/** @type {string} */ tool) => (pm ? join(pm.exec(tool)) : `npx ${tool}`),
+    audit: pm ? pm.auditCommand : "npm audit --audit-level=high --omit=dev",
+  };
+}
+
+/**
+ * The steps of a preset's CI, in the gate's order, provider-neutral. Given the repository's
+ * scripts, a step whose script the package does not have is kept in the list as ABSENT with the
+ * reason and rendered as a comment rather than as a command that cannot run: the gate reports
+ * the same step as skipped and the gap analysis names it, and the pipeline says the same thing
+ * in the same words rather than going red on a script nobody wrote yet.
+ * @param {Preset} preset @param {CiOptions} [o]
+ */
 export function ciSteps(preset, o = {}) {
   const base = o.base || "main";
+  const t = tooling(o);
+  /** The script the package has for a step (the preset's or an alternative), or null; every step when no scripts were given. @param {GateStep} s */
+  const scriptOf = (s) => {
+    if (!o.scripts) return String(s.script);
+    const found = [s.script, ...(s.alternatives || [])].find(
+      (n) => typeof n === "string" && typeof o.scripts?.[n] === "string",
+    );
+    return typeof found === "string" ? found : null;
+  };
+  /** @param {GateStep} s @param {"always" | "db" | "browser"} when @param {string} [suffix] */
+  const stepOf = (s, when, suffix = "") => {
+    const name = `${s.label}${suffix}`;
+    // A preset command that starts with `npx` names a tool, not a manager: the manager's own
+    // exec runs it (`pnpm exec`, `bunx`), and a pnpm pipeline carries nothing npm-shaped.
+    if (s.command)
+      return {
+        name,
+        command:
+          s.command[0] === "npx" && s.command[1]
+            ? [t.exec(String(s.command[1])), ...s.command.slice(2)].join(" ")
+            : s.command.join(" "),
+        when,
+      };
+    const script = scriptOf(s);
+    if (!script)
+      return {
+        name,
+        command: "",
+        when,
+        absent: `no "${s.script}" script in package.json; the gap analysis names it`,
+      };
+    if (script === "standards")
+      return {
+        name,
+        command: `git fetch --no-tags origin ${base} && ${t.run("standards", ["--range", `origin/${base}..HEAD`])}`,
+        when,
+      };
+    return { name, command: t.run(script), when };
+  };
   /** @type {CiStep[]} */
   const steps = [];
-  for (const s of preset.gate.always) {
-    if (s.command) steps.push({ name: s.label, command: s.command.join(" "), when: "always" });
-    else if (s.script === "standards")
-      steps.push({
-        name: s.label,
-        command: `git fetch --no-tags origin ${base} && npm run -s standards -- --range origin/${base}..HEAD`,
-        when: "always",
-      });
-    else if (s.script)
-      steps.push({ name: s.label, command: `npm run -s ${s.script}`, when: "always" });
-  }
+  for (const s of preset.gate.always) if (s.command || s.script) steps.push(stepOf(s, "always"));
   steps.push({
     name: "secret scan (SEC.1)",
-    command: `git fetch --no-tags origin ${base} && npx abatty secrets --range origin/${base}..HEAD`,
+    command: `git fetch --no-tags origin ${base} && ${t.exec("abatty")} secrets --range origin/${base}..HEAD`,
     when: "always",
   });
-  steps.push({ name: "audit (SEC.1)", command: "npm audit --audit-level=high", when: "always" });
+  steps.push({ name: "audit (SEC.1)", command: t.audit, when: "always" });
   // The same step the gate runs, so the two cannot list different ones. It is a no-op where the
   // repository did not opt in, exactly as the commit-msg hook is, and the command names no tool.
   steps.push({
     name: "no trace of the tools (scrub)",
-    command: "npx abatty scrub .",
+    command: `${t.exec("abatty")} scrub .`,
     when: "always",
   });
   for (const suite of preset.gate.suites) {
-    const db = /database|DATA.4/i.test(suite.name);
+    const when = /database|DATA.4/i.test(suite.name) ? "db" : "browser";
     for (const s of suite.steps)
-      if (s.script || s.command)
-        steps.push({
-          name: `${s.label} · ${suite.name}`,
-          command: s.command ? s.command.join(" ") : `npm run -s ${s.script}`,
-          when: db ? "db" : "browser",
-        });
+      if (s.script || s.command) steps.push(stepOf(s, when, ` · ${suite.name}`));
   }
   if (o.publish !== false)
     steps.push({
       name: "publish the report to the dashboard",
-      command: 'npx abatty publish --to "$ABATTY_DASHBOARD" --token "$ABATTY_TOKEN"',
+      command: `${t.exec("abatty")} publish --to "$ABATTY_DASHBOARD" --token "$ABATTY_TOKEN"`,
       when: "always",
     });
   return steps;
@@ -90,9 +144,17 @@ function ident(name) {
 export function renderWoodpecker(preset, o = {}) {
   const node = o.node || "22";
   const steps = ciSteps(preset, o);
-  const image = `node:${node}`;
+  const t = tooling(o);
+  // A node image carries corepack, which puts pnpm and yarn on PATH from the `packageManager`
+  // field; bun ships its own image.
+  const image = t.id === "bun" ? "oven/bun:1" : `node:${node}`;
+  const install =
+    t.id === "pnpm" || t.id === "yarn"
+      ? [`      - corepack enable`, `      - ${t.install}`]
+      : [`      - ${t.install}`];
   /** @param {CiStep} s */
   const step = (s) => {
+    if (s.absent) return `  # ${ident(s.name)}: ${s.absent}`;
     const lines = [`  ${ident(s.name)}:`];
     if (/abatty publish/.test(s.command))
       lines.push(
@@ -119,11 +181,19 @@ export function renderWoodpecker(preset, o = {}) {
     `  install:`,
     `    image: ${image}`,
     `    commands:`,
-    `      - npm ci`,
+    ...install,
     ...always.map(step),
     ``,
   ];
-  if (db.length) {
+  /** @param {string} job @param {CiStep[]} list */
+  const onlyAbsent = (job, list) =>
+    out.push(
+      `# ${job}: no runnable step yet`,
+      ...list.map((s) => `#   ${s.name}: ${s.absent}`),
+      ``,
+    );
+  if (db.length && db.every((s) => s.absent)) onlyAbsent("the database suite", db);
+  else if (db.length) {
     out.push(
       `---`,
       `# The database suite, on a real Postgres.`,
@@ -142,20 +212,23 @@ export function renderWoodpecker(preset, o = {}) {
       `  install:`,
       `    image: ${image}`,
       `    commands:`,
-      `      - npm ci`,
+      ...install,
     );
     for (const s of db)
-      out.push(
-        `  ${ident(s.name)}:`,
-        `    image: ${image}`,
-        `    environment:`,
-        `      DATABASE_URL: postgres://postgres:postgres@postgres:5432/test`,
-        `    commands:`,
-        `      - ${y(s.command)}`,
-      );
+      if (s.absent) out.push(`  # ${ident(s.name)}: ${s.absent}`);
+      else
+        out.push(
+          `  ${ident(s.name)}:`,
+          `    image: ${image}`,
+          `    environment:`,
+          `      DATABASE_URL: postgres://postgres:postgres@postgres:5432/test`,
+          `    commands:`,
+          `      - ${y(s.command)}`,
+        );
     out.push(``);
   }
-  if (browser.length) {
+  if (browser.length && browser.every((s) => s.absent)) onlyAbsent("the browser suite", browser);
+  else if (browser.length) {
     out.push(
       `---`,
       `# The browser suite with axe, over the built output.`,
@@ -167,15 +240,17 @@ export function renderWoodpecker(preset, o = {}) {
       `  install:`,
       `    image: mcr.microsoft.com/playwright:v1.48.0-noble`,
       `    commands:`,
-      `      - npm ci`,
+      ...install,
     );
     for (const s of browser)
-      out.push(
-        `  ${ident(s.name)}:`,
-        `    image: mcr.microsoft.com/playwright:v1.48.0-noble`,
-        `    commands:`,
-        `      - ${y(s.command)}`,
-      );
+      if (s.absent) out.push(`  # ${ident(s.name)}: ${s.absent}`);
+      else
+        out.push(
+          `  ${ident(s.name)}:`,
+          `    image: mcr.microsoft.com/playwright:v1.48.0-noble`,
+          `    commands:`,
+          `      - ${y(s.command)}`,
+        );
     out.push(``);
   }
   return out.join("\n");
@@ -189,8 +264,10 @@ export function renderWoodpecker(preset, o = {}) {
 export function renderGithubActions(preset, o = {}) {
   const node = o.node || "22";
   const steps = ciSteps(preset, o);
+  const t = tooling(o);
   /** @param {CiStep} s */
   const step = (s) => {
+    if (s.absent) return `      # ${s.name}: ${s.absent}`;
     if (/abatty publish/.test(s.command))
       return [
         `      - name: ${y(s.name)}`,
@@ -202,15 +279,19 @@ export function renderGithubActions(preset, o = {}) {
       ].join("\n");
     return [`      - name: ${y(s.name)}`, `        run: ${y(s.command)}`].join("\n");
   };
+  // The runner's toolchain follows the lockfile: pnpm is installed before node so the cache
+  // can find it, bun brings its own action, and the install is the manager's frozen one.
   const setup = [
     `      - uses: actions/checkout@v4`,
     `        with:`,
     `          fetch-depth: 0`,
+    ...(t.id === "pnpm" ? [`      - uses: pnpm/action-setup@v4`] : []),
+    ...(t.id === "bun" ? [`      - uses: oven-sh/setup-bun@v2`] : []),
     `      - uses: actions/setup-node@v4`,
     `        with:`,
     `          node-version: "${node}"`,
-    `          cache: npm`,
-    `      - run: npm ci`,
+    ...(t.id === "bun" ? [] : [`          cache: ${t.id}`]),
+    `      - run: ${t.install}`,
   ];
   const always = steps.filter((s) => s.when === "always");
   const db = steps.filter((s) => s.when === "db");
@@ -241,10 +322,10 @@ export function renderGithubActions(preset, o = {}) {
     // A bypass nobody can see afterwards is a gate with a hole nobody can measure.
     `      - name: the bypass rate of this push`,
     `        if: always()`,
-    `        run: npx abatty report --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const b=JSON.parse(s).bypass||{};console.log(\`bypass: \${b.bypassed||0} of \${b.commits||0} commit(s) got past the hook without saying why (\${b.rate||0}%), \${b.reasoned||0} with a reason\`);process.exit(b.bypassed?1:0)})"`,
+    `        run: ${t.exec("abatty")} report --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const b=JSON.parse(s).bypass||{};console.log(\`bypass: \${b.bypassed||0} of \${b.commits||0} commit(s) got past the hook without saying why (\${b.rate||0}%), \${b.reasoned||0} with a reason\`);process.exit(b.bypassed?1:0)})"`,
     `      - name: findings as SARIF`,
     `        if: always()`,
-    `        run: npx abatty ratchet --range auto --sarif > abatty.sarif || true`,
+    `        run: ${t.exec("abatty")} ratchet --range auto --sarif > abatty.sarif || true`,
     `      - name: upload the findings`,
     `        if: always()`,
     `        uses: github/codeql-action/upload-sarif@v3`,
@@ -262,7 +343,7 @@ export function renderGithubActions(preset, o = {}) {
     // it, with the run's identity, for free, in the store every verifier already reads.
     `      - name: the conformance statement`,
     `        if: always()`,
-    `        run: npx abatty attest --out abatty-conformance.json || true`,
+    `        run: ${t.exec("abatty")} attest --out abatty-conformance.json || true`,
     `      - name: sign it with this run's identity`,
     `        if: always()`,
     `        uses: actions/attest@v2`,
@@ -271,7 +352,14 @@ export function renderGithubActions(preset, o = {}) {
     `          predicate-type: https://abatty.dev/attestation/conformance/v1`,
     `          predicate-path: abatty-conformance.json`,
   ];
-  if (db.length) {
+  /** A job whose every step is absent is written as the comments, not as a job with no steps. @param {string} job @param {CiStep[]} list */
+  const onlyAbsent = (job, list) =>
+    out.push(
+      `  # ${job}: no runnable step yet`,
+      ...list.map((s) => `  #   ${s.name}: ${s.absent}`),
+    );
+  if (db.length && db.every((s) => s.absent)) onlyAbsent("database", db);
+  else if (db.length) {
     out.push(
       `  database:`,
       `    needs: checks`,
@@ -292,14 +380,15 @@ export function renderGithubActions(preset, o = {}) {
       ...db.map(step),
     );
   }
-  if (browser.length) {
+  if (browser.length && browser.every((s) => s.absent)) onlyAbsent("browser", browser);
+  else if (browser.length) {
     out.push(
       `  browser:`,
       `    needs: checks`,
       `    runs-on: ubuntu-latest`,
       `    steps:`,
       ...setup,
-      `      - run: npx playwright install --with-deps`,
+      `      - run: ${t.exec("playwright")} install --with-deps`,
       ...browser.map(step),
     );
   }
