@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import {
   changelogPairs,
+  commitsOf,
   coupledFindings,
   normalisePairs,
   pathMatcher,
@@ -222,6 +223,24 @@ test("the commit-msg hook: abatty changelog --message refuses the commit init's 
   assert.match(refused.out, /no-changelog: <reason>/);
   writeFileSync(msg, "feat: a is 2\n\nno-changelog: the entry for a is already under Unreleased\n");
   assert.equal(cli(["changelog", dir, "--message", msg], dir).code, 0, "excused");
+  // And the range check a push later reads the same line: the hook's escape is not a promise
+  // the ratchet breaks (it did, on this repository, on the day the hook landed).
+  const base = git(dir, "rev-parse", "HEAD");
+  git(dir, "commit", "-q", "-F", msg);
+  const pairs = changelogPairs({ changelog: "CHANGELOG.md", changelogRequiredFor: ["src/"] });
+  const commits = commitsOf((...a) => git(dir, ...a), `${base}..HEAD`);
+  assert.equal(commits.length, 1);
+  assert.match(commits[0]?.body || "", /no-changelog: the entry/);
+  assert.deepEqual(coupledFindings(commits, pairs), [], "excused in the range too");
+  // The control in the other direction: a second commit without the line, after it, is refused.
+  writeFileSync(join(dir, "src/a.mjs"), "export const a = 4;\n");
+  git(dir, "add", "src/a.mjs");
+  git(dir, "commit", "-q", "-m", "feat: a is 4, and nothing said");
+  const two = commitsOf((...a) => git(dir, ...a), `${base}..HEAD`);
+  assert.equal(coupledFindings(two, pairs).length, 1, "the excuse covers its own commit alone");
+  git(dir, "reset", "-q", "--hard", base);
+  writeFileSync(join(dir, "src/a.mjs"), "export const a = 2;\n");
+  git(dir, "add", "src/a.mjs");
   writeFileSync(join(dir, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n- a is 2\n");
   git(dir, "add", "CHANGELOG.md");
   writeFileSync(msg, "feat: a is 2\n");

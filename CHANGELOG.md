@@ -70,6 +70,15 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The push-time changelog check reads the same `no-changelog:` line the commit-time hook
+  accepts.** The hook let a reasoned commit through and the ratchet refused the push a step
+  later, on this repository, on the day the hook landed: the escape was a promise the range
+  check broke. `commitsOf` now reads the whole message, and the changelog pair carries the
+  excuse; an excused commit is not an offender and cures nothing before it, and the bypass
+  reading still counts it as reasoned, so the decision is on the record in three places rather
+  than accepted in one and refused in another. The night's Stop gate stays as it was: a night
+  does not excuse itself.
+
 - **`npm test` runs on Node 20, the oldest Node the package claims** (the matrix's second
   finding on its first day: `node --test "test/*.test.mjs"` relies on `--test` expanding the
   glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
