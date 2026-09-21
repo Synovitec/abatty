@@ -5,11 +5,14 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { presets, presetById } from "../src/presets/index.mjs";
-import { ciSteps, renderGithubActions, renderWoodpecker } from "../src/ci/generate.mjs";
+import { ciSteps } from "../src/ci/generate.mjs";
+import { renderGithubActions } from "../src/ci/github.mjs";
+import { renderWoodpecker } from "../src/ci/woodpecker.mjs";
 import { renderPullRequestTemplate, renderRuleset } from "../src/ci/templates.mjs";
 import { FORBIDDEN, TERMS } from "../src/core/vocabulary.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { RULES, runCatalog } from "../src/rules/index.mjs";
+import { phantomScripts } from "../src/rules/families/instrument.mjs";
 
 test("the CI steps are the gate's steps in the gate's order, then the secret scan, the audit and the publish step; the suites follow by kind", () => {
   for (const p of presets) {
@@ -113,11 +116,14 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   });
   const w = cli(["ci", dir, "--provider", "woodpecker,github"], dir);
   assert.equal(w.code, 0, w.out);
+  // Rendered from the repository's own scripts (test and build) and its package manager (none
+  // committed: npm), which is what the written file must equal.
+  const scripts = JSON.parse(NEXT_PKG).scripts;
   assert.equal(
     readFileSync(join(dir, ".woodpecker/checks.yaml"), "utf8").trim(),
     renderWoodpecker(
       /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next")),
-      { base: "main" },
+      { base: "main", scripts, pm: null },
     ).trim(),
   );
   assert.ok(existsSync(join(dir, ".github/workflows/checks.yml")));
@@ -128,13 +134,19 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.equal(behind.code, 3, "the check ran and found the pipeline behind");
   assert.match(behind.out, /behind\s+\.github\/workflows\/checks\.yml/);
   assert.equal(cli(["ci", dir, "--provider", "nope"], dir).code, 2);
+  // The fixture has `test` and `build` and nothing else: the pipeline names no script the
+  // package lacks (the absent steps are comments that say so), so INST-CI is present, and
+  // INST-CI-STEPS says what is missing rather than crediting a word.
   const findings = runCatalog(buildContext(dir), RULES);
-  assert.equal(findings.find((f) => f.id === "INST-CI")?.status, "present");
-  assert.equal(
-    findings.find((f) => f.id === "INST-CI-STEPS")?.status,
-    "present",
-    "lint, typecheck, test, standards, secret scan, audit are all in the generated pipeline",
-  );
+  const ci = findings.find((f) => f.id === "INST-CI");
+  assert.equal(ci?.status, "present", ci?.evidence);
+  const steps = findings.find((f) => f.id === "INST-CI-STEPS");
+  assert.equal(steps?.status, "partial");
+  assert.match(steps?.evidence || "", /MISSING lint/);
+  assert.match(steps?.evidence || "", /ok test/);
+  const written = readFileSync(join(dir, ".woodpecker/checks.yaml"), "utf8");
+  assert.match(written, /# lint: no "lint" script in package\.json; the gap analysis names it/);
+  assert.ok(!/npm run -s lint/.test(written), "a script the package lacks is not a step");
   const fresh = tempRepo("ci-init", { "package.json": NEXT_PKG });
   const init = cli(["init", fresh, "--stack", "next", "--ci", "github"], fresh);
   assert.equal(init.code, 0, init.out);
@@ -181,4 +193,107 @@ test("the generated pipeline signs the conformance statement with the run's iden
   assert.match(release, /attest --out abatty-conformance\.json/);
   assert.match(release, /uses: actions\/attest@v2/);
   assert.match(release, /attestations: write/);
+});
+
+test("a CI step is credited for the script behind it, not for the word: phantom scripts are named in both directions", () => {
+  const CI = [
+    "steps:",
+    "  - run: npm ci",
+    "  - run: npm run -s lint",
+    "  - run: pnpm run typecheck",
+    "  - run: yarn test",
+    "  - run: bun run --silent standards -- --range auto",
+    "  - run: yarn install --frozen-lockfile",
+    "  - run: npx abatty secrets --range origin/main..HEAD",
+    "  - run: npm audit --audit-level=high",
+    "",
+  ].join("\n");
+  assert.deepEqual(phantomScripts(CI, { test: "x", standards: "y" }).sort(), ["lint", "typecheck"]);
+  assert.deepEqual(
+    phantomScripts(CI, { test: "x", standards: "y", lint: "z", typecheck: "w" }),
+    [],
+  );
+
+  const pkg = (/** @type {Record<string, string>} */ scripts) =>
+    JSON.stringify({ name: "p", private: true, scripts, dependencies: { next: "15" } });
+  const verdicts = (/** @type {string} */ name, /** @type {Record<string, string>} */ scripts) => {
+    const dir = tempRepo(name, {
+      "package.json": pkg(scripts),
+      ".github/workflows/checks.yml": CI,
+    });
+    const f = runCatalog(buildContext(dir), RULES);
+    return {
+      ci: f.find((x) => x.id === "INST-CI"),
+      steps: f.find((x) => x.id === "INST-CI-STEPS"),
+    };
+  };
+  const ghost = verdicts("ci-phantom", { test: "x", standards: "y" });
+  assert.equal(ghost.ci?.status, "partial");
+  assert.match(ghost.ci?.evidence || "", /does not have: lint, typecheck/);
+  assert.equal(ghost.steps?.status, "partial");
+  assert.match(
+    ghost.steps?.evidence || "",
+    /NAMED, no script lint, NAMED, no script typecheck, ok test, ok standards/,
+  );
+
+  const real = verdicts("ci-real", { test: "x", standards: "y", lint: "z", typecheck: "w" });
+  assert.equal(real.ci?.status, "present", real.ci?.evidence);
+  assert.equal(real.steps?.status, "present", real.steps?.evidence);
+});
+
+test("the pipeline is the repository's: its package manager's install and audit, its scripts and no other", () => {
+  // The generated pipeline said `npm ci` and `npm run -s <five scripts the package lacked>` to a
+  // pnpm repository, and was red on its first run. Both directions: pnpm and npm on one preset.
+  const preset = /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next"));
+  const pnpm = tempRepo("ci-pnpm", {
+    "package.json": NEXT_PKG,
+    "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const w = cli(["ci", pnpm, "--provider", "woodpecker,github"], pnpm);
+  assert.equal(w.code, 0, w.out);
+  const gh = readFileSync(join(pnpm, ".github/workflows/checks.yml"), "utf8");
+  assert.match(gh, /uses: pnpm\/action-setup@v4/);
+  assert.match(gh, /cache: pnpm/);
+  assert.match(gh, /run: pnpm install --frozen-lockfile/);
+  assert.match(gh, /run: pnpm audit --audit-level=high --prod/);
+  assert.match(gh, /pnpm exec abatty secrets --range origin\/main\.\.HEAD/);
+  assert.match(gh, /run: pnpm run -s test\n/);
+  assert.ok(
+    !/\bnpm ci\b|\bnpx |\bnpm run|\bnpm audit/.test(gh),
+    "nothing npm-shaped in a pnpm pipeline",
+  );
+  assert.match(
+    gh,
+    /# database: no runnable step yet/,
+    "a job with no runnable step is a comment, not an empty job",
+  );
+  assert.match(gh, /run: pnpm exec playwright install --with-deps/);
+  const wp = readFileSync(join(pnpm, ".woodpecker/checks.yaml"), "utf8");
+  assert.match(wp, /- corepack enable\n\s+- pnpm install --frozen-lockfile/);
+  assert.match(wp, /# lint: no "lint" script in package\.json/);
+  assert.equal(
+    cli(["ci", pnpm, "--provider", "github", "--check"], pnpm).code,
+    0,
+    "in step with itself",
+  );
+
+  // The same preset with the standards script present and an alternative for the e2e step: the
+  // step runs the script the package has, under its own name.
+  const steps = ciSteps(preset, {
+    base: "main",
+    scripts: { test: "x", standards: "abatty ratchet", "test:e2e": "playwright test" },
+    pm: null,
+  });
+  assert.match(
+    steps.find((s) => /ratchet/.test(s.name))?.command || "",
+    /^git fetch --no-tags origin main && npm run -s standards -- --range origin\/main\.\.HEAD$/,
+  );
+  assert.equal(steps.find((s) => /E2E/.test(s.name))?.command, "npm run -s test:e2e");
+  assert.ok(
+    steps.find((s) => /^lint/.test(s.name))?.absent,
+    "no lint script: absent, with the reason",
+  );
+  // Without scripts, every step of the preset is rendered: the preset alone, for a reader.
+  assert.ok(ciSteps(preset, { base: "main" }).every((s) => !s.absent));
 });

@@ -16,6 +16,7 @@ import {
   writeBaseline,
 } from "../src/ratchet/index.mjs";
 import { runControls } from "../src/ratchet/controls.mjs";
+import { frontMatter } from "../src/ratchet/probes/lib.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 
 /** A file of n export lines. @param {number} n */
@@ -438,6 +439,34 @@ test("a reason is recorded against its metric: an unrelated rebaseline keeps it,
   assert.equal(write({ reason: "phase 8 splits these two", owner: "platform" }).ok, true);
   assert.equal(readBaseline(dir, rel)?.entries?.["size.overBudget"]?.owner, "platform");
 
+  // The raise is in the report, in the open and marked for what it is: the owner is a string
+  // the command was given, so the row says unverified until a raise can carry an approval the
+  // raiser cannot give itself. A reader sees the claim rather than nothing.
+  const raised = cli(["report", dir], dir);
+  assert.equal(raised.code, 0, raised.out);
+  assert.match(
+    raised.out,
+    /floor raised \(unverified\) size\.overBudget 1 → 2 on 2026-09-16 by platform: phase 8 splits these two/,
+  );
+  const json = JSON.parse(cli(["report", dir, "--json"], dir).out);
+  assert.deepEqual(
+    json.floors.raised.map((/** @type {any} */ f) => f.metric).sort(),
+    ["size.excessCode", "size.overBudget"],
+    "every metric the one write raised, one row each",
+  );
+  assert.deepEqual(
+    json.floors.raised.find((/** @type {any} */ f) => f.metric === "size.overBudget"),
+    {
+      metric: "size.overBudget",
+      at: "2026-09-16",
+      was: 1,
+      now: 2,
+      reason: "phase 8 splits these two",
+      owner: "platform",
+      verified: false,
+    },
+  );
+
   // a later write that touches nothing keeps the explanation on the metric it belongs to
   assert.equal(write({ today: "2026-09-17" }).ok, true);
   assert.equal(
@@ -451,6 +480,8 @@ test("a reason is recorded against its metric: an unrelated rebaseline keeps it,
   assert.equal(write({ today: "2026-09-18" }).ok, true);
   assert.equal(readBaseline(dir, rel)?.metrics["size.overBudget"], 1);
   assert.equal(readBaseline(dir, rel)?.entries?.["size.overBudget"], undefined);
+  // and the row goes with it: the control in the other direction
+  assert.ok(!/floor raised/.test(cli(["report", dir], dir).out));
 });
 
 test("a floor written under an older definition of a metric is reported, never compared", () => {
@@ -552,4 +583,19 @@ test("a probe that counts occurrences reports each one on its line, and the tota
   assert.equal(env?.value, 2);
   assert.equal(env?.debt["src/a.ts"], 2);
   assert.equal(esc?.value, 1);
+});
+
+test("the front matter reads the same with CRLF as with LF: the last key is not dropped on Windows", () => {
+  // Checked out with CRLF, the closing `---` was found but the line before it kept its `\r`,
+  // and `(.*)$` stopped before it: the last key of every document vanished, and the ratchet
+  // went red on one operating system only (an outside trial, on Windows, found it in a day).
+  const lf = '---\ntitle: T\nstatus: living\nlast_verified: "2026-09-21"\n---\n# T\n';
+  const crlf = lf.replace(/\n/g, "\r\n");
+  assert.deepEqual(frontMatter(crlf), frontMatter(lf));
+  assert.equal(frontMatter(crlf)?.last_verified, "2026-09-21", "the last key survives CRLF");
+  assert.equal(frontMatter("\ufeff" + crlf)?.title, "T", "and a byte-order mark before it");
+  assert.deepEqual(frontMatter("---\r\ntags: [a, b]\r\nrelated:\r\n  - ./x.md\r\n---\r\n"), {
+    tags: ["a", "b"],
+    related: ["./x.md"],
+  });
 });

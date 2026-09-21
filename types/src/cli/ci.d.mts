@@ -1,7 +1,5 @@
-/** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {{ base?: string }} o */
-export function ciFilesFor(provider: string, preset: import("../presets/index.mjs").Preset, o: {
-    base?: string;
-}): [string, string][];
+/** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {import("../ci/generate.mjs").CiOptions} o */
+export function ciFilesFor(provider: string, preset: import("../presets/index.mjs").Preset, o: import("../ci/generate.mjs").CiOptions): [string, string][];
 /**
  * Write (or check) the CI files of the providers. Returns the events.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, providers: string[], base: string, check?: boolean }} o

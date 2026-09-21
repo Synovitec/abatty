@@ -16,8 +16,9 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { asResult, bin, dockerRunning, runCommand, runScript } from "./spawn.mjs";
+import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
+import { pendingPaths, pushRangeInfo } from "./range.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
@@ -28,50 +29,21 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
-/**
- * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
- * a rebase or an amend it is not, and the diff would show the amend delta rather than the
- * push (which is how a push carrying twenty UI files once skipped the browser suite), so the
- * whole branch is judged instead; with no upstream, the fork point from the base; failing
- * that, the last commit.
- */
-/** @param {string} repoDir @param {string} [base] @param {string} [explicit] */
-export function pushRange(repoDir, base = "main", explicit = "") {
-  if (explicit) return explicit;
-  const upstream = git(repoDir, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}");
-  const linear =
-    upstream &&
-    spawnSync("git", ["merge-base", "--is-ancestor", "@{u}", "HEAD"], {
-      cwd: repoDir,
-      stdio: "ignore",
-    }).status === 0;
-  if (linear) return "@{u}..HEAD";
-  const fork =
-    git(repoDir, "merge-base", `origin/${base}`, "HEAD") ||
-    git(repoDir, "merge-base", base, "HEAD");
-  return fork ? `${fork}..HEAD` : "HEAD~1..HEAD";
-}
-
-/** Files whose content on disk differs from HEAD: staged, unstaged, untracked. @param {string} repoDir */
-export function pendingPaths(repoDir) {
-  const tracked = git(repoDir, "diff", "--name-only", "HEAD");
-  const untracked = git(repoDir, "ls-files", "--others", "--exclude-standard");
-  return `${tracked}\n${untracked}`.split("\n").filter(Boolean);
-}
-
-/**
- * The files a range changed, repository-relative. A finding in a file this change never touched
- * is not this change's finding, however true it is, and telling the two apart is the difference
- * between a gate a team acts on and a list they learn to scroll past.
- * @param {string} repoDir @param {string} range
- */
-export function changedPaths(repoDir, range) {
-  if (!range) return [];
-  return git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
-}
+/** The audit as spawned in a repository: the package manager's command, its output in one string. @param {string} repoDir @returns {AuditRunner} */
+const spawnAudit = (repoDir) => (cmd, args) => {
+  const l = launch(cmd, args);
+  const r = spawnSync(l.file, l.args, {
+    cwd: repoDir,
+    encoding: "utf8",
+    shell: l.shell,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
+};
 
 /**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
@@ -89,12 +61,27 @@ export function runGate(o) {
   let cwd = repoDir;
   let prefix = "";
 
-  const range = pushRange(repoDir, o.base, o.range);
-  const changed = git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
+  const info = pushRangeInfo(repoDir, o.base, o.range);
+  const range = info.range;
+  // A range the gate could not find, or an empty one in CI, is not an empty push. In CI the
+  // push is the event that started the run, not a diff against an upstream that was updated by
+  // that very push; on a detached or shallow checkout there is no upstream at all. Reading either
+  // as "0 pushed files" skipped every suite and printed green, which is the one thing a gate
+  // must never do by accident. Blind, the gate selects everything and says why.
+  const blind = info.how === "unknown" || info.commits < 0 || (o.ci === true && info.commits === 0);
+  const changed = blind
+    ? git(repoDir, "ls-files").split("\n").filter(Boolean)
+    : git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
   const pending = pendingPaths(repoDir);
   const selection = [...new Set([...changed, ...pending])];
   log(
-    `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
+    blind
+      ? `Gate · range ${range} could not be trusted (${
+          info.how === "unknown" || info.commits < 0
+            ? `no upstream and no ${o.base || "main"} to fork from`
+            : "in CI the push is the event, not a diff against the upstream"
+        }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
+      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
@@ -161,18 +148,10 @@ export function runGate(o) {
       log(`\n▶ ${s.label}`);
       const t0 = Date.now();
       const cfg = readConfig(repoDir);
-      const a = auditOutcome(
-        repoDir,
-        (cmd, args) => {
-          const r = spawnSync(bin(cmd), args, {
-            cwd: repoDir,
-            encoding: "utf8",
-            maxBuffer: 16 * 1024 * 1024,
-          });
-          return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
-        },
-        { allow: cfg?.security?.audit?.allow || [], level: cfg?.security?.audit?.level },
-      );
+      const a = auditOutcome(repoDir, o.audit || spawnAudit(repoDir), {
+        allow: cfg?.security?.audit?.allow || [],
+        level: cfg?.security?.audit?.level,
+      });
       // An advisory the repository allows, and an allowance whose date has run out, are said out
       // loud on a green step: a decision nobody is reminded of is a decision nobody revisits.
       if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
@@ -182,8 +161,16 @@ export function runGate(o) {
         log(`\n✗ ${s.label} failed. The gate stops here.`);
         return false;
       }
+      // No lockfile is no instrument: the same verdict as a linter that is not installed, and
+      // for the same reason. A step that cannot run is never a step that passed.
+      if (a.outcome === "errored") {
+        events.push({ label: s.label, outcome: "errored", ms: Date.now() - t0, detail: a.detail });
+        log(
+          `\n✗ ${s.label} could not run: ${a.detail}. The gate stops here, and this is the instrument, not the work.`,
+        );
+        return false;
+      }
       if (a.outcome === "deferred") log(`\n· DEFERRED to CI: ${s.label}\n  reason: ${a.detail}.`);
-      else if (a.outcome === "skipped") log(`· skipped ${s.label}: ${a.detail}`);
       events.push({
         label: s.label,
         outcome: a.outcome,
@@ -303,6 +290,7 @@ export function runGate(o) {
     ok,
     events,
     range,
+    blind,
     errored: events.some((e) => e.outcome === "errored"),
   });
 

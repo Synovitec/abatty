@@ -293,9 +293,13 @@ gate definition: the same steps in the same order (format, lint, typecheck, the 
 dead code, unit tests, the ratchet with the changelog over `origin/<base>..HEAD`), then the
 secret scan, the audit, and the publish step to the hosted dashboard, guarded by the secret;
 the suites follow as their own pipeline or job, the database one on a real Postgres, the
-browser one with the browsers installed. Because it is generated, the gate and CI cannot list
-different steps, and `--check` says when a pipeline file is behind the gate; `init --ci
-<provider>` (or `ci.providers` in the config) writes it on day 0. GitHub also gets a
+browser one with the browsers installed. It is the repository's pipeline, not a template's: the
+install, the audit and every `run` are the package manager's the lockfile names (npm, pnpm,
+yarn or bun), and a gate step whose script the package does not have yet is written as a
+comment that names it, in the words the gap analysis uses, rather than as a step that is red
+from the first run. Because it is generated, the gate and CI cannot list different steps, and
+`--check` says when a pipeline file is behind the gate; `init --ci <provider>` (or
+`ci.providers` in the config) writes it on day 0. GitHub also gets a
 pull-request template with the reviewer's checklist. `abatty ci --ruleset` prints a ruleset
 for the organisation (branch names naming a tool refused, a pull request required, the checks
 required); it is printed for import, never written into a repository, because it carries the
@@ -398,11 +402,15 @@ is absent. The secret scan is built into the gate (no dependency: a private key 
 access key, a provider token, a payment key, a chat token, a signed web token, a long literal on
 a secret-like name; a false positive is marked on its line with `abatty:allow-secret` or by path
 in `secrets.allow`), and it is ONE implementation for the pre-commit hook (`abatty secrets
---staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit runs
-`npm audit --audit-level=high` where a lockfile exists and is deferred loudly when the registry
-is unreachable, never red and never silently green. A step whose script the
-repository does not have yet is reported as skipped, so a fresh repository can run the gate
-before everything exists; the gap analysis names what is missing.
+--staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit is the
+package manager's, read from the lockfile the repository committed: `npm audit`, `pnpm audit`
+or `bun audit`, at `--audit-level=high` over production dependencies, its JSON read so an
+allowance can name an advisory (yarn's is deferred loudly to CI until somebody has watched it).
+It is deferred loudly when the registry is unreachable, and a repository with no lockfile has no
+audit: the step could not run, and the gate stops on it as it stops on a linter that is not
+installed, never silently green. A step whose script the repository does not have yet is
+reported as skipped, so a fresh repository can run the gate before everything exists; the gap
+analysis names what is missing.
 
 **Every gate step proves it can go red.** The ratchet's probes carry their controls; the
 gate steps are scripts a repository owns, and one that never went red may be checking

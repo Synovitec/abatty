@@ -32,11 +32,14 @@ export function budgetOf(path, config) {
  * @returns {Record<string, string | string[]> | null}
  */
 export function frontMatter(text) {
-  const t = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  // One line ending before anything is read. A file checked out with CRLF on Windows kept its
+  // `\r` on the last line of the block, `(.*)$` could not cross it, and the last key of every
+  // document was silently dropped: a ratchet red on one operating system only.
+  const t = (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text).replace(/\r\n?/g, "\n");
   if (!t.startsWith("---")) return null;
   const end = t.indexOf("\n---", 3);
   if (end < 0) return null;
-  const body = t.slice(3, end).split(/\r?\n/);
+  const body = t.slice(3, end).split("\n");
   /** @type {Record<string, string | string[]>} */
   const out = {};
   let key = "";

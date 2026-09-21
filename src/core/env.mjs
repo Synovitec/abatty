@@ -28,3 +28,8 @@ export function pathFromEnv() {
 export function portFromEnv() {
   return process.env.PORT || "";
 }
+
+/** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */
+export function ciFromEnv() {
+  return Boolean(process.env.CI);
+}

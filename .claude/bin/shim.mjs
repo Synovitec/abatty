@@ -121,13 +121,22 @@ function executable(p) {
  * @returns {string | null}
  */
 export function realGit(selfDir, pathEnv, isExe = executable) {
-  const names = process.platform === "win32" ? ["git.exe", "git.cmd", "git"] : ["git"];
+  // On Windows a file named `git` with no extension is not something the OS can run, and a
+  // shell script by that name (what a POSIX PATH carries) would only fail at spawn time.
+  const names = process.platform === "win32" ? ["git.exe", "git.cmd"] : ["git"];
   for (const dir of String(pathEnv || "").split(delimiter)) {
     if (!dir || resolve(dir) === resolve(selfDir)) continue;
     for (const n of names) if (isExe(join(dir, n))) return join(dir, n);
   }
   return null;
 }
+
+/**
+ * An argument as cmd.exe will hand it on unchanged, for the one case a shell is needed: a git
+ * that is itself a batch file, which Node refuses to spawn without one (EINVAL since 20.12).
+ * @param {string} a
+ */
+const quoteForCmd = (a) => (/[\s"&|<>^()]/.test(a) || a === "" ? `"${a.replace(/"/g, '\\"')}"` : a);
 
 /**
  * The shim as it runs: refuse, or hand the call to the real git and carry its exit code back.
@@ -152,7 +161,10 @@ export function runShim(args, selfDir = dirname(fileURLToPath(import.meta.url)))
     process.stderr.write("abatty: the git shim found no git on PATH outside its own folder.\n");
     return 4;
   }
-  const r = spawnSync(real, args, { stdio: "inherit" });
+  const batch = /\.(cmd|bat)$/i.test(real);
+  const r = batch
+    ? spawnSync(`"${real}"`, args.map(quoteForCmd), { stdio: "inherit", shell: true })
+    : spawnSync(real, args, { stdio: "inherit" });
   return r.status ?? (r.signal ? 128 : 4);
 }
 

@@ -13,3 +13,5 @@ export function dashboardFromEnv(): string;
 export function pathFromEnv(): string;
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;
+/** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */
+export function ciFromEnv(): boolean;

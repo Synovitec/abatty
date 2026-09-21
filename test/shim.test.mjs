@@ -17,9 +17,13 @@ const SHIM = fileURLToPath(new URL("../templates/harness/bin/shim.mjs", import.m
 const FORCE = "--force";
 const BYPASS = "--no-verify";
 
-/** A directory holding a git that only reports the arguments it was handed. */
+/** A directory holding a git that only reports the arguments it was handed: a shell script, or on Windows a batch file. */
 function fakeGit() {
   const dir = mkdtempSync(join(tmpdir(), "abatty-shim-"));
+  if (process.platform === "win32") {
+    writeFileSync(join(dir, "git.cmd"), "@echo real git: %*\r\n");
+    return dir;
+  }
   const p = join(dir, "git");
   writeFileSync(p, '#!/bin/sh\necho "real git: $*"\n');
   chmodSync(p, 0o755);
@@ -81,8 +85,11 @@ test("ordinary work is not refused: the control case in the other direction", ()
 });
 
 test("the real git is the first one on PATH outside the shim's own folder", () => {
-  const isExe = (/** @type {string} */ p) => ["/self/git", "/a/git", "/b/git"].includes(p);
-  assert.equal(realGit("/self", ["/self", "/a", "/b"].join(delimiter), isExe), join("/a", "git"));
+  // The name the OS can run: `git` on POSIX, `git.exe` on Windows; the separators are the OS's.
+  const exe = process.platform === "win32" ? "git.exe" : "git";
+  const isExe = (/** @type {string} */ p) =>
+    ["/self", "/a", "/b"].map((d) => join(d, exe)).includes(p);
+  assert.equal(realGit("/self", ["/self", "/a", "/b"].join(delimiter), isExe), join("/a", exe));
   assert.equal(realGit("/self", "/self", isExe), null, "nothing but itself: no git, not a loop");
 });
 

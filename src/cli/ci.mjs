@@ -5,11 +5,15 @@
 import { EXIT } from "./exit.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { PROVIDERS, renderGithubActions, renderWoodpecker } from "../ci/generate.mjs";
+import { PROVIDERS } from "../ci/generate.mjs";
+import { renderGithubActions } from "../ci/github.mjs";
+import { renderWoodpecker } from "../ci/woodpecker.mjs";
 import { renderPullRequestTemplate, renderRuleset } from "../ci/templates.mjs";
+import { packageManager } from "../core/package-manager.mjs";
+import { readPackage } from "../core/repo.mjs";
 import * as t from "../ui/term.mjs";
 
-/** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {{ base?: string }} o */
+/** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {import("../ci/generate.mjs").CiOptions} o */
 export function ciFilesFor(provider, preset, o) {
   /** @type {[string, string][]} */
   const files = [];
@@ -29,8 +33,15 @@ export function ciFilesFor(provider, preset, o) {
 export function writeCi(o) {
   /** @type {{ file: string, action: "written" | "in step" | "behind" | "missing" }[]} */
   const events = [];
+  // The pipeline is the repository's: its scripts, its package manager. A template that named
+  // scripts the package lacked and `npm ci` to a pnpm repository was red on its first run.
+  const repo = {
+    base: o.base,
+    scripts: readPackage(o.repoDir).scripts || {},
+    pm: packageManager(o.repoDir),
+  };
   for (const p of o.providers)
-    for (const [rel, text] of ciFilesFor(p, o.preset, { base: o.base })) {
+    for (const [rel, text] of ciFilesFor(p, o.preset, repo)) {
       const target = join(o.repoDir, rel);
       const current = existsSync(target) ? readFileSync(target, "utf8") : null;
       if (current !== null && current.trim() === text.trim()) {

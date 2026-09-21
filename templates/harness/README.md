@@ -7,7 +7,7 @@ audience: ["developer", "agent"]
 tags: ["agent-code", "templates", "hooks", "settings"]
 related: ["../../AUTONOMOUS_ADOPTION.md", "../../ADOPTION_PLAN.md"]
 scope: synovitec
-last_verified: "2026-09-14"
+last_verified: "2026-09-21"
 ---
 
 # the agent templates
@@ -40,8 +40,13 @@ differs from the base, whatever moved it.
 **Push policy is per repository**, not in the user settings: `adoption.json` →
 `directPushToBase` (`true` for an internal platform that pushes to `main` after the gate;
 `false` for a PR-only client project). The guard denies a daytime push to the
-base branch only when it is `false`, and always denies it in an unattended run. Force push
-and `--no-verify` are denied everywhere regardless.
+base branch only when it is `false`, and always denies it in an unattended run. It reads the
+push's target positionally and stops at a redirection (`git push origin main 2>&1` targets
+main, not `2>&1`), and it reads the forge's API as the same door (`gh api` moving the base's
+ref or merging into it). Force push and `--no-verify` are denied everywhere regardless. What
+the guard holds is the agent's shell on this machine; the policy on the branch is the forge's
+branch protection or nobody's, and `abatty doctor` says so on every run rather than letting a
+regex pass for a policy (`abatty ci --ruleset` prints the rules to import).
 
 ## The harness is read-only to the worker
 
@@ -84,11 +89,12 @@ refusing it; a baseline number, a threshold and `--max-warnings=0` are refused r
 every hook present and wired (including `protect.mjs` on `Edit|Write` and on
 `mcp__.*`), the Stop timeout long enough for a gate, `maxStopBlocks` under the agent's own cap
 of 8, the gate command resolving to a real npm script or file, `mcp.night.json` and
-`adoption.json` → `mcpServers` naming the same servers; thirty-six guard decisions in both modes
-(force push, `--no-verify`, push to `main` or to any branch but the adoption branch, leaving
+`adoption.json` → `mcpServers` naming the same servers; seventy-one guard decisions in both modes
+(force push, `--no-verify`, push to `main` or to any branch but the adoption branch, with a
+redirection behind it or through the forge's API, merging a pull request at night, leaving
 the branch, `reset --hard`, `npm install`, destructive SQL, deploy, every write shape to the
 harness and to a migration, and the ordinary commands that must stay allowed, restores from the
-base included); twenty-one file-guard decisions (a Slack send and a Drive write at night, a
+base included); twenty-three file-guard decisions (a Slack send and a Drive write at night, a
 code server not named, a named one editing a source file, the harness, a migration, a path
 outside the tree, a server name with a dot); the stop-gate blocking on a red gate with the
 gate's output as the reason, counting its blocks, letting go at the cap, leaving a receipt each

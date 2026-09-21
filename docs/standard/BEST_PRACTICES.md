@@ -16,7 +16,7 @@ related:
     "./research/06-analysis-pipeline-and-agent-skills.md",
   ]
 scope: synovitec
-last_verified: "2026-09-18"
+last_verified: "2026-09-21"
 source_truth:
   - "./research/*.md"
   - "./ENGINEERING_STANDARD.md"
@@ -59,6 +59,7 @@ stated as such.
 | `tsc --noEmit` stays the net even where the runtime strips types                                                                            | CODE.3  |
 | `eslint-plugin-jsdoc` preset: `-typescript-flavor` on TS, plain `recommended` only on checkJs JS; `@example` as the one tag worth its lines | CODE.7  |
 | Env loaded by the runtime (`--env-file`, `loadEnvFile()`), not a dependency                                                                 | VALID.3 |
+| A calendar day comes from the clock it is compared to (one `localToday()`), never sliced off a UTC instant; the suite pins a zone off UTC   | VALID.5 |
 | Graceful SIGTERM: fail health, stop accepting, drain, exit; redaction by field path at the logger                                           | OBS.1   |
 | `npm audit signatures`, release-age cooldown, install scripts off                                                                           | SEC.1   |
 | Next.js 16: `"use cache"` needs a `cacheLife`; `cookies()`/`headers()` outside the scope; `updateTag` vs `revalidateTag`                    | CACHE.2 |

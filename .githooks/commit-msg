@@ -1,3 +1,4 @@
 #!/bin/sh
-# No trace of the tools in this repository's history. Installed by `npm run hooks:install`.
-node bin/abatty.mjs scrub --message "$1"
+# No trace of the tools in this repository's history, and a source commit carries its changelog
+# line or says why (no-changelog: <reason>). Installed by `npm run hooks:install`.
+node bin/abatty.mjs scrub --message "$1" && node bin/abatty.mjs changelog --message "$1"

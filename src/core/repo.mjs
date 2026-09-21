@@ -50,7 +50,7 @@ export function repoRoot(dir = process.cwd()) {
   return resolve(dir);
 }
 
-/** @typedef {{ name?: string, scripts?: Record<string,string>, dependencies?: Record<string,string>, devDependencies?: Record<string,string>, peerDependencies?: Record<string,string>, workspaces?: unknown }} PackageJson */
+/** @typedef {{ name?: string, scripts?: Record<string,string>, dependencies?: Record<string,string>, devDependencies?: Record<string,string>, peerDependencies?: Record<string,string>, workspaces?: unknown, packageManager?: string }} PackageJson */
 
 /** @param {string} dir @returns {PackageJson} */
 export function readPackage(dir) {

@@ -113,15 +113,103 @@ test("an allowance whose date has passed stops allowing, and the gate names the 
   assert.match(green.detail, /allowance\(s\) expired: tar-fs/);
 });
 
-test("the network is not a verdict, and a repository with no lockfile is skipped, not green", () => {
+test("the network is not a verdict; a repository with no lockfile is an instrument that cannot run, never a green step", () => {
   const dir = locked("audit-offline");
   assert.equal(
     auditOutcome(dir, () => ({ status: 1, output: "getaddrinfo EAI_AGAIN registry.npmjs.org" }))
       .outcome,
     "deferred",
   );
+  // This read "skipped" once, and the gate counts a skipped step as passed: a product with
+  // seventy advisories and no package-lock.json had a gate that said nothing about them.
   const bare = tempRepo("audit-nolock", { "package.json": NEXT_PKG });
-  assert.equal(auditOutcome(bare, () => ({ status: 0, output: "" })).outcome, "skipped");
+  const r = auditOutcome(bare, () => ({ status: 0, output: "" }));
+  assert.equal(r.outcome, "errored");
+  assert.match(r.detail, /no lockfile/);
+});
+
+/** pnpm's report, as `pnpm audit --json --prod` printed it on 2026-09-21 for tar-fs 2.1.1. */
+const PNPM_REPORT = JSON.stringify({
+  actions: [],
+  advisories: {
+    1109532: {
+      id: 1109532,
+      module_name: "tar-fs",
+      severity: "high",
+      title: "tar-fs has a symlink validation bypass",
+      github_advisory_id: "GHSA-vj76-c3g6-qr5v",
+    },
+    1109533: { id: 1109533, module_name: "tmp", severity: "low", title: "Symlink" },
+  },
+  muted: [],
+  metadata: { vulnerabilities: { high: 1, low: 1 } },
+});
+/** bun's report, as `bun audit --json --prod` printed it the same day, its banner included. */
+const BUN_REPORT =
+  "bun audit v1.3.13 (bf2e2cec)\n" +
+  JSON.stringify({
+    "tar-fs": [
+      {
+        id: 1109532,
+        url: "https://github.com/advisories/GHSA-vj76-c3g6-qr5v",
+        title: "tar-fs has a symlink validation bypass",
+        severity: "high",
+      },
+    ],
+    tmp: [{ id: 1109533, title: "Symlink", severity: "low" }],
+  });
+
+test("the audit is the package manager's, not npm's: pnpm and bun are run and their reports read", () => {
+  const pnpm = tempRepo("audit-pnpm", {
+    "package.json": NEXT_PKG,
+    "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+  });
+  /** @type {string[][]} */
+  const calls = [];
+  const r = auditOutcome(
+    pnpm,
+    (cmd, args) => {
+      calls.push([cmd, ...args]);
+      return args.includes("--json")
+        ? { status: 1, output: PNPM_REPORT }
+        : { status: 1, output: "1 high" };
+    },
+    { allow: [{ id: "tar-fs", reason: "no fix yet" }] },
+  );
+  assert.deepEqual(calls[0], ["pnpm", "audit", "--audit-level=high", "--prod"]);
+  assert.deepEqual(calls[1], ["pnpm", "audit", "--json", "--prod"]);
+  assert.equal(r.outcome, "ok", r.detail);
+  assert.match(r.detail, /allowed: tar-fs \(high\)/);
+  assert.deepEqual(
+    advisoriesOf(PNPM_REPORT, "high")?.map((a) => [a.package, a.ids]),
+    [["tar-fs", ["1109532"]]],
+  );
+
+  const bun = tempRepo("audit-bun", { "package.json": NEXT_PKG, "bun.lock": "{}\n" });
+  const b = auditOutcome(
+    bun,
+    (cmd, args) =>
+      args.includes("--json") ? { status: 1, output: BUN_REPORT } : { status: 1, output: "1 high" },
+    { allow: [{ id: "left-pad", reason: "unrelated: the report is read and tar-fs is left" }] },
+  );
+  assert.equal(b.outcome, "failed", "nothing allows it: the high advisory fails the step");
+  assert.match(b.detail, /tar-fs \(high\)/);
+  assert.deepEqual(
+    advisoriesOf(BUN_REPORT, "low")
+      ?.map((a) => a.package)
+      .sort(),
+    ["tar-fs", "tmp"],
+  );
+
+  // the control in the other direction: a manager nobody has watched is deferred to CI, out loud
+  const yarn = tempRepo("audit-yarn", {
+    "package.json": NEXT_PKG,
+    "yarn.lock": "# yarn lockfile v1\n",
+  });
+  const y = auditOutcome(yarn, () => ({ status: 0, output: "" }));
+  assert.equal(y.outcome, "deferred");
+  assert.match(y.detail, /yarn's audit is not wired/);
+  assert.match(y.detail, /yarn audit --groups dependencies --level high/);
 });
 
 test("SEC-AUDIT reads for the scoping, not for the word: an unscoped audit is partial", () => {

@@ -82,19 +82,33 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
 // The branch a push TARGETS, not a word that appears in the command: `git push -u origin
 // feature/main-nav` pushes nothing to main, and a guard reading the substring refuses a branch
 // for its name. `-` and `/` are word boundaries, so \bmain\b matched half the branch names a
-// team uses. The target is the last non-flag argument, its destination side when it is a
-// refspec (`HEAD:main`, `:main` for a delete); with no refspec the push goes to the current
-// branch's upstream, which is the current branch.
+// team uses. The target is the last positional argument before any redirection, its destination
+// side when it is a refspec (`HEAD:main`, `:main` for a delete); with no refspec the push goes
+// to the current branch's upstream, which is the current branch. A redirection is not an
+// argument: `git push origin main 2>&1` targets main, and reading `2>&1` as the target was the
+// hole that let a push to main through (an outside trial found it in a day).
 function pushTarget() {
   const m = argv.match(/\bgit push\b([^;&|]*)/);
   if (!m) return null;
-  const args = m[1].trim().split(/\s+/).filter((w) => w && !w.startsWith("-"));
+  const words = m[1].trim().split(/\s+/).filter(Boolean);
+  const args = [];
+  for (const w of words) {
+    if (/^\d*>{1,2}|^<|^&>/.test(w)) break; // `>`, `>>`, `2>`, `2>&1`, `&>`, `<`: the shell's, not git's
+    if (!w.startsWith("-")) args.push(w);
+  }
   if (args.length < 2) return branch;
   const spec = args[args.length - 1];
   return (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
 }
 const target = hasFlag(/\bgit push\b/) ? pushTarget() : null;
-const pushesBase = target === base || target === "master";
+// A push is not the only write to a branch: the forge's API moves a ref or merges into it
+// without git. `gh api` with a write method (or a body flag, which implies POST) to the base's
+// ref or to the merges endpoint is the same act by another door. `gh pr merge` is the pull
+// request landing, which is what PR-only means, and stays a human's call by day.
+const apiWrite = /\bgh api\b/.test(argv) && /\s(-X|--method)\s+(PATCH|POST|PUT|DELETE)\b|\s(-f|-F|--field|--raw-field|--input)\b/i.test(argv);
+const B = "\\b"; // a word boundary as a string: in a template literal the same two characters are a backspace
+const apiRefWrite = apiWrite && new RegExp(B + "gh api" + B + "[^;&|]*/(git/refs/heads/(" + base + "|master)" + B + "|merges" + B + ")").test(argv);
+const pushesBase = target === base || target === "master" || apiRefWrite;
 if (pushesBase && (NIGHT || config.directPushToBase !== true)) {
   deny(
     NIGHT
@@ -128,6 +142,7 @@ if (NIGHT) {
     deny(`Unattended run: stay on ${adoption || "the adoption branch"}. Switching branches is not allowed.`);
   }
   const rules = [
+    [/\bgh pr merge\b|\bgh api\b[^;&|]*\/pulls\/\d+\/merge\b/, "Merging a pull request is a human act; the morning reads the branch."],
     [/\bgit reset\s+--hard\b/, "git reset --hard discards work; revert with a new commit instead."],
     [/\bgit clean\b.*-[a-zA-Z]*f/, "git clean -f deletes untracked work; leave it and record it."],
     [/\bgit branch\s+(-D|--delete --force)\b/, "Force-deleting a branch is not allowed unattended."],

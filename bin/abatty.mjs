@@ -17,6 +17,7 @@
  *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
  *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema
  *   abatty scrub [dir] [--fix] [--commits|--range <r>] [--prs] [--history] [--message <file>]
+ *   abatty changelog [dir] --message <file>                            the changelog rule at commit time (the commit-msg hook): staged source carries its changelog line, or the message says why
  *   abatty attest [dir] [--out <file>] [--json]                        the conformance statement as an in-toto predicate, ready to sign
  *   abatty evidence [dir] [--out <file>]                               the requirement mapping as a document: a mapping, never a conformity assessment
  *   abatty validate [dir] [--since <rev>] [--json]                     which rules precede defect-fixing commits in this repository's own history
@@ -56,6 +57,7 @@ const KNOWN = [
   "ci",
   "secrets",
   "scrub",
+  "changelog",
   "report",
   "attest",
   "evidence",
@@ -250,6 +252,10 @@ switch (command) {
     const { scrubCommand } = await import("../src/cli/scrub.mjs");
     await scrubCommand(ctx);
     break;
+  }
+  case "changelog": {
+    const { changelogCommand } = await import("../src/cli/changelog.mjs");
+    process.exit(changelogCommand(ctx));
   }
   case "report": {
     const { reportCommand } = await import("../src/cli/report.mjs");

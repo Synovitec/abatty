@@ -24,6 +24,17 @@ import { NEXT_PKG, git, inTimezone, tempRepo } from "./helpers.mjs";
  */
 const skewed = () => (new Date().getUTCHours() < 12 ? "Etc/GMT+12" : "Etc/GMT-12");
 
+/**
+ * The zones a case that goes through git can pin. git for Windows writes the committer's date
+ * in the system's zone whatever `TZ` says (proved: `TZ=Pacific/Kiritimati git commit` records
+ * `+0200` on a Paris machine), so pinning Node to another zone there only makes the two
+ * disagree by construction. On Windows the pair is asserted in the machine's own zone, which
+ * is the one pair that exists there; the cross-zone half runs where `TZ` reaches git.
+ * @param {string[]} zones
+ */
+const gitZones = (zones) => (process.platform === "win32" ? [SYSTEM_ZONE] : zones);
+const SYSTEM_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 test("localToday reads the local calendar, not UTC's", () => {
   // An instant that is one day in one zone and the day before in another. Pinned rather than
   // `new Date()`, so this case says the same thing at every hour of the day it runs.
@@ -63,7 +74,7 @@ test("the context's today is the day git records for a commit made now", () => {
   // in the committer's local zone, and `docs.behindCode` compares it against `c.today`. If those
   // two are not the same calendar, the guard misses and a hard metric fails a gate for anybody
   // not at Greenwich. Asserted directly, so it bites at every hour rather than only near midnight.
-  for (const tz of ["UTC", "Europe/Paris", "America/Los_Angeles", skewed()])
+  for (const tz of gitZones(["UTC", "Europe/Paris", "America/Los_Angeles", skewed()]))
     inTimezone(tz, () => {
       const dir = tempRepo(`today-git-${tz.replace(/\W/g, "")}`, { "package.json": NEXT_PKG });
       assert.equal(buildContext(dir).today, git(dir, "log", "-1", "--format=%cs"), tz);
@@ -74,7 +85,13 @@ test("a document verified today is not behind code committed today, wherever you
   // The exact shape of the defect, end to end through the probe. git writes `%cs` in the
   // committer's local zone; the front matter carries the same local day; the probe's same-day
   // guard has to agree with both.
-  for (const tz of ["Pacific/Auckland", "Europe/Paris", "UTC", "America/Los_Angeles", skewed()])
+  for (const tz of gitZones([
+    "Pacific/Auckland",
+    "Europe/Paris",
+    "UTC",
+    "America/Los_Angeles",
+    skewed(),
+  ]))
     inTimezone(tz, () => {
       const dir = tempRepo(`today-behind-${tz.replace(/\W/g, "")}`, {
         "package.json": NEXT_PKG,

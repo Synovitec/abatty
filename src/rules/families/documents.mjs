@@ -4,6 +4,20 @@
  * Standard §2.1, DOC.1..5, AIR.1, CHANGE.1, FLOW.4.
  */
 
+/**
+ * The template's placeholders a context file still carries: angle-bracketed text with a space
+ * in it (`<project name>`, `<e.g. ...>`, `<takes direct pushes | is PR-only>`). A convention
+ * written the same way has none (`<topic>`, `<type>/<short-description>`, `<agent>`), and an
+ * HTML comment or tag is not one. A context file that is the unfilled template passed every
+ * check for two days on a trial repository, because the sections were all there.
+ * @param {string} text
+ */
+export function templatePlaceholders(text) {
+  return [...String(text).matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
+    .map((m) => `<${m[1]}>`)
+    .filter((p) => !/^<[a-z][a-z0-9-]*(\s+[a-z-]+="[^"]*")*\s*\/?>$/i.test(p)); // an HTML tag: attributes carry a value, or it closes itself
+}
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -14,18 +28,24 @@ export const rules = [
     level: "must",
     enforcement: "prose",
     phase: "A.1 / status",
-    why: "The context file is read whole at the start of every session; past two hundred lines the model stops holding it and confidently applies the wrong half. The one repository that let it reach 1,124 lines is the motivating case.",
+    why: "The context file is read whole at the start of every session; past two hundred lines the model stops holding it and confidently applies the wrong half. The one repository that let it reach 1,124 lines is the motivating case. A file that is still the template, placeholders and all, is a description of a context file, not one.",
     next: "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template",
     check: (c) => {
       const f = c.contextFile;
-      const lines = f ? c.read(f).split(/\r?\n/).length : 0;
+      const text = f ? c.read(f) : "";
+      const lines = f ? text.split(/\r?\n/).length : 0;
+      const left = templatePlaceholders(text);
       return {
-        status: !f ? "missing" : lines <= 200 ? "present" : "partial",
-        evidence: f ? `${f}: ${lines} lines` : "no CLAUDE.md",
+        status: !f ? "missing" : lines <= 200 && left.length === 0 ? "present" : "partial",
+        evidence: f
+          ? `${f}: ${lines} lines${left.length ? `; ${left.length} template placeholder(s) left: ${left.slice(0, 3).join(", ")}${left.length > 3 ? ", ..." : ""}` : ""}`
+          : "no CLAUDE.md",
         next:
           lines > 200
             ? "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template"
-            : "Use the agent-context template (abatty init)",
+            : left.length
+              ? "Fill the placeholders in <>: they are the questions, not the answers"
+              : "Use the agent-context template (abatty init)",
       };
     },
   },

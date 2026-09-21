@@ -39,10 +39,15 @@ export function inTimezone(tz, fn) {
   try {
     return fn();
   } finally {
-    if (was === undefined) delete process.env.TZ;
-    else process.env.TZ = was;
+    // Deleting TZ does not put the clock back on Windows: Node keeps the last zone it was set
+    // to, and every later case ran in whatever the previous one pinned. The system's zone, read
+    // once before anything was pinned, is restored by name.
+    process.env.TZ = was === undefined ? SYSTEM_ZONE : was;
   }
 }
+
+/** The machine's own zone, read before any case pins another. */
+const SYSTEM_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /** @param {string} dir @param {string[]} args */
 export function git(dir, ...args) {

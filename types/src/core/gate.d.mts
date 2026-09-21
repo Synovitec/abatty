@@ -1,29 +1,4 @@
 /**
- * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
- * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
- * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
- * @typedef {import("./spawn.mjs").RunResult} RunResult
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
- */
-/**
- * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
- * a rebase or an amend it is not, and the diff would show the amend delta rather than the
- * push (which is how a push carrying twenty UI files once skipped the browser suite), so the
- * whole branch is judged instead; with no upstream, the fork point from the base; failing
- * that, the last commit.
- */
-/** @param {string} repoDir @param {string} [base] @param {string} [explicit] */
-export function pushRange(repoDir: string, base?: string, explicit?: string): string;
-/** Files whose content on disk differs from HEAD: staged, unstaged, untracked. @param {string} repoDir */
-export function pendingPaths(repoDir: string): string[];
-/**
- * The files a range changed, repository-relative. A finding in a file this change never touched
- * is not this change's finding, however true it is, and telling the two apart is the difference
- * between a gate a team acts on and a list they learn to scroll past.
- * @param {string} repoDir @param {string} range
- */
-export function changedPaths(repoDir: string, range: string): string[];
-/**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
  * @param {GateOptions} o
  */
@@ -31,6 +6,7 @@ export function runGate(o: GateOptions): {
     ok: boolean;
     events: GateEvent[];
     range: string;
+    blind: boolean;
     errored: boolean;
 };
 /**
@@ -53,13 +29,19 @@ export type GateEventW = {
     workspace?: string;
 };
 export type RunResult = import("./spawn.mjs").RunResult;
+export type AuditRunner = (cmd: string, args: string[]) => {
+    status: number | null;
+    output: string;
+};
 export type GateOptions = {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;
     fast?: boolean;
     range?: string;
     base?: string;
+    ci?: boolean;
     run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
+    audit?: AuditRunner;
     dockerUp?: () => boolean;
     log?: (line: string) => void;
     workspaces?: {

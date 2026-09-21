@@ -86,10 +86,17 @@ export function makeExecutable(target) {
   } catch {
     /* a filesystem without modes; the index below is what git reads */
   }
-  spawnSync("git", ["update-index", "--chmod=+x", "--", relative(dirname(target), target)], {
+  const rel = relative(dirname(target), target);
+  const r = spawnSync("git", ["update-index", "--chmod=+x", "--", rel], {
     cwd: dirname(target),
     stdio: "ignore",
   });
+  // Not tracked yet: there is no index entry to carry the bit. On a filesystem without modes
+  // (Windows, core.filemode false) `git add` will not read it from disk either, so the hook
+  // would be committed 644 and skipped on every other machine, which is a gate that never
+  // runs. The entry is staged with the bit here, because the index is the only record there is.
+  if (r.status !== 0)
+    spawnSync("git", ["add", "--chmod=+x", "--", rel], { cwd: dirname(target), stdio: "ignore" });
 }
 
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */
@@ -224,10 +231,12 @@ export function initRepo(o) {
     { merge: false, executable: true },
   );
   // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
-  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides.
+  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides. The
+  // changelog rule runs in the same hook: a source commit carries its line or says why, before
+  // the commit exists rather than a push later.
   put(
     ".githooks/commit-msg",
-    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on; a no-op otherwise.\nnpx abatty scrub --message "$1"\n',
+    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; `no-changelog: <reason>` in the message excuses it).\nnpx abatty scrub --message "$1" && npx abatty changelog --message "$1"\n',
     { merge: false, executable: true },
   );
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
@@ -297,7 +306,12 @@ export function initRepo(o) {
   // costs one file, and it is the only way an agent this repository never configured can read the
   // context; the primary's file imports it so there is one source rather than two copies that
   // drift. A rule that reads the context follows that import.
-  const context = tpl("harness/agent-context.md.template");
+  // What a machine can fill, it fills: the name is the package's or the folder's. The rest are
+  // the questions; DOC-CONTEXT names every one still standing until somebody answers them.
+  const context = tpl("harness/agent-context.md.template").replaceAll(
+    "<project name>",
+    String(readPackage(repoDir).name || basename(repoDir)),
+  );
   put("AGENTS.md", context);
   put(PRIMARY.contextFile, "@AGENTS.md\n");
   for (const a of others)

@@ -64,3 +64,21 @@ jobs:
           echo "TZ=$tz" >> "$GITHUB_ENV"
           echo "suite clock $tz · local day $(TZ=$tz date +%F) · UTC day $(date -u +%F)"
       - run: npm test
+
+  # The same gate on the other operating system the package claims. For two days the gate could
+  # not start on Windows (a tool launcher spawned without the shell a batch file needs) and main
+  # went red three ways that no run could see, because every run was on Linux: a false green one
+  # level up from the ones the gate refuses. This job is what keeps that from coming back; the
+  # eight cases that were pinned to a POSIX machine are the ones it would have caught first.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run -s gate

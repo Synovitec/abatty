@@ -54,5 +54,9 @@ test("every export of the package has its declaration, and the package names the
   }
   assert.ok(pkg.files.includes("types"), "shipped");
   const index = readFileSync(join(ROOT, "types/src/index.d.mts"), "utf8");
-  assert.match(index, /export \{ runGate, pushRange, pendingPaths \} from "\.\/core\/gate\.mjs";/);
+  assert.match(index, /export \{ runGate \} from "\.\/core\/gate\.mjs";/);
+  assert.match(
+    index,
+    /export \{ pushRange, pushRangeInfo, pendingPaths \} from "\.\/core\/range\.mjs";/,
+  );
 });

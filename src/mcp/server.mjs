@@ -28,7 +28,7 @@ import {
   readBaseline,
   scoreOf,
 } from "../ratchet/index.mjs";
-import { pushRange } from "../core/gate.mjs";
+import { pushRange } from "../core/range.mjs";
 import { readJsonFile } from "../core/repo.mjs";
 
 export const PROTOCOL_VERSION = "2025-06-18";

@@ -7,6 +7,30 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty report` says which floors were raised, by whom, and that nobody has verified it.**
+  The baseline already recorded a raise's date, reason and owner; the report never showed them,
+  and a reviewer who wanted the row assembled it by hand from commit messages for two days. The
+  JSON carries `floors.raised`, one row per raised metric with `verified: false` on every row,
+  and the terminal prints each as "floor raised (unverified)". Unverified is the honest word:
+  the owner is a string the command was given, and an agent session can type a person's name
+  as easily as a person can. A raise that needs an approval the raiser cannot give itself is
+  the next step; withholding the row until then would keep the whole picture dark. Control
+  cases: a raise appears, the debt paid removes it.
+
+- **The changelog rule at commit time, and the package's gate on Windows in its own CI** (two
+  of the reviewer's asks, one file each). `abatty changelog --message <file>` is the commit-msg
+  hook's second command: the staged files are judged against the same pair the push is judged
+  by, so a source commit without its changelog line is refused before it exists rather than a
+  push later, which is the difference between a rule that shapes commits and one that punishes
+  pushes (the trial hit the push-time refusal four times in two days). A `no-changelog:
+  <reason>` line in the message is the escape a decision needs, and the bypass reading counts
+  it as reasoned. The hook `init` writes carries both commands; a repository that already has
+  the hook keeps it and adds the line by hand or with `init --force`. The first commit refused
+  was this one, on this repository, until the entry you are reading was staged with it. And a
+  `windows-latest` job now runs the whole gate in this package's pipeline, because for two days
+  the gate could not start on Windows and `main` went red three ways that no Linux run could
+  see: the false green one level up from the ones the gate refuses.
+
 - **A date derived from UTC is now refused by a machine, not by memory** (from the same review).
   The fix for the timezone bug left the rule held by whoever remembered `localToday()`, and this
   package's own argument is that a rule held by memory is a rule held by nobody. The standard
@@ -20,7 +44,154 @@ under Unreleased in the same commit.
   in both directions, and the probe is spliced at the seam it forbids so that it passes the scan
   it defines.
 
+### Changed
+
+- **Two modules went over the module budget with the fixes above and are split by what they
+  are for.** What a push contains (the range, how it was found, the files it and the tree
+  change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the
+  same questions and none of them runs a gate; the gate keeps the gate. The provider-neutral
+  half of CI generation (the steps, the package manager's commands, the YAML helpers) stays in
+  `src/ci/generate.mjs`, and each provider renders them from its own module
+  (`src/ci/woodpecker.mjs`, `src/ci/github.mjs`). The `CI` flag the gate reads is read through
+  the env module, the one place the package reads its environment (VALID.3), which the ratchet
+  had counted as a regression. No behaviour changed; the suite that covers both is unchanged
+  but for the import paths.
+
 ### Fixed
+
+- **The suite runs green on Windows, and two of its eight red cases were the code's fault**
+  (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were
+  committed without their executable bit on Windows, because the bit was set on an index entry
+  that did not exist yet and `git add` on a filesystem without modes reads none from disk; the
+  hook was then skipped on every other machine, which is a gate that never runs. The entry is
+  now staged with the bit when the file is not tracked, because the index is the only record
+  there is. The git shim looked for a file named `git`, which Windows cannot run, and spawned a
+  `.cmd` without the shell Node requires for one; it now looks for `git.exe` or `git.cmd` and
+  gives the latter cmd.exe with the arguments quoted. The other six were the tests' shape: a
+  path compared with the separator of the machine that wrote the test, a Seatbelt string with
+  its backslashes unescaped, a container mount asserted as if the temp folder were never under
+  the home, and two timezone cases that pin `TZ` for git, which git for Windows does not read
+  (proved by a commit under `TZ=Pacific/Kiritimati` recorded at `+0200`); on Windows those two
+  run in the machine's own zone, the one pair that exists there. Underneath them a harness bug:
+  deleting `TZ` does not put Node's clock back on Windows, so every later case ran in whatever
+  the previous one pinned; the system zone is now restored by name. One more fixture had pinned
+  the audit's old "skipped" and is corrected with the rest.
+
+- **A context file that is still the template is a description of one, and the catalog now
+  says so** (the ninth defect of the trial: `AGENTS.md` shipped with `<project name>` and
+  twelve other placeholders, and nobody noticed for two days because every section was there).
+  `init` fills what a machine can, the project's name from `package.json` or the folder; the
+  rest are the questions, and `DOC-CONTEXT` reads as partial for as long as any stands, naming
+  the first three with the fix ("fill the placeholders in <>: they are the questions, not the
+  answers"). A placeholder is angle-bracketed text with a space in it; a convention written the
+  same way (`<topic>`, `<type>/<short-description>`), an HTML comment or a tag is not one.
+  Control cases in both directions, and the catalog regenerated.
+
+- **The front matter reads the same with CRLF as with LF** (the eighth defect of the trial: a
+  document checked out with CRLF on Windows lost the last key of its front matter, and the
+  ratchet went red on one operating system only). The closing `---` was found across the
+  `
+`, but the line before it kept its `
+` and the key pattern could not cross it. The
+  reader now normalises line endings once, before anything is read; every other parser in the
+  package reads git's own output, which is LF. A control case reads one document both ways
+  and expects the same map, byte-order mark included.
+
+- **The practices page was behind the standard it describes** (`docs.behindCode`, red on
+  `main` since VALID.5 landed on 2026-09-20: the standard gained a rule and
+  `docs/standard/BEST_PRACTICES.md` still carried the day before). Re-read against the
+  standard, the runtime table gains the VALID.5 row, and the date moves because the reading was
+  done, not because the number was red. The catalog's INST-CI-STEPS entry says the rule as the
+  check now reads it: a comment that names a step is not a step.
+
+- **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of
+  the trial: `npm ci` and five `npm run` steps for scripts the package lacked, on a pnpm
+  repository, red from the first run). The install, the audit, every `run` and every `npx`
+  are now the package manager's the lockfile names (`src/core/package-manager.mjs`: npm, pnpm,
+  yarn classic or berry, bun), with the runner's toolchain to match (`pnpm/action-setup`,
+  `oven-sh/setup-bun`, `corepack enable` on the node image, the cache keyed on the manager). A
+  gate step whose script the package does not have is written as a comment that names it, in
+  the words the gap analysis uses, and a job with no runnable step is a comment block rather
+  than an empty job the forge refuses to parse. `--check` compares against the same rendering,
+  so a generated file is in step with itself. INST-CI-STEPS reads commands and not comments, so
+  the comment that names a missing step does not count as the step. Control cases: pnpm and npm
+  on one preset, an alternative script found under its own name, and the preset alone rendered
+  whole for a reader.
+
+- **A trailing redirection no longer hides a push to the base branch, and the forge's API is
+  read as the same door** (the sixth defect of the trial: `git push origin main 2>&1` passed the
+  PR-only guard, and `gh api` ref writes were never looked at). The guard took the last non-flag
+  word as the target, and `2>&1` is a word; it now reads the arguments positionally and stops at
+  the first redirection. `gh api` with a write method or a body flag against the base's ref or
+  the merges endpoint is refused as a push to the base; `gh pr merge` and the API's merge of a
+  pull request are refused at night, since merging is a human act the skill was never allowed.
+  Nine control cases in both directions, six of them watched failing against the old guard.
+  And because a regex over the agent's shell is a guard on this machine, not a policy on the
+  branch, `abatty doctor` now says on every run that PR-only is held here for the agent's shell
+  and on the forge by branch protection, which this machine cannot see, with the command that
+  prints the ruleset to import.
+
+- **The bypass rate read every source commit as a bypass** (the fifth defect of the trial: "the
+  bypass-rate report reads the wrong config key and flags every commit"). The report handed the
+  raw config to the changelog pair, which reads `changelog` at the top level while the config
+  keeps it under `files`; the `then` side was null, and 41 of the last 47 commits on this
+  repository read as bypasses, the ones that touched the changelog included. In the generated
+  pipeline that step exits non-zero on a bypass, so it was a false red on every pull request as
+  well as a false number everywhere. The pair is now resolved the way the ratchet resolves it,
+  from the same function; a control case proves a commit with its changelog line reads clean
+  and one without reads as the hole it is.
+
+- **A pipeline is credited for the scripts it can run, not for the words it names** (the fourth
+  defect of the trial: a generated CI file naming five scripts the package lacked was red from
+  its first run and still lifted the score by six points). `INST-CI` read any pipeline file as
+  present and `INST-CI-STEPS` grepped its text for `lint`; now both read the scripts the pipeline
+  invokes (`npm run`, `pnpm run`, `yarn`, `bun run`) against `package.json`, a step whose script
+  is missing is reported as "NAMED, no script", and the phantom scripts are listed in the
+  evidence with the fix. Control cases in both directions, and the catalog regenerated.
+
+- **A push range the gate cannot trust selects everything, never nothing** (the third defect of
+  the trial: `abatty gate` in a pipeline without `--range` read "0 pushed files", skipped the
+  build, browser and database suites and printed green). Two cases were read as an empty push:
+  a range that could not be found at all (a detached or shallow checkout with no upstream and no
+  base to fork from, where `HEAD~1` may not even exist) and a range that is genuinely empty in
+  CI, where the push is the event that started the run and not a diff against an upstream the
+  push itself just moved. `pushRangeInfo()` now says how the range was found and how many
+  commits it holds; blind, the gate selects every tracked file, prints why in yellow, and says
+  how to narrow it (`--range <before>..<sha>`). Locally an empty range still means nothing to
+  push, which is what it means. The CLI passes `CI` down; the library takes it as an option so
+  the suite can judge both directions on one tree.
+
+- **A repository with no lockfile has no audit, and the gate now says so instead of passing**
+  (the second defect of the trial: seventy advisories on a pnpm product, and a gate that said
+  nothing for as long as it ran one). The audit step answered "skipped" without a
+  `package-lock.json`, and a skipped step is a passed step at the gate; the rule the reviewer
+  wrote is the one this package already claims for itself, that a check which reports nothing is
+  indistinguishable from a check that is switched off. Now the audit is the package manager's,
+  read from what the repository committed (`src/core/package-manager.mjs`: the `packageManager`
+  field first, the lockfile otherwise): `npm audit`, `pnpm audit` or `bun audit`, each run
+  against a package with a known advisory before it was wired and its JSON shape read for the
+  allowances (three shapes; a banner before the JSON is skipped). yarn's is named for CI and
+  deferred out loud until somebody has watched it. No lockfile at all is `errored`, the outcome
+  a linter that is not installed gets, and the gate stops on it as the instrument. The audit
+  runner is injectable like the script runner, so the suite is hermetic where it used to reach
+  the registry, and the fixtures that were green only because the audit skipped now carry a
+  lockfile. Control cases in both directions at the audit and at the gate.
+
+- **The gate runs again on Windows: a tool launcher is a batch file, and a batch file needs
+  cmd.exe** (the first of nine defects an outside trial on a pnpm + Windows product reported).
+  The commit that took the shell off every spawn site named the launcher instead (`npm.cmd`),
+  which Node has refused to start without a shell since 20.12 (EINVAL, the fix for
+  CVE-2024-27980), so this package's own gate stopped at its first step with "format could not
+  run: EINVAL" for two days. `launch()` in `src/core/spawn.mjs` is now the one place that
+  decides: on Windows a launcher runs under cmd.exe with its arguments quoted for it, once;
+  everywhere else and for everything else there is still no shell. The harness self-test's agent
+  probe had the same belief and the same failure on a `.cmd` stub, and carries the same fix. A
+  control case spawns the real launcher on every platform the suite runs on. Two limits are
+  written where they hold rather than papered over: cmd.exe exits 1 both for a tool that failed
+  and for a tool it could not find, so on Windows a missing tool inside an npm script is reported
+  as failed with the shell's own line above it (POSIX keeps 127 and "could not run"); and five
+  test fixtures were POSIX-shaped (single quotes in a script, a URL's pathname as a path) and
+  answered the wrong thing on Windows before the fix could be seen.
 
 - **Two gate steps here had never once been watched going red** (found while proving the date
   metric). `abatty doctor --controls` plants a violation per gate step and reports a step that

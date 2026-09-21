@@ -17,7 +17,7 @@
  */
 
 /** A commit whose message explains the bypass is a decision on the record, not a hole. */
-const REASONED = /\b(bypass|hook[- ]skipped|no[- ]gate)\b[^\n]*:\s*\S/i;
+const REASONED = /\b(bypass|hook[- ]skipped|no[- ]gate|no-changelog)\b[^\n]*:\s*\S/i;
 
 /**
  * @typedef {{ sha: string, subject: string, why: string }} BypassFinding

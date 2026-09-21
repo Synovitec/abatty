@@ -28,6 +28,20 @@ export function normalisePairs(declared: unknown): Pair[];
  */
 export function coupledFindings(commits: Commit[], pairs: Pair[]): Offender[];
 /**
+ * The same rule at commit time, on the staged files: a commit that touches a `when` path
+ * carries a `then` path or says why it does not. Judged before the commit exists rather than a
+ * push later, because a rule that refuses the push after the fact punishes pushes, and one that
+ * refuses the commit shapes commits (an outside trial hit the push-time refusal four times in
+ * two days, each a commit too late). A message line `no-changelog: <reason>` is the decision on
+ * the record and passes; the bypass reading counts the same line as reasoned.
+ * @param {string[]} staged @param {Pair[]} pairs @param {string} [message]
+ * @returns {{ ok: boolean, detail: string }}
+ */
+export function stagedVerdict(staged: string[], pairs: Pair[], message?: string): {
+    ok: boolean;
+    detail: string;
+};
+/**
  * The changelog rule as a pair: the source prefixes, then the changelog.
  * @param {{ changelog: string, changelogRequiredFor: string[] }} c @returns {Pair[]}
  */
@@ -41,6 +55,8 @@ export function changelogPairs(c: {
  * @returns {Commit[]}
  */
 export function commitsOf(git: (...args: string[]) => string, range: string): Commit[];
+/** A message that says why the counterpart is untouched: a decision, not a hole. */
+export const REASON: RegExp;
 export type Pair = {
     when: string[];
     then: string[];

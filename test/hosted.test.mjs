@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { NEXT_PKG, tempRepo } from "./helpers.mjs";
 import { buildReport } from "../src/core/report.mjs";
@@ -26,7 +27,7 @@ function cliAsync(args, cwd) {
   return new Promise((done) => {
     const child = spawn(
       process.execPath,
-      [new URL("../bin/abatty.mjs", import.meta.url).pathname, ...args],
+      [fileURLToPath(new URL("../bin/abatty.mjs", import.meta.url)), ...args],
       { cwd, env: { ...process.env, ADOPTION_RUN: "" } },
     );
     let out = "";

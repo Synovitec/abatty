@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { PROTOCOL_VERSION, createHandler, tools } from "../src/mcp/server.mjs";
 
@@ -99,7 +100,7 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
   // installs, so without this the gate fails here and cannot run on a clean runner, and the tool
   // under test is the one relaying the outcome.
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-  pkg.scripts.lint = "node -e 'process.exit(1)'";
+  pkg.scripts.lint = 'node -e "process.exit(1)"';
   writeFileSync(join(dir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
   const handle = createHandler(dir);
   const r = await handle(req("tools/call", { name: "gate", arguments: { fast: true } }, 7));
@@ -137,7 +138,7 @@ test("over stdio: abatty mcp answers JSON-RPC line by line and writes nothing el
     ].join("\n") + "\n";
   const r = spawnSync(
     process.execPath,
-    [new URL("../bin/abatty.mjs", import.meta.url).pathname, "mcp", dir],
+    [fileURLToPath(new URL("../bin/abatty.mjs", import.meta.url)), "mcp", dir],
     { input, encoding: "utf8", cwd: dir },
   );
   assert.equal(r.status, 0, r.stderr);

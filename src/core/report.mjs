@@ -15,7 +15,9 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
 import { cacheKey, readCache, writeCache } from "./cache.mjs";
 import { bypassReading } from "./bypass.mjs";
 import { changelogPairs, commitsOf, coupledFindings } from "./coupled.mjs";
-import { pushRange } from "./gate.mjs";
+import { pushRange } from "./range.mjs";
+import { baselinePath, resolveConfig } from "../ratchet/config.mjs";
+import { readBaseline } from "../ratchet/baseline.mjs";
 
 /**
  * @typedef {{
@@ -37,7 +39,9 @@ import { pushRange } from "./gate.mjs";
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
+ *   floors: { raised: FloorRaise[] },
  * }} Report
+ * @typedef {{ metric: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
  */
 
 export const REPORT_DIR = join(".abatty", "reports");
@@ -80,9 +84,12 @@ function bypassOf(repoDir) {
     const git = (/** @type {string[]} */ ...a) =>
       String(execFileSync("git", a, { cwd: repoDir, encoding: "utf8" }) || "").trim();
     const commits = commitsOf(git, range);
+    // The pair as the ratchet resolves it, from the same config: the changelog's name lives
+    // under `files`, and handing the raw config here made the `then` side null, so every source
+    // commit read as a bypass, the ones that touched the changelog included.
     const violations = coupledFindings(
       commits,
-      changelogPairs(/** @type {any} */ (readAdoption(repoDir) || {})),
+      changelogPairs(resolveConfig(readAdoption(repoDir))),
     ).map((f) => ({ sha: f.path, detail: f.detail }));
     const r = bypassReading(commits, violations);
     return {
@@ -96,6 +103,29 @@ function bypassOf(repoDir) {
     // history says nothing rather than reporting a rate it invented.
     return { commits: 0, bypassed: 0, reasoned: 0, rate: 0 };
   }
+}
+
+/**
+ * Every floor the baseline records as raised, with the reason and the owner it was raised under.
+ * `verified` is false on every row, and says so rather than implying otherwise: the owner is a
+ * string the command was given, and an agent session can type a person's name as easily as a
+ * person can. Until a raise needs an approval the raising process cannot give itself, the row
+ * is printed as what it is, an unverified claim, so the reader sees it instead of nothing.
+ * @param {string} repoDir @returns {FloorRaise[]}
+ */
+function floorsRaised(repoDir) {
+  const entries = readBaseline(repoDir, baselinePath(readAdoption(repoDir)))?.entries || {};
+  return Object.entries(entries)
+    .map(([metric, e]) => ({
+      metric,
+      at: String(e?.at || ""),
+      was: Number(e?.was ?? 0),
+      now: Number(e?.now ?? 0),
+      reason: String(e?.reason || ""),
+      owner: String(e?.owner || ""),
+      verified: /** @type {false} */ (false),
+    }))
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.metric.localeCompare(b.metric)));
 }
 
 /**
@@ -167,6 +197,9 @@ export async function buildReport(repoDir, o = {}) {
     // What got past the hook in this push, and at what rate. A bypass nobody can see afterwards
     // is a gate with a hole nobody can measure.
     bypass: bypassOf(repoDir),
+    // The floors raised, by whom, unverified: the row a team lead reads first, and the one the
+    // trial's reviewer assembled by hand from commit messages for two days.
+    floors: { raised: floorsRaised(repoDir) },
   };
   if (key) writeCache(repoDir, key, report);
   if (o.write !== false) {
