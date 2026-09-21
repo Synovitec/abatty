@@ -34,7 +34,7 @@ Violating one of these is an incident, not a bug.
 npm run gate               # `abatty gate`: format, lint, typecheck, graph, dead code, unit, the
                            # ratchet + changelog range, secrets, audit, scrub. One implementation
 npm run gate:fast          # the same without the heavy suites; this package has none
-npm test                   # node --test over test/*.test.mjs     npm run typecheck   # tsc --noEmit
+npm test                   # node --test over test/*.test.mjs (expanded by scripts/test.mjs, so Node 20 runs it too)   npm run typecheck   # tsc --noEmit
 npm run standards          # the ratchet alone over the pushed range
 npm run standards:baseline # today's numbers as the floor; zeros promoted to hard
 npm run types              # the .d.ts emit; types/ is committed and equal to a fresh emit

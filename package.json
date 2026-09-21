@@ -89,7 +89,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node scripts/test.mjs \"test/*.test.mjs\"",
     "typecheck": "tsc -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check --end-of-line auto .",

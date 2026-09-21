@@ -70,6 +70,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`npm test` runs on Node 20, the oldest Node the package claims** (the matrix's second
+  finding on its first day: `node --test "test/*.test.mjs"` relies on `--test` expanding the
+  glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
+  never once run there). `scripts/test.mjs` expands the glob itself and hands `node --test` the
+  files, node's flags first; the pattern stays in the script's text because the step controls
+  read it to learn where a planted test has to sit.
+
 - **The controls pass judges the suites too, and a step red without a plant proves nothing**
   (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and
   database steps, precisely the ones that vanished from the trial's empty-range run, were the
