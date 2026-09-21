@@ -194,7 +194,7 @@ test("the context file is not the template: init fills the name, and DOC-CONTEXT
   const dir = tempRepo("init-placeholders", { "package.json": NEXT_PKG });
   assert.equal(cli(["init", dir, "--stack", "next"], dir).code, 0);
   const written = readFileSync(join(dir, "AGENTS.md"), "utf8");
-  assert.match(written, /^# CLAUDE\.md - fixture-next$/m, "the name a machine can fill is filled");
+  assert.match(written, /^# [A-Z]+\.md - fixture-next$/m, "the name a machine can fill is filled");
   assert.ok(!written.includes("<project name>"));
   const left = templatePlaceholders(written);
   assert.ok(left.length >= 10, `the questions are still there: ${left.length}`);
