@@ -25,6 +25,8 @@ export async function gateCommand(cx, preset) {
     fast: flag("--fast"),
     range: opt("--range"),
     base,
+    // The pipelines set CI; a gate run there without --range cannot read the push from git.
+    ci: Boolean(process.env.CI),
     log: (line) => {
       const l = line.replace(/^\n/, "");
       if (l.startsWith("▶ ")) out(`\n${t.glyph.run} ${t.bold(l.slice(2))}\n`);
@@ -32,7 +34,9 @@ export async function gateCommand(cx, preset) {
       else if (l.startsWith("· DEFERRED")) out(`\n${t.glyph.defer} ${t.yellow(l.slice(2))}\n`);
       else if (l.startsWith("· ")) out(`${t.glyph.skip} ${t.gray(l.slice(2))}\n`);
       else if (l.startsWith("Gate ·"))
-        out(`\n${t.banner(VERSION)}  ${t.bold("gate")} ${t.gray(l.slice(5))}\n`);
+        out(
+          `\n${t.banner(VERSION)}  ${t.bold("gate")} ${/could not be trusted/.test(l) ? t.yellow(l.slice(5)) : t.gray(l.slice(5))}\n`,
+        );
       else out(`${t.gray(l)}\n`);
     },
   });

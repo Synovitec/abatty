@@ -29,7 +29,7 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -39,9 +39,23 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
  * whole branch is judged instead; with no upstream, the fork point from the base; failing
  * that, the last commit.
  */
-/** @param {string} repoDir @param {string} [base] @param {string} [explicit] */
-export function pushRange(repoDir, base = "main", explicit = "") {
-  if (explicit) return explicit;
+/**
+ * @typedef {"explicit" | "upstream" | "fork" | "unknown"} RangeHow
+ * @typedef {{ range: string, how: RangeHow, commits: number }} RangeInfo
+ */
+
+/**
+ * The push range and how it was found, because "could not be found" is a different answer from
+ * "found and empty" and the gate must not read the two alike. `commits` is what the range holds,
+ * -1 when git cannot list it (a shallow clone whose `HEAD~1` does not exist).
+ * @param {string} repoDir @param {string} [base] @param {string} [explicit] @returns {RangeInfo}
+ */
+export function pushRangeInfo(repoDir, base = "main", explicit = "") {
+  const count = (/** @type {string} */ range) => {
+    const r = spawnSync("git", ["rev-list", "--count", range], { cwd: repoDir, encoding: "utf8" });
+    return r.status === 0 ? Number(String(r.stdout).trim()) || 0 : -1;
+  };
+  if (explicit) return { range: explicit, how: "explicit", commits: count(explicit) };
   const upstream = git(repoDir, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}");
   const linear =
     upstream &&
@@ -49,11 +63,19 @@ export function pushRange(repoDir, base = "main", explicit = "") {
       cwd: repoDir,
       stdio: "ignore",
     }).status === 0;
-  if (linear) return "@{u}..HEAD";
+  if (linear) return { range: "@{u}..HEAD", how: "upstream", commits: count("@{u}..HEAD") };
   const fork =
     git(repoDir, "merge-base", `origin/${base}`, "HEAD") ||
     git(repoDir, "merge-base", base, "HEAD");
-  return fork ? `${fork}..HEAD` : "HEAD~1..HEAD";
+  if (fork) return { range: `${fork}..HEAD`, how: "fork", commits: count(`${fork}..HEAD`) };
+  // Nothing to compare with: no upstream, no base to fork from. The last commit is a guess, and
+  // the caller is told it is one.
+  return { range: "HEAD~1..HEAD", how: "unknown", commits: count("HEAD~1..HEAD") };
+}
+
+/** The push range alone (see pushRangeInfo). @param {string} repoDir @param {string} [base] @param {string} [explicit] */
+export function pushRange(repoDir, base = "main", explicit = "") {
+  return pushRangeInfo(repoDir, base, explicit).range;
 }
 
 /** Files whose content on disk differs from HEAD: staged, unstaged, untracked. @param {string} repoDir */
@@ -102,12 +124,27 @@ export function runGate(o) {
   let cwd = repoDir;
   let prefix = "";
 
-  const range = pushRange(repoDir, o.base, o.range);
-  const changed = git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
+  const info = pushRangeInfo(repoDir, o.base, o.range);
+  const range = info.range;
+  // A range the gate could not find, or an empty one in CI, is not an empty push. In CI the
+  // push is the event that started the run, not a diff against an upstream that was updated by
+  // that very push; on a detached or shallow checkout there is no upstream at all. Reading either
+  // as "0 pushed files" skipped every suite and printed green, which is the one thing a gate
+  // must never do by accident. Blind, the gate selects everything and says why.
+  const blind = info.how === "unknown" || info.commits < 0 || (o.ci === true && info.commits === 0);
+  const changed = blind
+    ? git(repoDir, "ls-files").split("\n").filter(Boolean)
+    : git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
   const pending = pendingPaths(repoDir);
   const selection = [...new Set([...changed, ...pending])];
   log(
-    `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
+    blind
+      ? `Gate · range ${range} could not be trusted (${
+          info.how === "unknown" || info.commits < 0
+            ? `no upstream and no ${o.base || "main"} to fork from`
+            : "in CI the push is the event, not a diff against the upstream"
+        }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
+      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
@@ -316,6 +353,7 @@ export function runGate(o) {
     ok,
     events,
     range,
+    blind,
     errored: events.some((e) => e.outcome === "errored"),
   });
 

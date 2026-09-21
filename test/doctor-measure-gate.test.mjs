@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
-import { runGate } from "../src/core/gate.mjs";
+import { pushRangeInfo, runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 import { normalise } from "../src/core/doctor.mjs";
@@ -336,6 +336,98 @@ test("a repository with no lockfile has no audit: the step could not run, and th
   );
   assert.equal(locked.r.ok, true, locked.out);
   assert.ok(locked.r.events.some((e) => /audit/.test(e.label) && e.outcome === "ok"));
+});
+
+test("the push range says how it was found: an upstream, a fork point, or nothing to compare with", () => {
+  const dir = tempRepo("range-how", { "package.json": NEXT_PKG });
+  // On main with no origin: the fork point of main and HEAD is HEAD itself, found and empty.
+  assert.deepEqual(pushRangeInfo(dir, "main"), {
+    range: `${git(dir, "rev-parse", "HEAD")}..HEAD`,
+    how: "fork",
+    commits: 0,
+  });
+  // A branch off main with a commit: the fork point, one commit in it.
+  git(dir, "checkout", "-q", "-b", "feat/x");
+  writeFileSync(join(dir, "a.txt"), "a\n");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "feat: a");
+  assert.equal(pushRangeInfo(dir, "main").how, "fork");
+  assert.equal(pushRangeInfo(dir, "main").commits, 1);
+  // Told the base is a branch that does not exist: nothing to compare with, and it says so.
+  const blind = pushRangeInfo(dir, "trunk");
+  assert.equal(blind.how, "unknown");
+  assert.equal(blind.range, "HEAD~1..HEAD");
+  // Told explicitly: taken as given, counted.
+  assert.deepEqual(pushRangeInfo(dir, "main", "main..HEAD"), {
+    range: "main..HEAD",
+    how: "explicit",
+    commits: 1,
+  });
+});
+
+test("a range the gate cannot trust selects everything, never nothing: in CI an empty range is the event, not an empty push", () => {
+  // A gate run in CI without --range, on a checkout whose upstream the push itself just moved,
+  // read "0 pushed files", skipped the build, browser and database suites and printed green.
+  // Both directions: the same tree, the same empty range, judged locally and in CI.
+  const scripts = {
+    test: "true",
+    build: "true",
+    e2e: "true",
+    "test:rls": "true",
+    coverage: "true",
+  };
+  const dir = tempRepo("range-ci", {
+    "package.json": JSON.stringify({ name: "g", scripts }),
+    "package-lock.json": "{}\n",
+    "src/app/page.tsx": "export default function Page() { return null; }\n",
+  });
+  const preset = presetById("next");
+  assert.ok(preset);
+  const gate = (/** @type {boolean} */ ci) => {
+    /** @type {string[]} */
+    const calls = [];
+    /** @type {string[]} */
+    const lines = [];
+    const r = runGate({
+      repoDir: dir,
+      preset,
+      ci,
+      run: (_d, s) => {
+        calls.push(s);
+        return 0;
+      },
+      audit: () => ({ status: 0, output: "" }),
+      dockerUp: () => true,
+      log: (l) => lines.push(l),
+    });
+    return { r, calls, out: lines.join("\n") };
+  };
+  const local = gate(false);
+  assert.equal(local.r.ok, true, local.out);
+  assert.equal(
+    local.r.blind,
+    false,
+    "locally, at the upstream with a clean tree, there is nothing to push",
+  );
+  assert.ok(
+    !local.calls.includes("e2e"),
+    "no path in the push or the tree: the browser suite is skipped",
+  );
+
+  const ci = gate(true);
+  assert.equal(ci.r.ok, true, ci.out);
+  assert.equal(ci.r.blind, true);
+  assert.match(ci.out, /could not be trusted \(in CI the push is the event/);
+  assert.match(ci.out, /every path is selected/);
+  assert.ok(ci.calls.includes("e2e"), "every path selected: the browser suite runs");
+
+  // And a range nobody can compute at all (no upstream, no base) is blind wherever it runs.
+  git(dir, "checkout", "-q", "-b", "work");
+  git(dir, "branch", "-q", "-D", "main");
+  const orphan = gate(false);
+  assert.equal(orphan.r.blind, true);
+  assert.match(orphan.out, /no upstream and no main to fork from/);
+  assert.ok(orphan.calls.includes("e2e"));
 });
 
 test("end to end, through real npm: a tool that ran and failed exits 3, one that could not run exits 4", () => {

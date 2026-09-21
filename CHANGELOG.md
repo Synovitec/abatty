@@ -22,6 +22,18 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A push range the gate cannot trust selects everything, never nothing** (the third defect of
+  the trial: `abatty gate` in a pipeline without `--range` read "0 pushed files", skipped the
+  build, browser and database suites and printed green). Two cases were read as an empty push:
+  a range that could not be found at all (a detached or shallow checkout with no upstream and no
+  base to fork from, where `HEAD~1` may not even exist) and a range that is genuinely empty in
+  CI, where the push is the event that started the run and not a diff against an upstream the
+  push itself just moved. `pushRangeInfo()` now says how the range was found and how many
+  commits it holds; blind, the gate selects every tracked file, prints why in yellow, and says
+  how to narrow it (`--range <before>..<sha>`). Locally an empty range still means nothing to
+  push, which is what it means. The CLI passes `CI` down; the library takes it as an option so
+  the suite can judge both directions on one tree.
+
 - **A repository with no lockfile has no audit, and the gate now says so instead of passing**
   (the second defect of the trial: seventy advisories on a pnpm product, and a gate that said
   nothing for as long as it ran one). The audit step answered "skipped" without a
