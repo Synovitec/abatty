@@ -22,6 +22,19 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A trailing redirection no longer hides a push to the base branch, and the forge's API is
+  read as the same door** (the sixth defect of the trial: `git push origin main 2>&1` passed the
+  PR-only guard, and `gh api` ref writes were never looked at). The guard took the last non-flag
+  word as the target, and `2>&1` is a word; it now reads the arguments positionally and stops at
+  the first redirection. `gh api` with a write method or a body flag against the base's ref or
+  the merges endpoint is refused as a push to the base; `gh pr merge` and the API's merge of a
+  pull request are refused at night, since merging is a human act the skill was never allowed.
+  Nine control cases in both directions, six of them watched failing against the old guard.
+  And because a regex over the agent's shell is a guard on this machine, not a policy on the
+  branch, `abatty doctor` now says on every run that PR-only is held here for the agent's shell
+  and on the forge by branch protection, which this machine cannot see, with the command that
+  prints the ruleset to import.
+
 - **The bypass rate read every source commit as a bypass** (the fifth defect of the trial: "the
   bypass-rate report reads the wrong config key and flags every commit"). The report handed the
   raw config to the changelog pair, which reads `changelog` at the top level while the config

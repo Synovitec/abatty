@@ -93,6 +93,15 @@ export async function doctorCommand(cx, preset) {
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
     );
   for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);
+  // What the guard holds and what it cannot: a regex over the agent's shell is a guard on this
+  // machine's agent, not a policy on the branch. The forge holds the policy, or nobody does, and
+  // a reader who believes the hook is the policy is the reader this line is for.
+  const adoption = readAdoption(dir);
+  const base = adoption?.baseBranch || "main";
+  if (adoption?.directPushToBase !== true)
+    out(
+      `  ${t.glyph.skip} PR-only on ${base}: held by the guard for the agent's shell (git push, gh api) · on the forge by branch protection, which this machine cannot see: ${t.gray("abatty ci --ruleset prints the rules to import")}\n`,
+    );
   if (r.config.files.length === 1 && r.config.files[0] === LEGACY_CONFIG)
     out(
       `  ${t.glyph.warn} the config is at the older place (${LEGACY_CONFIG}); abatty config --migrate moves it to ${CONFIG_FILE}\n`,

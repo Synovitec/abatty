@@ -177,6 +177,9 @@ try {
     ["night: push main", bash("git push origin main"), night, "deny"],
     ["night: push another branch", bash("git push origin feat/other"), night, "deny"],
     ["night: push with refspec to another branch", bash("git push origin HEAD:release"), night, "deny"],
+    ["night: merging a pull request is a human act", bash("gh pr merge 12 --squash"), night, "deny"],
+    ["night: merging through the API is the same act", bash("gh api -X PUT repos/o/r/pulls/12/merge"), night, "deny"],
+    ["night: reading a pull request is not merging it", bash("gh pr view 12"), night, "none"],
     ["night: push -u the adoption branch with flags", bash("git push --set-upstream origin adopt/standards-selftest"), night, "none"],
     ["night: checkout main", bash("git checkout main"), night, "deny"],
     ["night: checkout the adoption branch", bash("git checkout adopt/standards-selftest"), night, "none"],
@@ -225,6 +228,15 @@ try {
   cases.push(["deleting the base branch is refused", bash("git push origin :main"), {}, "deny"]);
   cases.push(["a branch whose name carries the base's is not the base", bash("git push -u origin fix/merge-to-main-1"), {}, "none"]);
   cases.push(["nor is one that starts with it", bash("git push -u origin main-nav-rework"), {}, "none"]);
+  // A redirection is the shell's, not git's: it was read as the target, and the push went through.
+  cases.push(["a push to the base with a trailing redirection is still a push to the base", bash("git push origin main 2>&1"), {}, "deny"]);
+  cases.push(["a push to the base into a log file is still one", bash("git push origin main > push.log"), {}, "deny"]);
+  cases.push(["a push elsewhere with a redirection is still elsewhere", bash("git push -u origin feat/x 2>&1 | tail -3"), {}, "none"]);
+  // The forge's API is another door to the same branch.
+  cases.push(["moving the base's ref through the API is a push to the base", bash("gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc123"), {}, "deny"]);
+  cases.push(["merging into the base through the API is a push to the base", bash("gh api -X POST repos/o/r/merges -f base=main -f head=feat/x"), {}, "deny"]);
+  cases.push(["reading the base's ref through the API is not a write", bash("gh api repos/o/r/git/refs/heads/main"), {}, "none"]);
+  cases.push(["moving another ref through the API is not the base", bash("gh api -X PATCH repos/o/r/git/refs/heads/feat/x -f sha=abc123"), {}, "none"]);
   cases.push([`a heredoc that documents the bypass flag is a file being written`, bash(`cat > docs/RULES.md <<'EOF'\n${bypass} is not a workflow.\ngit push --force is never allowed.\nEOF`), {}, "none"]);
   // Provenance is the default: with the scrub off (the template's default) a commit that carries
   // the agent's trailer passes. The vocabulary, under a config that opted in: a commit, a pull
