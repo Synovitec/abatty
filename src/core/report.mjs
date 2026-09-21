@@ -16,6 +16,7 @@ import { cacheKey, readCache, writeCache } from "./cache.mjs";
 import { bypassReading } from "./bypass.mjs";
 import { changelogPairs, commitsOf, coupledFindings } from "./coupled.mjs";
 import { pushRange } from "./gate.mjs";
+import { resolveConfig } from "../ratchet/config.mjs";
 
 /**
  * @typedef {{
@@ -80,9 +81,12 @@ function bypassOf(repoDir) {
     const git = (/** @type {string[]} */ ...a) =>
       String(execFileSync("git", a, { cwd: repoDir, encoding: "utf8" }) || "").trim();
     const commits = commitsOf(git, range);
+    // The pair as the ratchet resolves it, from the same config: the changelog's name lives
+    // under `files`, and handing the raw config here made the `then` side null, so every source
+    // commit read as a bypass, the ones that touched the changelog included.
     const violations = coupledFindings(
       commits,
-      changelogPairs(/** @type {any} */ (readAdoption(repoDir) || {})),
+      changelogPairs(resolveConfig(readAdoption(repoDir))),
     ).map((f) => ({ sha: f.path, detail: f.detail }));
     const r = bypassReading(commits, violations);
     return {

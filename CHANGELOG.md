@@ -22,6 +22,16 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The bypass rate read every source commit as a bypass** (the fifth defect of the trial: "the
+  bypass-rate report reads the wrong config key and flags every commit"). The report handed the
+  raw config to the changelog pair, which reads `changelog` at the top level while the config
+  keeps it under `files`; the `then` side was null, and 41 of the last 47 commits on this
+  repository read as bypasses, the ones that touched the changelog included. In the generated
+  pipeline that step exits non-zero on a bypass, so it was a false red on every pull request as
+  well as a false number everywhere. The pair is now resolved the way the ratchet resolves it,
+  from the same function; a control case proves a commit with its changelog line reads clean
+  and one without reads as the hole it is.
+
 - **A pipeline is credited for the scripts it can run, not for the words it names** (the fourth
   defect of the trial: a generated CI file naming five scripts the package lacked was red from
   its first run and still lifted the score by six points). `INST-CI` read any pipeline file as
