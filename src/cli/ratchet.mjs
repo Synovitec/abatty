@@ -5,7 +5,7 @@
 import { EXIT } from "./exit.mjs";
 import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
-import { pushRange } from "../core/gate.mjs";
+import { changedPaths, pushRange } from "../core/range.mjs";
 import {
   compare,
   failed,
@@ -123,7 +123,6 @@ export async function ratchetCommand(command, c) {
       // reports both in one list teaches its reader to scroll past both.
       if (range) {
         const { splitByRange } = await import("../ratchet/index.mjs");
-        const { changedPaths } = await import("../core/gate.mjs");
         const split = splitByRange(verdicts, changedPaths(dir, range));
         if (split.introduced.length || split.standing.length) {
           out(

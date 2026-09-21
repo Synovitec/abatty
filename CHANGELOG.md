@@ -20,6 +20,19 @@ under Unreleased in the same commit.
   in both directions, and the probe is spliced at the seam it forbids so that it passes the scan
   it defines.
 
+### Changed
+
+- **Two modules went over the module budget with the fixes above and are split by what they
+  are for.** What a push contains (the range, how it was found, the files it and the tree
+  change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the
+  same questions and none of them runs a gate; the gate keeps the gate. The provider-neutral
+  half of CI generation (the steps, the package manager's commands, the YAML helpers) stays in
+  `src/ci/generate.mjs`, and each provider renders them from its own module
+  (`src/ci/woodpecker.mjs`, `src/ci/github.mjs`). The `CI` flag the gate reads is read through
+  the env module, the one place the package reads its environment (VALID.3), which the ratchet
+  had counted as a regression. No behaviour changed; the suite that covers both is unchanged
+  but for the import paths.
+
 ### Fixed
 
 - **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of

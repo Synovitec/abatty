@@ -5,7 +5,9 @@
 import { EXIT } from "./exit.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { PROVIDERS, renderGithubActions, renderWoodpecker } from "../ci/generate.mjs";
+import { PROVIDERS } from "../ci/generate.mjs";
+import { renderGithubActions } from "../ci/github.mjs";
+import { renderWoodpecker } from "../ci/woodpecker.mjs";
 import { renderPullRequestTemplate, renderRuleset } from "../ci/templates.mjs";
 import { packageManager } from "../core/package-manager.mjs";
 import { readPackage } from "../core/repo.mjs";

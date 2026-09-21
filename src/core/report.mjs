@@ -15,7 +15,7 @@ import { scanFiles, allowList, scrubConfig } from "./scrub.mjs";
 import { cacheKey, readCache, writeCache } from "./cache.mjs";
 import { bypassReading } from "./bypass.mjs";
 import { changelogPairs, commitsOf, coupledFindings } from "./coupled.mjs";
-import { pushRange } from "./gate.mjs";
+import { pushRange } from "./range.mjs";
 import { resolveConfig } from "../ratchet/config.mjs";
 
 /**

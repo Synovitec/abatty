@@ -8,6 +8,7 @@ import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { doctor } from "../core/doctor.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
+import { ciFromEnv } from "../core/env.mjs";
 import { readAdoption } from "../core/repo.mjs";
 import * as t from "../ui/term.mjs";
 
@@ -26,7 +27,7 @@ export async function gateCommand(cx, preset) {
     range: opt("--range"),
     base,
     // The pipelines set CI; a gate run there without --range cannot read the push from git.
-    ci: Boolean(process.env.CI),
+    ci: ciFromEnv(),
     log: (line) => {
       const l = line.replace(/^\n/, "");
       if (l.startsWith("▶ ")) out(`\n${t.glyph.run} ${t.bold(l.slice(2))}\n`);

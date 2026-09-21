@@ -1,4 +1,17 @@
 /**
+ * The commands of the package manager a pipeline is written for: the repository's, read from
+ * its lockfile, or npm where nothing says otherwise. A pipeline that said `npm ci` to a pnpm
+ * repository was red from its first run (the trial's seventh defect).
+ * @param {CiOptions} o
+ */
+export function tooling(o: CiOptions): {
+    id: import("../core/package-manager.mjs").PackageManagerId;
+    install: string;
+    run: (script: string, args?: string[]) => string;
+    exec: (tool: string) => string;
+    audit: string;
+};
+/**
  * The steps of a preset's CI, in the gate's order, provider-neutral. Given the repository's
  * scripts, a step whose script the package does not have is kept in the list as ABSENT with the
  * reason and rendered as a comment rather than as a command that cannot run: the gate reports
@@ -7,18 +20,10 @@
  * @param {Preset} preset @param {CiOptions} [o]
  */
 export function ciSteps(preset: Preset, o?: CiOptions): CiStep[];
-/**
- * The Woodpecker pipeline: one `checks` pipeline with the always-on steps, the suites in their
- * own pipelines depending on it, Postgres as a service where the preset has a database suite.
- * @param {Preset} preset @param {CiOptions} [o]
- */
-export function renderWoodpecker(preset: Preset, o?: CiOptions): string;
-/**
- * The GitHub Actions workflow: a `checks` job with the always-on steps, a `database` job with a
- * Postgres service, a `browser` job, the publish step guarded by the secret.
- * @param {Preset} preset @param {CiOptions} [o]
- */
-export function renderGithubActions(preset: Preset, o?: CiOptions): string;
+/** A YAML scalar, quoted when it must be. @param {string} s */
+export function y(s: string): string;
+/** A step's name as an identifier. @param {string} name */
+export function ident(name: string): string;
 /**
  * @typedef {import("../presets/index.mjs").Preset} Preset
  * @typedef {import("../presets/index.mjs").GateStep} GateStep
