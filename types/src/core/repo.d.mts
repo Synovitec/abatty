@@ -12,7 +12,7 @@ export function git(dir: string, ...args: string[]): string;
  * @param {string} [dir]
  */
 export function repoRoot(dir?: string): string;
-/** @typedef {{ name?: string, scripts?: Record<string,string>, dependencies?: Record<string,string>, devDependencies?: Record<string,string>, peerDependencies?: Record<string,string>, workspaces?: unknown }} PackageJson */
+/** @typedef {{ name?: string, scripts?: Record<string,string>, dependencies?: Record<string,string>, devDependencies?: Record<string,string>, peerDependencies?: Record<string,string>, workspaces?: unknown, packageManager?: string }} PackageJson */
 /** @param {string} dir @returns {PackageJson} */
 export function readPackage(dir: string): PackageJson;
 /** Every dependency name of the root package (and workspace packages one level down). @param {string} dir */
@@ -39,4 +39,5 @@ export type PackageJson = {
     devDependencies?: Record<string, string>;
     peerDependencies?: Record<string, string>;
     workspaces?: unknown;
+    packageManager?: string;
 };

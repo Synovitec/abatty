@@ -28,7 +28,8 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -72,6 +73,18 @@ export function changedPaths(repoDir, range) {
   if (!range) return [];
   return git(repoDir, "diff", "--name-only", range).split("\n").filter(Boolean);
 }
+
+/** The audit as spawned in a repository: the package manager's command, its output in one string. @param {string} repoDir @returns {AuditRunner} */
+const spawnAudit = (repoDir) => (cmd, args) => {
+  const l = launch(cmd, args);
+  const r = spawnSync(l.file, l.args, {
+    cwd: repoDir,
+    encoding: "utf8",
+    shell: l.shell,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
+};
 
 /**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
@@ -161,20 +174,10 @@ export function runGate(o) {
       log(`\n▶ ${s.label}`);
       const t0 = Date.now();
       const cfg = readConfig(repoDir);
-      const a = auditOutcome(
-        repoDir,
-        (cmd, args) => {
-          const l = launch(cmd, args);
-          const r = spawnSync(l.file, l.args, {
-            cwd: repoDir,
-            encoding: "utf8",
-            shell: l.shell,
-            maxBuffer: 16 * 1024 * 1024,
-          });
-          return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
-        },
-        { allow: cfg?.security?.audit?.allow || [], level: cfg?.security?.audit?.level },
-      );
+      const a = auditOutcome(repoDir, o.audit || spawnAudit(repoDir), {
+        allow: cfg?.security?.audit?.allow || [],
+        level: cfg?.security?.audit?.level,
+      });
       // An advisory the repository allows, and an allowance whose date has run out, are said out
       // loud on a green step: a decision nobody is reminded of is a decision nobody revisits.
       if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
@@ -184,8 +187,16 @@ export function runGate(o) {
         log(`\n✗ ${s.label} failed. The gate stops here.`);
         return false;
       }
+      // No lockfile is no instrument: the same verdict as a linter that is not installed, and
+      // for the same reason. A step that cannot run is never a step that passed.
+      if (a.outcome === "errored") {
+        events.push({ label: s.label, outcome: "errored", ms: Date.now() - t0, detail: a.detail });
+        log(
+          `\n✗ ${s.label} could not run: ${a.detail}. The gate stops here, and this is the instrument, not the work.`,
+        );
+        return false;
+      }
       if (a.outcome === "deferred") log(`\n· DEFERRED to CI: ${s.label}\n  reason: ${a.detail}.`);
-      else if (a.outcome === "skipped") log(`· skipped ${s.label}: ${a.detail}`);
       events.push({
         label: s.label,
         outcome: a.outcome,

@@ -199,6 +199,7 @@ test("the gate's suites are path-aware and defer without Docker", () => {
       name: "g",
       scripts: { test: "true", "test:rls": "true", coverage: "true", build: "true", e2e: "true" },
     }),
+    "package-lock.json": "{}\n",
   });
   mkdirSync(join(dir, "src", "db"), { recursive: true });
   writeFileSync(join(dir, "src", "db", "schema.ts"), "export const t = 1;\n");
@@ -213,6 +214,7 @@ test("the gate's suites are path-aware and defer without Docker", () => {
       calls.push(s);
       return 0;
     },
+    audit: () => ({ status: 0, output: "" }),
     dockerUp: () => false,
     log: () => {},
   });
@@ -251,6 +253,7 @@ test("the gate holds the scrub for a repository that opted in, and skips it for 
       preset,
       fast: true,
       run: () => 0,
+      audit: () => ({ status: 0, output: "" }),
       log: (l) => lines.push(l),
     });
     return { r, out: lines.join("\n") };
@@ -259,6 +262,7 @@ test("the gate holds the scrub for a repository that opted in, and skips it for 
   // Opted out: the step is skipped and says why, whatever the files hold.
   const off = tempRepo("gate-scrub-off", {
     "package.json": JSON.stringify({ name: "g", scripts }),
+    "package-lock.json": "{}\n",
     "abatty.config.json": JSON.stringify({ scrub: { enabled: false } }),
     "docs/NOTE.md": `a line naming ${sampleTrailer()}\n`,
   });
@@ -272,6 +276,7 @@ test("the gate holds the scrub for a repository that opted in, and skips it for 
   // Opted in with a trace in a file: red, and the file and line are named.
   const on = tempRepo("gate-scrub-on", {
     "package.json": JSON.stringify({ name: "g", scripts }),
+    "package-lock.json": "{}\n",
     "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
     "docs/NOTE.md": `a line naming ${sampleTrailer()}\n`,
   });
@@ -283,12 +288,54 @@ test("the gate holds the scrub for a repository that opted in, and skips it for 
   // Opted in and clean: green, so the step is not merely always red.
   const clean = tempRepo("gate-scrub-clean", {
     "package.json": JSON.stringify({ name: "g", scripts }),
+    "package-lock.json": "{}\n",
     "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
     "docs/NOTE.md": "a line naming nothing at all\n",
   });
   const cleanRun = run(clean);
   assert.equal(cleanRun.r.ok, true, cleanRun.out);
   assert.ok(cleanRun.r.events.some((e) => /scrub/.test(e.label) && e.outcome === "ok"));
+});
+
+test("a repository with no lockfile has no audit: the step could not run, and the gate stops there", () => {
+  // The audit step answered "skipped" without a lockfile, and a skipped step is a passed step at
+  // the gate: a pnpm product with seventy advisories had a green gate for as long as it ran one.
+  // Both directions: the same fixture with a lockfile runs the audit and passes.
+  const scripts = { "format:check": "true", typecheck: "true", test: "true", standards: "true" };
+  const preset = presetById("node");
+  assert.ok(preset);
+  const run = (/** @type {string} */ dir) => {
+    /** @type {string[]} */
+    const lines = [];
+    const r = runGate({
+      repoDir: dir,
+      preset,
+      fast: true,
+      run: () => 0,
+      audit: () => ({ status: 0, output: "" }),
+      log: (l) => lines.push(l),
+    });
+    return { r, out: lines.join("\n") };
+  };
+  const bare = run(
+    tempRepo("gate-nolock", { "package.json": JSON.stringify({ name: "g", scripts }) }),
+  );
+  assert.equal(bare.r.ok, false, bare.out);
+  assert.equal(bare.r.errored, true, "the instrument, not the work");
+  assert.ok(
+    bare.r.events.some((e) => /audit/.test(e.label) && e.outcome === "errored"),
+    JSON.stringify(bare.r.events),
+  );
+  assert.match(bare.out, /audit \(SEC\.1\) could not run: no lockfile/);
+
+  const locked = run(
+    tempRepo("gate-lock", {
+      "package.json": JSON.stringify({ name: "g", scripts }),
+      "package-lock.json": "{}\n",
+    }),
+  );
+  assert.equal(locked.r.ok, true, locked.out);
+  assert.ok(locked.r.events.some((e) => /audit/.test(e.label) && e.outcome === "ok"));
 });
 
 test("end to end, through real npm: a tool that ran and failed exits 3, one that could not run exits 4", () => {

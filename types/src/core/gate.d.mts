@@ -3,7 +3,8 @@
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 /**
  * What the push contains. `@{u}..HEAD` while the upstream is still an ancestor of HEAD; after
@@ -53,6 +54,10 @@ export type GateEventW = {
     workspace?: string;
 };
 export type RunResult = import("./spawn.mjs").RunResult;
+export type AuditRunner = (cmd: string, args: string[]) => {
+    status: number | null;
+    output: string;
+};
 export type GateOptions = {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;
@@ -60,6 +65,7 @@ export type GateOptions = {
     range?: string;
     base?: string;
     run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
+    audit?: AuditRunner;
     dockerUp?: () => boolean;
     log?: (line: string) => void;
     workspaces?: {

@@ -398,11 +398,15 @@ is absent. The secret scan is built into the gate (no dependency: a private key 
 access key, a provider token, a payment key, a chat token, a signed web token, a long literal on
 a secret-like name; a false positive is marked on its line with `abatty:allow-secret` or by path
 in `secrets.allow`), and it is ONE implementation for the pre-commit hook (`abatty secrets
---staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit runs
-`npm audit --audit-level=high` where a lockfile exists and is deferred loudly when the registry
-is unreachable, never red and never silently green. A step whose script the
-repository does not have yet is reported as skipped, so a fresh repository can run the gate
-before everything exists; the gap analysis names what is missing.
+--staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit is the
+package manager's, read from the lockfile the repository committed: `npm audit`, `pnpm audit`
+or `bun audit`, at `--audit-level=high` over production dependencies, its JSON read so an
+allowance can name an advisory (yarn's is deferred loudly to CI until somebody has watched it).
+It is deferred loudly when the registry is unreachable, and a repository with no lockfile has no
+audit: the step could not run, and the gate stops on it as it stops on a linter that is not
+installed, never silently green. A step whose script the repository does not have yet is
+reported as skipped, so a fresh repository can run the gate before everything exists; the gap
+analysis names what is missing.
 
 **Every gate step proves it can go red.** The ratchet's probes carry their controls; the
 gate steps are scripts a repository owns, and one that never went red may be checking

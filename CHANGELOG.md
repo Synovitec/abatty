@@ -22,6 +22,22 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A repository with no lockfile has no audit, and the gate now says so instead of passing**
+  (the second defect of the trial: seventy advisories on a pnpm product, and a gate that said
+  nothing for as long as it ran one). The audit step answered "skipped" without a
+  `package-lock.json`, and a skipped step is a passed step at the gate; the rule the reviewer
+  wrote is the one this package already claims for itself, that a check which reports nothing is
+  indistinguishable from a check that is switched off. Now the audit is the package manager's,
+  read from what the repository committed (`src/core/package-manager.mjs`: the `packageManager`
+  field first, the lockfile otherwise): `npm audit`, `pnpm audit` or `bun audit`, each run
+  against a package with a known advisory before it was wired and its JSON shape read for the
+  allowances (three shapes; a banner before the JSON is skipped). yarn's is named for CI and
+  deferred out loud until somebody has watched it. No lockfile at all is `errored`, the outcome
+  a linter that is not installed gets, and the gate stops on it as the instrument. The audit
+  runner is injectable like the script runner, so the suite is hermetic where it used to reach
+  the registry, and the fixtures that were green only because the audit skipped now carry a
+  lockfile. Control cases in both directions at the audit and at the gate.
+
 - **The gate runs again on Windows: a tool launcher is a batch file, and a batch file needs
   cmd.exe** (the first of nine defects an outside trial on a pnpm + Windows product reported).
   The commit that took the shell off every spawn site named the launcher instead (`npm.cmd`),

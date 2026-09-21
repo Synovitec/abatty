@@ -24,6 +24,7 @@ function monorepo(name, rootExtra = {}) {
         scripts: { test: "node -e process.exit(0)" },
         ...rootExtra,
       }) + "\n",
+    "package-lock.json": "{}\n",
     "apps/web/package.json":
       JSON.stringify({
         name: "web",
@@ -99,9 +100,10 @@ test("the gate composes: the root's steps, then each workspace's preset in its o
     workspaces: detectWorkspaces(dir, null),
     fast: true,
     run: (cwd, script) => {
-      calls.push([cwd.slice(dir.length), script]);
+      calls.push([cwd.slice(dir.length).replace(/\\/g, "/"), script]);
       return 0;
     },
+    audit: () => ({ status: 0, output: "" }),
     dockerUp: () => false,
     log: () => {},
   });
@@ -133,7 +135,8 @@ test("the gate composes: the root's steps, then each workspace's preset in its o
     preset,
     workspaces: detectWorkspaces(dir, null),
     fast: true,
-    run: (cwd, script) => (cwd.endsWith("services/api") && script === "test" ? 1 : 0),
+    run: (cwd, script) => (/services[\\/]api$/.test(cwd) && script === "test" ? 1 : 0),
+    audit: () => ({ status: 0, output: "" }),
     log: () => {},
   });
   assert.equal(red.ok, false);
@@ -150,6 +153,7 @@ test("the gate composes: the root's steps, then each workspace's preset in its o
     preset,
     workspaces: detectWorkspaces(dir, null),
     run: () => 0,
+    audit: () => ({ status: 0, output: "" }),
     dockerUp: () => false,
     log: () => {},
   });
@@ -270,6 +274,7 @@ test("the gate runs the application's suites when only the package it imports ch
       workspaces: ["apps/*", "packages/*"],
       scripts: { test: "true" },
     }),
+    "package-lock.json": "{}\n",
     "apps/store/package.json": JSON.stringify({
       name: "@m/store",
       dependencies: { "@m/ui": "*", next: "15" },
@@ -291,6 +296,7 @@ test("the gate runs the application's suites when only the package it imports ch
     preset,
     workspaces: detectWorkspaces(dir, null),
     run: () => 0,
+    audit: () => ({ status: 0, output: "" }),
     dockerUp: () => false,
     log: (l) => lines.push(l),
   });

@@ -5,18 +5,19 @@
  * advisory nobody ships, at a severity nobody would act on, with no fix available, and it does it
  * on every push until somebody adds a flag that turns it off for good. So this one is scoped
  * three ways before it is allowed to refuse anything: production dependencies only, a severity
- * floor, and an allowance per advisory that carries a reason and a date.
+ * floor, and an allowance per advisory that carries a reason and a date. It runs the audit of
+ * the package manager the repository committed (src/core/package-manager.mjs), not npm's.
  *
  * The date is the point. An advisory with no fix available is a real decision somebody has to
  * take, and taking it forever is not a decision. An allowance whose date has passed stops
  * allowing, the advisory comes back, and the gate says which allowance ran out.
  */
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { localToday } from "./today.mjs";
+import { packageManager } from "./package-manager.mjs";
 
 /** @typedef {{ id: string, reason: string, until?: string }} Allowance */
-/** @typedef {{ outcome: "ok" | "failed" | "skipped" | "deferred", detail: string, allowed?: string[], expired?: string[] }} AuditOutcome */
+/** @typedef {{ outcome: "ok" | "failed" | "errored" | "deferred", detail: string, allowed?: string[], expired?: string[] }} AuditOutcome */
+/** @typedef {{ package: string, severity: string, ids: string[], title: string }} Advisory */
 
 /** Severity, weakest first: the floor is an index into this. */
 const SEVERITY = ["info", "low", "moderate", "high", "critical"];
@@ -39,37 +40,76 @@ export function splitAllowances(allow, today) {
 }
 
 /**
- * The advisories an `npm audit --json` report carries at or above the floor: one entry per
- * package, with every advisory id behind it, so an allowance may name either.
+ * The advisories an audit's JSON report carries at or above the floor: one entry per package,
+ * with every advisory id behind it, so an allowance may name either. Three shapes, each read
+ * from a real run: npm 7+ (`vulnerabilities` by package, the advisories under `via`), pnpm (the
+ * registry's own bulk response, `advisories` by id with `module_name`) and bun (packages as
+ * keys, an array of advisories each). A banner before the JSON (bun prints one) is skipped.
  * @param {string} json @param {string} floor
- * @returns {{ package: string, severity: string, ids: string[], title: string }[] | null}
+ * @returns {Advisory[] | null}
  */
 export function advisoriesOf(json, floor) {
   let report;
   try {
-    report = JSON.parse(json);
+    report = JSON.parse(String(json).slice(Math.max(0, String(json).indexOf("{"))));
   } catch {
     return null;
   }
-  const vulns = report?.vulnerabilities;
-  if (!vulns || typeof vulns !== "object") return null;
+  if (!report || typeof report !== "object") return null;
   const min = Math.max(0, SEVERITY.indexOf(floor));
-  const out = [];
-  for (const [name, v] of Object.entries(/** @type {Record<string, any>} */ (vulns))) {
-    if (SEVERITY.indexOf(String(v?.severity)) < min) continue;
-    // `via` mixes advisory objects with the names of the packages that pull them in; only the
-    // objects carry an id, and an allowance may name either that id or the package above.
-    const via = /** @type {any[]} */ (Array.isArray(v?.via) ? v.via : []).filter(
-      (x) => x && typeof x === "object",
-    );
-    out.push({
-      package: name,
-      severity: String(v?.severity),
-      ids: via.map((x) => String(x.source)),
-      title: String(via[0]?.title || ""),
-    });
+  const aboveFloor = (/** @type {Advisory} */ a) => SEVERITY.indexOf(a.severity) >= min;
+  const vulns = report.vulnerabilities;
+  if (vulns && typeof vulns === "object") {
+    const out = [];
+    for (const [name, v] of Object.entries(/** @type {Record<string, any>} */ (vulns))) {
+      // `via` mixes advisory objects with the names of the packages that pull them in; only the
+      // objects carry an id, and an allowance may name either that id or the package above.
+      const via = /** @type {any[]} */ (Array.isArray(v?.via) ? v.via : []).filter(
+        (x) => x && typeof x === "object",
+      );
+      out.push({
+        package: name,
+        severity: String(v?.severity),
+        ids: via.map((x) => String(x.source)),
+        title: String(via[0]?.title || ""),
+      });
+    }
+    return out.filter(aboveFloor);
   }
-  return out;
+  const advisories = report.advisories;
+  if (advisories && typeof advisories === "object") {
+    /** @type {Map<string, Advisory>} */
+    const byPackage = new Map();
+    for (const [id, a] of Object.entries(/** @type {Record<string, any>} */ (advisories))) {
+      const name = String(a?.module_name || "");
+      const entry = byPackage.get(name) || { package: name, severity: "info", ids: [], title: "" };
+      entry.ids.push(String(a?.id ?? id));
+      if (SEVERITY.indexOf(String(a?.severity)) > SEVERITY.indexOf(entry.severity)) {
+        entry.severity = String(a?.severity);
+        entry.title = String(a?.title || "");
+      }
+      byPackage.set(name, entry);
+    }
+    return [...byPackage.values()].filter(aboveFloor);
+  }
+  const entries = Object.entries(report);
+  if (entries.every(([, v]) => Array.isArray(v))) {
+    return entries
+      .map(([name, list]) => {
+        const worst = /** @type {any[]} */ (list).reduce(
+          (w, a) => (SEVERITY.indexOf(String(a?.severity)) > SEVERITY.indexOf(w.severity) ? a : w),
+          { severity: "info", title: "" },
+        );
+        return {
+          package: name,
+          severity: String(worst.severity),
+          ids: /** @type {any[]} */ (list).map((a) => String(a?.id)),
+          title: String(worst.title || ""),
+        };
+      })
+      .filter(aboveFloor);
+  }
+  return null;
 }
 
 /**
@@ -81,19 +121,31 @@ export function advisoriesOf(json, floor) {
  * @returns {AuditOutcome}
  */
 export function auditOutcome(repoDir, run, o = {}) {
-  if (
-    !existsSync(join(repoDir, "package-lock.json")) &&
-    !existsSync(join(repoDir, "npm-shrinkwrap.json"))
-  )
-    return { outcome: "skipped", detail: "no package-lock.json (an npm audit needs one)" };
+  // A repository that committed no lockfile has no install that was tested and nothing an audit
+  // can read: the instrument is missing, and a missing instrument is red, not a step skipped on a
+  // green run. This was "skipped" once, which is how a product with seventy advisories had a
+  // gate that said nothing about them.
+  const pm = packageManager(repoDir);
+  if (!pm)
+    return {
+      outcome: "errored",
+      detail:
+        "no lockfile (package-lock.json, pnpm-lock.yaml, yarn.lock or bun.lock): an audit reads one, and an install without one is not the install that was tested (SEC.1)",
+    };
+  if (!pm.audit)
+    return {
+      outcome: "deferred",
+      detail: `${pm.id}'s audit is not wired in this version of abatty; CI runs \`${pm.auditCommand}\``,
+    };
   const level = SEVERITY.includes(String(o.level)) ? String(o.level) : "high";
+  const cmd = pm.audit(level);
   const today = o.today || localToday();
   const { live, expired } = splitAllowances(o.allow || [], today);
   const expiredNote = expired.length
     ? `allowance(s) expired: ${expired.map((a) => `${a.id} on ${a.until}`).join(", ")}`
     : "";
 
-  const r = run("npm", ["audit", "--audit-level=" + level, "--omit=dev"]);
+  const r = run(String(cmd.check[0]), cmd.check.slice(1));
   if (r.status === 0)
     return {
       outcome: "ok",
@@ -106,12 +158,12 @@ export function auditOutcome(repoDir, run, o = {}) {
 
   // Something is above the floor and this repository allows some of it: read the report properly
   // rather than guessing from the text, and fail on whatever is left.
-  const json = run("npm", ["audit", "--json", "--omit=dev"]);
+  const json = run(String(cmd.json[0]), cmd.json.slice(1));
   const found = advisoriesOf(json.output, level);
   if (!found)
     return failure(
       r.output,
-      `${expiredNote ? expiredNote + "; " : ""}the allowances could not be applied: npm audit --json was not readable`,
+      `${expiredNote ? expiredNote + "; " : ""}the allowances could not be applied: ${cmd.json.join(" ")} was not readable`,
     );
   const names = new Set(live.map((a) => String(a.id)));
   const left = found.filter((f) => !names.has(f.package) && !f.ids.some((i) => names.has(i)));
