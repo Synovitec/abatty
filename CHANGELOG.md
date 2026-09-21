@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The changelog rule at commit time, and the package's gate on Windows in its own CI** (two
+  of the reviewer's asks, one file each). `abatty changelog --message <file>` is the commit-msg
+  hook's second command: the staged files are judged against the same pair the push is judged
+  by, so a source commit without its changelog line is refused before it exists rather than a
+  push later, which is the difference between a rule that shapes commits and one that punishes
+  pushes (the trial hit the push-time refusal four times in two days). A `no-changelog:
+  <reason>` line in the message is the escape a decision needs, and the bypass reading counts
+  it as reasoned. The hook `init` writes carries both commands; a repository that already has
+  the hook keeps it and adds the line by hand or with `init --force`. The first commit refused
+  was this one, on this repository, until the entry you are reading was staged with it. And a
+  `windows-latest` job now runs the whole gate in this package's pipeline, because for two days
+  the gate could not start on Windows and `main` went red three ways that no Linux run could
+  see: the false green one level up from the ones the gate refuses.
+
 - **A date derived from UTC is now refused by a machine, not by memory** (from the same review).
   The fix for the timezone bug left the rule held by whoever remembered `localToday()`, and this
   package's own argument is that a rule held by memory is a rule held by nobody. The standard

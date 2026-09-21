@@ -9,6 +9,7 @@ import {
   coupledFindings,
   normalisePairs,
   pathMatcher,
+  stagedVerdict,
 } from "../src/core/coupled.mjs";
 
 test("the mechanism: prefixes and globs match, pairs normalise, an offender is cured by a later commit touching the counterpart", () => {
@@ -155,4 +156,75 @@ test("the Stop hook refuses a night's stop while a coupled path changed without 
   git(dir, "commit", "-q", "-m", "feat: its migration");
   const allowed = stop();
   assert.equal(allowed.status, 0, allowed.stdout + allowed.stderr);
+});
+
+test("the rule at commit time: staged source without its changelog line is refused before the commit exists, or excused by a reason in the message", () => {
+  // The push-time refusal fired four times in two days on a trial repository, each time a commit
+  // too late: it punished pushes where the rule is about commits. Both directions here, and the
+  // one escape a decision needs.
+  const pairs = changelogPairs({
+    changelog: "CHANGELOG.md",
+    changelogRequiredFor: ["src/", "scripts/"],
+  });
+  const refused = stagedVerdict(["src/a.mjs", "src/b.mjs", "README.md"], pairs, "feat: a and b");
+  assert.equal(refused.ok, false);
+  assert.match(
+    refused.detail,
+    /2 staged file\(s\) under src\/, scripts\/ \(src\/a\.mjs, \+1\) and CHANGELOG\.md is not staged/,
+  );
+  assert.equal(
+    stagedVerdict(["src/a.mjs", "CHANGELOG.md"], pairs, "feat: a").ok,
+    true,
+    "the line is in the commit",
+  );
+  assert.equal(
+    stagedVerdict(["README.md", "docs/x.md"], pairs, "docs: x").ok,
+    true,
+    "nothing under a source path",
+  );
+  assert.equal(stagedVerdict([], pairs, "chore: nothing staged").ok, true);
+  const excused = stagedVerdict(
+    ["src/a.mjs"],
+    pairs,
+    "fix: a\n\nno-changelog: a revert of the line above, the entry already says it",
+  );
+  assert.equal(excused.ok, true);
+  assert.match(excused.detail, /the message says why/);
+  assert.equal(
+    stagedVerdict(["src/a.mjs"], pairs, "fix: a\n\nno-changelog:").ok,
+    false,
+    "a reason has to say something",
+  );
+  assert.equal(
+    stagedVerdict(["src/a.mjs"], pairs, "fix: a, see no-changelog: elsewhere").ok,
+    false,
+    "on its own line, as a trailer, not a word in a sentence",
+  );
+});
+
+test("the commit-msg hook: abatty changelog --message refuses the commit init's hook would, and the reasoned line is a decision the bypass reading counts", () => {
+  const dir = tempRepo("changelog-hook", {
+    "package.json": JSON.stringify({ name: "p", private: true, scripts: { test: "true" } }),
+    "abatty.config.json": JSON.stringify({
+      files: { changelog: "CHANGELOG.md" },
+      changelogRequiredFor: ["src/"],
+    }),
+    "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n",
+    "src/a.mjs": "export const a = 1;\n",
+  });
+  const msg = join(dir, ".git", "COMMIT_EDITMSG");
+  writeFileSync(join(dir, "src/a.mjs"), "export const a = 2;\n");
+  git(dir, "add", "src/a.mjs");
+  writeFileSync(msg, "feat: a is 2\n# a comment line git strips\n");
+  const refused = cli(["changelog", dir, "--message", msg], dir);
+  assert.equal(refused.code, 3, refused.out);
+  assert.match(refused.out, /src\/a\.mjs.*CHANGELOG\.md is not staged/);
+  assert.match(refused.out, /no-changelog: <reason>/);
+  writeFileSync(msg, "feat: a is 2\n\nno-changelog: the entry for a is already under Unreleased\n");
+  assert.equal(cli(["changelog", dir, "--message", msg], dir).code, 0, "excused");
+  writeFileSync(join(dir, "CHANGELOG.md"), "# Changelog\n\n## [Unreleased]\n\n- a is 2\n");
+  git(dir, "add", "CHANGELOG.md");
+  writeFileSync(msg, "feat: a is 2\n");
+  assert.equal(cli(["changelog", dir, "--message", msg], dir).code, 0, "the line is staged");
+  assert.equal(cli(["changelog", dir], dir).code, 2, "the hook's form is the only one");
 });

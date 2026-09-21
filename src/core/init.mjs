@@ -231,10 +231,12 @@ export function initRepo(o) {
     { merge: false, executable: true },
   );
   // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
-  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides.
+  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides. The
+  // changelog rule runs in the same hook: a source commit carries its line or says why, before
+  // the commit exists rather than a push later.
   put(
     ".githooks/commit-msg",
-    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on; a no-op otherwise.\nnpx abatty scrub --message "$1"\n',
+    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; `no-changelog: <reason>` in the message excuses it).\nnpx abatty scrub --message "$1" && npx abatty changelog --message "$1"\n',
     { merge: false, executable: true },
   );
   // A repository without a package (documents alone) gets a private one: `npm run gate` and

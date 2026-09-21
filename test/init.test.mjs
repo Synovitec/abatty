@@ -119,6 +119,11 @@ test("the git hooks init writes are executable, in the filesystem and in the ind
   const r = cli(["init", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
   git(dir, "add", "-A");
+  assert.match(
+    readFileSync(join(dir, ".githooks/commit-msg"), "utf8"),
+    /abatty scrub --message "\$1" && npx abatty changelog --message "\$1"/,
+    "the commit-msg hook holds the scrub and the changelog rule, one command each",
+  );
   for (const hook of ["pre-commit", "pre-push", "commit-msg"]) {
     const rel = `.githooks/${hook}`;
     assert.ok(existsSync(join(dir, rel)), `init writes ${rel}`);

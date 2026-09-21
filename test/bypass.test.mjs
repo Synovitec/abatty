@@ -39,6 +39,21 @@ test("a commit that got past the hook is counted; one that says why is not", () 
   assert.match(describeBypass(r)[0] || "", /aaaaaaa · feat: a thing · src\/a\.mjs changed/);
 });
 
+test("a no-changelog line is a decision on the record: the commit reads as reasoned, not as a hole", () => {
+  const r = bypassReading(
+    [
+      { sha: "aaaaaaa1", subject: "fix: x" },
+      { sha: "aaaaaaa2", subject: "fix: y\n\nno-changelog: the entry says it" },
+    ],
+    [
+      { sha: "aaaaaaa1", detail: "d" },
+      { sha: "aaaaaaa2", detail: "d" },
+    ],
+  );
+  assert.equal(r.bypassed.length, 1);
+  assert.equal(r.reasoned.length, 1);
+});
+
 test("a clean push reads zero, and an empty range invents nothing", () => {
   assert.deepEqual(bypassReading(commits, []), {
     commits: 4,
