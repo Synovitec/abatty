@@ -46,9 +46,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
-- **The package's own CI runs the gate on every Node it claims and on pnpm as well as npm on
-  Windows.** The Linux gate is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had
-  ever run), with the findings uploaded once per commit. The Windows job is a matrix over npm
+- **The package's own CI runs on every Node it claims and on pnpm as well as npm on Windows.**
+  The Linux job is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had ever run):
+  the whole gate on 22, the suite and the typecheck on 20, because the matrix's first run
+  showed the repository's graph tooling refuses Node 20 (`dependency-cruiser` runs on
+  `^22||^24||>=26`), which is that tool's floor and not the package's, whose claim rests on no
+  runtime dependency. The findings are uploaded once per commit. The Windows job is a matrix over npm
   and pnpm, the pnpm leg installing pnpm on the runner, and the launcher case in the suite now
   spawns every launcher it finds on PATH (npm always; pnpm, yarn and bun where installed, named
   in the output) rather than npm alone: the trial's repository is pnpm on Windows, and nothing

@@ -13,7 +13,10 @@ permissions:
   security-events: write
 jobs:
   # Every Node the package claims (`engines`), not only the newest: a launcher spawned the way
-  # only one version accepts is exactly what one runner cannot see.
+  # only one version accepts is exactly what one runner cannot see. The claim is the package's:
+  # no runtime dependency, so its own suite and typecheck are what Node 20 must pass. The whole
+  # gate runs on 22, because the repository's graph tooling (dependency-cruiser) refuses 20 and
+  # said so on this matrix's first run; that is the tooling's floor, not the package's.
   gate:
     runs-on: ubuntu-latest
     strategy:
@@ -29,7 +32,12 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      - run: npm run -s gate
+      - name: the whole gate, where the repository's tooling runs
+        if: matrix.node == '22'
+        run: npm run -s gate
+      - name: the package on the oldest Node it claims
+        if: matrix.node != '22'
+        run: npm run -s typecheck && npm test
       - name: the tarball a third party installs
         run: npm pack --dry-run
       # Emitted and uploaded even when a step above went red: a run that failed is exactly the run
