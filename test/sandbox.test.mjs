@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   detectDriver,
@@ -90,11 +90,13 @@ test("the drivers' argv: bubblewrap binds in order, the Seatbelt rules in order,
   assert.ok(!a.includes("--tmpfs"), "the temp folder is the host's");
 
   const profile = seatbeltProfile(plan);
+  // A Seatbelt string escapes its backslashes; a Windows temp folder has some.
+  const sb = (/** @type {string} */ p) => `(subpath "${p.replace(/["\\]/g, "\\$&")}")`;
   const order = [
     "(deny file-write*)",
-    `(subpath "${dir}")`,
-    `(subpath "${join(dir, ".claude")}")`,
-    `(subpath "${join(dir, ".claude", "night")}")`,
+    sb(dir),
+    sb(join(dir, ".claude")),
+    sb(join(dir, ".claude", "night")),
   ];
   let last = -1;
   for (const s of order) {
@@ -109,7 +111,11 @@ test("the drivers' argv: bubblewrap binds in order, the Seatbelt rules in order,
     ["ADOPTION_RUN"],
   );
   assert.equal(ct.cmd, "podman");
-  assert.ok(ct.args.includes(`${join(dir, ".claude")}:${join(dir, ".claude")}:ro`));
+  // The same path inside, except under the home, which is the container's: a temp folder that
+  // lives under the home (Windows) is remapped, one that does not (Linux) is mounted as is.
+  const inside = (/** @type {string} */ p) =>
+    p.startsWith(homedir()) ? "/root" + p.slice(homedir().length) : p;
+  assert.ok(ct.args.includes(`${join(dir, ".claude")}:${inside(join(dir, ".claude"))}:ro`));
   assert.ok(ct.args.includes("TOKEN") && ct.args.includes("ADOPTION_RUN"), "variables by name");
   assert.deepEqual(ct.args.slice(-3), ["img:1", "agent", "-p"]);
   assert.throws(() => buildSandbox("container", plan), /needs sandbox\.image/);

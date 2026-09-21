@@ -86,10 +86,17 @@ export function makeExecutable(target) {
   } catch {
     /* a filesystem without modes; the index below is what git reads */
   }
-  spawnSync("git", ["update-index", "--chmod=+x", "--", relative(dirname(target), target)], {
+  const rel = relative(dirname(target), target);
+  const r = spawnSync("git", ["update-index", "--chmod=+x", "--", rel], {
     cwd: dirname(target),
     stdio: "ignore",
   });
+  // Not tracked yet: there is no index entry to carry the bit. On a filesystem without modes
+  // (Windows, core.filemode false) `git add` will not read it from disk either, so the hook
+  // would be committed 644 and skipped on every other machine, which is a gate that never
+  // runs. The entry is staged with the bit here, because the index is the only record there is.
+  if (r.status !== 0)
+    spawnSync("git", ["add", "--chmod=+x", "--", rel], { cwd: dirname(target), stdio: "ignore" });
 }
 
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */

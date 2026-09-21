@@ -98,7 +98,7 @@ test("scanSecrets over the tree, the staged files and a range; the allow list by
   );
 });
 
-test("the gate: the secret scan is a built-in step that stops the gate on a finding; the audit is skipped without a lockfile", () => {
+test("the gate: the secret scan is a built-in step that stops the gate on a finding; the audit cannot run without a lockfile", () => {
   const dir = tempRepo("secrets-gate", {
     "package.json": JSON.stringify({
       name: "g",
@@ -120,8 +120,11 @@ test("the gate: the secret scan is a built-in step that stops the gate on a find
   writeFileSync(join(dir, "src/leak.ts"), "export const k = 1;\n");
   const green = runGate({ repoDir: dir, preset, fast: true, log: () => {}, run: () => 0 });
   assert.equal(green.events.find((e) => /secret scan/.test(e.label))?.outcome, "ok");
-  assert.equal(green.events.find((e) => /audit/.test(e.label))?.outcome, "skipped", "no lockfile");
-  assert.equal(auditOutcome(dir, () => ({ status: 1, output: "x" })).outcome, "skipped");
+  // No lockfile is no instrument: the audit step is errored and the gate stops on it, where it
+  // once read "skipped" and the gate passed.
+  assert.equal(green.events.find((e) => /audit/.test(e.label))?.outcome, "errored", "no lockfile");
+  assert.equal(green.ok, false);
+  assert.equal(auditOutcome(dir, () => ({ status: 1, output: "x" })).outcome, "errored");
   writeFileSync(join(dir, "package-lock.json"), "{}\n");
   assert.equal(
     auditOutcome(dir, () => ({

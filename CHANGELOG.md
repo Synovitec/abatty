@@ -35,6 +35,24 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The suite runs green on Windows, and two of its eight red cases were the code's fault**
+  (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were
+  committed without their executable bit on Windows, because the bit was set on an index entry
+  that did not exist yet and `git add` on a filesystem without modes reads none from disk; the
+  hook was then skipped on every other machine, which is a gate that never runs. The entry is
+  now staged with the bit when the file is not tracked, because the index is the only record
+  there is. The git shim looked for a file named `git`, which Windows cannot run, and spawned a
+  `.cmd` without the shell Node requires for one; it now looks for `git.exe` or `git.cmd` and
+  gives the latter cmd.exe with the arguments quoted. The other six were the tests' shape: a
+  path compared with the separator of the machine that wrote the test, a Seatbelt string with
+  its backslashes unescaped, a container mount asserted as if the temp folder were never under
+  the home, and two timezone cases that pin `TZ` for git, which git for Windows does not read
+  (proved by a commit under `TZ=Pacific/Kiritimati` recorded at `+0200`); on Windows those two
+  run in the machine's own zone, the one pair that exists there. Underneath them a harness bug:
+  deleting `TZ` does not put Node's clock back on Windows, so every later case ran in whatever
+  the previous one pinned; the system zone is now restored by name. One more fixture had pinned
+  the audit's old "skipped" and is corrected with the rest.
+
 - **A context file that is still the template is a description of one, and the catalog now
   says so** (the ninth defect of the trial: `AGENTS.md` shipped with `<project name>` and
   twelve other placeholders, and nobody noticed for two days because every section was there).
