@@ -106,7 +106,13 @@ test("the python preset: detected from the tree, init writes the private package
   );
   const preset = presetById("python");
   assert.ok(preset);
-  const controls = runStepControls({ repoDir: py, preset, run: () => 1 });
+  // The ratchet is real (it is this package), planted and clean; every other script answers red
+  // both times, which under the confirm-clean protocol proves nothing and says so.
+  const controls = runStepControls({
+    repoDir: py,
+    preset,
+    run: (_cwd, script) => (script === "standards" ? cli(["ratchet", py], py).code : 1),
+  });
   const by = Object.fromEntries(controls.steps.map((s) => [s.label.replace(/ \(.*/, ""), s]));
   // A tool that is installed goes red on its control; one that is not is skipped, said.
   assert.ok(["skipped", "red"].includes(by["format"]?.outcome || ""), JSON.stringify(by["format"]));

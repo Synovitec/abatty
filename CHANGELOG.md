@@ -67,6 +67,26 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The controls pass judges the suites too, and a step red without a plant proves nothing**
+  (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and
+  database steps, precisely the ones that vanished from the trial's empty-range run, were the
+  ones it could not see). Every suite step is now planted and judged under its suite's name, a
+  suite that needs Docker is skipped out loud when the daemon is down, and two plants are
+  declared for what a plant can prove: a browser test that throws where the Playwright config's
+  `testDir` says (or `e2e`), an integration test that throws where the script looks. What no
+  plant can prove is reported as `none` with the reason (a build is proven by its output, a
+  coverage floor by a drop no single file causes, the audit by the registry) rather than left
+  out. And a step that went red on its plant is run once more clean: red without the plant too
+  is the environment failing, not the guard holding, and reading it as proof was the trial's
+  first-day false red inside the mechanism that exists to catch false greens. That protocol
+  found two in this package's own suite at once: a fixture whose `package.json` was never
+  formatted had been "proving" the format step red on an unformatted file it did not need, and
+  `init` wrote a `docs/README.md` with no front matter, so every freshly initialised repository
+  was red on its first clean ratchet and its ratchet control was "proven" the same way. Both
+  fixed at the root. A tool that cannot be spawned reads as not installed on every platform
+  (127), where on Windows a missing `ruff` had read as a red control. The plants moved to
+  `src/core/step-plants.mjs`; the runner keeps `step-controls.mjs`.
+
 - **A step the preset requires cannot be skipped for want of a script, and a green with steps
   not run says how many** (the reviewer's second pass, the other half of the false green: a
   repository with a lockfile and no scripts read "gate green · 2 step(s)" with seven skipped and

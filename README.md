@@ -420,10 +420,14 @@ a gate that is green over two steps of nine is not a gate.
 gate steps are scripts a repository owns, and one that never went red may be checking
 nothing. `abatty doctor --controls` plants a violation per step (an unformatted file, a
 debugger statement, a type error, a test that throws, an unused export, a file over the cap,
-a cloud key), runs the step, removes the file whatever happened, and reports a step that
-stays green as **absent**; the outcome is written to `.abatty/controls.json` and the
-INST-CONTROLS rule reads it: partial until the controls ran, partial naming the absent step,
-present once every step went red.
+a cloud key, a browser or integration test that throws), runs the step, removes the file
+whatever happened, and reports a step that stays green as **absent**. The suites' steps are
+judged the same way, with a suite that needs Docker skipped out loud when the daemon is down,
+and a step that went red is run once more clean: red without a plant proves nothing, and is
+said so, because a suite that cannot start reads red on anything. What no planted file can
+prove (a build, a coverage floor, the audit) is reported as such rather than left out. The
+outcome is written to `.abatty/controls.json` and the INST-CONTROLS rule reads it: partial
+until the controls ran, partial naming the absent step, present once every step went red.
 
 ## The night
 
