@@ -141,9 +141,17 @@ function narrowFixture(name) {
         private: true,
         scripts: {
           typecheck: "node typecheck.mjs",
-          test: 'node --test "test/*.test.mjs"',
+          // A runner that expands the glob itself, as this package's own does: `node --test` with
+          // a glob needs Node 21, and with a folder fails on Windows, so neither form runs on every
+          // machine the suite does. The glob stays in the text because the plant reads it. Found
+          // by the Node 20 leg of the matrix, through the confirm-clean run of this control.
+          test: 'node run-tests.mjs "test/*.test.mjs"',
         },
       }) + "\n",
+    "run-tests.mjs":
+      'import { readdirSync } from "node:fs";\nimport { spawnSync } from "node:child_process";\n' +
+      'const files = readdirSync("test").filter((f) => f.endsWith(".test.mjs")).map((f) => "test/" + f);\n' +
+      'process.exit(spawnSync(process.execPath, ["--test", ...files], { stdio: "inherit" }).status ?? 1);\n',
     "tsconfig.json": JSON.stringify({ include: ["src/**/*.mjs"] }) + "\n",
     // Reads src/*.mjs alone, and refuses a JSDoc type that the value contradicts.
     "typecheck.mjs":
@@ -173,6 +181,12 @@ test("the plant follows the repository: the typecheck's own extension and the te
     "test/abatty-control.__.test.mjs",
   ]);
   // A tsconfig that covers TypeScript, and a runner with no glob of its own, keep the convention.
+  // A folder handed to the runner is a folder the plant goes in; a runner with no argument at
+  // all keeps the convention-based path its own default finds.
+  const folderCtx = { ...ctx, scripts: { test: "node --test ./tests/" } };
+  assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(folderCtx) || {}), [
+    "tests/abatty-control.__.test.mjs",
+  ]);
   const tsCtx = { ...ctx, dir: process.cwd() + "/no-such-dir", scripts: { test: "vitest run" } };
   assert.deepEqual(Object.keys(STEP_CONTROLS.typecheck?.files(tsCtx) || {}), [
     "src/abatty-control.__.ts",

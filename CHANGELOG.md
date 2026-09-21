@@ -84,7 +84,12 @@ under Unreleased in the same commit.
   glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
   never once run there). `scripts/test.mjs` expands the glob itself and hands `node --test` the
   files, node's flags first; the pattern stays in the script's text because the step controls
-  read it to learn where a planted test has to sit.
+  read it to learn where a planted test has to sit. The same leg then found the suite's own
+  fixture for the controls carrying the glob form, "proven" red on Node 20 for the wrong
+  reason until the confirm-clean run said so; it carries a runner of the same shape now, and
+  the plant path also reads a folder handed to a runner (`vitest run tests/`), which is a form
+  Windows' `node --test` does not take, so no single `node --test` argument runs on every
+  machine this suite does.
 
 - **The controls pass judges the suites too, and a step red without a plant proves nothing**
   (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and

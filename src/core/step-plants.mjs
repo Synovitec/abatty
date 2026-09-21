@@ -61,15 +61,22 @@ function checkedExt(dir) {
  * @param {string} script @param {string} fallbackExt
  */
 function testPlantPath(script, fallbackExt) {
-  const glob = String(script || "")
+  const tokens = String(script || "")
     .split(/\s+/)
-    .map((token) => token.replace(/^['"]|['"]$/g, ""))
-    .find((token) => token.includes("*") && /\.[cm]?[jt]sx?$/.test(token));
-  if (!glob) return `src/${MARK}.test${fallbackExt}`;
-  const parts = glob.split("/");
-  const name = String(parts.pop() || "").replace(/\*+/g, MARK);
-  const dir = parts.filter((part) => !part.includes("*")).join("/");
-  return dir ? `${dir}/${name}` : name;
+    .map((token) => token.replace(/^['"]|['"]$/g, ""));
+  const glob = tokens.find((token) => token.includes("*") && /\.[cm]?[jt]sx?$/.test(token));
+  if (glob) {
+    const parts = glob.split("/");
+    const name = String(parts.pop() || "").replace(/\*+/g, MARK);
+    const dir = parts.filter((part) => !part.includes("*")).join("/");
+    return dir ? `${dir}/${name}` : name;
+  }
+  // A folder handed to the runner (`node --test test/`, the form every Node accepts, where the
+  // glob form needs 21) is searched by the runner's own patterns, which a `.test` name meets.
+  const folder = tokens.find((token) => /^\.?\/?(tests?|__tests__|spec)\/?$/.test(token));
+  if (folder)
+    return `${folder.replace(/^\.?\//, "").replace(/\/$/, "")}/${MARK}.test${fallbackExt}`;
+  return `src/${MARK}.test${fallbackExt}`;
 }
 
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
