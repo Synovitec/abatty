@@ -5,6 +5,24 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The README is rewritten for somebody deciding whether to install this, and three claims in
+  it were false.** It said the registry package was not published and told the reader to install
+  from a git ref, which stopped being true the day 0.3.0 shipped; it listed `update`,
+  `night-report` and the dashboard under "what is not here yet" while documenting all three as
+  working further up the same page; and its preset table said the `node` preset was proven by
+  nobody, where `abatty presets` has named this repository and 2026-09-18 since the day it was.
+  A page that contradicts the tool it describes costs more than a page that says less.
+
+  615 lines to 272, and the cut is structural rather than cosmetic: what a reader needs to
+  decide, install and run is on the page, and the depth it used to restate now links to the
+  documents that own it. Every number in it was read from the tool rather than copied forward:
+  79 rules across 15 families, 47 of them held by a machine and 12 by nothing but prose, the
+  secret scan at 100 per cent both ways, eighty-four guard decisions, the preset table as
+  `abatty presets` prints it. The support line claims Linux and Windows and no longer macOS,
+  which nothing in CI covers. The honesty sections stay, because they are the argument.
+
 ## [0.3.1] - 2026-09-22
 
 ### Fixed
