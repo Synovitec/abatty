@@ -113,13 +113,16 @@ export async function doctorCommand(cx, preset) {
     );
   for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);
   // What the guard holds and what it cannot: a regex over the agent's shell is a guard on this
-  // machine's agent, not a policy on the branch. The forge holds the policy, or nobody does, and
-  // a reader who believes the hook is the policy is the reader this line is for.
+  // machine's agent, not a policy on the branch. It is a warning rather than a note because the
+  // regex was got past four ways in a single day (2026-09-22: a bundled flag, HEAD read as a
+  // branch name, a redirection token, a quoted target), and because this repository's own base
+  // branch was unprotected at the time, which is how one of those four was found. A reader who
+  // believes the hook is the policy is the reader this line is for.
   const adoption = readAdoption(dir);
   const base = adoption?.baseBranch || "main";
   if (adoption?.directPushToBase !== true)
     out(
-      `  ${t.glyph.skip} PR-only on ${base}: held by the guard for the agent's shell (git push, gh api) · on the forge by branch protection, which this machine cannot see: ${t.gray("abatty ci --ruleset prints the rules to import")}\n`,
+      `  ${t.glyph.warn} PR-only on ${base} is held here by a regex over one shell, which is defence in depth and not the control. Branch protection on the forge is the control, and this machine cannot see whether it is on: ${t.gray("abatty ci --ruleset prints the rules to import")}\n`,
     );
   if (r.config.files.length === 1 && r.config.files[0] === LEGACY_CONFIG)
     out(
