@@ -52,7 +52,15 @@ function deny(reason) {
 if (hasFlag(/\bgit push\b.*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+[\w/])/)) {
   deny("Force push is never allowed. Rebase onto the remote or make a new commit.");
 }
-if (hasFlag(/--no-verify\b|\bgit commit\b.*\s-n\b/)) {
+// The short form, read the way the shim beside this hook reads it. Two defects lived in the
+// span and in the flag. `.*` ran to the end of the line, so a `-n` belonging to a LATER command
+// was read as this commit's: `git commit -m x && sed -n 1p f` was refused, and so was any
+// sentence naming `git commit` with an unrelated `-n` behind it (this entry was written by a
+// command the guard refused for exactly that). The span now stops at a command separator, as
+// the push target's does. And `\s-n\b` could not see a cluster: `-n` bundled as `-nm` bypasses
+// the hook exactly as `-n` does, and the boundary after `n` never held, so the one spelling
+// somebody reaching for the bypass would type was the one spelling that got through.
+if (hasFlag(/--no-verify\b|\bgit commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b/)) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
 }
 // Provenance is the default: nothing here refuses a commit for naming the agent. A repository

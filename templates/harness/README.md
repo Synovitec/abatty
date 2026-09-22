@@ -7,7 +7,7 @@ audience: ["developer", "agent"]
 tags: ["agent-code", "templates", "hooks", "settings"]
 related: ["../../AUTONOMOUS_ADOPTION.md", "../../ADOPTION_PLAN.md"]
 scope: synovitec
-last_verified: "2026-09-21"
+last_verified: "2026-09-22"
 ---
 
 # the agent templates
@@ -89,8 +89,9 @@ refusing it; a baseline number, a threshold and `--max-warnings=0` are refused r
 every hook present and wired (including `protect.mjs` on `Edit|Write` and on
 `mcp__.*`), the Stop timeout long enough for a gate, `maxStopBlocks` under the agent's own cap
 of 8, the gate command resolving to a real npm script or file, `mcp.night.json` and
-`adoption.json` → `mcpServers` naming the same servers; seventy-one guard decisions in both modes
-(force push, `--no-verify`, push to `main` or to any branch but the adoption branch, with a
+`adoption.json` → `mcpServers` naming the same servers; seventy-six guard decisions in both modes
+(force push, `--no-verify` and its short form bundled into a cluster, a `-n` of a later command
+that is not this commit's, push to `main` or to any branch but the adoption branch, with a
 redirection behind it or through the forge's API, merging a pull request at night, leaving
 the branch, `reset --hard`, `npm install`, destructive SQL, deploy, every write shape to the
 harness and to a migration, and the ordinary commands that must stay allowed, restores from the

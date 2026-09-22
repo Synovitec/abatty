@@ -5,6 +5,34 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The guard read a `-n` of a later command as this commit's, and could not read the one
+  spelling a bypass would actually be typed in.** `\bgit commit\b.*\s-n\b` had a span and a
+  flag, and both were wrong. The span ran to the end of the line, so `git commit -m x && sed -n
+  1p f` was refused, and so was every sentence naming `git commit` with an unrelated `-n`
+  behind it: the changelog entry above this one was written by a command the guard denied for
+  exactly that, which is how this was found. It now stops at a command separator, as the push
+  target's span beside it already did. The flag is the more serious half: `\s-n\b` never
+  matched `-nm`, because the boundary after `n` cannot hold inside a cluster, so `git commit
+  -nm "x"` bypassed the hook and the guard said nothing. The shim on `PATH` has always read
+  clusters (`/^-[a-zA-Z]*n/`), so the two layers disagreed about the same flag, and the one
+  inside the agent's shell was the weaker. Five decisions added to the self-test, both
+  directions, and each half mutation-tested: restore the old span and the two "another command"
+  cases go red; restore the old flag and the cluster case goes red.
+
+- **A control fixture that would not go away failed a suite that had already passed.** The
+  release of 0.3.0 went red on `not ok 173`, with fifteen controls printed green above it and
+  `ENOTEMPTY: rmdir .git/info` below: a commit forks `gc --auto`, which outlives the command
+  that forked it and runs `update-server-info` into `.git/info/refs` while the teardown is
+  walking that very directory. The same tree had gone green five ways an hour earlier, which is
+  what a one-in-six race looks like. Two changes, because the cause and the consequence are
+  different bugs: the fixture sets `gc.auto 0`, so nothing is forked to race with, and the
+  teardown is `removeFixture`, which retries and then gives up quietly, because the probe has
+  already answered and a directory is not a verdict. Throwing from the `finally` also masked
+  whatever the block above was reporting. Control cases both ways, both mutation-tested: a
+  fixture that can go, goes; a removal that throws returns the answer anyway.
+
 ## [0.3.0] - 2026-09-22
 
 ### Added
