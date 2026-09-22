@@ -5,6 +5,19 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **Five standard documents re-read against the harness that moved on 2026-09-21.** The
+  guard's new readings (a push to the base behind a redirection, the forge's API as the same
+  door, a pull request merged at night) and the shim's Windows form were in the templates and
+  in their README, not in the standard that cites them: the hooks table, the enforcement map's
+  night steps and the standard's own invariant now say what the guard refuses, and two counts
+  that named a total of self-test checks (104, 124) name the decisions the README counts
+  instead. The dogfood page closes its pull-request-template claim, which `CLAUDE.md` §10 had
+  closed on 2026-09-19, and records what the first Windows and Node 20 runs found, including
+  that `docs.behindCode` turns red the day after a merge with nothing pushed, which is how this
+  entry came to be written.
+
 ### Added
 
 - **`abatty report` says which floors were raised, by whom, and that nobody has verified it.**

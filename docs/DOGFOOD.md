@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-19"
+last_verified: "2026-09-22"
 ---
 
 # Running abatty on abatty
@@ -98,8 +98,10 @@ commit, and this repository's own pipeline is hand-written and does not yet.
 - **`abatty doctor` cannot be green on a machine that is not set up for an unattended run.** It is
   the night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
   That is a design decision badly named, and the name has not been fixed.
-- **`abatty help` lists fewer commands than the README documents**, and the README has claimed
-  that `abatty ci --provider github` writes a pull-request template, which no code does.
+- **`abatty help` lists fewer commands than the README documents.** The README also claimed,
+  when this page was first written, that `abatty ci --provider github` writes a pull-request
+  template while no code did; `src/cli/ci.mjs` writes one since 2026-09-19, so that half is
+  closed and `CLAUDE.md` §10 says so.
 - **`abatty update` silently adds a `lint` script to `package.json`** on every run here, and it
   has to be reverted by hand each time. It is a real sharp edge and it is not fixed.
 - **Three of six presets are proven by nobody.** `node` is proven by this repository, `next` and
@@ -179,6 +181,26 @@ sometimes a test is not one.
 The same round found six agent-security rules citing `SEC.5`, which the published standard
 defines as outbound webhook signing. The standard gained `SEC.7` for what those rules are
 actually about.
+
+## What the first Windows and Node 20 runs found, 2026-09-21
+
+The package claims Node 20 and runs on Windows. Until an outside trial ran it on a Windows
+machine and its own pipeline gained a `windows-latest` job and a Node 20 leg, neither claim
+had been tested by anything.
+
+- **`npm test` had never once run on Node 20.** `node --test "test/*.test.mjs"` relies on
+  `--test` expanding the glob, which it does only from Node 21; on 20 the runner found no file
+  and passed. `scripts/test.mjs` expands the glob now, and `CLAUDE.md` §2 says so.
+- **Eight suite cases were red on Windows, and two of the eight were the code.** The hooks
+  `init` writes were committed without their executable bit, so on every other machine the hook
+  was skipped, which is a gate that never runs; and the git shim looked for a file named `git`,
+  which Windows cannot run. The other six were tests written for the machine that wrote them.
+- **`docs.behindCode` turns red the day after a merge, with no commit.** Its same-day guard
+  excludes a move dated today, so a document verified on Friday against code merged on Saturday
+  is green on Saturday's CI and red on Sunday's tree. `main` was red on this hard metric on
+  2026-09-22 with nothing pushed; the five documents were re-read and dated the same day. The
+  guard is honest about one thing (a doc and its code landing together) at the price of another
+  (a verdict that changes overnight), and that trade is recorded here rather than resolved.
 
 ## Two targets that were restated rather than met
 

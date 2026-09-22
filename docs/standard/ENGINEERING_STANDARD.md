@@ -17,7 +17,7 @@ related:
     "../README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-20"
+last_verified: "2026-09-22"
 source_truth:
   - "./research/*.md"
   - "./guides/*.md"
@@ -188,9 +188,10 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
 
 - **Enforcement is a hook, guidance is `CLAUDE.md`.** `.claude/settings.json` (committed,
   because it is the file whose hooks run in headless `-p` sessions) carries a `PreToolUse`
-  guard on `Bash|PowerShell` (denies push to the base branch when the repo is PR-only, force
-  push and `--no-verify` always; at night also any move off the work branch, history rewrite,
-  destructive SQL, deploy, publish, dependency change, a shell write to the harness), a
+  guard on `Bash|PowerShell` (denies a push to the base branch when the repo is PR-only, by
+  any door: behind a redirection or through the forge's API; force push and `--no-verify`
+  always; at night also any move off the work branch, the merge of a pull request, history
+  rewrite, destructive SQL, deploy, publish, dependency change, a shell write to the harness), a
   `PreToolUse` guard on `Edit|Write` (at night denies a write under `.claude/`, to an applied
   migration, to an env file, outside the tree), a `Stop` gate that refuses to end an
   unattended session while the gate is red, something was loosened against the base branch,
