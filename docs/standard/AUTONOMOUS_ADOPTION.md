@@ -392,7 +392,7 @@ Auto mode in a `-p` run never falls back to a prompt: repeated classifier blocks
 action unrun and the agent continues. The Stop hook is what turns "continued past a block" into a
 red gate rather than a silent gap.
 
-**Proven, and how.** The hooks are proven by `self-test.mjs` (ninety guard decisions in
+**Proven, and how.** The hooks are proven by `self-test.mjs` (ninety-six guard decisions in
 both modes, twenty-three file-guard decisions, twenty-four direction cases and the stop-gate's
 own, mutation-tested twelve ways; the count and the mutations are in the
 [templates README](../../templates/harness/README.md)). The runner loop is proven with [`templates/harness/testing/stub-agent.mjs`](../../templates/harness/testing/stub-agent.mjs)

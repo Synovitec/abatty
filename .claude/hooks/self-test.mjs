@@ -263,6 +263,16 @@ try {
   cases.push(["single quotes too", bash("git push origin 'main'"), {}, "deny"]);
   cases.push(["a quoted refspec to the base is still the base", bash(`git push origin "HEAD:main"`), {}, "deny"]);
   cases.push(["a quoted branch elsewhere is still elsewhere", bash(`git push -u origin "feat/x"`), {}, "none"]);
+  // The other half of the same word: a quote sits where the matchers anchor a short flag, so
+  // ` "-f"` carries no `\s-`. The last of these passes even without the fix, because the bypass
+  // alternative has no leading `\s`; it is pinned anyway, since it holds by luck and the luck
+  // would not survive somebody splitting that alternation.
+  cases.push(["a quoted force flag is still a force push", bash(`git push "--force" origin dev`), {}, "deny"]);
+  cases.push(["in single quotes too", bash("git push '-f' origin dev"), {}, "deny"]);
+  cases.push(["a quoted cluster is still one", bash(`git push "-fu" origin dev`), {}, "deny"]);
+  cases.push(["a quoted forced refspec is still forced", bash(`git push origin "+main"`), {}, "deny"]);
+  cases.push(["a quoted bypass cluster is still a bypass", bash(`git commit "-nm" "x"`), {}, "deny"]);
+  cases.push([`a quoted long bypass flag is still one`, bash(`git commit "${bypass}" -m "x"`), {}, "deny"]);
   // HEAD is not a branch name: git resolves it to the branch you are standing on, so on the base
   // branch it IS the base, and reading it as a literal let a push to main through. Judged from
   // two throwaway repositories, one standing on the base and one not, because where the guard
