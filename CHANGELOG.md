@@ -5,6 +5,34 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-22
+
+### Fixed
+
+- **`git push "--force" origin dev` was not a force push, and `git commit "-nm" x` was not a
+  bypass.** The quote sits exactly where every matcher anchors a short flag. `\s-[a-zA-Z]*f`
+  needs whitespace immediately before the dash, and ` "-f"` does not have it, so quoting the
+  flag walked past the two refusals that hold day and night. Five spellings, allowed by every
+  version through 0.3.2: `"--force"`, `'-f'`, `"-fu"`, `"-nm"`, and a quoted forced refspec
+  (`git push origin "+main"`), which nobody had thought to try until quoting became the thing
+  under test.
+
+  The comment above those matchers has always said that a quoted argument is a real bypass and
+  must not be stripped. It was right about the intent and wrong about the reach: `"--no-verify"`
+  was caught, but only because that one alternative carries no leading whitespace, which is luck
+  rather than design and would not survive somebody splitting the alternation. It is pinned by a
+  case of its own now, along with the five that were not.
+
+  0.3.2 gave the push target a shell's treatment and left the flags with a regex's; this is the
+  other half of the same word. Both the raw and the unquoted forms are tested rather than the
+  stripped one alone, so the change is provably additive: no command any earlier version refused
+  can become allowed by this one, which the earlier probe suites confirm. Six decisions added,
+  90 to 96, and the mutant that reads only the raw form turns five of them red.
+
+  Fifth family of this shape in a day, all of them the guard reading a shell command without
+  being a shell, and the fourth of the five surfaced by fixing the third. The tokenizer that
+  ends the series is still queued.
+
 ## [0.3.2] - 2026-09-22
 
 ### Fixed
