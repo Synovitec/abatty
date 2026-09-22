@@ -65,6 +65,22 @@ const decisionOf = (r) => {
   }
 };
 const bash = (command) => ({ tool_name: "Bash", tool_input: { command } });
+/**
+ * A throwaway repository standing on a named branch, for the cases whose answer depends on it.
+ * The commit is not decoration: `rev-parse --abbrev-ref HEAD` cannot name a branch that no
+ * commit has reached, so without it the guard reads an empty branch and every case passes for
+ * the wrong reason.
+ */
+function repoOnBranch(name, branch) {
+  const dir = join(tmp, name);
+  mkdirSync(dir, { recursive: true });
+  const git = (...args) => spawnSync("git", args, { cwd: dir, stdio: "ignore" });
+  git("init", "-q", "-b", branch);
+  git("config", "user.email", "selftest@example.com");
+  git("config", "user.name", "Self test");
+  git("commit", "-q", "--allow-empty", "--no-gpg-sign", "-m", "init");
+  return dir;
+}
 const edit = (file_path, tool_name = "Edit") => ({ tool_name, tool_input: { file_path } });
 const night = { ADOPTION_RUN: "1", ADOPTION_BRANCH: "adopt/standards-selftest", ADOPTION_PHASE: "0" };
 const oneLine = (s) => String(s).replace(/\s+/g, " ").slice(0, 120);
@@ -241,6 +257,15 @@ try {
   cases.push(["a push to the base branch is refused", bash("git push origin main"), {}, "deny"]);
   cases.push(["a push to the base by refspec is refused", bash("git push origin HEAD:main"), {}, "deny"]);
   cases.push(["deleting the base branch is refused", bash("git push origin :main"), {}, "deny"]);
+  // HEAD is not a branch name: git resolves it to the branch you are standing on, so on the base
+  // branch it IS the base, and reading it as a literal let a push to main through. Judged from
+  // two throwaway repositories, one standing on the base and one not, because where the guard
+  // runs is what decides the answer.
+  const onBase = repoOnBranch("on-base", "main");
+  const offBase = repoOnBranch("off-base", "feat/x");
+  cases.push(["pushing HEAD from the base branch is a push to the base", bash("git push origin HEAD"), {}, "deny", onBase]);
+  cases.push(["so is the alias @, with -u", bash("git push -u origin @"), {}, "deny", onBase]);
+  cases.push(["pushing HEAD from another branch is not", bash("git push origin HEAD"), {}, "none", offBase]);
   cases.push(["a branch whose name carries the base's is not the base", bash("git push -u origin fix/merge-to-main-1"), {}, "none"]);
   cases.push(["nor is one that starts with it", bash("git push -u origin main-nav-rework"), {}, "none"]);
   // A redirection is the shell's, not git's: it was read as the target, and the push went through.
@@ -287,8 +312,10 @@ try {
   cases.push(["provenance, night: a commit without the disclosure trailer is refused", bash('git commit -m "feat: x\n\nwhy"'), { ...night, ...provOn }, "deny"]);
   cases.push(["provenance, night: a commit with the disclosure trailer passes", bash('git commit -m "feat: x\n\nwhy\n\nAssisted-by: an unattended run"'), { ...night, ...provOn }, "none"]);
   cases.push(["provenance, day: a human commit without the trailer is the human's decision", bash('git commit -m "feat: x"'), provOn, "none"]);
-  for (const [name, event, env, expected] of cases) {
-    const r = hook("guard.mjs", event, env);
+  // A case may name the directory it is judged from: the branch the guard reads is the branch of
+  // the repository it runs in, and `HEAD` means a different thing on the base branch than off it.
+  for (const [name, event, env, expected, cwd] of cases) {
+    const r = hook("guard.mjs", event, env, cwd || process.cwd());
     const got = decisionOf(r);
     check(`guard · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code : ""}`);
   }

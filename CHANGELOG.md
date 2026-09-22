@@ -7,6 +7,21 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`git push origin HEAD` from the base branch was not a push to the base.** `HEAD`, and its
+  alias `@`, are not the name of a branch: git resolves them to the branch you are standing on,
+  so on `main` they are exactly the push the guard exists to refuse. `pushTarget()` compared
+  the literal token against the base name, matched nothing, and let it through. The refspec
+  form was never affected, because `HEAD:main` is read on its destination side and says `main`.
+
+  Found the way the others were not: by doing it. The agent closing the two flag holes above
+  pushed this repository's own `main` with `git push -u origin HEAD`, against `CLAUDE.md` §7,
+  and the guard said nothing though `abatty.config.json` sets `directPushToBase: false`. Three
+  spellings were open (`HEAD`, `-u HEAD`, `@`) and all three are refused now. A fixture on the
+  base branch and one off it decide the two answers, because where the guard runs is what
+  decides them; the fixtures carry a commit, since `rev-parse --abbrev-ref HEAD` cannot name a
+  branch no commit has reached and an empty branch would have passed every case for the wrong
+  reason. Mutation-tested: read `HEAD` as a literal again and both base-branch cases go red.
+
 - **`git push -fu origin dev` was not a force push to the guard.** The same cluster defect as
   the entry below, in the other flag that is refused everywhere: `\s-f\b` cannot match `-fu`,
   because the boundary after `f` does not hold inside a cluster, so the short spelling of a
