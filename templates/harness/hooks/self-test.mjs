@@ -89,7 +89,7 @@ process.stdout.write("\nHarness self-test\n\n");
 
 try {
   // ---- 1. files and wiring ------------------------------------------------------------------
-  for (const f of ["lib.mjs", "vocabulary.mjs", "guard.mjs", "protect.mjs", "stop-gate.mjs", "check-direction.mjs", "session-brief.mjs", "lint-on-edit.mjs"]) {
+  for (const f of ["lib.mjs", "shell.mjs", "vocabulary.mjs", "guard.mjs", "protect.mjs", "stop-gate.mjs", "check-direction.mjs", "session-brief.mjs", "lint-on-edit.mjs"]) {
     check(`hook present: ${f}`, existsSync(join(HOOKS, f)));
   }
   check(`skill present: ${SKILL}`, existsSync(SKILL));
@@ -299,6 +299,18 @@ try {
   cases.push(["reading the base's ref through the API is not a write", bash("gh api repos/o/r/git/refs/heads/main"), {}, "none"]);
   cases.push(["moving another ref through the API is not the base", bash("gh api -X PATCH repos/o/r/git/refs/heads/feat/x -f sha=abc123"), {}, "none"]);
   cases.push([`a heredoc that documents the bypass flag is a file being written`, bash(`cat > docs/RULES.md <<'EOF'\n${bypass} is not a workflow.\ngit push --force is never allowed.\nEOF`), {}, "none"]);
+  // A command is read as a command now, not as a line of text. A reader's arguments are the
+  // reader's: refusing an honest search teaches its user to route around the hook, which is the
+  // habit the hook exists to prevent.
+  cases.push(["a search whose pattern names a command is a search", bash(`rg "git push --force" docs/`), {}, "none"]);
+  cases.push(["reading the guard's own source is reading", bash(`grep -nE "git push|${bypass}" .claude/hooks/guard.mjs`), {}, "none"]);
+  cases.push(["saying the name of a thing is not doing it", bash(`echo "the bypass flag is ${bypass}"`), {}, "none"]);
+  // And the other direction, which is what makes the above safe to allow: a program the guard
+  // cannot resolve is read conservatively, token by token, so a substitution cannot hide the
+  // two words from each other.
+  cases.push(["a substitution in command position is still a force push", bash("$(echo git) push --force origin dev"), {}, "deny"]);
+  cases.push(["so is a variable holding the program", bash("$GIT push --force origin dev"), {}, "deny"]);
+  cases.push(["and a wrapper nobody put on a list", bash("timeout 5 git push --force origin dev"), {}, "deny"]);
   // Provenance is the default: with the scrub off (the template's default) a commit that carries
   // the agent's trailer passes. The vocabulary, under a config that opted in: a commit, a pull
   // request or an issue that names the tools is refused day and night; the samples are built at

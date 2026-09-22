@@ -5,6 +5,57 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-22
+
+### Changed
+
+- **The guard reads a command as a command.** Six families of hole came out of one component in
+  a single day, and every one of them was the same mistake: asking a regular expression what a
+  command does. A bundled flag (`-nm`, `-fu`), `HEAD` read as though it were a branch name, a
+  redirection token read as a refspec, a quoted branch, a quoted flag, and a substitution in
+  command position that split `git push` into two words nothing could match. Each fix closed one
+  spelling and changed nothing about the odds on the next, because the pattern was never what
+  was wrong.
+
+  `shellSegments` splits a command on the separators a shell would honour, tokenizes each
+  segment the way a shell consumes quotes, drops redirections, steps past leading `VAR=value`
+  assignments, and reports the program by its bare name, so `/usr/bin/git`, `git.exe` and
+  `\git` are all git. A rule can then ask what git was actually asked to do.
+
+  **The inversion is what makes it safe to ship.** A segment is read precisely only when its
+  program is recognised. `git` and `gh` are. So is a short list of readers that cannot reach a
+  program of their own, which is what lets an honest `rg "git push --force" docs/` through.
+  Everything else is opaque and keeps the old whole-line treatment. A list of WRAPPERS could
+  never be complete: `sh`, `bash`, `eval` and `xargs` are the ones anybody thinks of, and
+  `timeout`, `nice`, `stdbuf`, `sudo`, `doas`, `setsid`, `script -c` and `find -exec` are the
+  ones a list forgets. An opaque segment is also read token by token rather than as text, since
+  `$(echo git) push --force` carries no contiguous `git push` for any pattern to find. Precision
+  where the command parses, the blunt instrument where it does not, and never the other way
+  round.
+
+  **What this allows that 0.3.3 refused**, which is the point and not a side effect: a search
+  whose pattern names a command, a `grep` over the guard's own source, an `echo` that says the
+  name of a flag. A guard that refuses honest read-only work teaches its user to route around
+  it, and that is precisely the habit refusing the bypass exists to prevent. The argument came
+  from the reviewing session; it is right, and it is why this is worth a behaviour change rather
+  than a seventh patch.
+
+  **What it refuses that 0.3.3 allowed:** every substitution and variable spelling above, which
+  no published version has ever caught.
+
+  Proven three ways. Eleven unit tests over the tokenizer itself, covering the attack shapes the
+  reviewing session supplied: a program reached by path or extension, a separator inside single,
+  double and escaped quotes, an unterminated quote, a backslash continuation, an environment
+  prefix, eleven wrappers, and four substitution forms. A corpus of fifty spellings, contributed
+  by that session and by the six fixes, replayed from the base branch and again from a feature
+  branch where the branch-relative rows must flip to allowed. And 96 harness decisions to 102.
+  Mutation-tested in both directions: trust every segment as precise and three cases go red;
+  treat the readers as unknown and the three false positives come back.
+
+  Still open, and stated rather than hidden: the fallback has no counter on it. A fallback that
+  fires constantly would be the false-positive problem wearing a new hat, and there is no
+  measurement here that would say so.
+
 ## [0.3.3] - 2026-09-22
 
 ### Fixed
