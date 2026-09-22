@@ -220,6 +220,14 @@ try {
   const bypass = ["--no", "verify"].join("-");
   cases.push([`the bypass flag is refused`, bash(`git commit ${bypass} -m "x"`), {}, "deny"]);
   cases.push([`the bypass flag quoted is still argv and still refused`, bash(`git commit "${bypass}" -m "x"`), {}, "deny"]);
+  // The short form and its cluster: the spelling somebody reaching for the bypass types.
+  cases.push(["the short bypass flag is refused", bash(`git commit -n -m "x"`), {}, "deny"]);
+  cases.push(["the short bypass flag bundled into a cluster is refused", bash(`git commit -nm "x"`), {}, "deny"]);
+  cases.push(["a cluster without it is ordinary work", bash(`git commit -am "x"`), {}, "none"]);
+  // A `-n` of a LATER command is not this commit's: the span stops at the separator, or every
+  // sentence naming a commit with a flag behind it is a bypass.
+  cases.push(["a -n belonging to another command is not a bypass of this one", bash(`git commit -m "x" && sed -n 1p README.md`), {}, "none"]);
+  cases.push(["nor is one behind a pipe", bash(`git commit -m "x" | tee -n log`), {}, "none"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
   // The push target, not a word in the command: both directions, because a guard that refuses a
   // branch for carrying the base's name in it is a guard a team switches off.

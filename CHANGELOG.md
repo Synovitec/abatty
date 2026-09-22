@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The guard read a `-n` of a later command as this commit's, and could not read the one
+  spelling a bypass would actually be typed in.** `\bgit commit\b.*\s-n\b` had a span and a
+  flag, and both were wrong. The span ran to the end of the line, so `git commit -m x && sed -n
+  1p f` was refused, and so was every sentence naming `git commit` with an unrelated `-n`
+  behind it: the changelog entry above this one was written by a command the guard denied for
+  exactly that, which is how this was found. It now stops at a command separator, as the push
+  target's span beside it already did. The flag is the more serious half: `\s-n\b` never
+  matched `-nm`, because the boundary after `n` cannot hold inside a cluster, so `git commit
+  -nm "x"` bypassed the hook and the guard said nothing. The shim on `PATH` has always read
+  clusters (`/^-[a-zA-Z]*n/`), so the two layers disagreed about the same flag, and the one
+  inside the agent's shell was the weaker. Five decisions added to the self-test, both
+  directions, and each half mutation-tested: restore the old span and the two "another command"
+  cases go red; restore the old flag and the cluster case goes red.
+
 - **A control fixture that would not go away failed a suite that had already passed.** The
   release of 0.3.0 went red on `not ok 173`, with fifteen controls printed green above it and
   `ENOTEMPTY: rmdir .git/info` below: a commit forks `gc --auto`, which outlives the command
