@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-22
+
 ### Fixed
 
 - **`git push origin "main"` was not a push to the base branch.** Quotes belong to the shell:
