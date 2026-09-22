@@ -111,7 +111,13 @@ function pushTarget() {
   }
   if (args.length < 2) return branch;
   const spec = args[args.length - 1];
-  return (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
+  const dest = (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
+  // `HEAD` and its alias `@` are not the name of a branch: git resolves them to the branch you
+  // are standing on, so ON the base branch `git push origin HEAD` IS a push to the base. Read
+  // as a literal it matched no branch name and the push went through - this hook's own
+  // repository, 2026-09-22, by the agent that had just finished closing the two flag holes.
+  // `HEAD:main` is unaffected: the destination side is read before this, and it says main.
+  return dest === "HEAD" || dest === "@" ? branch : dest;
 }
 const target = hasFlag(/\bgit push\b/) ? pushTarget() : null;
 // A push is not the only write to a branch: the forge's API moves a ref or merges into it
