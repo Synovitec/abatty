@@ -257,6 +257,12 @@ try {
   cases.push(["a push to the base branch is refused", bash("git push origin main"), {}, "deny"]);
   cases.push(["a push to the base by refspec is refused", bash("git push origin HEAD:main"), {}, "deny"]);
   cases.push(["deleting the base branch is refused", bash("git push origin :main"), {}, "deny"]);
+  // Quotes are the shell's: git never sees them, so a target compared with them still attached
+  // matches no branch. Quoting a branch name is ordinary typing, not a trick.
+  cases.push(["a quoted base branch is still the base", bash(`git push origin "main"`), {}, "deny"]);
+  cases.push(["single quotes too", bash("git push origin 'main'"), {}, "deny"]);
+  cases.push(["a quoted refspec to the base is still the base", bash(`git push origin "HEAD:main"`), {}, "deny"]);
+  cases.push(["a quoted branch elsewhere is still elsewhere", bash(`git push -u origin "feat/x"`), {}, "none"]);
   // HEAD is not a branch name: git resolves it to the branch you are standing on, so on the base
   // branch it IS the base, and reading it as a literal let a push to main through. Judged from
   // two throwaway repositories, one standing on the base and one not, because where the guard

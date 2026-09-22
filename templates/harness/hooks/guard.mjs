@@ -100,6 +100,15 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
 // to the current branch's upstream, which is the current branch. A redirection is not an
 // argument: `git push origin main 2>&1` targets main, and reading `2>&1` as the target was the
 // hole that let a push to main through (an outside trial found it in a day).
+/**
+ * Quotes belong to the shell, not to git: by the time git is handed `"main"` the shell has
+ * taken them off, so a target compared with them still attached matches no branch name at all.
+ * `git push origin "main"` was allowed by every version up to 0.3.1 for exactly that reason,
+ * and quoting a branch name is not a trick somebody has to know, it is ordinary typing. A
+ * trailing quote left by a wrapper (`sh -c "git push origin main"`) goes the same way.
+ * @param {string} w
+ */
+const unquote = (w) => w.replace(/^['"]+/, "").replace(/['"]+$/, "");
 function pushTarget() {
   const m = argv.match(/\bgit push\b([^;&|]*)/);
   if (!m) return null;
@@ -107,7 +116,8 @@ function pushTarget() {
   const args = [];
   for (const w of words) {
     if (/^\d*>{1,2}|^<|^&>/.test(w)) break; // `>`, `>>`, `2>`, `2>&1`, `&>`, `<`: the shell's, not git's
-    if (!w.startsWith("-")) args.push(w);
+    const bare = unquote(w);
+    if (bare && !bare.startsWith("-")) args.push(bare);
   }
   if (args.length < 2) return branch;
   const spec = args[args.length - 1];

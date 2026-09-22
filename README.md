@@ -107,7 +107,7 @@ Every probe ships control cases in both directions: a case it must report, and a
 runs them on every push, so a probe without a failing control case cannot be added.
 
 The same principle covers the gate steps, where the check is `doctor --controls`, and the agent
-harness, where a self-test drives eighty-four guard decisions in both modes and is itself verified
+harness, where a self-test drives eighty-eight guard decisions in both modes and is itself verified
 by mutation.
 
 ## Commands

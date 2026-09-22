@@ -5,6 +5,21 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`git push origin "main"` was not a push to the base branch.** Quotes belong to the shell:
+  git is handed `main`, never `"main"`, so a target compared with them still attached matched
+  no branch name and the push went through. Every version up to and including 0.3.1 allowed it,
+  in single quotes and double, for the plain target and for a refspec (`"HEAD:main"`), and
+  through any wrapper that leaves a quote on the last token (`sh -c "git push origin main"`).
+
+  This is the fourth of the family and the one that needs no knowledge at all. The other three
+  asked somebody to bundle a flag or to know that `HEAD` is not a branch name; this one is
+  ordinary typing. It was found while testing whether a proposed narrowing of the flag matchers
+  would open holes, which is the second time this week that probing one question answered a
+  different and worse one. Four decisions added, both directions, mutation-tested: leave the
+  quotes on and the three base-branch cases go red while the branch-elsewhere case stays green.
+
 ### Changed
 
 - **The README is rewritten for somebody deciding whether to install this, and three claims in
