@@ -49,7 +49,12 @@ function deny(reason) {
 }
 
 // ---- always denied ----------------------------------------------------------------------
-if (hasFlag(/\bgit push\b.*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+[\w/])/)) {
+// The same span and the same cluster as the bypass below, for the same reasons: `git push -fu
+// origin dev` is a force push, and `\s-f\b` could not see it because the boundary after `f`
+// does not hold inside a cluster. `git clean` and `rm -r` in this file already read clusters;
+// the two flags that are refused everywhere, day and night, were the two that did not. Found
+// against a repository running 0.2.0, by replaying the spellings rather than reading the regex.
+if (hasFlag(/\bgit push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+[\w/])/)) {
   deny("Force push is never allowed. Rebase onto the remote or make a new commit.");
 }
 // The short form, read the way the shim beside this hook reads it. Two defects lived in the

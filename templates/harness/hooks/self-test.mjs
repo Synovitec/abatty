@@ -229,6 +229,13 @@ try {
   cases.push(["a -n belonging to another command is not a bypass of this one", bash(`git commit -m "x" && sed -n 1p README.md`), {}, "none"]);
   cases.push(["nor is one behind a pipe", bash(`git commit -m "x" | tee -n log`), {}, "none"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
+  // The short form and its cluster, the same defect the bypass check carried: `-fu` is a force
+  // push and the boundary after `f` never held inside a cluster.
+  cases.push(["the short force flag is refused", bash("git push -f origin dev"), {}, "deny"]);
+  cases.push(["the short force flag bundled into a cluster is refused", bash("git push -fu origin dev"), {}, "deny"]);
+  cases.push(["and in the other order", bash("git push -uf origin dev"), {}, "deny"]);
+  cases.push(["a cluster without it is ordinary work", bash("git push -uq origin dev"), {}, "none"]);
+  cases.push(["an -f of another command is not this push's", bash("git push origin dev && grep -f patterns.txt src"), {}, "none"]);
   // The push target, not a word in the command: both directions, because a guard that refuses a
   // branch for carrying the base's name in it is a guard a team switches off.
   cases.push(["a push to the base branch is refused", bash("git push origin main"), {}, "deny"]);

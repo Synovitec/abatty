@@ -7,6 +7,23 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`git push -fu origin dev` was not a force push to the guard.** The same cluster defect as
+  the entry below, in the other flag that is refused everywhere: `\s-f\b` cannot match `-fu`,
+  because the boundary after `f` does not hold inside a cluster, so the short spelling of a
+  force push passed the guard in silence. `git clean` and `rm -r` in the same file have always
+  read clusters (`-[a-zA-Z]*f`), so the two flags denied unconditionally, day and night, were
+  the two that could not read one. The span is scoped to the command as well, so an `-f` of a
+  later command (`git push origin dev && grep -f patterns src`) is no longer this push's.
+
+  Found by another session replaying the spellings against a repository running 0.2.0 rather
+  than by reading the regex, which is the only way this class shows itself: every one of these
+  holes reads as a passing guard, and the self-test agreed with the code because both had been
+  written from the same wrong idea of what the flag looked like. Five decisions added, both
+  directions, mutation-tested: restore the old matcher and the two cluster cases go red while
+  the later-command case goes red the other way. **Both cluster holes are open in the published
+  0.3.0**, which carries the bypass one too; a 0.3.1 is what closes them for an installed
+  repository.
+
 - **The guard read a `-n` of a later command as this commit's, and could not read the one
   spelling a bypass would actually be typed in.** `\bgit commit\b.*\s-n\b` had a span and a
   flag, and both were wrong. The span ran to the end of the line, so `git commit -m x && sed -n
