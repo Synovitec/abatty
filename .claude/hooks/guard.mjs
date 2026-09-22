@@ -13,6 +13,7 @@
 
 import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
+import { shellSegments } from "./shell.mjs";
 
 // Fail closed: a crashed PreToolUse hook does not block, so at night an internal error denies.
 process.on("uncaughtException", (err) => {
@@ -41,17 +42,37 @@ const argv = raw
   .replace(/<<-?\s*(['"]?)([A-Za-z_]\w*)\1[\s\S]*?\n[ \t]*\2\b/g, " ")
   .replace(/\s+/g, " ")
   .trim();
-// The comment above says a quoted argument is still a real bypass, and it was right about the
-// intent and wrong about the reach. Every matcher below anchors a short flag on the whitespace
-// in front of it (`\s-f`), and a quote sits exactly there: ` "-f"` has no `\s-`, so `git push
-// "--force" origin dev` and `git commit "-nm" x` were allowed by every version through 0.3.2.
-// `--no-verify` in quotes survived only because its alternative carries no leading `\s`, which
-// is luck rather than design and would not survive somebody splitting that alternation.
-// 0.3.2 gave the push TARGET a shell's treatment and left the flags with a regex's; this is the
-// other half of the same word. Both forms are tested rather than the stripped one alone, so the
-// check is provably additive: nothing an earlier version refused can become allowed here.
-const unquoted = argv.replace(/['"]/g, "");
-const hasFlag = (re) => re.test(argv) || re.test(unquoted);
+// Five families of hole came from matching a regex against a whole line: a bundled flag, HEAD
+// read as a branch name, a redirection token read as a refspec, a quoted branch, a quoted flag.
+// Each fix closed one spelling and changed nothing about the odds on the next, because the
+// mistake was never the pattern. It was asking a pattern what a command does.
+//
+// The segments carry what each program was actually asked to do. A segment whose program is
+// recognised is read precisely; one that is not is `opaque` and keeps the whole-line treatment.
+// That inversion is what makes this safe to ship: a list of WRAPPERS can never be complete
+// (sh, bash, eval, xargs are the obvious ones; timeout, nice, stdbuf, sudo, setsid, script and
+// find -exec are the ones a list forgets), so the list is of readers that cannot reach a
+// program at all, and everything else is conservative by default.
+//
+// `hasFlag` therefore answers over the opaque segments alone. A flag inside a search pattern is
+// no longer this command's, which is what stops the guard refusing honest read-only work and
+// teaching its user to route around the thing it exists for. Both the raw and the unquoted form
+// are tested, since a quote sits exactly where these patterns anchor a short flag.
+const segments = shellSegments(argv);
+const opaqueText = segments.filter((s) => s.opaque).map((s) => s.raw).join(" ; ");
+const hasFlag = (re) => re.test(opaqueText) || re.test(opaqueText.replace(/['"]/g, ""));
+/** The argument lists of one program, from the segments that were understood. */
+const invocations = (name) => segments.filter((s) => !s.opaque && s.program === name).map((s) => s.args);
+// An opaque segment has no trustworthy program, so every token in it is treated as though it
+// might be git's. `$(echo git) push --force origin dev` carries no contiguous `git push` for a
+// pattern to find, which is why every version through 0.3.3 allowed it: the substitution broke
+// the two words apart. Reading the tokens asks the only question that survives that.
+const maybeGit = segments.filter((s) => s.opaque).map((s) => s.tokens);
+/** A short flag as git reads it: `-fu` carries `-f`, and a long flag is its own token. */
+const carries = (args, short, ...longs) =>
+  args.some((a) => (/^-[a-zA-Z]+$/.test(a) ? a.slice(1).includes(short) : longs.includes(a)));
+/** The git subcommand, past git's own global options. */
+const sub = (args) => args.find((a) => !a.startsWith("-") && !/^[A-Za-z_]\w*=/.test(a)) || "";
 function deny(reason) {
   if (NIGHT) appendLog("guard-denials", { tool: event.tool_name, command: cmd.slice(0, 300), reason });
   decide("deny", reason);
@@ -59,12 +80,14 @@ function deny(reason) {
 }
 
 // ---- always denied ----------------------------------------------------------------------
-// The same span and the same cluster as the bypass below, for the same reasons: `git push -fu
-// origin dev` is a force push, and `\s-f\b` could not see it because the boundary after `f`
-// does not hold inside a cluster. `git clean` and `rm -r` in this file already read clusters;
-// the two flags that are refused everywhere, day and night, were the two that did not. Found
-// against a repository running 0.2.0, by replaying the spellings rather than reading the regex.
-if (hasFlag(/\bgit push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+[\w/])/)) {
+// A force push, in every spelling git accepts: the long flags, the short one alone or bundled
+// into a cluster, and a refspec forced with a leading `+`.
+const forces = (a) =>
+  carries(a, "f", "--force", "--force-with-lease") || a.some((x) => /^\+[\w/]/.test(x) && !x.startsWith("-"));
+const forcePush =
+  invocations("git").some((a) => sub(a) === "push" && forces(a)) ||
+  maybeGit.some((t) => t.includes("push") && forces(t));
+if (forcePush || hasFlag(/\bgit push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+[\w/])/)) {
   deny("Force push is never allowed. Rebase onto the remote or make a new commit.");
 }
 // The short form, read the way the shim beside this hook reads it. Two defects lived in the
@@ -75,7 +98,11 @@ if (hasFlag(/\bgit push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*
 // the push target's does. And `\s-n\b` could not see a cluster: `-n` bundled as `-nm` bypasses
 // the hook exactly as `-n` does, and the boundary after `n` never held, so the one spelling
 // somebody reaching for the bypass would type was the one spelling that got through.
-if (hasFlag(/--no-verify\b|\bgit commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b/)) {
+const bypasses = (a) => a.includes("--no-verify") || (a.includes("commit") && carries(a, "n"));
+const bypass =
+  invocations("git").some((a) => a.includes("--no-verify") || (sub(a) === "commit" && carries(a, "n"))) ||
+  maybeGit.some(bypasses);
+if (bypass || hasFlag(/--no-verify\b|\bgit commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b/)) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
 }
 // Provenance is the default: nothing here refuses a commit for naming the agent. A repository
@@ -119,18 +146,11 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
  * @param {string} w
  */
 const unquote = (w) => w.replace(/^['"]+/, "").replace(/['"]+$/, "");
-function pushTarget() {
-  const m = argv.match(/\bgit push\b([^;&|]*)/);
-  if (!m) return null;
-  const words = m[1].trim().split(/\s+/).filter(Boolean);
-  const args = [];
-  for (const w of words) {
-    if (/^\d*>{1,2}|^<|^&>/.test(w)) break; // `>`, `>>`, `2>`, `2>&1`, `&>`, `<`: the shell's, not git's
-    const bare = unquote(w);
-    if (bare && !bare.startsWith("-")) args.push(bare);
-  }
-  if (args.length < 2) return branch;
-  const spec = args[args.length - 1];
+/** The branch a push writes to, from an argument list a shell has already been read off. */
+function destinationOf(args) {
+  const positional = args.filter((a) => !a.startsWith("-"));
+  if (positional.length < 3) return branch; // `git`, `push`, and nothing said: the upstream
+  const spec = positional[positional.length - 1];
   const dest = (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
   // `HEAD` and its alias `@` are not the name of a branch: git resolves them to the branch you
   // are standing on, so ON the base branch `git push origin HEAD` IS a push to the base. Read
@@ -139,15 +159,44 @@ function pushTarget() {
   // `HEAD:main` is unaffected: the destination side is read before this, and it says main.
   return dest === "HEAD" || dest === "@" ? branch : dest;
 }
-const target = hasFlag(/\bgit push\b/) ? pushTarget() : null;
+/** The old whole-line reading, kept for the segments a shell could not be read off. */
+function opaqueTarget() {
+  const m = opaqueText.match(/\bgit push\b([^;&|]*)/);
+  if (!m) return null;
+  const args = [];
+  for (const w of m[1].trim().split(/\s+/).filter(Boolean)) {
+    if (/^\d*>{1,2}|^<|^&>/.test(w)) break;
+    const bare = unquote(w);
+    if (bare && !bare.startsWith("-")) args.push(bare);
+  }
+  return args.length < 2 ? branch : destinationOf(["push", ...args]);
+}
+// Every destination this command writes to: one per understood `git push`, plus the conservative
+// reading of anything that was not understood. A command can carry several.
+const targets = [
+  ...invocations("git").filter((a) => sub(a) === "push").map(destinationOf),
+  // An opaque segment that mentions `push` is read from that word on, so a substitution in
+  // command position cannot hide the destination either.
+  ...maybeGit.filter((t) => t.includes("push")).map((t) => destinationOf(t.slice(t.indexOf("push")))),
+  hasFlag(/\bgit push\b/) ? opaqueTarget() : null,
+].filter(Boolean);
 // A push is not the only write to a branch: the forge's API moves a ref or merges into it
 // without git. `gh api` with a write method (or a body flag, which implies POST) to the base's
 // ref or to the merges endpoint is the same act by another door. `gh pr merge` is the pull
 // request landing, which is what PR-only means, and stays a human's call by day.
-const apiWrite = /\bgh api\b/.test(argv) && /\s(-X|--method)\s+(PATCH|POST|PUT|DELETE)\b|\s(-f|-F|--field|--raw-field|--input)\b/i.test(argv);
+const WRITE_METHOD = /^(PATCH|POST|PUT|DELETE)$/i;
+const BODY_FLAG = /^(-f|-F|--field|--raw-field|--input)$/;
+const apiRefWritePrecise = invocations("gh").some((a) => {
+  if (a[0] !== "api") return false;
+  const method = a.findIndex((x) => x === "-X" || x === "--method");
+  const writes = (method >= 0 && WRITE_METHOD.test(a[method + 1] || "")) || a.some((x) => BODY_FLAG.test(x));
+  const path = a.find((x) => x.includes("/") && !x.startsWith("-")) || "";
+  return writes && new RegExp(`/(git/refs/heads/(${base}|master)\\b|merges\\b)`).test(path);
+});
+const apiWrite = /\bgh api\b/.test(opaqueText) && /\s(-X|--method)\s+(PATCH|POST|PUT|DELETE)\b|\s(-f|-F|--field|--raw-field|--input)\b/i.test(opaqueText);
 const B = "\\b"; // a word boundary as a string: in a template literal the same two characters are a backspace
-const apiRefWrite = apiWrite && new RegExp(B + "gh api" + B + "[^;&|]*/(git/refs/heads/(" + base + "|master)" + B + "|merges" + B + ")").test(argv);
-const pushesBase = target === base || target === "master" || apiRefWrite;
+const apiRefWrite = apiRefWritePrecise || (apiWrite && new RegExp(B + "gh api" + B + "[^;&|]*/(git/refs/heads/(" + base + "|master)" + B + "|merges" + B + ")").test(opaqueText));
+const pushesBase = targets.some((t) => t === base || t === "master") || apiRefWrite;
 if (pushesBase && (NIGHT || config.directPushToBase !== true)) {
   deny(
     NIGHT
