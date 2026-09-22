@@ -89,7 +89,7 @@ refusing it; a baseline number, a threshold and `--max-warnings=0` are refused r
 every hook present and wired (including `protect.mjs` on `Edit|Write` and on
 `mcp__.*`), the Stop timeout long enough for a gate, `maxStopBlocks` under the agent's own cap
 of 8, the gate command resolving to a real npm script or file, `mcp.night.json` and
-`adoption.json` → `mcpServers` naming the same servers; eighty-four guard decisions in both modes
+`adoption.json` → `mcpServers` naming the same servers; ninety guard decisions in both modes
 (force push, `--no-verify` and its short form bundled into a cluster, a `-n` of a later command
 that is not this commit's, push to `main` or to any branch but the adoption branch, with a
 redirection behind it or through the forge's API, merging a pull request at night, leaving

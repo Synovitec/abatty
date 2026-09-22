@@ -5,7 +5,39 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-22
+
+### Fixed
+
+- **`git push origin "main"` was not a push to the base branch.** Quotes belong to the shell:
+  git is handed `main`, never `"main"`, so a target compared with them still attached matched
+  no branch name and the push went through. Every version up to and including 0.3.1 allowed it,
+  in single quotes and double, for the plain target and for a refspec (`"HEAD:main"`), and
+  through any wrapper that leaves a quote on the last token (`sh -c "git push origin main"`).
+  It also defeated the `HEAD` resolution added in 0.3.1, since `"HEAD"` with the quotes attached
+  is neither `HEAD` nor `@`: one character undid that fix, and the reviewing session found that
+  fifth spelling after the first four were reported. Unquoting runs before both comparisons, so
+  the one line covers both, and both spellings are pinned by cases of their own rather than
+  left to hold incidentally.
+
+  This is the fourth of the family and the one that needs no knowledge at all. The other three
+  asked somebody to bundle a flag or to know that `HEAD` is not a branch name; this one is
+  ordinary typing. It was found while testing whether a proposed narrowing of the flag matchers
+  would open holes, which is the second time today that probing one question answered a
+  different and worse one. Six decisions added, both directions, mutation-tested: leave the
+  quotes on and five cases go red while the branch-elsewhere ones stay green.
+
 ### Changed
+
+- **`doctor` says the PR-only policy is not the hook's to hold, and says it as a warning.** The
+  line was already honest and was printed with the glyph of a passing note, which is the wrong
+  weight for the thing it reports. A regex over one shell is defence in depth; branch protection
+  on the forge is the control, and no local command can see whether it is on. Four ways past
+  that regex were found and closed in a single day, and this repository's own base branch was
+  unprotected while it happened, which is how one of the four came to light: an agent pushed
+  `main` with a spelling the guard did not read and nothing else existed to stop it. A
+  repository trusting the hook alone has a weaker guarantee than its config implies, and now
+  hears so on every run.
 
 - **The README is rewritten for somebody deciding whether to install this, and three claims in
   it were false.** It said the registry package was not published and told the reader to install
