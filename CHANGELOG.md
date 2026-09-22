@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-22
+
 ### Fixed
 
 - **`git push origin HEAD` from the base branch was not a push to the base.** `HEAD`, and its
