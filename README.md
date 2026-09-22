@@ -1,145 +1,192 @@
 # abatty
 
-## The problem this is for
+[![npm](https://img.shields.io/npm/v/abatty.svg)](https://www.npmjs.com/package/abatty)
+[![checks](https://github.com/Synovitec/abatty/actions/workflows/checks.yml/badge.svg)](https://github.com/Synovitec/abatty/actions/workflows/checks.yml)
+[![node](https://img.shields.io/node/v/abatty.svg)](package.json)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Your team writes more code than it used to, and it reviews it at the same speed it always did.
-Somewhere in there, the things everybody agreed to - the file that should have been split, the
-test that should have gone red first, the doc that should have moved with the code - stopped
-being decisions and became a queue nobody reads. A model can now produce a week of plausible
-work in an afternoon, and the only thing standing between that and your main branch is a person
-reading a diff at the end of a Thursday.
+An engineering standard you install rather than circulate. `abatty` puts a gate in front of your
+main branch, measures the debt behind it, and proves that every step of the gate is capable of
+failing.
 
-The usual answer is another report. Reports are where good analysis goes to die: the same
-finding, at the same precision, reached a **near-zero fix rate as a report** and passed
-**seventy per cent when it arrived on the change under review**. Placement beats precision. The
-sources are in
-[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md) (F2).
+It has no runtime dependencies and runs on Node 20 and later. Linux and Windows are covered by CI
+on every push, against both npm and pnpm.
 
-So this is not a report. **abatty installs a gate your repository has to pass, and then proves
-the gate can fail** - it plants a violation in each step and calls a step that stays green
-_absent_, because a guard nobody has watched fail is not a guard.
+## Why
 
-### What it is honest about
+Most teams already agree on how they want to build. The agreement lives in a document, and the
+document loses. The file that should have been split, the test that should have gone red first,
+the doc that should have moved with the code: each is a decision that quietly became a queue
+nobody reads.
 
-It does not make anybody faster, and it is not sold as if it did. What a written, enforced
-standard does is **amplify whatever discipline is already there**: a team that agrees on how it
-builds gets an agent that builds that way and a reviewer who can read a diff instead of policing
-one. A team that has not agreed gets the same disagreements, produced faster. The instrument
-enforces a decision; it does not make it, and it will not save a team from not having made one.
+The usual response is another report. Reports are where good analysis goes to die. The same
+finding, at the same precision, reaches a near-zero fix rate when it arrives as a report and
+roughly seventy per cent when it arrives on the change under review. Placement beats precision;
+the sources are in
+[`docs/standard/research/07-evidence-base.md`](docs/standard/research/07-evidence-base.md).
 
-The reading it produces - the score, the phase, the trend - is a way to compare this repository
-against itself over time. It is not a grade, not a percentage of conformity, and not a number to
-put in front of anybody as one.
+So `abatty` is not a report. It installs a gate your repository has to pass, then plants a
+violation in each step of that gate and reports any step that stays green as **absent**. A guard
+nobody has watched fail is not a guard.
 
-What running it on itself actually produced, negative results included, is in
-[`docs/DOGFOOD.md`](docs/DOGFOOD.md).
-
-Open source under Apache-2.0. The standard it enforces - the rules, the enforcement map, the
-adoption plan, the lessons, the research - ships with the package under
-[`docs/standard/`](docs/standard/README.md), versioned with it. Contributions under a DCO:
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## In two minutes
-
-1. `npm i -D github:Synovitec/abatty`, in any repository: a Next, Astro, Vite, Node or Python
-   one, a monorepo, or documents alone. That is the install that works today: the registry
-   package is not published yet, and `npm i -D abatty` is what this line becomes on the day it
-   is. A first command that fails is worse than a README that says where the package is.
-2. `npx abatty init` installs the instrument for the stack it detects (`--stack` names one,
-   `--stage design` says there is no application yet): the gate, the pre-push hook that runs it,
-   the ratchet with today's numbers as the floor, the harness the agent works under, CI from the
-   same gate definition, the day-0 documents.
-3. **`npm run gate` before every push.** One implementation, three callers: this command, the
-   pre-push hook, and the unattended night's Stop hook. It refuses the work rather than
-   describing it, which is the whole of the difference.
-4. `npx abatty doctor --controls` plants a violation per gate step and reports a step that stays
-   green as **absent**: a guard nobody has watched fail is not a guard.
-5. Then the reading. `npx abatty` says where the repository stands, `npx abatty measure` writes
-   the dated report, and both are by-products of the gate rather than the point of it.
-
-**Why that order.** Placement beats precision, as above: the gate leads and the report follows.
-
-Everything else below is the same instrument in more depth.
+## Install
 
 ```sh
-# the four that do the work
-npm i -D github:Synovitec/abatty # the install that works today; the registry package is not published yet
-npx abatty init --stack next     # the instrument, from the templates and the preset
-npx abatty gate --fast           # THE gate: the pre-push hook and the night run this same one
-npx abatty ratchet --range auto  # every probe against the committed baseline, per total and per file
-npx abatty doctor --controls     # plants a violation per gate step; a step that stays green is absent
-
-# the reading, which is what the gate leaves behind
-npx abatty                       # where this repository stands: the phase it is on, then the trend
-npx abatty measure               # the gap analysis: every check, the next steps by phase
-npx abatty explain CODE-DEADCODE # one rule, its reason, and its finding in this repository
-npx abatty rules                 # the rule catalog: what must hold, why, what insures it, when the plan installs it
-
-# the rest
-npx abatty baseline              # today's numbers as the floor; zeros promoted to HARD
-npx abatty night --canary-only   # the unattended night (one implementation, Windows and POSIX); the pre-flight alone here
-npx abatty night-report          # the morning after: the night's facts and the lessons they propose
-npx abatty agents                # the agent adapters: what each gives, what this repository loses with the ones it named
-npx abatty mcp                   # the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as typed tools
-npx abatty secrets --staged      # the secret scan: the tree, the staged files (the pre-commit hook), a range (CI); one implementation
-npx abatty ci --provider github  # CI generated from the gate (Woodpecker, GitHub Actions); --ruleset prints the org ruleset
-npx abatty serve --token <t>     # the dashboard hosted: CI posts each report, one page over every repository, a badge
-npx abatty publish --to <url>    # the CI step: post this repository's newest report to a service
-npx abatty dashboard --open      # one page over the reports of one or many repositories, light and dark
-npx abatty update                # the harness to the package's version, your edits kept (a three-way merge per file)
-npx abatty config                # the one config (abatty.config.json at the root): its files, its problems against the schema; --migrate
-npx abatty presets               # the stacks, and which repository proved each
-npx abatty scrub                 # opt-in: no trace of the tools in files (--fix), commit messages (--commits), pull requests (--prs)
+npm i -D abatty
 ```
 
-Every command prints for a terminal (colour, glyphs, bars, timings) and degrades to plain text
-in a pipe or CI; `--json` on `measure` and `report` is the machine-readable form. Each
-measurement writes a dated report under `.abatty/reports/` (ignored by git); the dashboard is
-built from those and needs no server: `abatty dashboard repoA repoB --open`.
+`pnpm`, `yarn` and `bun` work the same way. The package reads no credential and installs nothing
+on your behalf: when a stack needs a tool, the tool is named and you decide.
 
-## The rule catalog
+## Quick start
 
-Every check abatty makes is a rule, as data: an ID, a family, the statement, the standard's
-IDs it holds, **must** or **should**, what insures it once present (**hard**: a machine refuses
-the work; **ratchet**: a number that may only fall; **review**: the reviewer's checklist;
-**prose**: nothing yet), the adoption-plan phase that installs it, the reason in two sentences,
-and the check itself, a pure function of the repository's context. `abatty measure` runs the
-catalog; `abatty rules` lists it (`--family`, `--level`, `--phase`, `--json`, `--md`); `abatty explain
-<ID>` opens one rule against the repository; [`docs/CATALOG.md`](docs/CATALOG.md) is the
-whole of it, kept equal to the code by a test.
+```sh
+npx abatty init              # detects the stack and installs the instrument
+npm run gate                 # the gate, which the pre-push hook also runs
+npx abatty doctor --controls # proves each gate step can fail
+npx abatty                   # where the repository stands
+```
 
-The number the catalog exists for is the **enforced share**: of the rules a repository has,
-the part a machine holds (hard, ratchet) against the part a reviewer or a sentence holds
-(review, prose). `abatty` and `abatty measure` print it beside the score, the report and the
-dashboard carry it, and `abatty rules --enforcement prose` lists what a night moves up a level
-next; the `adopt-standards` skill moves one rule up per night once the phase's checks are done.
+1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet with today's numbers
+   as its floor, CI generated from the same gate definition, and the day-0 documents. Pass
+   `--stack` to name a stack instead of detecting one, or `--stage design` for a repository that
+   has no application yet.
+2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
+   unattended run's stop check. It refuses the work rather than describing it.
+3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever
+   happened, and marks a step that stayed green as absent.
+4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
+   it.
 
-The rules come from **profiles**: a standard as a package, rules, the phases of its adoption
-plan, the presets it ships and the harness rule files it installs, as one unit. The built-in
-profile, `synovitec`, is the standard the package was built on; every rule's text and every
-phase in it is one company's. A repository names the profiles it follows in its config
-(`profiles`, `["synovitec"]` when absent): a built-in id, a file (`./profiles/acme.mjs`) or an
-installed package exporting `profile`; a client project that names only its own carries only
-its own standard with the same instrument. `abatty profiles` lists what is loaded and what
-each brings; a rule two profiles define is a problem, the later one loses it.
+## How it works
 
-A rule says **where it applies**: `applies` is a predicate over the repository's facts
-(`c.stack`: a package, sources, a browser application, a server, a database, catalogues, a
-service worker) and `when` the sentence the catalog prints; where a rule does not apply its
-finding is n/a with the reason, never missing, so a documents-only repository is read for
-what it is and a service without a database is not scored on migrations. The rule states the
-practice; the profile names the tool it chose for it (`tools`).
+### The gate
 
-A repository has a **stage**: design (documents, decisions, a schema, a mockup; no application
-yet), build, or run (serving users, a deploy surface). The config names it (`stage`, `abatty
-init --stage design`); otherwise it is read from the tree. A rule belongs to stages (`stages`;
-the instrument's build-stage rules, every code surface, the restore drill at run) and is n/a
-at another with the stage named, so a repository under design is read on the documents
-family, the changelog, a decisions log and a CI that can fail, not on a dead-code gate; the
-plan per stage is `phasesFor` (day 0 alone at design).
+One definition drives the local command, the git hook and CI, so they cannot disagree about which
+steps exist. Steps run in a fixed order and stop at the first failure: format, lint, typecheck,
+import graph, dead code, tests, the ratchet with the changelog over the pushed range, the secret
+scan, the dependency audit.
 
-A repository extends the catalog with its own rules in `abatty.rules.mjs` at its root, the same
-shape:
+Heavy suites are selected by path, so a change that touches no database code does not wait for the
+database suite. A step whose script the repository does not have yet is reported as skipped rather
+than passed, and the verdict leads with how many steps did not run. Steps the preset requires
+cannot be skipped: without them the gate reports that it could not run.
+
+Exit codes are a contract:
+
+| Code | Meaning                                      |
+| ---- | -------------------------------------------- |
+| 0    | Clean                                        |
+| 2    | Invalid input, flags or configuration        |
+| 3    | Ran correctly and found violations           |
+| 4    | Internal error, or a step that could not run |
+| 130  | Interrupted                                  |
+
+Three is the one that matters. A gate that found something did not fail; it worked. Four says the
+instrument broke, which is a different problem from bad work.
+
+### The ratchet
+
+`abatty ratchet` measures the mechanical rules a linter cannot state, and refuses any number that
+moves the wrong way. `abatty baseline` records today's numbers as the floor.
+
+Metrics come in two kinds. **Hard** must be zero now and forever. **Ratchet** holds today's number
+and may only fall, both in total and per file, so debt cannot relocate: a file may improve and
+never worsen, and a file absent from the list carries none.
+
+A metric at zero is promoted to hard. A floor that rises is refused without a reason and an owner,
+both recorded against the metric rather than against the write, so one metric's explanation
+survives an unrelated rebaseline and disappears when the debt it explained does. A probe that
+scans zero files where the baseline saw some fails the run, so a moved directory never reports
+green forever.
+
+### Proving the guards
+
+Every probe ships control cases in both directions: a case it must report, and a case it must not.
+`abatty ratchet --controls` runs them on throwaway repositories, and the package's own test suite
+runs them on every push, so a probe without a failing control case cannot be added.
+
+The same principle covers the gate steps, where the check is `doctor --controls`, and the agent
+harness, where a self-test drives eighty-four guard decisions in both modes and is itself verified
+by mutation.
+
+## Commands
+
+| Command               | What it does                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `abatty`              | Where the repository stands: the phase, the score, the trend                                |
+| `abatty init`         | Install the instrument for the detected or named stack                                      |
+| `abatty gate`         | The gate. `--fast` omits the heavy suites                                                   |
+| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases             |
+| `abatty baseline`     | Record today's numbers as the floor                                                         |
+| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps     |
+| `abatty measure`      | The gap analysis: every check, with next steps by phase                                     |
+| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document |
+| `abatty explain <ID>` | One rule, its reason, and its finding here                                                  |
+| `abatty check <ID>`   | One rule as an exit code, for a script                                                      |
+| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`              |
+| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it       |
+| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                    |
+| `abatty update`       | Bring the harness to the package's version, keeping your edits                              |
+| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                    |
+| `abatty presets`      | The stacks, and which repository proved each                                                |
+| `abatty profiles`     | The standards this repository follows                                                       |
+| `abatty attest`       | The conformance statement, ready to sign                                                    |
+| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                    |
+| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here              |
+| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                  |
+| `abatty serve`        | Host that dashboard, so CI can post each report to it                                       |
+| `abatty night`        | The unattended run, with its pre-flight and canary session                                  |
+| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests           |
+
+Every command accepts `--plain` for ASCII markers and no colour, which is what a log parser wants.
+Colour is off automatically outside a terminal and in CI. `measure` and `report` take `--json`.
+
+Run `abatty help` for the full flag list of each.
+
+## Configuration
+
+`abatty.config.json` at the repository root is the single configuration file, validated against
+the schema the package ships. It carries the commands, the file locations, the push policy, the
+phases, the ratchet settings, waived rules with their reasons, and the optional scrub.
+
+`abatty config` reports where it is and what is wrong with it. `abatty update` adds keys that the
+template gained and never replaces a value you set.
+
+## Presets
+
+A preset describes what a stack's repository looks like: its paths, scripts, gate steps, suites
+and rule files. The standard says what must hold; the preset says where to find it.
+
+A preset is real when a named repository has run it, and the tool says so plainly rather than
+implying coverage it does not have.
+
+| Preset       | Status                                     |
+| ------------ | ------------------------------------------ |
+| `next`       | Proven by paycore_dms, 2026-09-14          |
+| `vite-react` | Proven by Paycore-Task-Manager, 2026-09-13 |
+| `node`       | Proven by abatty, 2026-09-18               |
+| `astro`      | Not yet proven by a repository             |
+| `python`     | Not yet proven by a repository             |
+| `docs`       | Not yet proven by a repository             |
+
+Monorepos compose. Workspaces are read from the root manifest, a pnpm workspace file, or the
+conventional `apps/*`, `packages/*` and `services/*` directories. Each workspace is detected from
+its own dependencies and gated with its own preset in its own directory, while the shared steps
+and the ratchet run once at the root. A workspace without a preset is listed and not gated.
+
+## Extending
+
+The catalog holds 79 rules across 15 families. Each rule is data: an identifier, the statement,
+whether it is a **must** or a **should**, what insures it once present, the phase that installs it,
+the reason, and a check that is a pure function of the repository's facts. Nothing in the
+repository is executed.
+
+Insurance is the number worth watching. Of the rules in the built-in catalog, 47 are held by a
+machine, 7 by a ratchet, 13 by a reviewer's checklist and 12 by nothing but prose. `abatty rules
+--enforcement prose` lists what to move up next.
+
+Add your own rules in `abatty.rules.mjs` at the root:
 
 ```js
 export const rules = [
@@ -150,7 +197,7 @@ export const rules = [
     level: "must",
     enforcement: "prose",
     phase: "0",
-    why: "A repository without an owner is a repository nobody answers for; the file is the name.",
+    why: "A repository without an owner is a repository nobody answers for.",
     next: "Add OWNERS at the root",
     check: (c) => ({
       status: c.exists("OWNERS") ? "present" : "missing",
@@ -160,456 +207,67 @@ export const rules = [
 ];
 ```
 
-The context `c` gives a rule the repository as git keeps it (`files`, `firstFile`, `read`,
-`readJson`, `exists`, `git`), its package (`pkg`, `scripts`, `script`, `deps`, `has`), its
-configs (`eslintText`, `tsconfigText`, `ciText`), its sources (`sourceFiles`, `docFiles`,
-`isTs`, `packs`) and its facts (`stack`); nothing of the repository is executed. A rule is waived with a reason in
-`.claude/adoption.json` → `rules.waived` (`"CODE-DUP": "not measured on a prototype"`, or
-`{ "reason": ..., "until": "2026-12-31" }`): listed, not scored, and since that file is
-read-only to the night's worker, a waiver is a human's decision. A waiver with a date that has
-passed stops waiving and does **not** disappear: the rule is measured again and the expired
-waiver is reported by name, because a repository that set something aside until March should be
-told when March is over. `abatty rules` and the gap analysis print the **waiver rate** over the
-rules that could apply here - a rule that repository after repository waives is, in all
-likelihood, a rule that is wrong, and this is the first input to a false-positive rate the
-catalog can be judged by.
+Add your own probes in `abatty.probes.mjs`, in the same shape. Control cases are required and a
+built-in metric name is refused.
 
-The secret scan is measured, not asserted. `abatty secrets --benchmark` runs it against a corpus
-published in the package (`src/core/secret-corpus.mjs`): documented credential shapes on one side,
-the look-alikes that get scanners uninstalled on the other, every case carrying the reason it is
-the verdict it is. Today it scores 100 per cent precision and 100 per cent recall over 41 cases,
-and a test holds both as a floor. That measurement is what found the six shapes it used to miss,
-the unquoted `API_KEY=...` of a `.env` file and the password inside a connection string among
-them. The corpus is this repository's own rather than a third-party benchmark, which
-`docs/SECRET_SCAN_BENCHMARK.md` says on the page with the number.
+Rules can also arrive as a **profile**: a standard packaged as a unit of rules, adoption phases,
+presets and harness files. The built-in profile is one company's standard. A repository that names
+only its own carries only its own, with the same instrument underneath.
 
-The dependency audit is scoped before it is trusted, because an unscoped audit is the one people
-switch off: production dependencies only, a severity floor, and an advisory allowed by name or by
-id in `security.audit.allow` with a reason and, where the decision is not permanent, an `until`
-date. An allowance that has expired stops allowing and the gate names which one ran out; an
-allowance that is still live is printed on the green run, because a decision nobody is reminded of
-is a decision nobody revisits. `SEC-AUDIT` reads for that scoping rather than for the word
-`audit`: an unscoped audit reads partial, and a repository whose CI runs the gate has the
-built-in one, which is scoped by construction.
+## What it does not claim
 
-`abatty attest` writes the conformance statement, ready to sign: what held, at which commit,
-under which version of which standard, the waivers with their owners and their expiry dates, the
-floors with who raised each one and why, and the proof from the last `abatty doctor --controls`
-run that each gate step has been watched going red. It is an **in-toto Statement with a custom
-predicate** (`https://abatty.dev/attestation/conformance/v1`), not a document of this package's
-invention, so every attestation store, policy engine and verifier that already exists can hold it
-and gate on it without a reader anybody has to write first. The subject is the git commit: a
-conformance statement is about a state of a source tree, not about a built file.
+It does not make anybody faster, and it is not sold as though it did. What a written and enforced
+standard does is amplify whatever discipline is already present. A team that agrees on how it
+builds gets a reviewer who can read a diff instead of policing one. A team that has not agreed
+gets the same disagreements, produced faster. The instrument enforces a decision; it does not make
+one.
 
-The predicate says inside itself what it does **not** answer - the bill of materials, the
-vulnerability report, the licence inventory, the build provenance - because each of those is a
-solved problem with a decade of tooling behind it, and a record that quietly restated them would
-be a worse copy inviting the reader to trust one document for everything. It carries only what
-nothing else produces: which engineering rules hold, under which written standard, which were set
-aside and by whom, and whether the checks that say so have themselves been watched failing. A
-statement whose controls never ran says so and the command exits 3.
+The reading it produces is a way to compare a repository against itself over time. It is not a
+grade, not a percentage of conformity, and not a number to put in front of anybody as either.
 
-**Signing is the pipeline's, and deliberately so.** A signature is worth exactly the identity
-behind it, and the only identity a measurement tool could offer is a key on somebody's laptop or
-a secret in a repository, which is the weakest of the options and the likeliest to leak. The
-pipeline already has a short-lived workload identity that no human can export, so the generated
-pipeline prints the statement and signs it with that, through the platform's own attestation
-action, into the transparency log every verifier already reads. `abatty ci --provider github`
-writes those steps; this repository's release workflow does the same for each published version,
-alongside the registry's own provenance.
+Measurements come with their limits attached. The secret scan currently scores 100 per cent
+precision and 100 per cent recall, over a corpus this repository assembled rather than a
+third-party benchmark, and the page carrying the number says so. `abatty validate` prints churn
+beside every correlation, because a rule that merely tracks how often a file changes will
+otherwise look excellent.
 
-`abatty evidence` is the same facts for a person: the regulation's essential requirements mapped
-onto the rules of the catalog, as a document. The `cra` profile carries that mapping and **no
-rules of its own** - a profile that invented "CRA rules" would be selling the idea that holding
-them makes a product conform, which is not true and is not something a source-code tool can make
-true. It is a lens: name it beside a real profile and the mapping reads that profile's findings.
+What running the tool on its own repository produced, negative results included, is in
+[`docs/DOGFOOD.md`](docs/DOGFOOD.md).
 
-The page is arranged to be read by a sceptic. The requirements **nothing here bears on** come
-first, before the ones with rules behind them, because the other arrangement is how a reader ends
-up believing something nobody claimed; of twenty-one requirements, seven have no rule in the
-catalog that touches them at all. Every remaining row says what the named rules evidence, what
-they do not, and how each reads today. A mapping is not a conformity assessment and is not legal
-advice, and the document says so three times.
+## Documentation
 
-`abatty validate` asks the question a `why` cannot answer: do the files that break each rule turn
-out to be the files somebody later had to fix, **in this repository**? It reads the history for
-commits that fix something, and compares the fix rate among the files a probe reports against the
-files it does not. On this repository the honest answer today is _too few files to say_ for every
-probe, and that is what it prints: a tool that produced a confident number from two files would
-be worse than one that produced none.
+The standard ships with the package and is versioned alongside it.
 
-Every number comes with what it is not. It is a correlation, never a cause. Churn is printed
-beside every rate rather than removed, because a rule that merely tracks how often a file changes
-will look excellent and the commits-per-file column is where you see that happening. The tree is
-read as it is today against fixes from the whole range, so a file that was fixed and then cleaned
-up counts against its rule - an error that runs one way and flatters nothing. And it is one
-repository, which the reading names.
-
-Every command takes `--plain`: no colour, and ASCII markers (`[ok]`, `[FAIL]`, `[skip]`) that a
-log parser can match without knowing about Unicode. Colour is off anyway when stdout is not a
-terminal, when `NO_COLOR` is set or in CI; `--plain` is for when none of those is true and
-something is still reading the output.
-
-## What `init` writes
-
-| Where          | What                                                                                                                                                                                                                                                                                                                      | Kept if it exists                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| root           | `abatty.config.json`: the one config, the hooks' and the package's (commands, files, push policy, phases, `mcpServers`, `rules.waived`, `ratchet`, `scrub`, `provenance`), with its `$schema` line; validated by `abatty config` and `doctor` against the schema the package ships (`schema/`)                            | yes; merged key by key, your values kept |
-| `.claude/`     | `settings.json` (the hooks wired), `mcp.night.json` (the only MCP servers a night has), the seven hooks and their self-test, the `adopt-standards` skill, the two agents, the preset's `rules/*.md`, `harness.lock.json` (the package version and the hash of every shipped file as installed, what `update` merges from) | yes                                      |
-| per adapter    | `AGENTS.md` for the open convention and Cursor (the primary's context file then imports it), `.cursor/rules/*.mdc` for Cursor (the preset's rules, the paths as globs)                                                                                                                                                    | yes                                      |
-| root           | `.dependency-cruiser.cjs` (the import graph: cycles, orphans, one rule per arrow of the boundary map), `knip.jsonc` (dead code), `.githooks/pre-push`, `CLAUDE.md` (the template, placeholders to fill), `CHANGELOG.md`                                                                                                   | yes                                      |
-| `package.json` | `gate`, `gate:fast`, `graph`, `dead`, `typecheck`, `lint`, `format:check`, `hooks:install`                                                                                                                                                                                                                                | an existing script is never replaced     |
-| `docs/`        | `README.md` (the index), `STANDARDS_PROGRESS.md`, `ADOPTION_DECISIONS.md`                                                                                                                                                                                                                                                 | yes                                      |
-
-Dependencies are named, never installed (`npm i -D dependency-cruiser knip ...` is printed): a
-dependency change is a decision. Then by hand: fill `CLAUDE.md`, write the boundary-map rules
-in `.dependency-cruiser.cjs`, on an existing repository `depcruise --baseline` once and knip at
-today's count, `npm run hooks:install`, `abatty doctor`, `abatty measure`, `npm run gate`.
-
-## Agents
-
-The harness talks to an agent through an **adapter**: its settings folder, its context file,
-where its path-scoped rules go and in what shape, whether it has a hook protocol, the flags
-of its headless mode. `abatty agents` lists them; `agents` in the config (or `init --agent
-<id,id>`) names the ones a repository writes for. Three today: the harness's own agent (its id
-is derived from its folder, so this package names no tool), the open `AGENTS.md` convention
-any agent reads, and Cursor (`AGENTS.md`, the rules as `.cursor/rules/*.mdc` with the paths as
-globs). With more than one, the context file is `AGENTS.md` and the primary's file imports
-it, so there is one source. The `adopt-standards` skill is in the open agent-skills format
-(`templates/skills/adopt-standards/SKILL.md`: name, description, license, compatibility,
-metadata, an agent-neutral body) and `init` writes it to every configured adapter's skills
-folder.
-
-What an adapter cannot give is said plainly, because the enforcement of a night is the hooks:
-an agent without a hook protocol gets the context, the rules, the gate and CI, and loses the
-guard, the file guard, the Stop gate, the canary and the night itself. `abatty night` refuses
-a repository whose adapters have no hooks and names what is lost. The runner builds every
-session's flags from the adapter, never from a hard-coded list.
-
-## CI from the gate
-
-`abatty ci [--provider woodpecker,github] [--check]` generates the pipeline from the preset's
-gate definition: the same steps in the same order (format, lint, typecheck, the import graph,
-dead code, unit tests, the ratchet with the changelog over `origin/<base>..HEAD`), then the
-secret scan, the audit, and the publish step to the hosted dashboard, guarded by the secret;
-the suites follow as their own pipeline or job, the database one on a real Postgres, the
-browser one with the browsers installed. It is the repository's pipeline, not a template's: the
-install, the audit and every `run` are the package manager's the lockfile names (npm, pnpm,
-yarn or bun), and a gate step whose script the package does not have yet is written as a
-comment that names it, in the words the gap analysis uses, rather than as a step that is red
-from the first run. Because it is generated, the gate and CI cannot list different steps, and
-`--check` says when a pipeline file is behind the gate; `init --ci <provider>` (or
-`ci.providers` in the config) writes it on day 0. GitHub also gets a
-pull-request template with the reviewer's checklist. `abatty ci --ruleset` prints a ruleset
-for the organisation (branch names naming a tool refused, a pull request required, the checks
-required); it is printed for import, never written into a repository, because it carries the
-vocabulary in the open.
-
-## The dashboard, hosted
-
-`abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]` is a small self-hosted
-service with no dependency: CI posts each repository's report to it and it serves the same
-dashboard page over every repository. `POST /reports` takes the report `abatty measure` writes
-(a bearer token; the service refuses to start without one unless `--no-auth`, for a machine
-nobody else reaches); `GET /` is the page; `GET /api/reports` the index of repositories with
-their newest score and enforced share; `GET /api/reports/<name>` one repository's readings;
-`GET /badge/<name>.svg` the score as a badge for a README; `GET /healthz`. Reports are files
-under the data folder, one per repository and day. `abatty publish --to <url> [--token <t>]`
-(or `ABATTY_DASHBOARD` and `ABATTY_TOKEN`) is the CI step: it posts the newest report, measuring
-first when there is none.
-
-`GET /api/events` and `GET /api/events/<name>` are the **adoption events**: what changed between
-readings rather than what the number is. A wall of scores tells an adopter nothing they can act on
-and nothing they can show anybody; "on the 14th CODE-SIZE-300 went from missing to present, on the
-15th FLOW-COMMITS was promoted from a checklist item to something a machine refuses" is the
-adoption story. They are derived from the readings the service already holds, so nothing new is
-collected and a repository cannot tell the service it adopted something. **Losses are events too
-and are not softened**: a rule that was present and is now missing is the most useful line the log
-carries, and `regressions` is counted on its own so a dashboard cannot bury it.
-
-## The catalogue, without a plugin
-
-`abatty portal [--out catalog-info.yaml] [--dashboard <url>] [--dry-run]` writes the conformance
-into the developer portal catalogue's **own entity descriptor**: the score, the phase, the check
-count and, where a hosted service exists, the report, events and badge endpoints, as annotations
-under `abatty.dev/`. Any portal that reads the descriptor gets the conformance with nothing
-installed, and a team with no portal has a file that does no harm.
-
-The obvious shape for this would be a portal plugin. A plugin is a separate package carrying that
-portal's framework as a dependency, it puts the work behind an install a whole organisation has to
-agree to, and it puts the conformance where only that portal can read it. The descriptor reaches
-the same place and asks for nothing.
-
-It **merges rather than overwrites**. A `catalog-info.yaml` is somebody's file, with an owner, a
-system and a lifecycle nothing here knows: it rewrites only the annotations under its own prefix,
-adds the ones that were missing, leaves the comments and everything else byte for byte, and
-leaves a shape it does not understand alone rather than guessing at it. It will not invent an
-owner: a new file says `unknown` and says why.
-
-## The MCP server
-
-`abatty mcp [dir]` speaks the Model Context Protocol over stdio and exposes the package as
-typed tools scoped to one repository: `measure`, `ratchet`, `gate`, `scrub`, `report`,
-`explain`. An agent then verifies through a call whose result is data (the score, the
-verdicts, the findings, the gate's outcome) instead of parsing a terminal, and no tool takes
-a path, so nothing outside the repository is reachable through it. Declared for a night in
-`.claude/mcp.night.json` and named in the config's `mcpServers` like any server:
-
-```json
-{ "mcpServers": { "abatty": { "command": "npx", "args": ["abatty", "mcp"] } } }
-```
-
-Hand-written, because the package has no runtime dependency and a tool server needs a small
-subset of the protocol: `initialize`, `ping`, `tools/list`, `tools/call`, one JSON-RPC message
-per line.
-
-## Configuration
-
-One file, `abatty.config.json` at the repository root: a tool-neutral name any agent can read,
-the file the hooks trust and the package reads, validated against the JSON Schema the package
-ships (`schema/abatty.config.schema.json`, `$schema: https://abatty.io/schema/abatty.config.json`).
-`abatty config` lists the files that carry it, the resolved values and every problem against
-the schema; `doctor` refuses a config the schema refuses. The older place, `.claude/adoption.json`,
-is still read, the root file winning key by key, and `abatty config --migrate` moves it. At
-night the root config is read-only to the worker exactly as the agent folder is: the guard and
-the file guard refuse a write to it, the direction check and the runner refuse a night where it
-moved, the Stop gate reads it from the base branch. The config carries `abatty`, the version
-this repository follows: `init` writes it, `update` moves it with the harness, `doctor` says
-when the package differs from it.
-
-## Update
-
-`abatty update` brings the harness to the package's version without losing the repository's
-own edits: a three-way merge per file between the copy the package installed (kept under
-`.abatty/harness/<version>/`, ignored by git), the repository's copy and the package's copy
-now. A file untouched since the install takes the new version; a file edited here while the
-package did not change it is kept; a file both changed is merged with `git merge-file`, and
-when the edits meet on the same lines the new version is written beside yours as
-`<file>.abatty-new` and nothing of yours is touched. `adoption.json` gains the keys the template
-gained and keeps every value set here; the scripts absent are added; `--dry-run` says what
-would change, `--force` takes the package's version of everything. `doctor` names the version
-the harness was installed by when it is not the package's.
-
-## The gate
-
-One implementation, three callers: `npm run gate`, `.githooks/pre-push`, the night's Stop hook.
-Always on, in this order - format (Prettier with `--end-of-line auto`), lint at zero warnings,
-typecheck, the import graph, dead code, unit tests, the abatty ratchet with the changelog
-check over the pushed range, the secret scan, the audit and the scrub where the repository
-opted into it - then the preset's heavy suites
-only when the push or the working tree touches their paths, deferred loudly to CI when Docker
-is absent. The secret scan is built into the gate (no dependency: a private key block, a cloud
-access key, a provider token, a payment key, a chat token, a signed web token, a long literal on
-a secret-like name; a false positive is marked on its line with `abatty:allow-secret` or by path
-in `secrets.allow`), and it is ONE implementation for the pre-commit hook (`abatty secrets
---staged`, written by `init`), the gate (the tree) and CI (the pushed range). The audit is the
-package manager's, read from the lockfile the repository committed: `npm audit`, `pnpm audit`
-or `bun audit`, at `--audit-level=high` over production dependencies, its JSON read so an
-allowance can name an advisory (yarn's is deferred loudly to CI until somebody has watched it).
-It is deferred loudly when the registry is unreachable, and a repository with no lockfile has no
-audit: the step could not run, and the gate stops on it as it stops on a linter that is not
-installed, never silently green. A step whose script the repository does not have yet is
-reported as skipped, so a fresh repository can run the gate before everything exists, and the
-verdict then leads with how many steps did not run rather than with the colour; the gap
-analysis names what is missing. The steps a preset requires (the tests and the ratchet wherever
-there is code, the typecheck where the preset is TypeScript-native) cannot be skipped: without
-their script the gate could not run, the same verdict as a tool that is not installed, because
-a gate that is green over two steps of nine is not a gate.
-
-**Every gate step proves it can go red.** The ratchet's probes carry their controls; the
-gate steps are scripts a repository owns, and one that never went red may be checking
-nothing. `abatty doctor --controls` plants a violation per step (an unformatted file, a
-debugger statement, a type error, a test that throws, an unused export, a file over the cap,
-a cloud key, a browser or integration test that throws), runs the step, removes the file
-whatever happened, and reports a step that stays green as **absent**. The suites' steps are
-judged the same way, with a suite that needs Docker skipped out loud when the daemon is down,
-and a step that went red is run once more clean: red without a plant proves nothing, and is
-said so, because a suite that cannot start reads red on anything. What no planted file can
-prove (a build, a coverage floor, the audit) is reported as such rather than left out. The
-outcome is written to `.abatty/controls.json` and the INST-CONTROLS rule reads it: partial
-until the controls ran, partial naming the absent step, present once every step went red.
-
-## The night
-
-`abatty night [dir] --until HH:MM|+Nmin --max-cost <usd> [--phases "0 1"] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]`
-drives the adoption programme unattended: one headless session per phase on
-`adopt/standards-<date>`, until the hour or the allowance. Before the first phase, four things or
-no night: the harness self-test green, `.claude/` identical to the base branch, the gate green
-on the branch as it starts, and the canary (a real session that proves a command runs without
-a prompt, the guard fires, the Stop hook fires and reads the base, and no MCP server but the
-declared ones reached it). A crash is retried once and a second in a row aborts; fifteen
-denials abort (auto mode did not take); the harness is checked before every session; the
-branch is pushed only when nothing was loosened against the base without a decision naming
-it. The agent's executable comes from `--agent`, `ABATTY_AGENT` or `~/.abatty/config.json`,
-never from the repository. `templates/harness/testing/stub-agent.*` stands in for the agent;
-the package's test runs the whole runner with it, every abort path included.
-
-**The sandbox under the guard.** The guard is a text match on commands; the sandbox is the
-layer below it, an OS boundary that holds whatever a command was called, in whatever shell,
-through whatever script: the working tree writable; the harness folder, the root config and the
-protected paths read-only at the OS level; the rest of the machine read-only (the temp folder
-aside); the hooks' log folder and the agent's own state writable. Drivers: bubblewrap on Linux
-(no daemon, no root), `sandbox-exec` on macOS, or a container image (`sandbox.image`, docker or
-podman) anywhere. `sandbox.mode` is `auto` (a driver found on the machine, else the guard alone,
-said loudly in the log and in `run.json`), `required` (no driver, no night) or `off`;
-`--sandbox` overrides it for one night. Before the first session the runner **proves** the
-boundary with a probe (a Node inside it tries the tree, the log folder, the harness, the root
-config, the protected paths and its own runtime folder): a sandbox that is present but does not
-hold refuses the night, because a night claiming a boundary it lacks is worse than one saying
-it has none. The network is not cut (the model is on it): pushes, deploys and publishing stay
-the guard's to refuse. The package's test runs a night under bubblewrap where the stub tampers
-with the config and the filesystem refuses it.
-
-**The allowance, and a night resumed.** What a night may spend is in the unit the account is
-billed in: dollars for metered access (`--max-cost`, 60 by default); under a subscription the
-dollar figure is a proxy, so the cap is sessions or tokens (`--max-sessions`, `--max-tokens`,
-or `allowance` in the config), with the hour as the outer bound either way. Any cap reached
-ends the night, said, and the wrap-up is not run on a spent allowance. The runner writes its
-spend to `.claude/night/run.json` after every session; a night interrupted (a laptop closed, a
-process killed) continues with `--resume`: it counts what was spent, keeps the canary of that
-night, and starts from the phase the state file says. Without `--resume` an interrupted run is
-only mentioned and the night starts afresh.
-
-**The morning after**, `abatty night-report [--date] [--json] [--out docs/NIGHT_REPORT_<date>.md]`
-reads what the night left (the sessions' results, the Stop gate's receipts and its log of
-every block, the guards' denial log, the direction check's findings, the state file, the
-decisions, the commits) and proposes **lessons** in the lessons catalogue's shape: a block
-recurring on the same check, a command the guard refused more than once, a crash, a denial
-storm, a phase blocked, a decision recorded twice, a loosening refused, a failed canary. Each
-proposal carries its evidence and the check that would catch it next time. A proposal is a
-human's to accept into `docs/standard/LESSONS.md`; a quiet night proposes nothing.
-
-## Presets
-
-A preset says what a stack's repository looks like (paths, scripts, gate steps and suites, the
-rules files); the standard says what must hold. A preset is real when a repository has run it:
-
-| Preset       | Proven by                                                                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `next`       | paycore_dms, 2026-09-14: instrument, harness, graph and dead code in the gate, first unattended night closed a phase                                                     |
-| `vite-react` | Paycore-Task-Manager, 2026-09-13: instrument and harness; graph and dead code pending                                                                                    |
-| `astro`      | nobody yet - `init` says so; the fixture in the tests proves init, measure, doctor and the gate's order on the shape                                                     |
-| `node`       | nobody yet - `init` says so                                                                                                                                              |
-| `python`     | nobody yet - ruff, mypy, pytest, vulture as commands; the ratchet and the secret scan from the package; detected from the tree (pyproject.toml, .py sources)             |
-| `docs`       | nobody yet - a repository at the design stage or documents alone: the format check, the document probes, the secret scan; chosen when there is no package and no sources |
-
-**Presets per workspace, composed.** A monorepo is several stacks in one tree: the root's
-`workspaces` field (npm, yarn), a pnpm workspace file or the conventional `apps/*`, `packages/*`
-and `services/*` name the folders; each with a package of its own is detected from its own
-dependencies (or named in the config → `workspaces`), `init` writes its preset's scripts into
-its own `package.json`, and the gate runs that preset's steps in its own folder with its suites
-path-aware under it, after the root's steps; the built-in steps (the secret scan, the audit)
-and the ratchet run once at the root, and the rules read the repository once. A workspace
-without a preset is listed by `abatty` and not gated. `sql`, `python`, `expo` and `tauri` are
-not here: each is real only when a named repository has run it.
-
-**Language packs.** The rules keep the same words across languages: a pack names a
-language's source extensions, its test-file shape, its manifest and its tools (the formatter,
-the linter, the typecheck, the dead-code tool, the test runner) as the config files, scripts
-and dependencies a rule looks for. The context detects the packs of a tree from its files and
-reads the sources of every pack; the rules about the tools judge each pack (present when
-every pack has the tool, partial when some, the evidence naming the pack), the rules whose
-check reads JavaScript are n/a on a tree without it, and `doctor --controls` plants the
-violation in the pack's language. JavaScript is the pack the package was built on; Python is
-the first beyond it, with a preset that no repository has run yet.
-
-## Provenance, and the scrub as an option
-
-**Provenance is the default.** A tool that audits an agent's runs does not erase them: the
-agent's trailer on the commits it made is the audit trail, and nothing in the harness refuses a
-commit for naming it. A repository may ask for more: `provenance.trailer` in its config names a
-disclosure line every unattended commit carries, and the guard refuses a night commit written
-without it.
-
-**The scrub is opt-in** (`scrub.enabled: true` in the adoption config or in
-`abatty.config.json`), for white-label work where the client's history names no tool, no
-vendor, no model, with the reason in the repository's decisions file. Once on, four layers hold
-it:
-
-- `abatty scrub` scans the tracked files, a commit range (`--commits`, `--range`) and the
-  pull requests (`--prs`); `--fix` rewrites files by the word map; `--history` prints the
-  `git filter-repo` command for an existing history and never runs it (a rewrite is a
-  deliberate step from a fresh clone, followed by a force-push and the hosting provider's
-  purge request, because old commits stay reachable by SHA until then).
-- The guard (`.claude/hooks/guard.mjs`) refuses a `git commit`, `git tag -m`, `gh pr create`,
-  `gh pr edit` or `gh issue create` whose text names one, day and night: a commit is the one
-  thing a night cannot rewrite.
-- A `commit-msg` hook for humans (`abatty scrub --message`, a no-op where the scrub is off),
-  and the gate's scan of the files before a push where the repository wired it.
-- The agent's executable is never in the repository: `ABATTY_AGENT` or `agent.command` in
-  `~/.abatty/config.json`, on the machine that runs the night.
-
-The words live in `src/core/vocabulary.mjs`, stored reversed so that the file passes the scan
-it defines; the hooks carry a copy. Two names cannot go because the agent itself requires them
-to read its settings and its context: the `.claude/` folder and `CLAUDE.md`. A line that
-mentions only those is not a finding. A repository allows its own product terms through
-`scrub.allow` (path substrings), with the reason in its decisions file. This package opted in
-on its first day and keeps it (`abatty.config.json`).
-
-## Roadmap
-
-[`docs/ROADMAP.md`](docs/ROADMAP.md): what changes next, in the order the evidence dictates, each
-item with the evidence that put it there.
-
-## The ratchet
-
-`abatty ratchet` measures every mechanical rule the linter cannot state and refuses a number
-that goes the wrong way; `abatty baseline` writes today's numbers as the floor. A **probe** is
-data with one function: `{ metric, kind, standard, title, why, version, scan(ctx), controls }`. Two
-kinds: **hard** must be zero, now and forever; **ratchet** holds today's number and may only
-fall, by its total **and per file** (the `debt` in the baseline), so debt cannot relocate: a
-file may improve, never worsen, and a file not on the list carries none. A metric at zero is
-promoted to hard by the baseline writer; a hard metric above zero is never recorded; a floor
-that rose is refused without `--reason` and `--owner`, and the reason belongs in
-`docs/STANDARDS_PROGRESS.md` too. The reason and the owner are recorded **against the metric**,
-in the baseline's `entries`, not against the write: one metric's explanation is not erased by an
-unrelated rebaseline of another, and it is deleted when the debt it explained is gone. A probe
-also carries a `version`, the definition it counts under, written into the baseline beside the
-number; a probe that changes what it counts reports `REDEFINED` rather than comparing today's
-count against a floor that answered a different question. A probe that scans zero files where the
-baseline saw some fails the run, so a moved path never reports green forever. The changelog check over the pushed range (CHANGE.1) is one probe
-among the others; the gate passes it the range.
-
-The built-in probes: `size.overBudget`, `size.excessCode`, `size.overRaw` (CODE.1, the budgets
-by kind of file and the 800 cap), `context.overCap` (AIR.1), `types.escapes` (CODE.3),
-`valid.rawEnv` (VALID.3), `code.barrels` (CODE.5), `docs.frontMatter`, `docs.indexDrift`,
-`docs.citations`, `docs.behindCode`, `docs.danglingSource` (DOC.2..5), `change.changelogMissing`
-(CHANGE.1), `context.unsourcedGrowth` (AIR.1: a push that grew the context file without touching the lessons it grew from). A readability score over the same numbers is printed as a trend, never a gate.
-
-Every probe carries its **control cases in both directions**, and `abatty ratchet --controls`
-runs them on throwaway repositories; the package's own test runs them on every push, so a probe
-with no failing control case cannot be added. A repository adds its own probes in
-`abatty.probes.mjs` at its root, the same shape, controls required, a built-in name refused;
-it configures the ratchet under `ratchet` in its adoption config or in `abatty.config.json` at
-its root (`kinds` and their budgets, `exempt` paths, `cap`, `contextMax`, `barrelMax`,
-`envModule`, `include`/`exclude` of metrics, `hard`/`ratchet` overrides, `mustScan`) and names
-the baseline through `files.baseline` (default `scripts/ci/standards-baseline.json`).
-
-**Coupled paths.** "When this changes, that changes in the same push" is one mechanism:
-pairs of paths (a prefix, or a glob with `*` and `**`) declared in the config (`coupled`,
-with a `why`), judged per commit over the pushed range by the ratchet's probe (so the gate
-and CI) and by the Stop hook at night. A commit that touches a `when` path without a `then`
-path is refused until a later commit touches the `then` path, so the cure is always a new
-commit. The changelog rule is the same mechanism (the source prefixes, then the changelog);
-a schema and its migration, an API and its client, a document and the code it describes are
-the pairs a repository adds.
-
-## What is not here yet
-
-The `update` command (a three-way merge that keeps a repository's own edits), `night-report`
-(the learning distillation), and the dashboard over every repository's report. The function-shape probe
-(CODE.2) is not here: ESLint holds it (`CODE-SHAPE`).
+| Document                                                                         | Contents                                                       |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [`docs/standard/ENGINEERING_STANDARD.md`](docs/standard/ENGINEERING_STANDARD.md) | The rules themselves, by family                                |
+| [`docs/standard/ENFORCEMENT_MAP.md`](docs/standard/ENFORCEMENT_MAP.md)           | What checks, measures and refuses each rule                    |
+| [`docs/standard/ADOPTION_PLAN.md`](docs/standard/ADOPTION_PLAN.md)               | Day 0 for a new repository, and the phases for an existing one |
+| [`docs/standard/AUTONOMOUS_ADOPTION.md`](docs/standard/AUTONOMOUS_ADOPTION.md)   | The harness, the hooks and the unattended run                  |
+| [`docs/CATALOG.md`](docs/CATALOG.md)                                             | The whole catalog as data, kept equal to the code by a test    |
+| [`docs/DOGFOOD.md`](docs/DOGFOOD.md)                                             | The tool measured against its own repository                   |
+| [`docs/PLAN.md`](docs/PLAN.md)                                                   | What changes next, and the evidence that put it there          |
 
 ## Development
 
 ```sh
-npm test                 # node:test, temp repositories, the real self-test
-npm run typecheck        # checkJs strict, zero findings, no file under ts-nocheck
-npm run types            # the declarations under types/, generated from the JSDoc; committed, a test keeps them equal
-npm run gate             # format, typecheck, tests, the ratchet, no trace of the tools
-npm run standards        # this package against its own baseline (scripts/ci/standards-baseline.json)
-node bin/abatty.mjs rules --md > docs/CATALOG.md   # after a rule changed; the test is red until it is run
+npm test           # node:test over temporary repositories and the real self-test
+npm run typecheck  # checkJs, strict, zero findings
+npm run types      # the declarations under types/, generated from the JSDoc and committed
+npm run gate       # the full gate
+npm run standards  # this package against its own baseline
 ```
 
-The templates and the rules are owned here (`templates/`, `src/rules/`); a change to a rule
-appends its ID to the list in `test/rules.test.mjs`, which is red for a rename or a loss.
+A change to a rule regenerates the catalog document in the same push, which the gate enforces.
+Every commit that touches source, tests, scripts or docs adds a changelog entry in the same
+commit, which the commit hook enforces.
+
+## Contributing
+
+Contributions are welcome under a Developer Certificate of Origin. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow, and
+[`SECURITY.md`](SECURITY.md) for coordinated disclosure.
+
+## License
+
+Apache-2.0. See [`LICENSE`](LICENSE).
