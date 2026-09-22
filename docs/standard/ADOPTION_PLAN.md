@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-20"
+last_verified: "2026-09-22"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -98,7 +98,7 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
     suite, per area if the repository is heterogeneous. `reportOnFailure` on, or a red suite
     reports no coverage rather than a failure.
 11. **Docs front matter check and index check** live from the first document.
-12. **The the agent harness**, from `templates/harness/`: `.claude/settings.json` (guard,
+12. **The agent harness**, from `templates/harness/`: `.claude/settings.json` (guard,
     protect, stop-gate, brief and lint-on-edit hooks; the repo's allow/deny rules),
     `abatty.config.json` at the root (commands, files, push policy, phases; the older
     `.claude/adoption.json` is still read and `abatty config --migrate` moves it), the nine hooks (the

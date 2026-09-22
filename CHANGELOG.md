@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-22
+
 ### Added
 
 - **`abatty report` says which floors were raised, by whom, and that nobody has verified it.**
@@ -43,321 +45,6 @@ under Unreleased in the same commit.
   would not have fixed that, because it agrees with UTC for most of the day. Five control cases
   in both directions, and the probe is spliced at the seam it forbids so that it passes the scan
   it defines.
-
-### Changed
-
-- **The package's own CI runs on every Node it claims and on pnpm as well as npm on Windows.**
-  The Linux job is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had ever run):
-  the whole gate on 22, the suite and the typecheck on 20, because the matrix's first run
-  showed the repository's graph tooling refuses Node 20 (`dependency-cruiser` runs on
-  `^22||^24||>=26`), which is that tool's floor and not the package's, whose claim rests on no
-  runtime dependency. The findings are uploaded once per commit. The Windows job is a matrix over npm
-  and pnpm, the pnpm leg installing pnpm on the runner, and the launcher case in the suite now
-  spawns every launcher it finds on PATH (npm always; pnpm, yarn and bun where installed, named
-  in the output) rather than npm alone: the trial's repository is pnpm on Windows, and nothing
-  here had ever run `pnpm.cmd` there.
-
-- **Two modules went over the module budget with the fixes above and are split by what they
-  are for.** What a push contains (the range, how it was found, the files it and the tree
-  change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the
-  same questions and none of them runs a gate; the gate keeps the gate. The provider-neutral
-  half of CI generation (the steps, the package manager's commands, the YAML helpers) stays in
-  `src/ci/generate.mjs`, and each provider renders them from its own module
-  (`src/ci/woodpecker.mjs`, `src/ci/github.mjs`). The `CI` flag the gate reads is read through
-  the env module, the one place the package reads its environment (VALID.3), which the ratchet
-  had counted as a regression. No behaviour changed; the suite that covers both is unchanged
-  but for the import paths.
-
-### Fixed
-
-- **The push-time changelog check reads the same `no-changelog:` line the commit-time hook
-  accepts.** The hook let a reasoned commit through and the ratchet refused the push a step
-  later, on this repository, on the day the hook landed: the escape was a promise the range
-  check broke. `commitsOf` now reads the whole message, and the changelog pair carries the
-  excuse; an excused commit is not an offender and cures nothing before it, and the bypass
-  reading still counts it as reasoned, so the decision is on the record in three places rather
-  than accepted in one and refused in another. The night's Stop gate stays as it was: a night
-  does not excuse itself.
-
-- **`npm test` runs on Node 20, the oldest Node the package claims** (the matrix's second
-  finding on its first day: `node --test "test/*.test.mjs"` relies on `--test` expanding the
-  glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
-  never once run there). `scripts/test.mjs` expands the glob itself and hands `node --test` the
-  files, node's flags first; the pattern stays in the script's text because the step controls
-  read it to learn where a planted test has to sit. The same leg then found the suite's own
-  fixture for the controls carrying the glob form, "proven" red on Node 20 for the wrong
-  reason until the confirm-clean run said so; it carries a runner of the same shape now, and
-  the plant path also reads a folder handed to a runner (`vitest run tests/`), which is a form
-  Windows' `node --test` does not take, so no single `node --test` argument runs on every
-  machine this suite does.
-
-- **The controls pass judges the suites too, and a step red without a plant proves nothing**
-  (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and
-  database steps, precisely the ones that vanished from the trial's empty-range run, were the
-  ones it could not see). Every suite step is now planted and judged under its suite's name, a
-  suite that needs Docker is skipped out loud when the daemon is down, and two plants are
-  declared for what a plant can prove: a browser test that throws where the Playwright config's
-  `testDir` says (or `e2e`), an integration test that throws where the script looks. What no
-  plant can prove is reported as `none` with the reason (a build is proven by its output, a
-  coverage floor by a drop no single file causes, the audit by the registry) rather than left
-  out. And a step that went red on its plant is run once more clean: red without the plant too
-  is the environment failing, not the guard holding, and reading it as proof was the trial's
-  first-day false red inside the mechanism that exists to catch false greens. That protocol
-  found two in this package's own suite at once: a fixture whose `package.json` was never
-  formatted had been "proving" the format step red on an unformatted file it did not need, and
-  `init` wrote a `docs/README.md` with no front matter, so every freshly initialised repository
-  was red on its first clean ratchet and its ratchet control was "proven" the same way. Both
-  fixed at the root. A tool that cannot be spawned reads as not installed on every platform
-  (127), where on Windows a missing `ruff` had read as a red control. The plants moved to
-  `src/core/step-plants.mjs`; the runner keeps `step-controls.mjs`.
-
-- **A step the preset requires cannot be skipped for want of a script, and a green with steps
-  not run says how many** (the reviewer's second pass, the other half of the false green: a
-  repository with a lockfile and no scripts read "gate green · 2 step(s)" with seven skipped and
-  exit 0). `errored` covered the instrument breaking; it did not cover the instrument never
-  being installed. A gate step now carries `required`, the preset's word on what is the
-  instrument rather than an option: the tests and the ratchet wherever there is code, the
-  typecheck where the preset is TypeScript-native (next, vite-react, astro), pytest for python.
-  Without its script or its config such a step is `errored` and the gate cannot run, the same
-  verdict as a tool that is not installed; a linter or a graph remains a dependency decision and
-  is skipped as before. And the verdict no longer leads with the colour when steps did not run:
-  "gate green with 4 of 9 step(s) not run (format, lint, import graph, dead code: no script or
-  config)", in yellow, so the reader is made to finish the sentence. The generated pipeline's
-  comment for an absent step says when the preset requires it. Three controls: the reviewer's
-  repro exits 4, the required steps alone are green with the count, every step present is the
-  plain verdict.
-
-- **The suite runs green on Windows, and two of its eight red cases were the code's fault**
-  (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were
-  committed without their executable bit on Windows, because the bit was set on an index entry
-  that did not exist yet and `git add` on a filesystem without modes reads none from disk; the
-  hook was then skipped on every other machine, which is a gate that never runs. The entry is
-  now staged with the bit when the file is not tracked, because the index is the only record
-  there is. The git shim looked for a file named `git`, which Windows cannot run, and spawned a
-  `.cmd` without the shell Node requires for one; it now looks for `git.exe` or `git.cmd` and
-  gives the latter cmd.exe with the arguments quoted. The other six were the tests' shape: a
-  path compared with the separator of the machine that wrote the test, a Seatbelt string with
-  its backslashes unescaped, a container mount asserted as if the temp folder were never under
-  the home, and two timezone cases that pin `TZ` for git, which git for Windows does not read
-  (proved by a commit under `TZ=Pacific/Kiritimati` recorded at `+0200`); on Windows those two
-  run in the machine's own zone, the one pair that exists there. Underneath them a harness bug:
-  deleting `TZ` does not put Node's clock back on Windows, so every later case ran in whatever
-  the previous one pinned; the system zone is now restored by name. One more fixture had pinned
-  the audit's old "skipped" and is corrected with the rest.
-
-- **A context file that is still the template is a description of one, and the catalog now
-  says so** (the ninth defect of the trial: `AGENTS.md` shipped with `<project name>` and
-  twelve other placeholders, and nobody noticed for two days because every section was there).
-  `init` fills what a machine can, the project's name from `package.json` or the folder; the
-  rest are the questions, and `DOC-CONTEXT` reads as partial for as long as any stands, naming
-  the first three with the fix ("fill the placeholders in <>: they are the questions, not the
-  answers"). A placeholder is angle-bracketed text with a space in it; a convention written the
-  same way (`<topic>`, `<type>/<short-description>`), an HTML comment or a tag is not one.
-  Control cases in both directions, and the catalog regenerated.
-
-- **The front matter reads the same with CRLF as with LF** (the eighth defect of the trial: a
-  document checked out with CRLF on Windows lost the last key of its front matter, and the
-  ratchet went red on one operating system only). The closing `---` was found across the
-  `
-`, but the line before it kept its `
-` and the key pattern could not cross it. The
-  reader now normalises line endings once, before anything is read; every other parser in the
-  package reads git's own output, which is LF. A control case reads one document both ways
-  and expects the same map, byte-order mark included.
-
-- **The practices page was behind the standard it describes** (`docs.behindCode`, red on
-  `main` since VALID.5 landed on 2026-09-20: the standard gained a rule and
-  `docs/standard/BEST_PRACTICES.md` still carried the day before). Re-read against the
-  standard, the runtime table gains the VALID.5 row, and the date moves because the reading was
-  done, not because the number was red. The catalog's INST-CI-STEPS entry says the rule as the
-  check now reads it: a comment that names a step is not a step.
-
-- **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of
-  the trial: `npm ci` and five `npm run` steps for scripts the package lacked, on a pnpm
-  repository, red from the first run). The install, the audit, every `run` and every `npx`
-  are now the package manager's the lockfile names (`src/core/package-manager.mjs`: npm, pnpm,
-  yarn classic or berry, bun), with the runner's toolchain to match (`pnpm/action-setup`,
-  `oven-sh/setup-bun`, `corepack enable` on the node image, the cache keyed on the manager). A
-  gate step whose script the package does not have is written as a comment that names it, in
-  the words the gap analysis uses, and a job with no runnable step is a comment block rather
-  than an empty job the forge refuses to parse. `--check` compares against the same rendering,
-  so a generated file is in step with itself. INST-CI-STEPS reads commands and not comments, so
-  the comment that names a missing step does not count as the step. Control cases: pnpm and npm
-  on one preset, an alternative script found under its own name, and the preset alone rendered
-  whole for a reader.
-
-- **A trailing redirection no longer hides a push to the base branch, and the forge's API is
-  read as the same door** (the sixth defect of the trial: `git push origin main 2>&1` passed the
-  PR-only guard, and `gh api` ref writes were never looked at). The guard took the last non-flag
-  word as the target, and `2>&1` is a word; it now reads the arguments positionally and stops at
-  the first redirection. `gh api` with a write method or a body flag against the base's ref or
-  the merges endpoint is refused as a push to the base; `gh pr merge` and the API's merge of a
-  pull request are refused at night, since merging is a human act the skill was never allowed.
-  Nine control cases in both directions, six of them watched failing against the old guard.
-  And because a regex over the agent's shell is a guard on this machine, not a policy on the
-  branch, `abatty doctor` now says on every run that PR-only is held here for the agent's shell
-  and on the forge by branch protection, which this machine cannot see, with the command that
-  prints the ruleset to import.
-
-- **The bypass rate read every source commit as a bypass** (the fifth defect of the trial: "the
-  bypass-rate report reads the wrong config key and flags every commit"). The report handed the
-  raw config to the changelog pair, which reads `changelog` at the top level while the config
-  keeps it under `files`; the `then` side was null, and 41 of the last 47 commits on this
-  repository read as bypasses, the ones that touched the changelog included. In the generated
-  pipeline that step exits non-zero on a bypass, so it was a false red on every pull request as
-  well as a false number everywhere. The pair is now resolved the way the ratchet resolves it,
-  from the same function; a control case proves a commit with its changelog line reads clean
-  and one without reads as the hole it is.
-
-- **A pipeline is credited for the scripts it can run, not for the words it names** (the fourth
-  defect of the trial: a generated CI file naming five scripts the package lacked was red from
-  its first run and still lifted the score by six points). `INST-CI` read any pipeline file as
-  present and `INST-CI-STEPS` grepped its text for `lint`; now both read the scripts the pipeline
-  invokes (`npm run`, `pnpm run`, `yarn`, `bun run`) against `package.json`, a step whose script
-  is missing is reported as "NAMED, no script", and the phantom scripts are listed in the
-  evidence with the fix. Control cases in both directions, and the catalog regenerated.
-
-- **A push range the gate cannot trust selects everything, never nothing** (the third defect of
-  the trial: `abatty gate` in a pipeline without `--range` read "0 pushed files", skipped the
-  build, browser and database suites and printed green). Two cases were read as an empty push:
-  a range that could not be found at all (a detached or shallow checkout with no upstream and no
-  base to fork from, where `HEAD~1` may not even exist) and a range that is genuinely empty in
-  CI, where the push is the event that started the run and not a diff against an upstream the
-  push itself just moved. `pushRangeInfo()` now says how the range was found and how many
-  commits it holds; blind, the gate selects every tracked file, prints why in yellow, and says
-  how to narrow it (`--range <before>..<sha>`). Locally an empty range still means nothing to
-  push, which is what it means. The CLI passes `CI` down; the library takes it as an option so
-  the suite can judge both directions on one tree.
-
-- **A repository with no lockfile has no audit, and the gate now says so instead of passing**
-  (the second defect of the trial: seventy advisories on a pnpm product, and a gate that said
-  nothing for as long as it ran one). The audit step answered "skipped" without a
-  `package-lock.json`, and a skipped step is a passed step at the gate; the rule the reviewer
-  wrote is the one this package already claims for itself, that a check which reports nothing is
-  indistinguishable from a check that is switched off. Now the audit is the package manager's,
-  read from what the repository committed (`src/core/package-manager.mjs`: the `packageManager`
-  field first, the lockfile otherwise): `npm audit`, `pnpm audit` or `bun audit`, each run
-  against a package with a known advisory before it was wired and its JSON shape read for the
-  allowances (three shapes; a banner before the JSON is skipped). yarn's is named for CI and
-  deferred out loud until somebody has watched it. No lockfile at all is `errored`, the outcome
-  a linter that is not installed gets, and the gate stops on it as the instrument. The audit
-  runner is injectable like the script runner, so the suite is hermetic where it used to reach
-  the registry, and the fixtures that were green only because the audit skipped now carry a
-  lockfile. Control cases in both directions at the audit and at the gate.
-
-- **The gate runs again on Windows: a tool launcher is a batch file, and a batch file needs
-  cmd.exe** (the first of nine defects an outside trial on a pnpm + Windows product reported).
-  The commit that took the shell off every spawn site named the launcher instead (`npm.cmd`),
-  which Node has refused to start without a shell since 20.12 (EINVAL, the fix for
-  CVE-2024-27980), so this package's own gate stopped at its first step with "format could not
-  run: EINVAL" for two days. `launch()` in `src/core/spawn.mjs` is now the one place that
-  decides: on Windows a launcher runs under cmd.exe with its arguments quoted for it, once;
-  everywhere else and for everything else there is still no shell. The harness self-test's agent
-  probe had the same belief and the same failure on a `.cmd` stub, and carries the same fix. A
-  control case spawns the real launcher on every platform the suite runs on. Two limits are
-  written where they hold rather than papered over: cmd.exe exits 1 both for a tool that failed
-  and for a tool it could not find, so on Windows a missing tool inside an npm script is reported
-  as failed with the shell's own line above it (POSIX keeps 127 and "could not run"); and five
-  test fixtures were POSIX-shaped (single quotes in a script, a URL's pathname as a path) and
-  answered the wrong thing on Windows before the fix could be seen.
-
-- **Two gate steps here had never once been watched going red** (found while proving the date
-  metric). `abatty doctor --controls` plants a violation per gate step and reports a step that
-  stays green as ABSENT, and on this repository it had been reporting typecheck and unit tests
-  as absent on every run. Two causes, both the same mistake: the plant assumed a convention the
-  repository does not keep. The typecheck control wrote a `.ts` file, and this tsconfig includes
-  `**/*.mjs` only, so the compiler never read it; the test control wrote `src/*.test.ts`, and the
-  test script globs `test/*.test.mjs`, so the runner never ran it. The plant now follows the
-  repository: the extension its own tsconfig covers, with the type error written as JSDoc where
-  that is JavaScript, and the folder and name its own test script globs. A second hole in the
-  same mechanism: a planted step inherited `NODE_TEST_CONTEXT` from whatever spawned it, and a
-  `node --test` that sees it exits 0 on a test that threw, so the control watched a failure and
-  called the step green. The planted step now runs with that variable and the coverage one
-  removed. Both fixes are mutation-tested against a fixture whose typecheck and runner are
-  deliberately narrow. The mechanism was not silent about any of this: it printed ABSENT and
-  exited 3 every time. CI runs the self-test skipped, so nothing downstream acted on it.
-
-- **Dates were derived in UTC and compared against local ones** (from an outside review). The
-  reviewer's `npm test` failed two cases at 01:55 CEST that pass at UTC: `docs.behindCode`
-  reported a document as behind code it had been verified against on the same day, because the
-  probe's same-day guard compared a UTC "today" against git's `%cs`, which is the committer's
-  local day. It is a HARD metric, so it failed a gate, for every user east of Greenwich in the
-  hours before midnight and west of it after. The probe's own control case is what caught it.
-  Every date is now derived by one `localToday()`, so the mistake is unavailable rather than
-  merely fixed, and seven call sites were moved onto it. Running the suite across five timezones
-  found four more of the same defect in the tests themselves and two deeper ones nobody had
-  looked at: the night report matched hooks' UTC timestamps against a local folder name with a
-  string prefix, which silently dropped every Stop receipt for anybody not at Greenwich, and its
-  fixtures built UTC instants out of local dates. The suite now passes in UTC, Paris, Auckland,
-  Los Angeles and Kolkata, and the regression cases pin a zone whose calendar day differs from
-  UTC's at whatever hour they run, because a suite that only runs at UTC cannot see any of this.
-- **Six agent-security rules cited `SEC.5`, which the published standard defines as outbound
-  webhook signing.** A collision introduced when the family was added. The standard gains
-  `SEC.7`, which says what those rules are actually about, and the six now cite it.
-
-### Changed
-
-- **The standard documents say what the harness now ships.** `docs.behindCode` flagged four of
-  them once the day rolled over, correctly: they describe a harness that moved under them. The
-  git shim is now in the enforcement map's night controls (three became four), in the adoption
-  plan's inventory of what `init` writes, as an invariant of its own in the engineering standard,
-  and with a section in the autonomous-adoption guide explaining why a `PreToolUse` hook is a
-  property of one tool rather than of the repository. The adoption plan also said "the seven
-  hooks" when there are nine. Each date was bumped because the document was re-read and changed,
-  which is the only reason §7 allows for bumping one.
-
-### Fixed
-
-- **The trust scanner fired on its own repository, and would have blocked a night here** (from an
-  outside review). Ten findings on this tree, every one a false positive: the scanner's own
-  pattern table, its own test fixtures, the permission deny-list that forbids `rm -rf /`, and
-  research prose reading "the Cyber Resilience **Act as a** deadline" and "they **act as a**
-  ratchet". A night-blocking check has the tightest false-positive budget there is, and this one
-  was running at roughly one hundred per cent on its author's tree, which is the shape of check
-  people switch off. Four narrowings: the scanner's own two files are exempt by name (those two,
-  never "tests" as a class, because a hostile repository would hide an instruction in a test file
-  precisely because a scan was taught to skip them); a list that forbids what it names is read as
-  forbidding, by looking for the key above rather than only the line; `act as` needs both a
-  second-person lead and a role-shaped object; and the secret pattern needs a determiner, so
-  "fewer output tokens" is prose again. A repository may also name paths to skip, in
-  `preflight.trustAllow`, with the reason. A test asserts the scan is clean on this repository and
-  a hostile fixture proves all seven attack shapes are still caught.
-- **SARIF findings carried no line numbers** (from the same review). Zero of eight ratchet results
-  had a region, so a forge placed them at the top of the file rather than on the line of the
-  change under review, which was the whole argument for emitting SARIF. The renderer was right;
-  the probes never supplied a line. The two probes that scan for occurrences now report one
-  finding per occurrence on its own line, and the totals and per-file floors are untouched because
-  the ratchet sums weights either way. Fingerprints gained an ordinal so two findings in one file
-  are two alerts rather than one, and they still survive an unrelated line being inserted above.
-- **Six test assertions accepted either answer at the exact point the fifth gate outcome exists.**
-  A step whose tool ran and failed exits 3; one whose tool could not run exits 4. Widening the
-  assertions to `[3, 4]` made the suite unable to detect a regression in either direction. They
-  are exact again, against fixtures that decide the outcome rather than hoping for it, plus an
-  end-to-end case through real npm covering both codes. Verified by running the suite with
-  `eslint`, `ruff` and `mypy` removed from the machine, which is the condition that broke CI.
-- **Three surfaces each decided for themselves whether a finding had a location**, and two
-  disagreed. A finding now carries `where`, attached once in `runCatalog`, and the SARIF renderer
-  and the agent surface both read it. The first attempt put the scrape in the renderer and this
-  repository's own import graph refused it, correctly: `src/ui/` renders what it is given.
-- **`bin/abatty.mjs` was 312 code lines against a 300 budget** and `explain CODE-SIZE-300` still
-  named it, which wave 1 had claimed as done. The help screen moved to `src/ui/help.mjs`, where
-  the boundary map says terminal text belongs; the entry point is 288 lines, the rule no longer
-  names it, and the startup floor is unchanged at 3 because the import is lazy.
-- **`preflight.trust` was read by a rule but absent from the config schema**, so a repository
-  setting it would have failed validation. Both `preflight` keys are in the schema now.
-
-### Fixed
-
-- **Six tests pinned the machine they were written on, and went red on a clean runner.** A gate
-  step whose tool is absent reports `could not run` and exits 4; one whose tool found something
-  reports `failed` and exits 3. That distinction is the whole point of the fifth gate outcome, and
-  six assertions had baked in whichever of the two this machine happened to produce, because the
-  linter and the Python tools are installed here and are not on a CI runner. They now accept
-  either, and say why: what each test is about is WHERE the gate stops, not which of the two
-  reasons a particular machine had for stopping it there. A gate that sailed past the step, or
-  reported a clean zero, still fails all six.
-
-### Added
 
 - **`--plain` on every command** (C30, the second half of it). No colour, and ASCII markers a
   byte-oriented reader can match on: `[ok]`, `[FAIL]`, `[skip]`. It is handled once at the entry
@@ -499,22 +186,6 @@ under Unreleased in the same commit.
   scroll past the real one. `docs/SECRET_SCAN_BENCHMARK.md` publishes the numbers and says plainly
   what the corpus is not: it is this repository's own, and a third-party benchmark is still open.
 
-### Changed
-
-- **Coverage and mutation testing are read for their bounds, not for their tool** (C14, C13).
-  TEST-COVERAGE asked for a threshold on the tree total, which is the wrong question asked loudly:
-  a whole new untested file passes while the total holds, and a refactor that deletes well-tested
-  code fails for improving the codebase. It now asks for a gate on the coverage of the lines the
-  change touched, with the total kept as a floor underneath. TEST-MUTATION asked whether a
-  particular package was installed. It now asks for the two bounds without which mutation testing
-  is the slowest check anybody has ever switched off: mutate what the change touched, and ignore
-  the nodes a mutant cannot prove anything about, so a surviving mutant is a real gap in the tests
-  rather than a log line. Both rules read the tool's config files, the scripts and the pipeline,
-  in whichever ecosystem's spelling, instead of one vendor's file name; where a rule still names a
-  tool it is because that tool is the exception, and it says so.
-
-### Added
-
 - **The dependency audit is scoped before it is trusted** (C16). An unscoped audit is the one
   people switch off: it reports a dev-only advisory nobody ships, at a severity nobody would act
   on, with no fix available, on every push, until somebody adds the flag that kills it for good.
@@ -590,8 +261,6 @@ under Unreleased in the same commit.
   hidden from the repository. The tree is readable. The claim is not containment - it is that the
   night's own instructions never name these rules, so nothing aims at them.
 
-### Added
-
 - **The bypass rate, in the report and in the generated pipeline** (C25). The guard refuses a
   bypass at the moment it is attempted, which leaves the one that happened where the guard was
   not: a machine whose hooks were never installed, a commit made before the harness landed, a
@@ -605,8 +274,6 @@ under Unreleased in the same commit.
   be assumed. A commit whose message says why is counted as a decision rather than a hole: the
   reason is the difference between a decision and a habit.
 
-### Added
-
 - **The sandbox's threat model is published** (C23), in `docs/standard/AUTONOMOUS_ADOPTION.md` §9.
   A sandbox nobody can describe is a claim, so the document says what the boundary holds, how it
   is proven, and - the part that matters - **what it does not contain**: the network, the
@@ -615,8 +282,6 @@ under Unreleased in the same commit.
   decide whether it is enough for their repository instead of trusting the word "sandbox". The
   closing line is the honest one: run a night on a machine you would be willing to hand to the
   repository it is working on, because for the length of the night that is what you have done.
-
-### Added
 
 - **Agent security is a family of rules** (C21). The other families ask what the code does; these
   ask what the agent may do to the repository and what the repository may do to the agent - a
@@ -630,8 +295,6 @@ under Unreleased in the same commit.
   nobody can measure). Each is a harnessed repository's: a repository nobody runs unattended reads
   `n/a` with the reason rather than failing five rules it never opted into. The catalog is 76
   rules over 15 families.
-
-### Added
 
 - **The repository is read before an agent is pointed at it** (C22). A night let a model read
   everything in the tree - source, documents, dependency metadata - and nothing asked what the
@@ -657,35 +320,6 @@ under Unreleased in the same commit.
   tested. The night now refuses to start without the record, and refuses just as firmly when the
   record names a step that stayed green: absent is not passing.
 
-### Fixed
-
-- **The coupled path for the harness named a folder it does not install into.** `templates/harness/`
-  was coupled to `.claude/`, but the context-file template installs to the root as `CLAUDE.md`,
-  not into `.claude/` at all - so editing it demanded a change to a folder it never touches, and
-  the gate refused a correct push. The coupling is now the four pairs that are actually installs:
-  the hooks, the path-scoped rules, the agents and the project settings. A rule that fires where
-  nothing is wrong is the same defect as a rule that stays silent where something is.
-
-### Changed
-
-- **The interoperable context file is always written, and `agents` says which surfaces are
-  covered** (C8). `AGENTS.md` was written only when another configured adapter asked for it, so a
-  repository that named one agent was invisible to every other - the interoperability objection,
-  for the cost of one file. `init` now writes it always and the primary's file imports it, so
-  there is one source rather than two copies that drift, and a rule that reads the context follows
-  that import rather than reporting the sections missing from a pointer. `abatty agents` lists,
-  per adapter, the file it reads and whether that file is on disk: an adapter named in the config
-  whose file was never written is a repository that believes it is covered while the agent reads
-  nothing.
-
-- **The context template points where it used to copy** (C9, reshaped). Its size section repeated
-  the table in `.claude/rules/size-limits.md` and its command block listed commands for a stack an
-  adopter may not have; both now point. 144 lines to 141. The item as written - "ships near-empty"
-  - is recorded as withdrawn in the plan with the reason: `DOC-CONTEXT-SECTIONS` requires six
-  sections, so a near-empty template would fail the package's own rule the moment `init` wrote it.
-
-### Added
-
 - **The second reading of an unchanged tree is nearly free** (C44). Every `measure` read the whole
   tree and ran the whole catalog, so nothing was cheaper the second time and the inner-loop tier
   was aspirational. One property governs the design and every control case is about it: **a cache
@@ -699,8 +333,6 @@ under Unreleased in the same commit.
   One thing the first implementation got wrong and the controls caught: writing the cache created
   an untracked file, which changed the key that named it, so the cache never hit in a repository
   that does not ignore `.abatty/`. The tool's own scratch folder is not an input.
-
-### Added
 
 - **`abatty fix` writes what a phase asks for that a machine can write** (C46). A tool that only
   refuses is half a tool, and most of day zero is not a judgement: a document with front matter, a
@@ -718,8 +350,6 @@ under Unreleased in the same commit.
   a stack detected without being named, the stage read off the tree, and five next steps - no
   `--stack`, no config, no profile.
 
-### Added
-
 - **The cold start is a number the ratchet holds** (C32). `startup.eagerModules` counts the
   modules the entry point parses before it knows which command was asked for - the floor under
   every command in the inner loop - and it may only fall. It lands at **3**, from 89 before the
@@ -728,17 +358,6 @@ under Unreleased in the same commit.
   ratchet nobody trusts. Two control cases hold the distinction the whole split depends on: an
   eager graph is counted, and the same graph behind an `await import()` costs nothing.
 
-### Changed
-
-- **The suite is 81 s, from 225 s** (C43, in part). The runner already parallelises files, so the
-  suite was never serialised work - it was one file: `night.test.mjs` was 151 s of the 225 s, and
-  nothing else could finish before it. It is now three files that run at once, split by what each
-  group proves (a night that runs, the aborts and refusals, the spend and the resume), with the
-  fixture they share in `test/night-helpers.mjs`. The number to watch is the longest file, now
-  70 s. What is left of C43 is the gate's own steps, which still run one after another.
-
-### Added
-
 - **What this change introduced, before what the repository already carried** (C2). The ratchet
   reported every finding in one list, so an author reading a red gate could not tell the two lines
   they added from the four hundred the repository has carried for a year - and a reader who cannot
@@ -746,8 +365,6 @@ under Unreleased in the same commit.
   the range touched is reported first, under `in this change`, and the standing debt is counted
   beside it. The split is named for what it can actually know - touching a file is not the same as
   causing the finding - so `introduced` means the finding sits in a file this change edited.
-
-### Added
 
 - **Every rule says which kind of control it is** (C33). The category has a published vocabulary
   and the catalog did not use it: a **guide** is feedforward and steers the agent before it acts,
@@ -758,8 +375,6 @@ under Unreleased in the same commit.
   to 19 inferential - honest for a package built around a gate, and now visible rather than
   accidental, which matters because feedback alone produces an agent that repeats its mistakes and
   feedforward alone produces one that never learns whether its rules worked.
-
-### Added
 
 - **A finding now carries the command that proves it was fixed** (C31). The published definition
   of a sensor in an agent harness is a signal optimised for the model and carrying the instruction
@@ -772,8 +387,6 @@ under Unreleased in the same commit.
   human: the rule breaks, the gate refuses with an instruction, the agent edits, the agent runs
   `verify`. The control case is the one that matters and runs both ways: `verify` is non-zero
   before the edit and zero after it, with nothing else in the repository changed.
-
-### Added
 
 - **Findings go to the diff, as SARIF** (C45). The strongest finding in the whole evidence base is
   about placement rather than precision: the same analysis, at the same precision, reached a
@@ -789,51 +402,6 @@ under Unreleased in the same commit.
   debt solves by hand today. It is a renderer and nothing else: one finding model, another
   surface, nothing recomputed.
 
-### Changed
-
-- **The shell is gone from every spawn site that did not need it** (C42). Eleven sites passed a
-  command and an argument array and then handed both to a shell, which only added a layer that
-  re-parses quoting, behaves differently on Windows, and sits exactly where a repository's own
-  scripts run during an unattended night. What the shell was actually covering is narrower: on
-  Windows the node tool launchers are batch files and the bare name does not resolve, so
-  `src/core/spawn.mjs` names the launcher instead, which does the same job without handing the
-  arguments to a parser. Two sites keep a shell and say why in a comment: the night's pre-flight
-  and the Stop hook each run one command string the repository configured, not a command and its
-  arguments, and that string comes from the config the hooks trust.
-
-### Fixed
-
-- **A change under a shared package left the application that imports it ungated** (C29). The
-  gate selected work by path, which answers only half of what a monorepo has to ask: which inputs
-  changed, but not which workspaces can observe them. A change under `packages/ui` did not select
-  `apps/store`, so its suites were skipped with "no matching path" and the push went through
-  unchecked - a silent pass, which is the worst failure a gate can have, because nothing in the
-  output says the check did not happen. The workspaces now carry a dependency graph read from
-  their own manifests, and a changed workspace selects every workspace that depends on it, at any
-  depth. Where the graph cannot be built, or a changed file sits outside every workspace, the gate
-  runs everything and **says which of the two happened**: conservative and slow is a correct gate,
-  fast and silent is not. Four control cases: one hop, two hops, a leaf nothing depends on, and
-  the root-level change that widens to all; plus a gate-level case, watched failing first, where
-  the application's suites run although its folder was never touched.
-
-### Changed
-
-- **Every command loads only what it uses, and the entry point is a dispatcher again** (C41).
-  Printing a version string parsed the night runner, the sandbox drivers, the hosted service, the
-  MCP server and the CI generator: 89 modules and 12,845 lines were statically reachable from
-  `bin/abatty.mjs`, which is the floor under every command in the inner loop. Each case now
-  imports what it needs when it is chosen, and the eleven screens that were written inline moved
-  into `src/cli/` beside the seven already there: `measure`, `gate` and `doctor`, `init` and
-  `update`, `config` and `agents`, `scrub`, `report` and `dashboard`, `rules` and `explain`.
-  `abatty version` falls from 131 ms to 45 ms, status from 131 ms to 78 ms, `measure` from 229 ms
-  to 165 ms. The entry point falls from 646 code lines to 291, so `abatty explain CODE-SIZE-300`
-  no longer names the file an agent edits most - the tool stops failing its own rule at the one
-  place it hurt. What the remaining 45 ms is: `node -e ""` alone is 31 ms here, so the package's
-  own share is about 14 ms, and the plan's 30 ms target is restated as the share above the
-  runtime's floor rather than an absolute nobody can reach.
-
-### Added
-
 - **The gate can say "I could not run", and the exit codes say which happened** (C48, and the
   codes of C30). A dead-code analyser that crashed and one that found dead code produced the same
   `✗ ... failed. The gate stops here.`, so the verdict conflated "your work is bad" with "my
@@ -847,18 +415,6 @@ under Unreleased in the same commit.
   one that matters: a gate that found something did not fail, it worked. Two control cases run in
   both directions - the same step crashing and the same step exiting non-zero after it ran - so
   the difference is watched rather than asserted.
-
-### Fixed
-
-- **A document whose name ends another document's name was invisible to `docs.indexDrift`.** The
-  probe asked whether the index text contained the path, so `PLAN.md` read as named because the
-  index carries `standard/ADOPTION_PLAN.md`, and the metric reported nothing while the row was
-  genuinely absent: a check that cannot see a whole class of its own subject. It now reads the
-  paths the index names, each taken whole and bounded at both ends, and carries two control cases
-  for exactly this shape, the missing one and the named one. Both were watched failing against the
-  substring match before the fix landed.
-
-### Added
 
 - **`docs/DESIGN.md`: what the instrument has to become on its own terms.** The roadmap says what
   changes next and the position says where the package stands against the evidence about
@@ -884,12 +440,420 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **Five standard documents re-read against the harness that moved on 2026-09-21.** The
+  guard's new readings (a push to the base behind a redirection, the forge's API as the same
+  door, a pull request merged at night) and the shim's Windows form were in the templates and
+  in their README, not in the standard that cites them: the hooks table, the enforcement map's
+  night steps and the standard's own invariant now say what the guard refuses, and two counts
+  that named a total of self-test checks (104, 124) name the decisions the README counts
+  instead. The dogfood page closes its pull-request-template claim, which `CLAUDE.md` §10 had
+  closed on 2026-09-19, and records what the first Windows and Node 20 runs found, including
+  that `docs.behindCode` turns red the day after a merge with nothing pushed, which is how this
+  entry came to be written.
+
+- **The package's own CI runs on every Node it claims and on pnpm as well as npm on Windows.**
+  The Linux job is a matrix over Node 20 and 22 (`engines` says `>=20`; only 22 had ever run):
+  the whole gate on 22, the suite and the typecheck on 20, because the matrix's first run
+  showed the repository's graph tooling refuses Node 20 (`dependency-cruiser` runs on
+  `^22||^24||>=26`), which is that tool's floor and not the package's, whose claim rests on no
+  runtime dependency. The findings are uploaded once per commit. The Windows job is a matrix over npm
+  and pnpm, the pnpm leg installing pnpm on the runner, and the launcher case in the suite now
+  spawns every launcher it finds on PATH (npm always; pnpm, yarn and bun where installed, named
+  in the output) rather than npm alone: the trial's repository is pnpm on Windows, and nothing
+  here had ever run `pnpm.cmd` there.
+
+- **Two modules went over the module budget with the fixes above and are split by what they
+  are for.** What a push contains (the range, how it was found, the files it and the tree
+  change) is `src/core/range.mjs`, because the ratchet, the report and the MCP server ask the
+  same questions and none of them runs a gate; the gate keeps the gate. The provider-neutral
+  half of CI generation (the steps, the package manager's commands, the YAML helpers) stays in
+  `src/ci/generate.mjs`, and each provider renders them from its own module
+  (`src/ci/woodpecker.mjs`, `src/ci/github.mjs`). The `CI` flag the gate reads is read through
+  the env module, the one place the package reads its environment (VALID.3), which the ratchet
+  had counted as a regression. No behaviour changed; the suite that covers both is unchanged
+  but for the import paths.
+
+- **The standard documents say what the harness now ships.** `docs.behindCode` flagged four of
+  them once the day rolled over, correctly: they describe a harness that moved under them. The
+  git shim is now in the enforcement map's night controls (three became four), in the adoption
+  plan's inventory of what `init` writes, as an invariant of its own in the engineering standard,
+  and with a section in the autonomous-adoption guide explaining why a `PreToolUse` hook is a
+  property of one tool rather than of the repository. The adoption plan also said "the seven
+  hooks" when there are nine. Each date was bumped because the document was re-read and changed,
+  which is the only reason §7 allows for bumping one.
+
+- **Coverage and mutation testing are read for their bounds, not for their tool** (C14, C13).
+  TEST-COVERAGE asked for a threshold on the tree total, which is the wrong question asked loudly:
+  a whole new untested file passes while the total holds, and a refactor that deletes well-tested
+  code fails for improving the codebase. It now asks for a gate on the coverage of the lines the
+  change touched, with the total kept as a floor underneath. TEST-MUTATION asked whether a
+  particular package was installed. It now asks for the two bounds without which mutation testing
+  is the slowest check anybody has ever switched off: mutate what the change touched, and ignore
+  the nodes a mutant cannot prove anything about, so a surviving mutant is a real gap in the tests
+  rather than a log line. Both rules read the tool's config files, the scripts and the pipeline,
+  in whichever ecosystem's spelling, instead of one vendor's file name; where a rule still names a
+  tool it is because that tool is the exception, and it says so.
+
+- **The interoperable context file is always written, and `agents` says which surfaces are
+  covered** (C8). `AGENTS.md` was written only when another configured adapter asked for it, so a
+  repository that named one agent was invisible to every other - the interoperability objection,
+  for the cost of one file. `init` now writes it always and the primary's file imports it, so
+  there is one source rather than two copies that drift, and a rule that reads the context follows
+  that import rather than reporting the sections missing from a pointer. `abatty agents` lists,
+  per adapter, the file it reads and whether that file is on disk: an adapter named in the config
+  whose file was never written is a repository that believes it is covered while the agent reads
+  nothing.
+
+- **The context template points where it used to copy** (C9, reshaped). Its size section repeated
+  the table in `.claude/rules/size-limits.md` and its command block listed commands for a stack an
+  adopter may not have; both now point. 144 lines to 141. The item as written ("ships
+  near-empty") is recorded as withdrawn in the plan with the reason: `DOC-CONTEXT-SECTIONS`
+  requires six sections, so a near-empty template would fail the package's own rule the moment
+  `init` wrote it.
+
+- **The suite is 81 s, from 225 s** (C43, in part). The runner already parallelises files, so the
+  suite was never serialised work - it was one file: `night.test.mjs` was 151 s of the 225 s, and
+  nothing else could finish before it. It is now three files that run at once, split by what each
+  group proves (a night that runs, the aborts and refusals, the spend and the resume), with the
+  fixture they share in `test/night-helpers.mjs`. The number to watch is the longest file, now
+  70 s. What is left of C43 is the gate's own steps, which still run one after another.
+
+- **The shell is gone from every spawn site that did not need it** (C42). Eleven sites passed a
+  command and an argument array and then handed both to a shell, which only added a layer that
+  re-parses quoting, behaves differently on Windows, and sits exactly where a repository's own
+  scripts run during an unattended night. What the shell was actually covering is narrower: on
+  Windows the node tool launchers are batch files and the bare name does not resolve, so
+  `src/core/spawn.mjs` names the launcher instead, which does the same job without handing the
+  arguments to a parser. Two sites keep a shell and say why in a comment: the night's pre-flight
+  and the Stop hook each run one command string the repository configured, not a command and its
+  arguments, and that string comes from the config the hooks trust.
+
+- **Every command loads only what it uses, and the entry point is a dispatcher again** (C41).
+  Printing a version string parsed the night runner, the sandbox drivers, the hosted service, the
+  MCP server and the CI generator: 89 modules and 12,845 lines were statically reachable from
+  `bin/abatty.mjs`, which is the floor under every command in the inner loop. Each case now
+  imports what it needs when it is chosen, and the eleven screens that were written inline moved
+  into `src/cli/` beside the seven already there: `measure`, `gate` and `doctor`, `init` and
+  `update`, `config` and `agents`, `scrub`, `report` and `dashboard`, `rules` and `explain`.
+  `abatty version` falls from 131 ms to 45 ms, status from 131 ms to 78 ms, `measure` from 229 ms
+  to 165 ms. The entry point falls from 646 code lines to 291, so `abatty explain CODE-SIZE-300`
+  no longer names the file an agent edits most - the tool stops failing its own rule at the one
+  place it hurt. What the remaining 45 ms is: `node -e ""` alone is 31 ms here, so the package's
+  own share is about 14 ms, and the plan's 30 ms target is restated as the share above the
+  runtime's floor rather than an absolute nobody can reach.
+
 - **`docs/ROADMAP.md` is archived and points at the plan.** Four of its five tables were empty
   and the one open row split in two: the presets it wanted proven are wave 5 of the plan, and the
   repository outside the company is the position's subject. The 2026-09-15 analysis it carried of
   what stopped a stranger's repository from a meaningful score is left in place rather than
   moved, because three of its four blockers are closed and it describes a repository that no
   longer exists.
+
+### Fixed
+
+- **The push-time changelog check reads the same `no-changelog:` line the commit-time hook
+  accepts.** The hook let a reasoned commit through and the ratchet refused the push a step
+  later, on this repository, on the day the hook landed: the escape was a promise the range
+  check broke. `commitsOf` now reads the whole message, and the changelog pair carries the
+  excuse; an excused commit is not an offender and cures nothing before it, and the bypass
+  reading still counts it as reasoned, so the decision is on the record in three places rather
+  than accepted in one and refused in another. The night's Stop gate stays as it was: a night
+  does not excuse itself.
+
+- **`npm test` runs on Node 20, the oldest Node the package claims** (the matrix's second
+  finding on its first day: `node --test "test/*.test.mjs"` relies on `--test` expanding the
+  glob, which it does only from Node 21, so on 20 the runner found no file and the suite had
+  never once run there). `scripts/test.mjs` expands the glob itself and hands `node --test` the
+  files, node's flags first; the pattern stays in the script's text because the step controls
+  read it to learn where a planted test has to sit. The same leg then found the suite's own
+  fixture for the controls carrying the glob form, "proven" red on Node 20 for the wrong
+  reason until the confirm-clean run said so; it carries a runner of the same shape now, and
+  the plant path also reads a folder handed to a runner (`vitest run tests/`), which is a form
+  Windows' `node --test` does not take, so no single `node --test` argument runs on every
+  machine this suite does.
+
+- **The controls pass judges the suites too, and a step red without a plant proves nothing**
+  (the reviewer's second pass: `stepControls` read `preset.gate.always` alone, so the browser and
+  database steps, precisely the ones that vanished from the trial's empty-range run, were the
+  ones it could not see). Every suite step is now planted and judged under its suite's name, a
+  suite that needs Docker is skipped out loud when the daemon is down, and two plants are
+  declared for what a plant can prove: a browser test that throws where the Playwright config's
+  `testDir` says (or `e2e`), an integration test that throws where the script looks. What no
+  plant can prove is reported as `none` with the reason (a build is proven by its output, a
+  coverage floor by a drop no single file causes, the audit by the registry) rather than left
+  out. And a step that went red on its plant is run once more clean: red without the plant too
+  is the environment failing, not the guard holding, and reading it as proof was the trial's
+  first-day false red inside the mechanism that exists to catch false greens. That protocol
+  found two in this package's own suite at once: a fixture whose `package.json` was never
+  formatted had been "proving" the format step red on an unformatted file it did not need, and
+  `init` wrote a `docs/README.md` with no front matter, so every freshly initialised repository
+  was red on its first clean ratchet and its ratchet control was "proven" the same way. Both
+  fixed at the root. A tool that cannot be spawned reads as not installed on every platform
+  (127), where on Windows a missing `ruff` had read as a red control. The plants moved to
+  `src/core/step-plants.mjs`; the runner keeps `step-controls.mjs`.
+
+- **A step the preset requires cannot be skipped for want of a script, and a green with steps
+  not run says how many** (the reviewer's second pass, the other half of the false green: a
+  repository with a lockfile and no scripts read "gate green · 2 step(s)" with seven skipped and
+  exit 0). `errored` covered the instrument breaking; it did not cover the instrument never
+  being installed. A gate step now carries `required`, the preset's word on what is the
+  instrument rather than an option: the tests and the ratchet wherever there is code, the
+  typecheck where the preset is TypeScript-native (next, vite-react, astro), pytest for python.
+  Without its script or its config such a step is `errored` and the gate cannot run, the same
+  verdict as a tool that is not installed; a linter or a graph remains a dependency decision and
+  is skipped as before. And the verdict no longer leads with the colour when steps did not run:
+  "gate green with 4 of 9 step(s) not run (format, lint, import graph, dead code: no script or
+  config)", in yellow, so the reader is made to finish the sentence. The generated pipeline's
+  comment for an absent step says when the preset requires it. Three controls: the reviewer's
+  repro exits 4, the required steps alone are green with the count, every step present is the
+  plain verdict.
+
+- **The suite runs green on Windows, and two of its eight red cases were the code's fault**
+  (the trial's second finding as a class: "npm/Linux-shaped"). The hooks `init` writes were
+  committed without their executable bit on Windows, because the bit was set on an index entry
+  that did not exist yet and `git add` on a filesystem without modes reads none from disk; the
+  hook was then skipped on every other machine, which is a gate that never runs. The entry is
+  now staged with the bit when the file is not tracked, because the index is the only record
+  there is. The git shim looked for a file named `git`, which Windows cannot run, and spawned a
+  `.cmd` without the shell Node requires for one; it now looks for `git.exe` or `git.cmd` and
+  gives the latter cmd.exe with the arguments quoted. The other six were the tests' shape: a
+  path compared with the separator of the machine that wrote the test, a Seatbelt string with
+  its backslashes unescaped, a container mount asserted as if the temp folder were never under
+  the home, and two timezone cases that pin `TZ` for git, which git for Windows does not read
+  (proved by a commit under `TZ=Pacific/Kiritimati` recorded at `+0200`); on Windows those two
+  run in the machine's own zone, the one pair that exists there. Underneath them a harness bug:
+  deleting `TZ` does not put Node's clock back on Windows, so every later case ran in whatever
+  the previous one pinned; the system zone is now restored by name. One more fixture had pinned
+  the audit's old "skipped" and is corrected with the rest.
+
+- **A context file that is still the template is a description of one, and the catalog now
+  says so** (the ninth defect of the trial: `AGENTS.md` shipped with `<project name>` and
+  twelve other placeholders, and nobody noticed for two days because every section was there).
+  `init` fills what a machine can, the project's name from `package.json` or the folder; the
+  rest are the questions, and `DOC-CONTEXT` reads as partial for as long as any stands, naming
+  the first three with the fix ("fill the placeholders in <>: they are the questions, not the
+  answers"). A placeholder is angle-bracketed text with a space in it; a convention written the
+  same way (`<topic>`, `<type>/<short-description>`), an HTML comment or a tag is not one.
+  Control cases in both directions, and the catalog regenerated.
+
+- **The front matter reads the same with CRLF as with LF** (the eighth defect of the trial: a
+  document checked out with CRLF on Windows lost the last key of its front matter, and the
+  ratchet went red on one operating system only). The closing `---` was found across the
+  `\r\n`, but the line before it kept its `\r` and the key pattern could not cross it. The reader
+  now normalises line endings once, before anything is read; every other parser in the package
+  reads git's own output, which is LF. A control case reads one document both ways and expects
+  the same map, byte-order mark included.
+
+- **The practices page was behind the standard it describes** (`docs.behindCode`, red on
+  `main` since VALID.5 landed on 2026-09-20: the standard gained a rule and
+  `docs/standard/BEST_PRACTICES.md` still carried the day before). Re-read against the
+  standard, the runtime table gains the VALID.5 row, and the date moves because the reading was
+  done, not because the number was red. The catalog's INST-CI-STEPS entry says the rule as the
+  check now reads it: a comment that names a step is not a step.
+
+- **`abatty ci` writes the repository's pipeline, not a template's** (the seventh defect of
+  the trial: `npm ci` and five `npm run` steps for scripts the package lacked, on a pnpm
+  repository, red from the first run). The install, the audit, every `run` and every `npx`
+  are now the package manager's the lockfile names (`src/core/package-manager.mjs`: npm, pnpm,
+  yarn classic or berry, bun), with the runner's toolchain to match (`pnpm/action-setup`,
+  `oven-sh/setup-bun`, `corepack enable` on the node image, the cache keyed on the manager). A
+  gate step whose script the package does not have is written as a comment that names it, in
+  the words the gap analysis uses, and a job with no runnable step is a comment block rather
+  than an empty job the forge refuses to parse. `--check` compares against the same rendering,
+  so a generated file is in step with itself. INST-CI-STEPS reads commands and not comments, so
+  the comment that names a missing step does not count as the step. Control cases: pnpm and npm
+  on one preset, an alternative script found under its own name, and the preset alone rendered
+  whole for a reader.
+
+- **A trailing redirection no longer hides a push to the base branch, and the forge's API is
+  read as the same door** (the sixth defect of the trial: `git push origin main 2>&1` passed the
+  PR-only guard, and `gh api` ref writes were never looked at). The guard took the last non-flag
+  word as the target, and `2>&1` is a word; it now reads the arguments positionally and stops at
+  the first redirection. `gh api` with a write method or a body flag against the base's ref or
+  the merges endpoint is refused as a push to the base; `gh pr merge` and the API's merge of a
+  pull request are refused at night, since merging is a human act the skill was never allowed.
+  Nine control cases in both directions, six of them watched failing against the old guard.
+  And because a regex over the agent's shell is a guard on this machine, not a policy on the
+  branch, `abatty doctor` now says on every run that PR-only is held here for the agent's shell
+  and on the forge by branch protection, which this machine cannot see, with the command that
+  prints the ruleset to import.
+
+- **The bypass rate read every source commit as a bypass** (the fifth defect of the trial: "the
+  bypass-rate report reads the wrong config key and flags every commit"). The report handed the
+  raw config to the changelog pair, which reads `changelog` at the top level while the config
+  keeps it under `files`; the `then` side was null, and 41 of the last 47 commits on this
+  repository read as bypasses, the ones that touched the changelog included. In the generated
+  pipeline that step exits non-zero on a bypass, so it was a false red on every pull request as
+  well as a false number everywhere. The pair is now resolved the way the ratchet resolves it,
+  from the same function; a control case proves a commit with its changelog line reads clean
+  and one without reads as the hole it is.
+
+- **A pipeline is credited for the scripts it can run, not for the words it names** (the fourth
+  defect of the trial: a generated CI file naming five scripts the package lacked was red from
+  its first run and still lifted the score by six points). `INST-CI` read any pipeline file as
+  present and `INST-CI-STEPS` grepped its text for `lint`; now both read the scripts the pipeline
+  invokes (`npm run`, `pnpm run`, `yarn`, `bun run`) against `package.json`, a step whose script
+  is missing is reported as "NAMED, no script", and the phantom scripts are listed in the
+  evidence with the fix. Control cases in both directions, and the catalog regenerated.
+
+- **A push range the gate cannot trust selects everything, never nothing** (the third defect of
+  the trial: `abatty gate` in a pipeline without `--range` read "0 pushed files", skipped the
+  build, browser and database suites and printed green). Two cases were read as an empty push:
+  a range that could not be found at all (a detached or shallow checkout with no upstream and no
+  base to fork from, where `HEAD~1` may not even exist) and a range that is genuinely empty in
+  CI, where the push is the event that started the run and not a diff against an upstream the
+  push itself just moved. `pushRangeInfo()` now says how the range was found and how many
+  commits it holds; blind, the gate selects every tracked file, prints why in yellow, and says
+  how to narrow it (`--range <before>..<sha>`). Locally an empty range still means nothing to
+  push, which is what it means. The CLI passes `CI` down; the library takes it as an option so
+  the suite can judge both directions on one tree.
+
+- **A repository with no lockfile has no audit, and the gate now says so instead of passing**
+  (the second defect of the trial: seventy advisories on a pnpm product, and a gate that said
+  nothing for as long as it ran one). The audit step answered "skipped" without a
+  `package-lock.json`, and a skipped step is a passed step at the gate; the rule the reviewer
+  wrote is the one this package already claims for itself, that a check which reports nothing is
+  indistinguishable from a check that is switched off. Now the audit is the package manager's,
+  read from what the repository committed (`src/core/package-manager.mjs`: the `packageManager`
+  field first, the lockfile otherwise): `npm audit`, `pnpm audit` or `bun audit`, each run
+  against a package with a known advisory before it was wired and its JSON shape read for the
+  allowances (three shapes; a banner before the JSON is skipped). yarn's is named for CI and
+  deferred out loud until somebody has watched it. No lockfile at all is `errored`, the outcome
+  a linter that is not installed gets, and the gate stops on it as the instrument. The audit
+  runner is injectable like the script runner, so the suite is hermetic where it used to reach
+  the registry, and the fixtures that were green only because the audit skipped now carry a
+  lockfile. Control cases in both directions at the audit and at the gate.
+
+- **The gate runs again on Windows: a tool launcher is a batch file, and a batch file needs
+  cmd.exe** (the first of nine defects an outside trial on a pnpm + Windows product reported).
+  The commit that took the shell off every spawn site named the launcher instead (`npm.cmd`),
+  which Node has refused to start without a shell since 20.12 (EINVAL, the fix for
+  CVE-2024-27980), so this package's own gate stopped at its first step with "format could not
+  run: EINVAL" for two days. `launch()` in `src/core/spawn.mjs` is now the one place that
+  decides: on Windows a launcher runs under cmd.exe with its arguments quoted for it, once;
+  everywhere else and for everything else there is still no shell. The harness self-test's agent
+  probe had the same belief and the same failure on a `.cmd` stub, and carries the same fix. A
+  control case spawns the real launcher on every platform the suite runs on. Two limits are
+  written where they hold rather than papered over: cmd.exe exits 1 both for a tool that failed
+  and for a tool it could not find, so on Windows a missing tool inside an npm script is reported
+  as failed with the shell's own line above it (POSIX keeps 127 and "could not run"); and five
+  test fixtures were POSIX-shaped (single quotes in a script, a URL's pathname as a path) and
+  answered the wrong thing on Windows before the fix could be seen.
+
+- **Two gate steps here had never once been watched going red** (found while proving the date
+  metric). `abatty doctor --controls` plants a violation per gate step and reports a step that
+  stays green as ABSENT, and on this repository it had been reporting typecheck and unit tests
+  as absent on every run. Two causes, both the same mistake: the plant assumed a convention the
+  repository does not keep. The typecheck control wrote a `.ts` file, and this tsconfig includes
+  `**/*.mjs` only, so the compiler never read it; the test control wrote `src/*.test.ts`, and the
+  test script globs `test/*.test.mjs`, so the runner never ran it. The plant now follows the
+  repository: the extension its own tsconfig covers, with the type error written as JSDoc where
+  that is JavaScript, and the folder and name its own test script globs. A second hole in the
+  same mechanism: a planted step inherited `NODE_TEST_CONTEXT` from whatever spawned it, and a
+  `node --test` that sees it exits 0 on a test that threw, so the control watched a failure and
+  called the step green. The planted step now runs with that variable and the coverage one
+  removed. Both fixes are mutation-tested against a fixture whose typecheck and runner are
+  deliberately narrow. The mechanism was not silent about any of this: it printed ABSENT and
+  exited 3 every time. CI runs the self-test skipped, so nothing downstream acted on it.
+
+- **Dates were derived in UTC and compared against local ones** (from an outside review). The
+  reviewer's `npm test` failed two cases at 01:55 CEST that pass at UTC: `docs.behindCode`
+  reported a document as behind code it had been verified against on the same day, because the
+  probe's same-day guard compared a UTC "today" against git's `%cs`, which is the committer's
+  local day. It is a HARD metric, so it failed a gate, for every user east of Greenwich in the
+  hours before midnight and west of it after. The probe's own control case is what caught it.
+  Every date is now derived by one `localToday()`, so the mistake is unavailable rather than
+  merely fixed, and seven call sites were moved onto it. Running the suite across five timezones
+  found four more of the same defect in the tests themselves and two deeper ones nobody had
+  looked at: the night report matched hooks' UTC timestamps against a local folder name with a
+  string prefix, which silently dropped every Stop receipt for anybody not at Greenwich, and its
+  fixtures built UTC instants out of local dates. The suite now passes in UTC, Paris, Auckland,
+  Los Angeles and Kolkata, and the regression cases pin a zone whose calendar day differs from
+  UTC's at whatever hour they run, because a suite that only runs at UTC cannot see any of this.
+
+- **Six agent-security rules cited `SEC.5`, which the published standard defines as outbound
+  webhook signing.** A collision introduced when the family was added. The standard gains
+  `SEC.7`, which says what those rules are actually about, and the six now cite it.
+
+- **The trust scanner fired on its own repository, and would have blocked a night here** (from an
+  outside review). Ten findings on this tree, every one a false positive: the scanner's own
+  pattern table, its own test fixtures, the permission deny-list that forbids `rm -rf /`, and
+  research prose reading "the Cyber Resilience **Act as a** deadline" and "they **act as a**
+  ratchet". A night-blocking check has the tightest false-positive budget there is, and this one
+  was running at roughly one hundred per cent on its author's tree, which is the shape of check
+  people switch off. Four narrowings: the scanner's own two files are exempt by name (those two,
+  never "tests" as a class, because a hostile repository would hide an instruction in a test file
+  precisely because a scan was taught to skip them); a list that forbids what it names is read as
+  forbidding, by looking for the key above rather than only the line; `act as` needs both a
+  second-person lead and a role-shaped object; and the secret pattern needs a determiner, so
+  "fewer output tokens" is prose again. A repository may also name paths to skip, in
+  `preflight.trustAllow`, with the reason. A test asserts the scan is clean on this repository and
+  a hostile fixture proves all seven attack shapes are still caught.
+
+- **SARIF findings carried no line numbers** (from the same review). Zero of eight ratchet results
+  had a region, so a forge placed them at the top of the file rather than on the line of the
+  change under review, which was the whole argument for emitting SARIF. The renderer was right;
+  the probes never supplied a line. The two probes that scan for occurrences now report one
+  finding per occurrence on its own line, and the totals and per-file floors are untouched because
+  the ratchet sums weights either way. Fingerprints gained an ordinal so two findings in one file
+  are two alerts rather than one, and they still survive an unrelated line being inserted above.
+
+- **Six test assertions accepted either answer at the exact point the fifth gate outcome exists.**
+  A step whose tool ran and failed exits 3; one whose tool could not run exits 4. Widening the
+  assertions to `[3, 4]` made the suite unable to detect a regression in either direction. They
+  are exact again, against fixtures that decide the outcome rather than hoping for it, plus an
+  end-to-end case through real npm covering both codes. Verified by running the suite with
+  `eslint`, `ruff` and `mypy` removed from the machine, which is the condition that broke CI.
+
+- **Three surfaces each decided for themselves whether a finding had a location**, and two
+  disagreed. A finding now carries `where`, attached once in `runCatalog`, and the SARIF renderer
+  and the agent surface both read it. The first attempt put the scrape in the renderer and this
+  repository's own import graph refused it, correctly: `src/ui/` renders what it is given.
+
+- **`bin/abatty.mjs` was 312 code lines against a 300 budget** and `explain CODE-SIZE-300` still
+  named it, which wave 1 had claimed as done. The help screen moved to `src/ui/help.mjs`, where
+  the boundary map says terminal text belongs; the entry point is 288 lines, the rule no longer
+  names it, and the startup floor is unchanged at 3 because the import is lazy.
+
+- **`preflight.trust` was read by a rule but absent from the config schema**, so a repository
+  setting it would have failed validation. Both `preflight` keys are in the schema now.
+
+- **Six tests pinned the machine they were written on, and went red on a clean runner.** A gate
+  step whose tool is absent reports `could not run` and exits 4; one whose tool found something
+  reports `failed` and exits 3. That distinction is the whole point of the fifth gate outcome, and
+  six assertions had baked in whichever of the two this machine happened to produce, because the
+  linter and the Python tools are installed here and are not on a CI runner. They now accept
+  either, and say why: what each test is about is WHERE the gate stops, not which of the two
+  reasons a particular machine had for stopping it there. A gate that sailed past the step, or
+  reported a clean zero, still fails all six.
+
+- **The coupled path for the harness named a folder it does not install into.** `templates/harness/`
+  was coupled to `.claude/`, but the context-file template installs to the root as `CLAUDE.md`,
+  not into `.claude/` at all - so editing it demanded a change to a folder it never touches, and
+  the gate refused a correct push. The coupling is now the four pairs that are actually installs:
+  the hooks, the path-scoped rules, the agents and the project settings. A rule that fires where
+  nothing is wrong is the same defect as a rule that stays silent where something is.
+
+- **A change under a shared package left the application that imports it ungated** (C29). The
+  gate selected work by path, which answers only half of what a monorepo has to ask: which inputs
+  changed, but not which workspaces can observe them. A change under `packages/ui` did not select
+  `apps/store`, so its suites were skipped with "no matching path" and the push went through
+  unchecked - a silent pass, which is the worst failure a gate can have, because nothing in the
+  output says the check did not happen. The workspaces now carry a dependency graph read from
+  their own manifests, and a changed workspace selects every workspace that depends on it, at any
+  depth. Where the graph cannot be built, or a changed file sits outside every workspace, the gate
+  runs everything and **says which of the two happened**: conservative and slow is a correct gate,
+  fast and silent is not. Four control cases: one hop, two hops, a leaf nothing depends on, and
+  the root-level change that widens to all; plus a gate-level case, watched failing first, where
+  the application's suites run although its folder was never touched.
+
+- **A document whose name ends another document's name was invisible to `docs.indexDrift`.** The
+  probe asked whether the index text contained the path, so `PLAN.md` read as named because the
+  index carries `standard/ADOPTION_PLAN.md`, and the metric reported nothing while the row was
+  genuinely absent: a check that cannot see a whole class of its own subject. It now reads the
+  paths the index names, each taken whole and bounded at both ends, and carries two control cases
+  for exactly this shape, the missing one and the named one. Both were watched failing against the
+  substring match before the fix landed.
 
 ## [0.2.0] - 2026-09-18
 
