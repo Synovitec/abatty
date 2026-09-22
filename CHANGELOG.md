@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A control fixture that would not go away failed a suite that had already passed.** The
+  release of 0.3.0 went red on `not ok 173`, with fifteen controls printed green above it and
+  `ENOTEMPTY: rmdir .git/info` below: a commit forks `gc --auto`, which outlives the command
+  that forked it and runs `update-server-info` into `.git/info/refs` while the teardown is
+  walking that very directory. The same tree had gone green five ways an hour earlier, which is
+  what a one-in-six race looks like. Two changes, because the cause and the consequence are
+  different bugs: the fixture sets `gc.auto 0`, so nothing is forked to race with, and the
+  teardown is `removeFixture`, which retries and then gives up quietly, because the probe has
+  already answered and a directory is not a verdict. Throwing from the `finally` also masked
+  whatever the block above was reporting. Control cases both ways, both mutation-tested: a
+  fixture that can go, goes; a removal that throws returns the answer anyway.
+
 ## [0.3.0] - 2026-09-22
 
 ### Added

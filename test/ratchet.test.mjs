@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cli, git, tempRepo } from "./helpers.mjs";
 import {
@@ -15,7 +15,7 @@ import {
   validateProbe,
   writeBaseline,
 } from "../src/ratchet/index.mjs";
-import { runControls } from "../src/ratchet/controls.mjs";
+import { removeFixture, runControls } from "../src/ratchet/controls.mjs";
 import { frontMatter } from "../src/ratchet/probes/lib.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 
@@ -238,6 +238,21 @@ test("a repository's own probes load from abatty.probes.mjs, validated; a built-
   );
   assert.equal(v.find((x) => x.metric === "own.ownersEmpty")?.status, "hard-fail");
   assert.equal(validateProbe({ metric: "Bad", kind: "soft" }, new Set()).length > 2, true);
+});
+
+// The teardown, in both directions: a fixture that can go does, and one that cannot is not a
+// verdict. The release of 0.3.0 went red on the second: git's background `gc --auto` recreated
+// a file under `.git/` while the removal walked that very directory, and the throw out of the
+// `finally` turned fifteen passing controls into a failed suite.
+test("the control fixture is removed, and a removal that throws is not a verdict", () => {
+  const dir = tempRepo("fixture-teardown", { "src/a.mjs": "export const a = 1;\n" });
+  assert.ok(existsSync(join(dir, ".git", "info")));
+  removeFixture(dir);
+  assert.equal(existsSync(dir), false, "a fixture that can go, goes");
+
+  // A path the platform refuses before it touches the filesystem: the throw is swallowed, and
+  // a caller in a `finally` keeps whatever it was returning.
+  assert.doesNotThrow(() => removeFixture("a\0path no platform accepts"));
 });
 
 test("the CLI: ratchet is red without a floor, baseline writes it, ratchet is green, --json carries the verdicts, --controls runs the cases", () => {
