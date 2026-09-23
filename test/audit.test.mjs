@@ -120,6 +120,11 @@ test("the network is not a verdict; a repository with no lockfile is an instrume
       .outcome,
     "deferred",
   );
+  // an advisory title that talks about a network is a finding, not an outage
+  assert.equal(
+    auditOutcome(dir, runner(1, "high  Server-side request forgery over the network")).outcome,
+    "failed",
+  );
   // This read "skipped" once, and the gate counts a skipped step as passed: a product with
   // seventy advisories and no package-lock.json had a gate that said nothing about them.
   const bare = tempRepo("audit-nolock", { "package.json": NEXT_PKG });
@@ -232,6 +237,21 @@ test("yarn 1 is judged from its report, never its exit code, which ignores the f
     auditOutcome(dir, () => ({ status: 1, output: "error An unexpected error occurred" })).outcome,
     "failed",
     "an unreadable report is never a clean one",
+  );
+  // an advisory about a network, even one quoting a connection error, is an advisory and not an
+  // unreachable registry: this read "deferred", which the gate counts as a pass
+  const networky = YARN1_HIGH.replace(
+    '"title":"Command Injection in lodash"',
+    '"title":"An attacker on the network forces ECONNRESET"',
+  );
+  assert.equal(auditOutcome(dir, () => ({ status: 8, output: networky })).outcome, "failed");
+  // and a real outage still defers
+  assert.equal(
+    auditOutcome(dir, () => ({
+      status: 1,
+      output: "error getaddrinfo ENOTFOUND registry.yarnpkg.com",
+    })).outcome,
+    "deferred",
   );
 });
 

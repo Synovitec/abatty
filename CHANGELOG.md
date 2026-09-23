@@ -119,6 +119,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **An advisory about a network no longer reads as an unreachable registry.** The audit's offline
+  check matched the bare word "network", so a high advisory whose text mentioned one (a request
+  forgery, say) was deferred to CI, and the gate counts a deferral as a pass. The check now reads
+  the error codes a failed connection prints, and a yarn report that parsed is never treated as
+  an outage.
 - **INST-CI no longer reads a comment in a pipeline as a script it runs.** A comment saying
   "yarn 1 comes with the runner images" was charged as a script named `1` that the package
   lacks, and the check dropped to partial. Comment lines are skipped now; a comment runs

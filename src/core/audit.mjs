@@ -22,9 +22,15 @@ import { packageManager } from "./package-manager.mjs";
 /** Severity, weakest first: the floor is an index into this. */
 const SEVERITY = ["info", "low", "moderate", "high", "critical"];
 
-/** The network is not a verdict: a registry that cannot be reached defers to CI, never fails. @param {string} out */
+/**
+ * The network is not a verdict: a registry that cannot be reached defers to CI, never fails. Read
+ * by the error codes a failed connection prints. The bare word "network" was on this list, and an
+ * advisory about a network (a request forgery, say) then read as an unreachable registry: a high
+ * advisory deferred, which the gate counts as a pass.
+ * @param {string} out
+ */
 const offline = (out) =>
-  /ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ETIMEDOUT|ENETUNREACH|network|registry.*(unreachable|offline)/i.test(
+  /ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ETIMEDOUT|ENETUNREACH|ECONNRESET|registry.*(unreachable|offline)/i.test(
     out,
   );
 
@@ -197,7 +203,8 @@ export function auditOutcome(repoDir, run, o = {}) {
       detail: expiredNote,
       ...(expired.length ? { expired: ids(expired) } : {}),
     };
-  if (offline(r.output))
+  // A report that parsed was delivered by the registry, whatever its advisories say.
+  if (offline(r.output) && !(cmd.byJson && advisoriesOf(r.output, level)))
     return { outcome: "deferred", detail: "the registry is unreachable; CI runs the audit" };
   if (!live.length && !cmd.byJson) return failure(r.output, expiredNote);
 
