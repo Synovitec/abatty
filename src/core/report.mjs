@@ -25,6 +25,7 @@ import { readBaseline } from "../ratchet/baseline.mjs";
  *   abatty: string,
  *   repo: string, name: string, date: string, at: string, branch: string, commit: string,
  *   score: number, applicable: number, waived: number,
+ *   truth?: import("./truth.mjs").Truth,
  *   enforced: import("./gap-analysis.mjs").Enforced,
  *   waivers?: import("./gap-analysis.mjs").Waivers,
  *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
@@ -109,8 +110,9 @@ function bypassOf(repoDir) {
  * Every floor the baseline records as raised, with the reason and the owner it was raised under.
  * `verified` is false on every row, and says so rather than implying otherwise: the owner is a
  * string the command was given, and an agent session can type a person's name as easily as a
- * person can. Until a raise needs an approval the raising process cannot give itself, the row
- * is printed as what it is, an unverified claim, so the reader sees it instead of nothing.
+ * person can. The approval the raiser cannot give itself is a review on the forge, read in the
+ * pipeline by `abatty raises` (src/core/raises.mjs); this machine cannot see it, so here the
+ * row is printed as what it is, an unverified claim, so the reader sees it instead of nothing.
  * @param {string} repoDir @returns {FloorRaise[]}
  */
 function floorsRaised(repoDir) {
@@ -163,6 +165,7 @@ export async function buildReport(repoDir, o = {}) {
     commit: git(repoDir, "rev-parse", "--short", "HEAD"),
     score: gap.score,
     applicable: gap.applicable,
+    truth: gap.truth,
     enforced: gap.enforced,
     waivers: gap.waivers,
     waived: gap.waived,

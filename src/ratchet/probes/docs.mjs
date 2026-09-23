@@ -210,7 +210,7 @@ export const probes = [
           const p = prefixOf(entry, f);
           if (!p || !c.exists(p)) continue;
           const last = c.git("log", "-1", "--format=%cs", "--", p);
-          if (last && last > verified && last !== c.today) behind.push(`${entry} moved ${last}`);
+          if (last && last > verified) behind.push(`${entry} moved ${last}`);
         }
         if (behind.length)
           findings.push({ path: f, detail: `verified ${verified}; ${behind.join("; ")}` });
@@ -234,11 +234,25 @@ export const probes = [
         expect: 1,
       },
       {
-        name: "a doc verified today holds",
+        // The day the source moves is the day its author can re-read the doc. An exemption for
+        // today let the change merge green and the base go red at midnight, charged to the next push.
+        name: "a source moved today after a doc verified yesterday counts, today",
+        files: {
+          "docs/a.md": FM(
+            `last_verified: "${localToday(new Date(Date.now() - 36 * 3600 * 1000))}"\nsource_truth:\n  - "src/x.ts"\n`,
+          ),
+          "src/x.ts": "export {};\n",
+        },
+        commits: [{ files: { "src/x.ts": "export const now = 1;\n" }, message: "feat: now" }],
+        expect: 1,
+      },
+      {
+        name: "a doc verified today holds, its source moved today too",
         files: {
           "docs/a.md": FM(`last_verified: "${localToday()}"\nsource_truth:\n  - "src/x.ts"\n`),
           "src/x.ts": "export {};\n",
         },
+        commits: [{ files: { "src/x.ts": "export const now = 1;\n" }, message: "feat: now" }],
         expect: 0,
       },
     ],

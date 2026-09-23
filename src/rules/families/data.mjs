@@ -45,17 +45,26 @@ export const rules = [
     phase: "4 / 10",
     ...DATABASE,
     why: "One tenant reading another's rows is the failure a multi-tenant product does not survive; it is proven by a negative test on a real database, not by the presence of a column.",
-    next: "Add a negative isolation integration test (tenant A cannot read B)",
+    next: "Add a negative isolation integration test (tenant A cannot read B); a tenant column other than tenant_id, store_id, company_id or organisation_id is named in tenantKeys in the config",
     check: (c) => {
       const m = migrations(c);
       const rls = m.some((f) => /ROW LEVEL SECURITY/i.test(c.read(f)));
       // A column is a word on its own, not the tail of another name: `ms_tenant_id` (a settings
-      // key for a Microsoft tenant) read as a tenant column on a single-tenant repository.
-      const tenantCol = m.some((f) =>
-        /(^|[^\w])(store_id|tenant_id|company_id|organisation_id|organization_id)(?![\w])/i.test(
-          c.read(f),
-        ),
-      );
+      // key for a Microsoft tenant) read as a tenant column on a single-tenant repository. A
+      // product whose tenant is a restaurant or a workspace names its column in `tenantKeys`.
+      const own = Array.isArray(c.adoption?.tenantKeys)
+        ? c.adoption.tenantKeys.map((k) => String(k).replace(/\W/g, "")).filter(Boolean)
+        : [];
+      const keys = [
+        "store_id",
+        "tenant_id",
+        "company_id",
+        "organisation_id",
+        "organization_id",
+        ...own,
+      ];
+      const column = new RegExp(`(^|[^\\w])(${keys.join("|")})(?![\\w])`, "i");
+      const tenantCol = m.some((f) => column.test(c.read(f)));
       // A negative scope test on a real database counts whatever it is named after: the proof
       // that one caller cannot read another's rows is called `visibility` or `scope` as often as
       // `tenant`.

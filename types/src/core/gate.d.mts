@@ -1,4 +1,12 @@
 /**
+ * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
+ * @typedef {import("./spawn.mjs").RunResult} RunResult
+ * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ */
+/**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
  * @param {GateOptions} o
  */
@@ -40,9 +48,13 @@ export type GateOptions = {
     range?: string;
     base?: string;
     ci?: boolean;
-    run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
+    run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number;
     audit?: AuditRunner;
     dockerUp?: () => boolean;
+    db?: {
+        url: string;
+        test: string;
+    };
     log?: (line: string) => void;
     workspaces?: {
         path: string;

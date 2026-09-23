@@ -12,7 +12,7 @@
  *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
- *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
+ *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>] [--preflight]
  *   abatty doctor [dir] [--strict] [--skip-self-test] [--controls]      the harness in step; --controls plants a violation per gate step and reports a step that stays green as absent
  *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
  *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema
@@ -28,6 +28,7 @@
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
+ *   abatty raises [dir] [--base <ref>] [--require-review <pr>] [--json]  the floors loosened against the base, and the review that can land them
  *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]
  *   abatty profiles [dir] [--json]                                    the profiles this repository follows: rules, phases, presets as one package
  *   abatty presets · abatty version
@@ -70,6 +71,7 @@ const KNOWN = [
   "fix",
   "ratchet",
   "baseline",
+  "raises",
   "night",
   "presets",
   "profiles",
@@ -115,6 +117,7 @@ const VALUE_FLAGS = [
   "--to",
   "--provider",
   "--ci",
+  "--require-review",
 ];
 const positional = rest.filter(
   (a, i) => !a.startsWith("--") && !(i > 0 && VALUE_FLAGS.includes(rest[i - 1] || "")),
@@ -308,6 +311,10 @@ switch (command) {
     const { ratchetCommand } = await import("../src/cli/ratchet.mjs");
     await ratchetCommand(command, { dir, opt, flag, out, err, VERSION });
     break;
+  }
+  case "raises": {
+    const { raisesCommand } = await import("../src/cli/raises.mjs");
+    process.exit(raisesCommand(ctx));
   }
   case "night": {
     const { nightCommand } = await import("../src/cli/night.mjs");

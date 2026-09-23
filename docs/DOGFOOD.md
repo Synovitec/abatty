@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-22"
+last_verified: "2026-09-23"
 ---
 
 # Running abatty on abatty
@@ -75,13 +75,14 @@ vulnerability disclosure policy. There is now, and `SEC-DISCLOSURE` is a rule.
 
 ## What it cannot hold, and why
 
-Five rules of its own catalog are missing here, and they are open rather than waived:
+Four rules of its own catalog are missing here, and they are open rather than waived. A fifth,
+`CODE-DUP`, was on this list until 2026-09-23: the package's own `code.clones` reading holds it
+without a dependency.
 
 | Rule                                        | Why not                                                                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CODE-LINTER`, `CODE-MAXWARN`, `CODE-SHAPE` | This package has not adopted eslint. The gate reports the absent `lint` step as **skipped** rather than passing it, and the gap analysis names it |
 | `CODE-JSDOC`                                | Wants `eslint-plugin-jsdoc`                                                                                                                       |
-| `CODE-DUP`                                  | Wants `jscpd`                                                                                                                                     |
 | `TEST-COVERAGE`                             | Wants a coverage runner with thresholds                                                                                                           |
 | `TEST-MUTATION`                             | Wants StrykerJS                                                                                                                                   |
 

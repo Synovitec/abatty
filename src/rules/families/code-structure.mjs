@@ -109,29 +109,36 @@ export const rules = [
   {
     id: "CODE-DUP",
     family: "Code",
-    title: "Duplication measured by jscpd as a ratchet metric",
+    title: "Duplication measured as a ratchet metric",
     standard: ["CODE.12"],
     level: "should",
     enforcement: "ratchet",
     phase: "12",
     ...JS_SOURCES,
-    why: "Two copies of a block fix one bug twice, or once; the count of clones is a number that may only fall.",
-    next: "Add jscpd with a dup script and read its report as dup.clones / dup.clonedLines in the ratchet, or record the decision not to measure",
+    why: "Two copies of a block fix one bug twice, or once; the count of clones is a number that may only fall. The practice is the number, not a tool: the package's own reading needs no dependency, and a repository's own detector counts as well.",
+    next: "Add code.clones to ratchet.enable (no dependency) and record the floor with abatty baseline, or read your own clone detector into the ratchet as a metric",
     check: (c) => {
-      const script = c.script(/jscpd/);
-      const inBaseline =
-        c.readJson(c.firstFile(/standards-baseline\.json$/) || "")?.metrics?.["dup.clones"] !==
-        undefined;
-      const run = script || inBaseline;
+      // Any clone count with a floor holds the rule: the package's `code.clones`, or a metric a
+      // repository's own probe reads from its detector (`dup.clones` was the first one seen).
+      const metrics = Object.keys(
+        c.readJson(c.firstFile(/standards-baseline\.json$/) || "")?.metrics || {},
+      );
+      const floored = metrics.find((m) => /(^|\.)clones$|^dup\./.test(m));
+      const script = c.script(/jscpd|\bcpd\b|simian|\bdupl\b/);
+      const enabled = (c.adoption?.ratchet?.enable || []).includes("code.clones");
+      const status =
+        floored || script ? "present" : enabled || c.has("jscpd") ? "partial" : "missing";
       return {
-        status: run ? "present" : c.has("jscpd") ? "partial" : "missing",
-        evidence: run
-          ? script
+        status,
+        evidence: floored
+          ? `${floored} in the baseline`
+          : script
             ? "script " + script[0]
-            : "dup.clones in the baseline"
-          : c.has("jscpd")
-            ? "jscpd installed, not in the ratchet"
-            : "not measured",
+            : enabled
+              ? "code.clones enabled, no floor yet (abatty baseline)"
+              : c.has("jscpd")
+                ? "a clone detector installed, not in the ratchet"
+                : "not measured",
       };
     },
   },

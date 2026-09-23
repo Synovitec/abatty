@@ -72,6 +72,11 @@ database suite. A step whose script the repository does not have yet is reported
 than passed, and the verdict leads with how many steps did not run. Steps the preset requires
 cannot be skipped: without them the gate reports that it could not run.
 
+A suite that needs a database never runs against one the run did not create. With
+`TEST_DATABASE_URL` set, the suite runs with `DATABASE_URL` pointed at it; in CI the pipeline's
+own service is trusted. An ambient `DATABASE_URL`, from the shell or declared in a `.env` file
+(read for the name only), defers the suite to CI and says how to give it a database of its own.
+
 Exit codes are a contract:
 
 | Code | Meaning                                      |
@@ -100,6 +105,13 @@ survives an unrelated rebaseline and disappears when the debt it explained does.
 scans zero files where the baseline saw some fails the run, so a moved directory never reports
 green forever.
 
+The owner is a name the raiser typed, and an agent can type one as easily as a person can. So a
+raise lands only through a pull request approved at its head by somebody other than its author.
+`abatty raises --require-review <number>` reads that review in the pipeline that `abatty ci`
+generates. It counts as a rise anything else that loosens a floor: a floor that vanished, a hard
+metric demoted, a file whose debt grew while the total held, or the same done through the config
+(a metric excluded, a path exempted, a probe switched off, a cap or a budget raised).
+
 ### Proving the guards
 
 Every probe ships control cases in both directions: a case it must report, and a case it must not.
@@ -112,32 +124,33 @@ by mutation.
 
 ## Commands
 
-| Command               | What it does                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------- |
-| `abatty`              | Where the repository stands: the phase, the score, the trend                                |
-| `abatty init`         | Install the instrument for the detected or named stack                                      |
-| `abatty gate`         | The gate. `--fast` omits the heavy suites                                                   |
-| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases             |
-| `abatty baseline`     | Record today's numbers as the floor                                                         |
-| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps     |
-| `abatty measure`      | The gap analysis: every check, with next steps by phase                                     |
-| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document |
-| `abatty explain <ID>` | One rule, its reason, and its finding here                                                  |
-| `abatty check <ID>`   | One rule as an exit code, for a script                                                      |
-| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`              |
-| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it       |
-| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                    |
-| `abatty update`       | Bring the harness to the package's version, keeping your edits                              |
-| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                    |
-| `abatty presets`      | The stacks, and which repository proved each                                                |
-| `abatty profiles`     | The standards this repository follows                                                       |
-| `abatty attest`       | The conformance statement, ready to sign                                                    |
-| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                    |
-| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here              |
-| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                  |
-| `abatty serve`        | Host that dashboard, so CI can post each report to it                                       |
-| `abatty night`        | The unattended run, with its pre-flight and canary session                                  |
-| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests           |
+| Command               | What it does                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `abatty`              | Where the repository stands: the phase, the score, the trend                                  |
+| `abatty init`         | Install the instrument for the detected or named stack                                        |
+| `abatty gate`         | The gate. `--fast` omits the heavy suites; `--preflight` says what each step needs, runs none |
+| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases               |
+| `abatty baseline`     | Record today's numbers as the floor                                                           |
+| `abatty raises`       | The floors loosened against the base, and the review that can land them                       |
+| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps       |
+| `abatty measure`      | The gap analysis: every check, with next steps by phase                                       |
+| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document   |
+| `abatty explain <ID>` | One rule, its reason, and its finding here                                                    |
+| `abatty check <ID>`   | One rule as an exit code, for a script                                                        |
+| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                |
+| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it         |
+| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                      |
+| `abatty update`       | Bring the harness to the package's version, keeping your edits                                |
+| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                      |
+| `abatty presets`      | The stacks, and which repository proved each                                                  |
+| `abatty profiles`     | The standards this repository follows                                                         |
+| `abatty attest`       | The conformance statement, ready to sign                                                      |
+| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                      |
+| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here                |
+| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                    |
+| `abatty serve`        | Host that dashboard, so CI can post each report to it                                         |
+| `abatty night`        | The unattended run, with its pre-flight and canary session                                    |
+| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests             |
 
 Every command accepts `--plain` for ASCII markers and no colour, which is what a log parser wants.
 Colour is off automatically outside a terminal and in CI. `measure` and `report` take `--json`.
@@ -209,6 +222,28 @@ export const rules = [
 
 Add your own probes in `abatty.probes.mjs`, in the same shape. Control cases are required and a
 built-in metric name is refused.
+
+Some built-in probes are **opt-in**, because each reads one stack's conventions and would be
+noise, or a surprise red after an update, anywhere else. A repository switches them on in
+`ratchet.enable`, and `init` enables the ones that suit the preset:
+
+| Probe                    | Counts                                                                                             | Configured by  |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | -------------- |
+| `valid.unparsedBoundary` | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
+| `valid.wholeEnv`         | The environment object taken whole outside the env module                                          |                |
+| `auth.unguardedPage`     | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
+| `api.unboundedList`      | List reads in a route handler without a bound                                                      | `boundedBy`    |
+| `api.rowReturn`          | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
+| `api.floatMoney`         | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
+| `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                           |                |
+| `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
+| `change.refactorTests`   | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
+| `code.clones`            | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
+
+A probe that is not enabled does not reserve its name, so a repository that wrote its own version
+keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,
+enabled or not. A multi-tenant repository whose tenant column is not `tenant_id` names it in
+`tenantKeys` so DATA-TENANT can see it.
 
 Rules can also arrive as a **profile**: a standard packaged as a unit of rules, adoption phases,
 presets and harness files. The built-in profile is one company's standard. A repository that names

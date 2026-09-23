@@ -1,8 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { launch, quoteForCmd, runCommand } from "../src/core/spawn.mjs";
+import { launch, notInstalled, quoteForCmd, runCommand } from "../src/core/spawn.mjs";
+import { scriptProgram, toolFound } from "../src/core/which.mjs";
 
 // The launcher fix is proved on the platform it is for and on the platforms it must leave alone:
 // a launch decision is a pure function of the name and the platform, so both sides are asserted
@@ -57,4 +60,59 @@ test("every launcher on this machine's PATH starts through launch(): npm always,
     assert.equal(r.code, 0, `${name} --version`);
   }
   console.log(`launchers proved: ${found.join(", ")}`);
+});
+
+test("cmd.exe's exit 1 is read again: a script whose program is found nowhere could not run", () => {
+  const dir = mkdtempSync(join(tmpdir(), "abatty-which-"));
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({
+      scripts: {
+        lint: "abatty-no-such-tool-xyz . --max-warnings=0",
+        local: "CI=1 localtool --check",
+        builtin: "echo hi",
+        path: "./bin/run",
+      },
+    }),
+  );
+  mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
+  writeFileSync(join(dir, "node_modules", ".bin", "localtool.cmd"), "");
+  // the extension spelled as the file is, so the case-sensitive filesystem of a Linux runner agrees
+  const env = { PATH: "", PATHEXT: ".cmd" };
+  const failed = { code: 1 };
+  const missing = notInstalled(failed, dir, "lint", "win32", env);
+  assert.equal(missing.errored, true);
+  assert.equal(missing.code, 127);
+  assert.match(missing.detail || "", /abatty-no-such-tool-xyz: not installed/);
+  // the tool's own verdict stands wherever the program is found or cannot be read
+  assert.deepEqual(notInstalled(failed, dir, "local", "win32", env), failed, "node_modules/.bin");
+  assert.deepEqual(notInstalled(failed, dir, "builtin", "win32", env), failed, "a builtin");
+  assert.deepEqual(
+    notInstalled(failed, dir, "path", "win32", env),
+    failed,
+    "a path is the shell's",
+  );
+  // and nothing changes where the shell already says 127, or for another exit code
+  assert.deepEqual(notInstalled(failed, dir, "lint", "linux", env), failed);
+  assert.deepEqual(notInstalled({ code: 2 }, dir, "lint", "win32", env), { code: 2 });
+  assert.equal(scriptProgram("NODE_ENV=test FOO=1 vitest run"), "vitest");
+  assert.equal(scriptProgram('"C:/x y/tool" a'), null);
+});
+
+test("a tool in a virtualenv at the root is found whether or not the shell activated it", () => {
+  const dir = mkdtempSync(join(tmpdir(), "abatty-venv-"));
+  const env = { PATH: "", PATHEXT: ".EXE" };
+  assert.equal(toolFound(dir, "abatty-ruff-__", env), false);
+  mkdirSync(join(dir, ".venv", process.platform === "win32" ? "Scripts" : "bin"), {
+    recursive: true,
+  });
+  writeFileSync(
+    join(
+      dir,
+      ".venv",
+      process.platform === "win32" ? "Scripts/abatty-ruff-__.exe" : "bin/abatty-ruff-__",
+    ),
+    "",
+  );
+  assert.equal(toolFound(dir, "abatty-ruff-__", env), true);
 });

@@ -59,8 +59,12 @@ export function renderGithubActions(preset, o = {}) {
     `on:`,
     `  push:`,
     `  pull_request:`,
+    // A review re-runs the floors job alone: the approval arrives after the checks ran.
+    `  pull_request_review:`,
+    `    types: [submitted, dismissed]`,
     `permissions:`,
     `  contents: read`,
+    `  pull-requests: read`,
     // The workload identity the signature is made with, and the write the transparency log needs.
     `  id-token: write`,
     `  attestations: write`,
@@ -69,6 +73,7 @@ export function renderGithubActions(preset, o = {}) {
     `  security-events: write`,
     `jobs:`,
     `  checks:`,
+    `    if: github.event_name != 'pull_request_review'`,
     `    runs-on: ubuntu-latest`,
     `    steps:`,
     ...setup,
@@ -108,6 +113,19 @@ export function renderGithubActions(preset, o = {}) {
     `          predicate-type: https://abatty.dev/attestation/conformance/v1`,
     `          predicate-path: abatty-conformance.json`,
   ];
+  // A floor raised or dropped lands only with an approval its raiser cannot give itself: a
+  // review of the head commit by somebody other than the author (src/core/raises.mjs).
+  out.push(
+    `  floors:`,
+    `    if: github.event_name != 'push'`,
+    `    runs-on: ubuntu-latest`,
+    `    steps:`,
+    ...setup,
+    `      - name: a loosened floor needs a second person's approval`,
+    `        env:`,
+    `          GH_TOKEN: \${{ github.token }}`,
+    `        run: ${t.exec("abatty")} raises --base origin/\${{ github.event.pull_request.base.ref }} --require-review \${{ github.event.pull_request.number }}`,
+  );
   /** A job whose every step is absent is written as the comments, not as a job with no steps. @param {string} job @param {CiStep[]} list */
   const onlyAbsent = (job, list) =>
     out.push(

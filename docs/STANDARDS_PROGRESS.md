@@ -303,3 +303,32 @@ run and exited 3. What was missing is that nothing downstream acts on it, becaus
 self-test skipped (§10) and the two machine-setup failures make a red `doctor` the expected
 result on any machine not set up for a night. A permanent red is a red nobody reads. That is the
 open item this leaves behind, and it is a harness change rather than a code one.
+
+### 2026-09-23 - Two opt-in probes enabled here, two new floors
+
+The package now ships opt-in probes (`ratchet.enable`): readings of one stack's conventions that
+would turn every adopter red on update if they ran by default. Two of them apply to this
+repository and are enabled: `fn.shapeExemptions` reads 0 and is promoted to hard, and
+`valid.wholeEnv` reads 8 and is a new ratchet floor. No existing floor moved. The eight are the
+environment handed whole to a child process (the controls, the night's session and pre-flight,
+the MCP server) and two default parameters in `src/core/which.mjs`. Each is a take by the probe's
+definition, and whether a child should get a narrowed environment instead is the open question
+the floor now keeps visible. The readability score in the baseline fell from 98 to 92 because the
+new metric counts against boundary clarity: the same code, measured further.
+
+### 2026-09-23 - Duplication measured here, with no dependency
+
+CODE-DUP was open because the only detector the package knew was a dependency. The package now
+ships `code.clones`, a line-level reading with no dependency, and this repository enables it
+together with `change.refactorTests`. `code.clones` reads 27 and is a new ratchet floor:
+the preset tables repeat each other's blocks, the installed graph config repeats its template,
+and the probes repeat their own scaffolding. `change.refactorTests` reads 0 and is hard. No
+existing floor moved; the baseline's readability score falls from 92 to 91, because the clone
+count now counts against navigability.
+
+### 2026-09-23 - valid.wholeEnv 8 → 6, the branch's own two takes removed
+
+Review pointed out that two of the eight takes the new floor recorded were this same change's own
+code: `process.env` as a default parameter in `src/core/which.mjs`. They now read the search path
+through `searchFromEnv()` in the env module, the one place the package reads its environment, and
+the floor is locked at 6. The readability score in the baseline returns from 91 to 93.

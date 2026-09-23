@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { allReports, buildReport } from "../core/report.mjs";
+import { dayRows, movedFindings, previousReading } from "../core/day.mjs";
 import { PREDICATE_TYPE, attestation } from "../core/attest.mjs";
 import { renderEvidence } from "../ui/evidence.mjs";
 import { mappingShape } from "../profiles/cra-requirements.mjs";
@@ -33,11 +34,41 @@ export async function reportCommand(cx) {
   const r = await buildReport(dir, { abattyVersion: VERSION });
   if (flag("--json")) out(JSON.stringify(r, null, 2) + "\n");
   else {
+    const all = allReports(dir);
     out(
-      `${t.glyph.ok} report written: .abatty/reports/${r.date}.json ${t.gray(`· score ${r.score}/100 · ${allReports(dir).length} reading(s)`)}\n`,
+      `${t.glyph.ok} report written: .abatty/reports/${r.date}.json ${t.gray(`· score ${r.score}/100 · ${all.length} reading(s)`)}\n`,
     );
-    // Said every time there is one, until a raise carries an approval the raiser cannot give
-    // itself: an unverified row in the open beats a verified row nobody has yet.
+    const before = previousReading(all, r.date);
+    out(
+      t.heading(
+        "The day",
+        before ? `${r.date} beside ${before.date}` : `${r.date}, the first reading`,
+      ),
+    );
+    const mark = {
+      better: t.green("▲ better"),
+      worse: t.red("▼ worse"),
+      same: t.gray("="),
+      new: t.gray("new"),
+    };
+    out(
+      t.table(
+        [
+          ["", before ? before.date : "", r.date, ""],
+          ...dayRows(r, before).map((x) => [x.label, x.before, x.now, mark[x.change]]),
+        ],
+        { align: ["l", "r", "r", "l"] },
+      ) + "\n",
+    );
+    for (const m of movedFindings(r, before)) {
+      const glyph = { better: t.glyph.ok, worse: t.glyph.fail, same: t.glyph.skip }[m.change];
+      const to = { better: t.green(m.to), worse: t.red(m.to), same: m.to }[m.change];
+      out(`  ${glyph} ${m.id} ${t.gray(`${m.from} → `)}${to}\n`);
+    }
+    out("\n");
+    // Said every time there is one: the owner is a string the raiser typed. The approval that is
+    // not is the forge's, read by `abatty raises --require-review` in the pipeline, which this
+    // machine cannot see, so the row stays unverified here and says where it is verified.
     for (const f of r.floors.raised)
       out(
         `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,

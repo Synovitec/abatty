@@ -44,9 +44,12 @@ for (const probe of BUILTIN_PROBES) {
   });
 }
 
+/** The probes a repository with the default config runs: the opt-in ones only where enabled. */
+const DEFAULT_PROBES = BUILTIN_PROBES.filter((p) => !p.optIn);
+
 /** Measure a repository with the default config and no range. @param {string} dir @param {import("../src/ratchet/index.mjs").Baseline | null} baseline */
 function measure(dir, baseline, config = DEFAULT_CONFIG) {
-  return measureAll(BUILTIN_PROBES, buildContext(dir), { config, range: "" }, baseline);
+  return measureAll(DEFAULT_PROBES, buildContext(dir), { config, range: "" }, baseline);
 }
 
 test("the three-step control: a clean tree holds; a violation fails; raising the total to match still fails and names the file", () => {
@@ -613,4 +616,30 @@ test("the front matter reads the same with CRLF as with LF: the last key is not 
     tags: ["a", "b"],
     related: ["./x.md"],
   });
+});
+
+test("an opt-in probe runs only where enabled, and until then its name is the repository's to use", async () => {
+  const own = `export const probes = [
+  { metric: "valid.wholeEnv", kind: "ratchet", standard: [], title: "mine", why: "a repository's own reading, written before the package had one",
+    scan: () => ({ scanned: 1, findings: [] }), controls: [{ name: "a", expect: 1 }, { name: "b", expect: 0 }] },
+];
+`;
+  const dir = tempRepo("ratchet-optin", { "package.json": PKG, "abatty.probes.mjs": own });
+  const off = await loadProbes(dir, DEFAULT_CONFIG);
+  assert.equal(
+    off.probes.filter((p) => p.metric === "api.rowReturn").length,
+    0,
+    "not enabled, not run",
+  );
+  assert.equal(off.probes.find((p) => p.metric === "valid.wholeEnv")?.source, "abatty.probes.mjs");
+  assert.deepEqual(off.problems, []);
+
+  const on = await loadProbes(dir, {
+    ...DEFAULT_CONFIG,
+    enable: ["valid.wholeEnv", "api.rowReturn", "no.suchProbe"],
+  });
+  assert.equal(on.probes.find((p) => p.metric === "valid.wholeEnv")?.source, "abatty");
+  assert.ok(on.probes.some((p) => p.metric === "api.rowReturn"));
+  assert.match(on.problems.join("\n"), /valid\.wholeEnv: a built-in metric name/);
+  assert.match(on.problems.join("\n"), /no\.suchProbe is not an opt-in probe/);
 });

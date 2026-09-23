@@ -549,16 +549,10 @@ test("end to end, through real npm: a tool that ran and failed exits 3, one that
     "the tool ran: this is the work, not the instrument",
   );
 
+  // cmd.exe exits 1 for a tool it cannot find, the code a tool that ran and failed returns; the
+  // gate looks the script's program up after a 1 on Windows, so the answer is the same everywhere.
   const absent = gateOf("gate-exit-4", "abatty-no-such-binary-__ .");
-  if (process.platform === "win32") {
-    // cmd.exe exits 1 for a tool it cannot find, the code a tool that ran and failed returns, so
-    // through npm on Windows the two are one answer. The shell prints its own "not recognized"
-    // line above the verdict; the classification stops at its door. Asserted as the limit it
-    // is, not widened to accept either answer everywhere.
-    assert.equal(absent.code, 3, absent.out);
-  } else {
-    assert.equal(absent.code, 4, absent.out);
-    assert.match(absent.out, /lint \(CODE\.4\) could not run/);
-    assert.match(absent.out, /the instrument, not the work/);
-  }
+  assert.equal(absent.code, 4, absent.out);
+  assert.match(absent.out, /lint \(CODE\.4\) could not run/);
+  assert.match(absent.out, /the instrument, not the work/);
 });

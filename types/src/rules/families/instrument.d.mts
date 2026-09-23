@@ -7,7 +7,8 @@
  * x`, with or without `-s`/`--silent`), and which of them the package does not have. A pipeline
  * is credited for what it can run, not for what it names: the generated one on a trial repository
  * named five scripts the package lacked, was red from its first run, and still counted as
- * "present" for six points of score.
+ * "present" for six points of score. A comment line runs nothing, so it is not read: a pipeline
+ * whose comment said "yarn 1 comes with the runner images" was charged with a script named `1`.
  * @param {string} ciText @param {Record<string, string>} scripts
  */
 export function phantomScripts(ciText: string, scripts: Record<string, string>): any[];

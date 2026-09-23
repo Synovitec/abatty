@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { CONFIG_FILE, LEGACY_CONFIG } from "../core/config.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { doctor } from "../core/doctor.mjs";
+import { prerequisites } from "../core/prereqs.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
 import { ciFromEnv } from "../core/env.mjs";
@@ -17,6 +18,7 @@ import * as t from "../ui/term.mjs";
  */
 export async function gateCommand(cx, preset) {
   const { dir, opt, flag, out, err, VERSION } = cx;
+  if (flag("--preflight")) process.exit(preflightScreen(cx, preset));
   const base = opt("--base") || readAdoption(dir)?.baseBranch || "main";
   const t0 = Date.now();
   const r = runGate({
@@ -74,6 +76,27 @@ export async function gateCommand(cx, preset) {
 }
 
 /**
+ * `gate --preflight`: what each step needs and whether it is here, with nothing run. Exit 4 when
+ * a step that would run cannot, since that is the instrument and not the work.
+ * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
+ */
+function preflightScreen(cx, preset) {
+  const list = prerequisites(cx.dir, preset);
+  cx.out(
+    `\n${t.banner(cx.VERSION)}  ${t.bold("gate --preflight")} ${t.gray("· " + preset.id)}\n\n`,
+  );
+  for (const p of list)
+    cx.out(
+      `  ${p.state === "ready" ? t.glyph.ok : p.state === "off" ? t.glyph.skip : t.glyph.warn} ${p.state === "off" ? t.gray(p.label) : p.label}${p.required ? t.gray(" (required)") : ""}${t.gray("  · " + p.detail)}\n`,
+    );
+  const missing = list.filter((p) => p.state === "missing");
+  cx.out(
+    `\n${missing.length ? t.glyph.warn + " " + t.yellow(`${missing.length} step(s) cannot run here`) : t.glyph.ok + " " + t.green("every configured step can run here")}\n\n`,
+  );
+  return missing.length ? EXIT.error : EXIT.clean;
+}
+
+/**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset | null} preset
  */
 export async function doctorCommand(cx, preset) {
@@ -111,6 +134,20 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
     );
+  out(
+    t.heading(
+      "Hooks",
+      "what each one does here, by day and at night, from the settings and the config",
+    ),
+  );
+  for (const h of r.hooks) {
+    out(
+      `  ${h.warn ? t.glyph.warn : t.glyph.ok} ${h.hook}${t.gray("  · " + (h.wired.join(", ") || "unwired"))}\n`,
+    );
+    out(t.gray(`      day    ${h.day}\n      night  ${h.night}\n`));
+    if (h.warn) out(`      ${t.yellow(h.warn)}\n`);
+  }
+  out("\n");
   for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);
   // What the guard holds and what it cannot: a regex over the agent's shell is a guard on this
   // machine's agent, not a policy on the branch. It is a warning rather than a note because the

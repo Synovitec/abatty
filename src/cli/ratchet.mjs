@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
 import { changedPaths, pushRange } from "../core/range.mjs";
 import {
+  BUILTIN_PROBES,
   compare,
   failed,
   loadProbes,
@@ -41,7 +42,12 @@ export async function ratchetCommand(command, c) {
       }
       if (flag("--controls")) {
         let bad = 0;
-        for (const p of probes) {
+        // The opt-in probes prove themselves too: a probe the package ships is a probe it vouches
+        // for, enabled here or not.
+        const idle = BUILTIN_PROBES.filter(
+          (b) => b.optIn && !probes.some((p) => p.metric === b.metric),
+        ).map((b) => ({ ...b, source: "abatty, opt-in, not enabled here" }));
+        for (const p of [...probes, ...idle]) {
           const results = runControls(p);
           const failing = results.filter((r) => !r.ok);
           bad += failing.length;
@@ -190,7 +196,7 @@ export async function ratchetCommand(command, c) {
       for (const x of r.refusals) out(`\n  ${t.glyph.fail} ${t.red(x)}\n`);
       if (r.rises.length && r.ok)
         out(
-          `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised by ${opt("--owner")}: ${r.rises.join(", ")} - the reason is recorded per metric in the baseline; write the same one in docs/STANDARDS_PROGRESS.md`)}\n`,
+          `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised by ${opt("--owner")}: ${r.rises.join(", ")} - the reason is recorded per metric in the baseline; write the same one in docs/STANDARDS_PROGRESS.md. It lands through a pull request somebody other than its author approves; the pipeline checks that with abatty raises`)}\n`,
         );
       out(
         `\n${r.ok ? t.glyph.ok : t.glyph.fail} ${r.ok ? t.green(flag("--dry-run") ? "baseline computed (not written: --dry-run)" : "baseline written") : t.red("baseline refused; nothing written")} ${t.gray(`· readability ${r.baseline.score}/100`)}\n\n`,

@@ -146,6 +146,49 @@ test("the config gains the keys the template gained and keeps every value set he
   );
 });
 
+test("a script removed after it was offered stays removed; a required one comes back", () => {
+  const dir = tempRepo("update-declined", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  assert.ok(readLock(dir)?.scripts?.includes("lint"), "the lock lists the scripts offered");
+  const pkgPath = join(dir, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  delete pkg.scripts.lint;
+  delete pkg.scripts.typecheck;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  const r = updateRepo({ repoDir: dir, preset });
+  const after = JSON.parse(readFileSync(pkgPath, "utf8")).scripts;
+  assert.equal(after.lint, undefined, "a declined script is not written back");
+  assert.ok(after.typecheck, "a script a required gate step runs is written back");
+  assert.match(r.events.find((e) => e.file === "package.json")?.detail || "", /left out.*lint/);
+});
+
+test("a script the lock never offered is added, and a lock without the list reads as all offered", () => {
+  const dir = tempRepo("update-offered", { "package.json": NEXT_PKG });
+  cli(["init", dir, "--stack", "next"], dir);
+  const lock = readLock(dir);
+  assert.ok(lock);
+  lock.scripts = (lock.scripts || []).filter((s) => s !== "lint");
+  writeFileSync(join(dir, LOCK), JSON.stringify(lock, null, 2) + "\n");
+  const pkgPath = join(dir, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  delete pkg.scripts.lint;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  updateRepo({ repoDir: dir, preset });
+  assert.ok(
+    JSON.parse(readFileSync(pkgPath, "utf8")).scripts.lint,
+    "never offered, so offered now",
+  );
+  const legacy = readLock(dir);
+  assert.ok(legacy);
+  delete legacy.scripts;
+  writeFileSync(join(dir, LOCK), JSON.stringify(legacy, null, 2) + "\n");
+  const again = JSON.parse(readFileSync(pkgPath, "utf8"));
+  delete again.scripts.lint;
+  writeFileSync(pkgPath, JSON.stringify(again, null, 2) + "\n");
+  updateRepo({ repoDir: dir, preset });
+  assert.equal(JSON.parse(readFileSync(pkgPath, "utf8")).scripts.lint, undefined);
+});
+
 test("mergeFile: clean when the edits are apart, conflicts counted when they meet", () => {
   const base = "a\nb\nc\n";
   assert.deepEqual(mergeFile("x\na\nb\nc\n", base, "a\nb\nc\nz\n"), {
@@ -232,5 +275,23 @@ test("a file the package really installed keeps its ancestor across a re-run of 
     readFileSync(join(dir, BASE_DIR, lock.abatty, HOOK), "utf8"),
     installed,
     "and its copy is still on the machine to merge from",
+  );
+});
+
+test("init enables the preset's opt-in probes in a new config, never in one a repository already had", () => {
+  const fresh = tempRepo("init-enable-new", { "package.json": NEXT_PKG });
+  cli(["init", fresh, "--stack", "next"], fresh);
+  const was = JSON.parse(readFileSync(join(fresh, "abatty.config.json"), "utf8"));
+  assert.ok(was.ratchet.enable.includes("valid.unparsedBoundary"));
+  const adopted = tempRepo("init-enable-old", {
+    "package.json": NEXT_PKG,
+    "abatty.config.json": JSON.stringify({ stack: "next", ratchet: { exclude: [] } }),
+  });
+  cli(["init", adopted, "--stack", "next"], adopted);
+  const kept = JSON.parse(readFileSync(join(adopted, "abatty.config.json"), "utf8"));
+  assert.deepEqual(
+    kept.ratchet.enable,
+    [],
+    "on its own floors: switching probes on is its decision",
   );
 });

@@ -82,6 +82,7 @@ export const DEFAULT_CONFIG = {
     "prisma/",
   ],
   coupled: [],
+  enable: [],
 };
 
 /**

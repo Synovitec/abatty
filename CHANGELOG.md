@@ -5,6 +5,207 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-23
+
+### Added
+
+- **Duplication is measured without a dependency.** The new opt-in probe `code.clones` reduces
+  each source to its meaningful lines (comments removed, whitespace collapsed, brackets,
+  imports and lone keywords dropped), hashes every run of six, and counts a run that appears in
+  two places as one clone, charged once, to the smaller of the two paths. It reads this
+  repository's 134 files in under a tenth of a second. CODE-DUP now reads the practice rather
+  than one tool: any clone count with a floor holds it, the package's or a repository's own
+  detector. Every code preset enables the probe.
+- **A refactor may not rewrite the tests it is judged by.** A refactor claims the behaviour did
+  not change, and the tests are the only statement of the behaviour a machine can check. The
+  new opt-in probe `change.refactorTests` reads the pushed range. A `refactor:` commit that
+  removes a test case is counted, always. One that edits a test is counted unless its message
+  says why on a `tests-changed: <reason>` line: a renamed function is a reason, since the tests
+  that call it move with it. A test added, or moved with its cases intact, is not counted. It
+  reads JS, Python and Go test layouts. Every code preset enables it, and so does this
+  repository.
+- **`abatty report` prints the day's table.** Today's reading sits beside the newest one before
+  it, with the score, the phase, the counts by status, the share held by a machine, proven and
+  contradicted checks, harness drift, bypassed commits and raised floors. Each row says whether
+  it got better, worse or stayed the same. Below the table it names every check whose status
+  moved, the ones that got worse first, since a flat score can hide one check fixed and another
+  broken. The outside trial's reviewer assembled this table by hand from two reports and the
+  commit log for two days.
+- **Eight opt-in probes, and `ratchet.enable` to switch them on.** They grew out of one
+  outside repository's own probes, written during its trial, and are generalised here: what
+  was particular to that product is now configuration. `valid.unparsedBoundary` counts route
+  handlers, server actions and credentials callbacks that read input no schema parses.
+  `valid.wholeEnv` counts the environment object taken whole outside the env module.
+  `auth.unguardedPage` counts protected pages that do not await their guard first
+  (`pageGuards`). `api.unboundedList` counts list reads in a route handler without a bound
+  (`boundedBy`). `api.rowReturn` counts server actions that return the ORM's row, or a select
+  with a secret column (`secretFields`). `api.floatMoney` counts money made a number on the wire
+  or stored in a Float column (`moneyFields`). `cache.serverCacheUse` counts server-side caches,
+  for a repository that decided to have none. `fn.shapeExemptions` counts shape rules switched
+  off inline, in the eslint, oxlint, biome, ruff and pylint spellings, or by a list
+  (`shapeList`). They are opt-in because each reads one stack's conventions: on by default,
+  every adopter would have gone red after an update on a metric it never asked for. `init`
+  enables the ones that suit the preset, so a new Next.js repository starts with the boundary
+  and API probes. An opt-in probe that is not enabled does not reserve its name, so a repository
+  that wrote its own version keeps it until it switches to the package's. `abatty ratchet
+  --controls` proves every shipped probe, enabled or not.
+- **`valid.wholeEnv` here falls from 8 to 6.** Two of the eight were this change's own default
+  parameters; they read the search path through the env module now, and the floor is locked.
+- **This repository measures its duplication: `code.clones` reads 27 and is a new floor.** The
+  preset tables repeat each other's blocks, the installed graph config repeats its template, and
+  the probes repeat their own scaffolding. CODE-DUP leaves the list of open gaps in the context
+  file. No existing floor moved; the baseline's readability score falls from 92 to 91.
+- **This repository enables `change.refactorTests` too, and its catalog pair is anchored to the
+  root.** The coupled pair `src/rules/families/` also matched the generated
+  `types/src/rules/families/`, because a prefix matches under any folder (on purpose, for
+  workspaces), so a regenerated declaration asked for a catalog change nothing had caused. The
+  pair is now the glob `src/rules/families/**`, which matches from the root.
+- **This repository runs the two opt-in probes that apply to it.** `fn.shapeExemptions` reads
+  0 and is now hard. `valid.wholeEnv` reads 8, each one the environment handed whole to a child
+  process or a default parameter, and is a new ratchet floor. No existing floor moved. The
+  readability score in the baseline falls from 98 to 92, because the new metric counts against
+  boundary clarity. The decision is logged in `docs/STANDARDS_PROGRESS.md`.
+- **The gate audits yarn repositories, yarn 1 and yarn berry both.** Each was run against a
+  package with a known advisory before it was wired, as npm, pnpm and bun were. yarn 1's exit
+  code turned out to be a bitmask of every severity found, and it ignores `--level`: it reads 12
+  (moderate and high) even at `--level critical`. So yarn 1 is judged from its JSON report alone,
+  and the pipeline `abatty ci` writes fails only on a code of 8 or more (high or critical). yarn
+  berry's code honours `--severity`, and its line-per-advisory report is read for the
+  allowances. Until now a yarn repository's audit was deferred to CI, where yarn 1's raw
+  command would have failed on moderate advisories below the floor.
+- **CI watches the audit of npm, pnpm and yarn on a real install, on Linux and on Windows.** A
+  new `managers` job runs `scripts/ci/manager-smoke.mjs` once per manager and operating system.
+  Each run installs a repository with that manager, checks that it is detected, audits a clean
+  install (it must pass) and then an install with a known high advisory (it must fail). The
+  suite reads each manager's report from a recording; this job checks the recording against the
+  tool as it ships today. npm and pnpm were run both ways on Windows before the job was
+  committed.
+- **DATA-TENANT reads the tenant column a repository names.** `tenantKeys` in the config adds
+  to `tenant_id`, `store_id`, `company_id` and `organisation_id`, so a product whose tenant is
+  a restaurant or a workspace is no longer read as single-tenant.
+- **The score reads presence against truth.** A rule that finds a lint script counted as
+  present whether or not the linter was installed, or whether the step had ever gone red. The
+  gap analysis now checks each present check that a gate step backs (format, lint, typecheck,
+  import graph, dead code, unit tests, audit, secret scan) against two facts already on disk.
+  If the step cannot run here (the new prerequisites), or stayed green on a planted violation
+  (the last `doctor --controls`), the check drops to partial and its evidence says why. If the
+  step went red on its plant, it is marked proven. `measure` and the report carry one line,
+  "presence and truth", with the three counts, and the JSON report carries them as `truth`.
+  The measurement cache now keys on `.abatty/controls.json` and the installed tools, which git
+  ignores, so a cached reading can no longer outlive either.
+- **`abatty gate --preflight` says what each step needs and whether it is here, running
+  nothing.** For each step it checks the script, the program the script starts (in
+  `node_modules/.bin` up the tree, then on PATH), the config file the step wants, the lockfile
+  the audit reads, and a container runtime for a suite that starts a database. It exits 4 when a
+  configured or required step cannot run. The gate itself now prints the same finding as its
+  first line, before the slowest step rather than after it, but it does not refuse: a lookup that
+  cannot see a layout must never stop a gate that would have run. Plug'n'Play trees are not
+  judged. This is the second half of the prerequisite preflight; the confirm-clean run of
+  `doctor --controls` was the first.
+
+- **A floor raised lands only with an approval its raiser cannot give itself.** `abatty
+  baseline` asks for a reason and an owner, but the owner is a name the raiser typed, and an
+  agent types one as easily as a person does (it can also edit the baseline by hand). The new
+  `abatty raises` compares the baseline with the one on the base branch and names every floor
+  that rose, vanished or stopped being hard, every file whose debt grew while the total held,
+  and the same done through the config: a metric excluded, a path exempted, a metric taken off
+  the hard list, an opt-in probe switched off, a cap or a budget raised. With `--require-review <number>` it passes only
+  when somebody other than the pull request's author approved its head commit, a review the
+  forge does not let an author give. The GitHub pipeline `abatty ci` generates runs it as a
+  `floors` job on pull requests and again when a review is submitted or dismissed. That
+  event runs the `floors` job only.
+
+- **`abatty doctor` says what each hook actually does here, by day and at night.** It reads
+  the settings that wire each hook, the config keys it reads and the tool it calls. It names a
+  hook that no settings file wires, every hook switched off by `disableAllHooks` (in the
+  project's settings, the local ones or the user's own), and a lint-on-edit whose linter this
+  machine cannot find. `--strict` fails on any of them. The first run found one here: at night
+  lint-on-edit ran `npx eslint` in a repository that declined eslint, so every edit read as a
+  red lint. `lintOnEdit` is now `false` in this repository's config.
+
+### Fixed
+
+- **A bun repository's audit allowances apply.** bun prints its report on stdout and a banner on
+  stderr after it, and the audit read from the first brace to the end of both, so every bun
+  report was unreadable and the step failed even when every advisory left was allowed. An
+  adopter with nineteen dated allowances had a red pre-push it could not get past, with a
+  critical fix waiting behind it. The report is now read up to the brace that closes it.
+- **The package's entry point is executable in git.** `bin/abatty.mjs` was committed 644; the
+  published tarball never showed it, because the registry sets the bit, but this repository's
+  own pipeline ran `npx abatty` against the checkout and got "permission denied", which left its
+  findings upload empty. The file carries the bit now, and the pipeline calls it through node.
+- **`docs.behindCode` judges a change on the day it lands, not the day after.** It exempted a
+  cited file moved today, so a change merged green and the base branch went red at midnight
+  with nothing committed, charged to whoever pushed next on work that did not cause it. An
+  outside repository lost a push to it, and so would this one have: the 0.5.0 branch changed
+  sources that five documents cite, and none had been re-read. A doc verified the same day still
+  holds. The five documents here were re-read and corrected where they were behind: duplication
+  is measured by `code.clones` without a dependency, the same-day rule is gone from DOC.5, and
+  the standard says a suite never runs against the developer's database.
+
+- **The gate no longer runs a database or browser suite against the developer's own database.**
+  On a laptop, a suite inherited `DATABASE_URL` from the shell or from `.env`, which is the
+  database the developer works against, sometimes production's. An outside trial's pre-push gate
+  ran its browser suite there: it went red on data that had drifted, wrote real orders, and
+  created administrator accounts with a known password that a killed run would have left behind.
+  Now a suite that needs a database runs with `DATABASE_URL` pointed at `TEST_DATABASE_URL` when
+  one is set, trusts the pipeline's own service in CI, and otherwise, when it can see an ambient
+  database, is deferred to CI with how to give it one of its own. The trial's session showed the
+  fix by hand: a database in the container the integration suite already starts took the same
+  suite from red to 50 of 50. `.env` files are read for the name only, never a value.
+- **Re-running `init` on an adopted repository no longer switches probes on.** A config that
+  already exists and never listed `ratchet.enable` keeps an empty list. A preset's opt-in
+  probes are for a new repository; switching four to eight of them on at once would turn an
+  adopted one red on metrics it never asked for.
+- **Five smaller corrections from the review.**
+  - `update`, reading a lock from before the list of offered scripts, now says that it infers
+    a script was removed, rather than asserting it.
+  - A tool in a Python virtualenv at the root (`.venv`, `venv`) is found whether or not the
+    shell activated it, so the preflight and the truth reading no longer depend on the shell.
+  - `doctor` counts the paths the hooks protect by default when the config names none.
+  - The day's table prints a move between statuses of equal worth (present to waived) as
+    neutral, not as worse.
+  - The probes' text reader has one definition of where a string ends, where it had two.
+- **Three probes stop counting correct code.** All were found by review before release.
+  - `api.floatMoney` no longer counts integer minor units (`parseInt(`, `z.number().int()`),
+    which is the exact form its own reason recommends.
+  - `api.rowReturn` reads a row kept in a local as returned only when the same function returns
+    it, not when another action happens to return a local of the same name.
+  - `change.refactorTests` no longer counts a regex's `.test(` call as a test case, and it counts
+    a case turned into `test.skip(` as removed, since a skipped test lowers the bar as a deleted
+    one does.
+- **The boundary probes read JSX text and guard calls correctly.** Both were caught by review
+  before release. An apostrophe in JSX text (`Don't`) was read as the start of a string that
+  never ended, which unbalanced every function body after it: a page that guarded first read as
+  "no default export function found". A quoted string now ends on its line. And every call of
+  `authorize(` was read as a credentials callback, so a guard helper of that name counted as
+  an unparsed boundary. Only a definition counts now: a method, or an `authorize:` property
+  holding a function.
+- **An advisory about a network no longer reads as an unreachable registry.** The audit's offline
+  check matched the bare word "network", so a high advisory whose text mentioned one (a request
+  forgery, say) was deferred to CI, and the gate counts a deferral as a pass. The check now reads
+  the error codes a failed connection prints, and a yarn report that parsed is never treated as
+  an outage.
+- **INST-CI no longer reads a comment in a pipeline as a script it runs.** A comment saying
+  "yarn 1 comes with the runner images" was charged as a script named `1` that the package
+  lacks, and the check dropped to partial. Comment lines are skipped now; a comment runs
+  nothing. The day's table caught it on its first run.
+- **`abatty update` no longer writes back a script you removed.** The harness lock now lists
+  the package scripts offered to the repository, and a script offered before and absent now is
+  read as declined and left out, which the update says. A script the gate cannot run without
+  (the tests, the ratchet, the typecheck on a TypeScript preset) still comes back. A lock
+  written before this lists nothing, and reads as though every preset script had been offered,
+  since `init` wrote them all. This repository declined `lint`, and every update added it back.
+- **On Windows, a gate step whose tool is not installed now reads "could not run" instead of
+  failed.** cmd.exe exits 1 both for a tool it cannot find and for a tool that ran and judged
+  the work. After a script exits 1 on Windows, the gate now looks up the script's program
+  (`node_modules/.bin` up the tree, then PATH with PATHEXT, and cmd.exe's builtins), and a
+  program found nowhere makes the step errored (exit 4, the instrument) rather than failed
+  (exit 3, the work). A path, a quoted program or a builtin keeps the tool's own verdict.
+- **The best-practices digest was re-read** against the standard's guard paragraph that changed
+  on 2026-09-22. The digest only says that enforcement is a hook, which is still true, so it
+  is dated today. It had turned `docs.behindCode` red on main overnight with nothing pushed.
+
 ## [0.4.0] - 2026-09-22
 
 ### Changed

@@ -8,14 +8,19 @@
  * x`, with or without `-s`/`--silent`), and which of them the package does not have. A pipeline
  * is credited for what it can run, not for what it names: the generated one on a trial repository
  * named five scripts the package lacked, was red from its first run, and still counted as
- * "present" for six points of score.
+ * "present" for six points of score. A comment line runs nothing, so it is not read: a pipeline
+ * whose comment said "yarn 1 comes with the runner images" was charged with a script named `1`.
  * @param {string} ciText @param {Record<string, string>} scripts
  */
 export function phantomScripts(ciText, scripts) {
   const named = new Set();
   const re =
     /\b(?:npm|pnpm|bun)\s+run\s+(?:-s\s+|--silent\s+)?([\w:.-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:.-]+)/g;
-  for (const m of String(ciText).matchAll(re)) {
+  const code = String(ciText)
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*#/.test(line))
+    .join("\n");
+  for (const m of code.matchAll(re)) {
     const name = m[1] || m[2] || "";
     // `yarn install`, `yarn npm audit`: yarn's own verbs are not scripts.
     if (name && !/^(install|add|npm|exec|dlx|audit|cache|config|--\S*)$/.test(name))
@@ -145,7 +150,7 @@ export const rules = [
     level: "must",
     enforcement: "hard",
     phase: "0",
-    why: "The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. A pipeline is credited for the scripts it can run, not for the words it names: one that names a script the package lacks is red or never ran.",
+    why: "The hook runs on the machine that pushes and can be skipped there; CI re-runs every gate independently of who pushed and of what they skipped. A pipeline is credited for the scripts it can run, not for the words it names: one that names a script the package lacks is red or never ran, and a comment runs nothing.",
     next: "abatty ci generates the pipeline from the gate (Woodpecker, GitHub Actions)",
     check: (c) => {
       if (!c.ciFiles.length)

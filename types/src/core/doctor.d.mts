@@ -54,6 +54,7 @@ export function doctor(o: {
         steps: StepOutcome[];
         absent: string[];
     } | null;
+    hooks: import("./hook-modes.mjs").HookMode[];
 };
 export type DriftEvent = {
     file: string;

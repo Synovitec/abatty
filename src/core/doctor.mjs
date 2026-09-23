@@ -14,6 +14,7 @@ import { configFiles, configProblems } from "./config.mjs";
 import { runStepControls } from "./step-controls.mjs";
 import { readAdoption } from "./repo.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
+import { hookModes } from "./hook-modes.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -106,12 +107,14 @@ export function doctor(o) {
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
   const problems = configProblems(repoDir);
+  // What each hook does here, day and night; one that does nothing it seems to fails --strict.
+  const hooks = hookModes(repoDir);
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
     problems.length === 0 &&
     (!controls || controls.absent.length === 0) &&
-    (!o.strict || differs.length === 0);
+    (!o.strict || (differs.length === 0 && hooks.every((h) => !h.warn)));
   const lock = readLock(repoDir);
   return {
     ok,
@@ -128,5 +131,6 @@ export function doctor(o) {
     packageVersion: packageVersion(),
     config: { files: configFiles(repoDir), problems },
     controls,
+    hooks,
   };
 }
