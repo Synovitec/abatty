@@ -68,7 +68,7 @@ export async function ratchetCommand(command, c) {
       const rangeOpt = opt("--range");
       const base = opt("--base") || adoption?.baseBranch || "main";
       const range = rangeOpt === "auto" ? pushRange(dir, base) : rangeOpt;
-      const ctx = buildContext(dir);
+      const ctx = buildContext(dir, { tracked: true });
       const measurements = measureAll(probes, ctx, { config, range }, baseline);
       const verdicts = compare(measurements, baseline, config);
       const { score, axes } = scoreOf(measurements);
@@ -168,7 +168,7 @@ export async function ratchetCommand(command, c) {
       if (problems.length) process.exit(EXIT.input);
       const previous = readBaseline(dir, baselineRel);
       const base = opt("--base") || adoption?.baseBranch || "main";
-      const ctx = buildContext(dir);
+      const ctx = buildContext(dir, { tracked: true });
       const measurements = measureAll(
         probes,
         ctx,

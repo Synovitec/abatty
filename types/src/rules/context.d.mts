@@ -61,11 +61,16 @@
  */
 export function followImport(named: string | null, exists: (p: string) => boolean, read: (p: string) => string): string | null;
 /**
- * Build the context of a repository. @param {string} repoDir @param {{ today?: string }} [o]
+ * Build the context of a repository. `tracked` reads what git tracks and nothing it does not:
+ * the ratchet's view, because a file tooling writes on every run and nobody commits (a dated
+ * report under docs/) moved a floor on every push with no human change, and a ratchet that
+ * regresses on its own teaches people to raise floors.
+ * @param {string} repoDir @param {{ today?: string, tracked?: boolean }} [o]
  * @returns {RepoContext}
  */
 export function buildContext(repoDir: string, o?: {
     today?: string;
+    tracked?: boolean;
 }): RepoContext;
 /**
  * @param {{ has: (d: string) => boolean, deps: Set<string>, files: (re: RegExp) => string[], sourceFiles: string[], tsSources: string[], jsSources: string[], pySources: string[], exists: (p: string) => boolean }} c

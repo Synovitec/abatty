@@ -109,7 +109,11 @@ export function followImport(named, exists, read) {
 }
 
 /**
- * Build the context of a repository. @param {string} repoDir @param {{ today?: string }} [o]
+ * Build the context of a repository. `tracked` reads what git tracks and nothing it does not:
+ * the ratchet's view, because a file tooling writes on every run and nobody commits (a dated
+ * report under docs/) moved a floor on every push with no human change, and a ratchet that
+ * regresses on its own teaches people to raise floors.
+ * @param {string} repoDir @param {{ today?: string, tracked?: boolean }} [o]
  * @returns {RepoContext}
  */
 
@@ -161,14 +165,17 @@ export function buildContext(repoDir, o = {}) {
 
   /**
    * The files git would keep: tracked plus untracked-but-not-ignored, so an ignored scratch
-   * folder beside the source (a build report, a download) is not read as the repository. Outside
+   * folder beside the source (a build report, a download) is not read as the repository; with
+   * `tracked`, what git tracks alone (the index included, so a staged file counts). Outside
    * a git repository the walk stands in. The agent-folder and ignore rules apply to both.
    */
   function gitKept() {
     try {
       const out = execFileSync(
         "git",
-        ["ls-files", "--cached", "--others", "--exclude-standard", "--deduplicate", "-z"],
+        o.tracked
+          ? ["ls-files", "--cached", "--deduplicate", "-z"]
+          : ["ls-files", "--cached", "--others", "--exclude-standard", "--deduplicate", "-z"],
         {
           cwd: REPO,
           encoding: "utf8",

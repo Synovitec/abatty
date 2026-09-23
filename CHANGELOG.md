@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The ratchet reads what git tracks.** An adopter's docs tooling wrote a dated report under
+  `docs/` on every run, never committed and never ignored, and the ratchet counted each one as a
+  document without front matter: every push regressed a floor with no human change, until the
+  folder was ignored. A ratchet that regresses on its own teaches people to raise floors. The
+  ratchet (`abatty ratchet`, the gate's step, the baseline, the MCP server) now measures the
+  tracked tree, a staged file included; the rules and `measure` still read the working tree.
 - **The guard judges a push by the branch where it runs.** It asked for the current branch once,
   in the folder the hook starts in, so `cd <worktree> && git push` was judged by another
   checkout's branch. That refused a push to a feature branch while the main checkout stood on
