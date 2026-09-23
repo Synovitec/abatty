@@ -11,6 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { git } from "./repo.mjs";
+import { codeOnly } from "../ratchet/probes/lex.mjs";
 
 /**
  * A dev server holding this folder, read from the lock files a preset names for its framework
@@ -47,27 +48,40 @@ function alive(pid) {
   }
 }
 
-/** A line that is a comment or nothing, in the languages the suites build. */
-const COMMENT = /^\s*(\/\/|\/\*|\*|#|\{\s*\/\*|<!--|-->|$)/;
+/** The sources whose comments the lexer reads; any other file is never judged comment-only. */
+const LEXED = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/;
 
 /**
- * The files of a range whose every added and removed line is a comment or blank: they change no
- * behaviour, so they select no suite. Read line by line from a zero-context diff; a file the diff
- * cannot show (binary, deleted, renamed) is never counted as comment-only, because a guess that
- * skips a suite is the expensive direction to be wrong in.
- * @param {string} repoDir @param {string} range @param {string[]} files
+ * A source with its comments blanked, each line trimmed and the empty ones dropped: two versions
+ * that read the same here differ only in comments or blank lines.
+ * @param {string} text
+ */
+const behaviour = (text) =>
+  codeOnly(text, { strings: "keep" })
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join("\n");
+
+/**
+ * The files of a range whose two versions differ only in comments and blank lines: they change
+ * no behaviour, so they select no suite. Both versions are read whole and compared with their
+ * comments blanked by the probes' lexer, rather than judged line by line from a diff, where a
+ * CSS `#id` selector or a `* 2` continuation reads as a comment. Only the languages the lexer
+ * knows are judged, and a file missing at either end is never counted: a guess that skips a
+ * suite is the expensive direction to be wrong in.
+ * @param {string} repoDir @param {string} range `from..to`; a three-dot range judges nothing
+ * @param {string[]} files
  * @returns {Set<string>}
  */
 export function commentOnly(repoDir, range, files) {
   const only = new Set();
-  for (const f of files) {
-    const diff = git(repoDir, "diff", "-U0", "--no-color", range, "--", f);
-    if (!diff || /^(Binary files|deleted file|rename from|new file)/m.test(diff)) continue;
-    const lines = diff
-      .split("\n")
-      .filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)\s/.test(l))
-      .map((l) => l.slice(1));
-    if (lines.length && lines.every((l) => COMMENT.test(l))) only.add(f);
+  const ends = range.includes("...") ? [] : range.split("..");
+  if (ends.length !== 2) return only;
+  for (const f of files.filter((p) => LEXED.test(p))) {
+    const [before, after] = ends.map((ref) => git(repoDir, "show", `${ref}:${f}`));
+    if (!before || !after || before === after) continue;
+    if (behaviour(before) === behaviour(after)) only.add(f);
   }
   return only;
 }

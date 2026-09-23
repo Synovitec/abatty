@@ -64,6 +64,25 @@ test("a file whose diff is only comments or blank lines is comment-only, and a c
   );
 });
 
+test("a line that only looks like a comment is code, and a file the lexer cannot read is never quiet", () => {
+  const dir = tempRepo("comment-lookalike", {
+    "src/sum.ts": "export const x = 1\n  * 2;\n",
+    "src/a.css": "a { background: url(//cdn.example/one.png); }\n",
+    "src/doc.ts": "/**\n * One line.\n */\nexport const y = 1;\n",
+  });
+  writeFileSync(join(dir, "src", "sum.ts"), "export const x = 1\n  * 3;\n");
+  // A protocol-relative URL is a comment to a JavaScript lexer, and a change of asset to CSS.
+  writeFileSync(join(dir, "src", "a.css"), "a { background: url(//cdn.example/two.png); }\n");
+  writeFileSync(
+    join(dir, "src", "doc.ts"),
+    "/**\n * Two lines,\n * now.\n */\n\nexport const y = 1;\n",
+  );
+  git(dir, "commit", "-qam", "change");
+  const quiet = commentOnly(dir, "HEAD~1..HEAD", ["src/sum.ts", "src/a.css", "src/doc.ts"]);
+  assert.deepEqual([...quiet], ["src/doc.ts"]);
+  assert.equal(commentOnly(dir, "HEAD~1...HEAD", ["src/doc.ts"]).size, 0, "a three-dot range");
+});
+
 /** @param {string} dir */
 function gate(dir) {
   /** @type {string[]} */
