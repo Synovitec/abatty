@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`measure --out` writes the measurement there, and only there.** With `--json` or `--sarif`
+  the output went to the screen and no file was written, and every run replaced the
+  repository's latest report under `.abatty/reports/`, which the dashboard and the MCP server
+  read as the truth. A run with `--out` now writes that file alone.
 - **Three rules read a bun monorepo right after 0.5.1's verification on it.** A pipeline step
   that runs a file (`bun run scripts/check.ts`) is no longer reported as naming a script called
   `scripts` (INST-CI). A root `test` script that hands the run to the workspaces (`turbo run
