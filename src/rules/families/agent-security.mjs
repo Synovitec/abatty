@@ -123,7 +123,9 @@ export const rules = [
       // adopter's shim sat inert for a week while this rule counted it. The night's runner puts
       // it first; a terminal reaches it through an .envrc that does the same.
       const envrc = /\.claude\/bin/.test(c.read(".envrc"));
-      const night = c.exists(".claude/night") || Boolean(c.adoption?.phases);
+      // The runner's own folder, not the config: every initialised repository has phases in its
+      // config, so reading them credited a shim no night had ever run with.
+      const night = c.exists(".claude/night");
       if (wrapper && logic)
         return envrc || night
           ? {

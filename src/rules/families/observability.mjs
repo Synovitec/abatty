@@ -37,6 +37,8 @@ const serverText = (c) =>
     .files(
       /(^|\/)((app\/api|api|server|routes|workers?|jobs|observability|logging)\/.*|[^/]*logger[^/]*)\.(ts|tsx|js|jsx|mjs|cjs)$/,
     )
+    // A test or a mock that mentions `redact` or `/health` configures nothing that runs.
+    .filter((f) => !/(^|\/)(__mocks__|mocks?|__tests__|tests?)\/|\.(test|spec)\.[^/]+$/.test(f))
     .map((f) => c.read(f))
     .join("\n");
 

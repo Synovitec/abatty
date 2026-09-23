@@ -68,15 +68,17 @@ export const rules = [
       // A negative scope test on a real database counts whatever it is named after: the proof
       // that one caller cannot read another's rows is called `visibility` or `scope` as often as
       // `tenant`.
-      // Named for what it proves (rls, isolation, tenant), it is the proof wherever it sits: an
-      // adopter's sixty-five `*.rls.test.ts` under packages/db read as none. The weaker words
-      // (visibility, scope) still need a database suite's folder to be read as one.
+      // Named for what it proves (rls as a word, isolation), it is the proof wherever it sits: an
+      // adopter's sixty-five `*.rls.test.ts` under packages/db read as none. As a bare substring
+      // `rls` matched `urls.test.ts`, so it stands between separators. The weaker words (tenant,
+      // visibility, scope) still need a database suite's folder: `TenantPicker.test.tsx` is a UI.
       const isolationTest = c
         .files(/(isolation|tenant|rls|visibility|scope)[^/]*\.test\.|(^|\/)rls\//i)
         .some(
           (f) =>
-            /(^|\/)(rls\/|[^/]*(isolation|tenant|rls)[^/]*\.test\.)/i.test(f) ||
-            /(^|\/)tests?\/(db|integration|rls)\//.test(f),
+            /(^|\/)rls\/|(^|[/._-])rls([._-][^/]*)?\.test\.|(^|\/)[^/]*isolation[^/]*\.test\./i.test(
+              f,
+            ) || /(^|\/)tests?\/(db|integration|rls)\//.test(f),
         );
       return {
         status: rls || isolationTest ? "present" : tenantCol ? "partial" : "n/a",

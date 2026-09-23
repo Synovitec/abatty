@@ -119,8 +119,14 @@ export const rules = [
       const gi = c.read(".gitignore");
       const night = c.exists(`${c.agentRoot}/adoption.json`) || c.exists(`${c.agentRoot}/night`);
       const wanted = [".abatty/", ...(night ? [".claude/night/"] : [])];
-      // A line that names the folder, with or without the leading or trailing slash.
-      const lines = gi.split(/\r?\n/).map((l) => l.trim().replace(/^\/|\/$/g, ""));
+      // A line that names the folder, with or without a leading slash or `**/`, and with or
+      // without a trailing slash, `/*` or `/**`.
+      const lines = gi.split(/\r?\n/).map((l) =>
+        l
+          .trim()
+          .replace(/^(\*\*\/|\/)/, "")
+          .replace(/\/(\*\*?)?$/, ""),
+      );
       const missing = wanted.filter((w) => !lines.includes(w.replace(/\/$/, "")));
       return {
         status:

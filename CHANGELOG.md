@@ -49,8 +49,8 @@ under Unreleased in the same commit.
   event is listed (HARNESS-HOOKS). `.abatty/` must be ignored as well as the night's folder
   (HARNESS-GITIGNORE). The git shim counts only where the night or an `.envrc` puts it on PATH
   (SEC-AGENT-SHIM). Commits that carry the authorship trailer by policy read as a practised
-  policy rather than n/a (FLOW-TRAILER). The em dash rule is now a `should`, and a repository
-  whose typography uses the dash, as French does, says `style.emDash: "allowed"` in its config
+  policy rather than n/a (FLOW-TRAILER). The em dash rule stays a must, and a repository whose
+  typography uses the dash, as French does, says `style.emDash: "allowed"` in its config
   (FLOW-EMDASH).
 - **The secret scan stops reporting variable reads and fixture samples.** On an adopter's repository
   it reported twenty-six findings and none was a secret, which trains people to add allow

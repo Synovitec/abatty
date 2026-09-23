@@ -77,10 +77,10 @@ export const rules = [
     family: "Delivery",
     title: "No em-dash in code, copy or docs",
     standard: ["FLOW.1"],
-    level: "should",
+    level: "must",
     enforcement: "hard",
     phase: "1",
-    why: 'The character is the signature of generated text and a locale problem in copy; a hyphen says the same. It is a house style, not a defect: a repository whose typography uses it (French sets it as correct punctuation) says `style.emDash: "allowed"` in its config and the rule steps aside.',
+    why: 'The character is the signature of generated text and a locale problem in copy; a hyphen says the same. The standard holds it as a must (FLOW.1), and a repository whose own typography uses the dash (French sets it as punctuation) records that decision with `style.emDash: "allowed"` in its config, and the rule steps aside.',
     next: 'Replace with a hyphen, or record that this repository\'s typography uses it: style.emDash "allowed" in the config',
     check: (c) => {
       // A must that read 1,948 files as missing on a French repository whose house style is the

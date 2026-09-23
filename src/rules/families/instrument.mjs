@@ -33,18 +33,27 @@ export function phantomScripts(ciText, scripts) {
 }
 
 /**
- * Every script a pipeline could run anywhere in the tree: the root's and each workspace's. An
+ * Every script a pipeline could run: the root's, and those of each workspace the pipeline names
+ * (its folder in a `working-directory:` or a `--cwd`, its package name in a `--filter`). An
  * adopter's steps ran `bun run typecheck` under `working-directory: apps/web`, and the root's
- * package.json alone called them phantom. The root's win a name both define.
+ * package.json alone called them phantom. A workspace the pipeline never names lends it nothing:
+ * a root `npm run lint` is still phantom when only `packages/x` has a lint. The root's win a
+ * name both define.
  * @param {import("../index.mjs").RepoContext} c
  * @returns {Record<string, string>}
  */
 export function treeScripts(c) {
   const all = {};
   for (const f of c.files(/(^|\/)package\.json$/)) {
+    const dir = f.replace(/\/?package\.json$/, "");
+    if (!dir) continue;
     try {
-      const own = JSON.parse(c.read(f)).scripts;
-      if (own && typeof own === "object") Object.assign(all, own);
+      const pkg = JSON.parse(c.read(f));
+      const named =
+        c.ciText.includes(dir) ||
+        (typeof pkg.name === "string" && pkg.name && c.ciText.includes(pkg.name));
+      const own = pkg.scripts;
+      if (named && own && typeof own === "object") Object.assign(all, own);
     } catch {
       // A package.json that does not parse offers no script.
     }

@@ -17,7 +17,9 @@
 export function templatePlaceholders(text) {
   const prose = String(text)
     .replace(/```[\s\S]*?```/g, "")
-    .replace(/`[^`\n]*`/g, "");
+    // A choice offered in a code span (`<package.json | docs/version.json>`) is the template's
+    // own question, written in code because it names files: it stays a blank to fill.
+    .replace(/`[^`\n]*`/g, (span) => (/<[^<>\n]*\s\|\s[^<>\n]*>/.test(span) ? span : ""));
   return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
     .map((m) => `<${m[1]}>`)
     .filter((p) => !/^<[a-z][a-z0-9-]*(\s+[a-z-]+="[^"]*")*\s*\/?>$/i.test(p)); // an HTML tag: attributes carry a value, or it closes itself

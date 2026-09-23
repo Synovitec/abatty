@@ -58,6 +58,12 @@ test("DATA-TENANT counts a test named rls wherever it sits, and a scope test onl
     "src/scope.test.ts": "test('a', () => {});\n",
   });
   assert.equal(scope.status, "partial", "a scope test outside a database suite is not the proof");
+  for (const lookalike of ["src/lib/urls.test.ts", "src/components/TenantPicker.test.tsx"])
+    assert.equal(
+      judge("DATA-TENANT", { ...migration, [lookalike]: "test('a', () => {});\n" }).status,
+      "partial",
+      `${lookalike} is not an isolation test`,
+    );
 });
 
 test("TEST-UNIT names the runner the test script runs before a dependency one app carries", () => {
@@ -102,6 +108,9 @@ test("a placeholder inside code is an example, and one in prose is still a blank
   assert.deepEqual(templatePlaceholders("Write `-- <which case>` above it."), []);
   assert.deepEqual(templatePlaceholders("```sql\n-- <which case>\n```\n"), []);
   assert.deepEqual(templatePlaceholders("Name: <project name>"), ["<project name>"]);
+  assert.deepEqual(templatePlaceholders("SemVer in `<package.json | docs/version.json>`."), [
+    "<package.json | docs/version.json>",
+  ]);
 });
 
 test("HARNESS-HOOKS lists every wired event, PostToolUse included", () => {
@@ -180,10 +189,36 @@ test("INST-CI credits a step that runs a workspace's script in the workspace's f
   });
   assert.equal(v.status, "partial");
   assert.match(v.evidence, /does not have: nowhere$/);
+  // a workspace the pipeline never names lends a root step nothing
+  const unnamed = judge("INST-CI", {
+    "package.json": JSON.stringify({ scripts: { test: "npm test" } }),
+    "packages/x/package.json": JSON.stringify({ name: "x-lib", scripts: { lint: "biome" } }),
+    ".github/workflows/ci.yml": "steps:\n  - run: npm run lint\n",
+  });
+  assert.match(unnamed.evidence, /does not have: lint$/);
 });
 
 test("a flag before run is read through, and a flag's value is not the script", () => {
   assert.deepEqual(phantomScripts("pnpm --filter web run lint", {}), ["lint"]);
   assert.deepEqual(phantomScripts("bun --cwd apps/api run test", {}), ["test"]);
   assert.deepEqual(phantomScripts("pnpm -r run build", { build: "x" }), []);
+});
+
+test("HARNESS-GITIGNORE reads a folder ignored as a glob, and OBS reads no test or mock", () => {
+  for (const line of [".abatty/*", "/.abatty/**", "**/.abatty/"])
+    assert.equal(judge("HARNESS-GITIGNORE", { ".gitignore": `${line}\n` }).status, "present", line);
+  const mocked = judge("OBS-REDACTION", {
+    "src/server/logger.test.ts": "const log = pino({ redact: ['password'] });\n",
+    "src/server/__mocks__/logger.ts": "export const log = pino({ redact: ['password'] });\n",
+  });
+  assert.equal(mocked.status, "missing");
+});
+
+test("SEC-AGENT-SHIM does not read the config's phases as a night that ran", () => {
+  const v = judge("SEC-AGENT-SHIM", {
+    ".claude/bin/git": "#!/bin/sh\n",
+    ".claude/bin/shim.mjs": "export {};\n",
+    "abatty.config.json": JSON.stringify({ phases: [0, 1, 2] }),
+  });
+  assert.equal(v.status, "partial");
 });

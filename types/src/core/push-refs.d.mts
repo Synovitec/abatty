@@ -5,11 +5,13 @@
 /** The lines a pre-push hook receives, parsed; malformed lines are dropped. @param {string} text @returns {PushLine[]} */
 export function pushLines(text: string): PushLine[];
 /**
- * What to do with each ref of a push, against the commit checked out here.
+ * What to do with each ref of a push, against the commit checked out here. A tag is read as the
+ * commit it names (`peel`), since an annotated tag's own sha is the tag object's.
  * @param {PushLine[]} lines @param {string} head the checked-out commit's sha
+ * @param {(sha: string) => string} [peel] the commit a sha names; the sha itself by default
  * @returns {PushPlan}
  */
-export function pushPlan(lines: PushLine[], head: string): PushPlan;
+export function pushPlan(lines: PushLine[], head: string, peel?: (sha: string) => string): PushPlan;
 /**
  * The range a judged ref adds: from what the remote had, or from where the branch left `base`
  * for a new branch (the remote sha all zeros).

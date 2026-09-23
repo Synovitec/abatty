@@ -16,9 +16,12 @@
  */
 export function phantomScripts(ciText: string, scripts: Record<string, string>): any[];
 /**
- * Every script a pipeline could run anywhere in the tree: the root's and each workspace's. An
+ * Every script a pipeline could run: the root's, and those of each workspace the pipeline names
+ * (its folder in a `working-directory:` or a `--cwd`, its package name in a `--filter`). An
  * adopter's steps ran `bun run typecheck` under `working-directory: apps/web`, and the root's
- * package.json alone called them phantom. The root's win a name both define.
+ * package.json alone called them phantom. A workspace the pipeline never names lends it nothing:
+ * a root `npm run lint` is still phantom when only `packages/x` has a lint. The root's win a
+ * name both define.
  * @param {import("../index.mjs").RepoContext} c
  * @returns {Record<string, string>}
  */
