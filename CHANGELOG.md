@@ -64,8 +64,10 @@ under Unreleased in the same commit.
   be on, and pushing another branch was judged by the checkout's tree. An adopter's sessions
   began deleting branches through the forge's API to get round it. The hook now passes the refs
   to `abatty gate --refs`, which reads each line:
-  - a deletion or a tag runs no gate, and says so;
-  - the commit checked out is judged over the range the push adds;
+  - a deletion runs no gate, and says so;
+  - the commit checked out is judged over the range the push adds, and when several refs name
+    it, over the range the furthest-behind of them adds;
+  - a tag is judged as the commit it names, since a tag push is what starts a release;
   - a push of any other commit is refused, loudly, since the tree here is not the one being
     pushed.
   With nothing on stdin (the hook run by hand), the gate reads the push itself, as before. This

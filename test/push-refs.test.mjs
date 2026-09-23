@@ -9,19 +9,18 @@ const HEAD = "a".repeat(40);
 const OTHER = "b".repeat(40);
 const REMOTE = "c".repeat(40);
 
-test("each pushed ref is read: a deletion and a tag are skipped, the checkout is judged, another commit is refused", () => {
+test("each pushed ref is read: a deletion is skipped, the checkout is judged, another commit is refused", () => {
   const lines = pushLines(
     [
       `(delete) ${ZERO} refs/heads/old ${REMOTE}`,
-      `refs/tags/v1 ${OTHER} refs/tags/v1 ${ZERO}`,
       `refs/heads/feat ${HEAD} refs/heads/feat ${REMOTE}`,
       `refs/heads/other ${OTHER} refs/heads/other ${ZERO}`,
       "not a line git writes",
     ].join("\n"),
   );
-  assert.equal(lines.length, 4, "a malformed line is dropped");
+  assert.equal(lines.length, 3, "a malformed line is dropped");
   const plan = pushPlan(lines, HEAD);
-  assert.equal(plan.skipped.length, 2);
+  assert.equal(plan.skipped.length, 1);
   assert.match(plan.skipped[0] || "", /deletion carries nothing/);
   assert.deepEqual(
     plan.judge.map((l) => l.remote),
@@ -32,6 +31,30 @@ test("each pushed ref is read: a deletion and a tag are skipped, the checkout is
     plan.refused[0] || "",
     /refs\/heads\/other .* not the aaaaaaaaaaaa checked out here/,
   );
+});
+
+test("a tag is judged as the commit it names: the checkout's is gated, another is refused", () => {
+  const TAG = "d".repeat(40); // an annotated tag's own object, naming HEAD
+  const peel = (/** @type {string} */ sha) => (sha === TAG ? HEAD : sha);
+  const lines = pushLines(
+    [
+      `refs/tags/v2 ${TAG} refs/tags/v2 ${ZERO}`,
+      `refs/tags/v1 ${OTHER} refs/tags/v1 ${ZERO}`,
+      `refs/tags/gone ${ZERO} refs/tags/gone ${REMOTE}`,
+    ].join("\n"),
+  );
+  const plan = pushPlan(lines, HEAD, peel);
+  assert.deepEqual(
+    plan.judge.map((l) => [l.remote, l.localSha]),
+    [["refs/tags/v2", HEAD]],
+  );
+  assert.equal(
+    plan.refused.length,
+    1,
+    "a tag on commits no branch push carried is not waved through",
+  );
+  assert.match(plan.refused[0] || "", /refs\/tags\/v1/);
+  assert.match(plan.skipped[0] || "", /deletion/);
 });
 
 test("the range a judged ref adds: from what the remote had, or from where a new branch left the base", () => {
@@ -82,4 +105,30 @@ test("a push of deletions only runs no gate; a push of a commit not checked out 
   const own = gateRefs(dir, `refs/heads/main ${head} refs/heads/main ${ZERO}\n`);
   assert.notEqual(own.code, 0, own.out);
   assert.match(own.out, /unit tests/);
+});
+
+test("an annotated tag on the checkout is gated, and two refs are judged over the older base", () => {
+  const dir = tempRepo("refs-tag", {
+    "package.json": JSON.stringify({
+      name: "t",
+      scripts: { test: "node -e 0", standards: "node -e 0" },
+    }),
+    "package-lock.json": "{}\n",
+  });
+  const first = git(dir, "rev-parse", "HEAD");
+  git(dir, "commit", "-q", "--allow-empty", "-m", "two");
+  const second = git(dir, "rev-parse", "HEAD");
+  git(dir, "commit", "-q", "--allow-empty", "-m", "three");
+  const head = git(dir, "rev-parse", "HEAD");
+  git(dir, "tag", "-a", "v1", "-m", "release");
+  const tagObject = git(dir, "rev-parse", "v1");
+  assert.notEqual(tagObject, head, "an annotated tag has its own object");
+  const tag = gateRefs(dir, `refs/tags/v1 ${tagObject} refs/tags/v1 ${ZERO}\n`);
+  assert.doesNotMatch(tag.out, /nothing pushed that the gate judges|not the .* checked out/);
+  assert.match(tag.out, /unit tests/);
+  const two = gateRefs(
+    dir,
+    `refs/heads/main ${head} refs/heads/main ${second}\nrefs/heads/b ${head} refs/heads/b ${first}\n`,
+  );
+  assert.match(two.out, new RegExp(`range ${first}\.\.${head}`));
 });

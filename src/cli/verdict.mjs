@@ -102,7 +102,8 @@ function refsVerdict(cx, base) {
   const lines = pushLines(text);
   // Nothing handed (the hook run by hand): the gate reads the push itself, as it always has.
   if (!lines.length) return "";
-  const plan = pushPlan(lines, git(cx.dir, "rev-parse", "HEAD"));
+  const head = git(cx.dir, "rev-parse", "HEAD");
+  const plan = pushPlan(lines, head, (sha) => git(cx.dir, "rev-parse", `${sha}^{commit}`));
   for (const s of plan.skipped) cx.out(`${t.glyph.skip} ${t.gray(s)}\n`);
   if (plan.refused.length) {
     for (const s of plan.refused) cx.out(`${t.glyph.fail} ${t.red(s)}\n`);
@@ -112,8 +113,14 @@ function refsVerdict(cx, base) {
     cx.out(`${t.glyph.ok} ${t.green("nothing pushed that the gate judges")}\n`);
     return EXIT.clean;
   }
-  const first = plan.judge[0];
-  return first ? refRange(first, git(cx.dir, "merge-base", base, first.localSha)) : "";
+  // Every judged ref names HEAD, and together they add what lies past the oldest of their bases:
+  // judging the first alone let a second ref, further behind on its remote, carry commits unseen.
+  const froms = plan.judge.map(
+    (l) => refRange(l, git(cx.dir, "merge-base", base, head)).split("..")[0] || "",
+  );
+  if (froms.some((f) => !f)) return "";
+  const from = froms.length === 1 ? froms[0] : git(cx.dir, "merge-base", "--octopus", ...froms);
+  return from ? `${from}..${head}` : "";
 }
 
 /**

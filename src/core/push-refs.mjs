@@ -6,7 +6,9 @@
  * was judged by the checkout's tree; a push of two refs judged one. So each line is read:
  *
  *   a deletion (the local sha is all zeros)  nothing to verify: said, and skipped
- *   a tag                                    it names commits a branch push already judged: skipped
+ *   a tag                                    judged as the commit it names: a tag push is what
+ *                                            starts a release, so skipping it waved through
+ *                                            commits no branch push ever carried
  *   the commit checked out                   judged, over the range the push adds
  *   any other commit                         refused, loudly: the gate judges a tree, and the
  *                                            tree here is not the one being pushed
@@ -34,18 +36,20 @@ export function pushLines(text) {
 }
 
 /**
- * What to do with each ref of a push, against the commit checked out here.
+ * What to do with each ref of a push, against the commit checked out here. A tag is read as the
+ * commit it names (`peel`), since an annotated tag's own sha is the tag object's.
  * @param {PushLine[]} lines @param {string} head the checked-out commit's sha
+ * @param {(sha: string) => string} [peel] the commit a sha names; the sha itself by default
  * @returns {PushPlan}
  */
-export function pushPlan(lines, head) {
+export function pushPlan(lines, head, peel = (sha) => sha) {
   /** @type {PushPlan} */
   const plan = { judge: [], skipped: [], refused: [] };
-  for (const l of lines) {
+  for (const raw of lines) {
+    const tag = raw.local.startsWith("refs/tags/") || raw.remote.startsWith("refs/tags/");
+    const l = tag && !ZERO.test(raw.localSha) ? { ...raw, localSha: peel(raw.localSha) } : raw;
     if (ZERO.test(l.localSha))
       plan.skipped.push(`${l.remote}: a deletion carries nothing to verify`);
-    else if (l.local.startsWith("refs/tags/") || l.remote.startsWith("refs/tags/"))
-      plan.skipped.push(`${l.remote}: a tag names commits a branch push is judged on`);
     else if (l.localSha === head) plan.judge.push(l);
     else
       plan.refused.push(
