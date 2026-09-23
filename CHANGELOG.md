@@ -121,6 +121,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Three probes stop counting correct code.** All were found by review before release.
+  - `api.floatMoney` no longer counts integer minor units (`parseInt(`, `z.number().int()`),
+    which is the exact form its own reason recommends.
+  - `api.rowReturn` reads a row kept in a local as returned only when the same function returns
+    it, not when another action happens to return a local of the same name.
+  - `change.refactorTests` no longer counts a regex's `.test(` call as a test case, and it counts
+    a case turned into `test.skip(` as removed, since a skipped test lowers the bar as a deleted
+    one does.
 - **The boundary probes read JSX text and guard calls correctly.** Both were caught by review
   before release. An apostrophe in JSX text (`Don't`) was read as the start of a string that
   never ended, which unbalanced every function body after it: a page that guarded first read as

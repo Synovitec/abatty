@@ -16,8 +16,13 @@ const TEST_FILE =
   /(^|\/)(tests?|__tests__|e2e|spec)\/|\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)test_[^/]*\.py$|_test\.(py|go)$/;
 const REFACTOR = /^refactor(\([^)]*\))?!?:/;
 const REASON = /^tests-changed:\s*\S/m;
-/** A test case, as the runners spell one: `test(`, `it(`, a pytest function, a Go test. */
-const CASE = /\b(?:test|it)(?:\.\w+)?\s*\(|^\s*def test_|^func Test/gm;
+/**
+ * A test case, as the runners spell one: `test(`, `it(` and their `only`/`each`/`concurrent`
+ * forms, a pytest function, a Go test. Not `re.test(` (a method, after a dot), and not a skipped
+ * or pending case, so skipping one lowers the count as removing it does.
+ */
+const CASE =
+  /(?<![.\w$])(?:test|it)(?:\.(?:only|each|concurrent))?\s*\(|^\s*def test_|^func Test/gm;
 
 /** @param {string} text */
 const cases = (text) => (String(text).match(CASE) || []).length;
@@ -93,18 +98,24 @@ export const probes = [
             files: { "test/b.test.ts": "// b is covered elsewhere\n" },
             message: "refactor(b): fold b\n\ntests-changed: b is covered by a",
           },
+          {
+            // a skipped case lowers the bar as a removed one does, reason or not
+            files: { "test/a.test.ts": "test.skip('one', () => {});\n" },
+            message: "refactor(a): park one\n\ntests-changed: flaky",
+          },
         ],
-        range: "HEAD~3..HEAD",
-        expect: 3,
+        range: "HEAD~4..HEAD",
+        expect: 4,
       },
       {
         name: "a reasoned edit, a test added, and a fix that edits a test are not counted",
         files: {
           "src/a.ts": "export const a = 1;\n",
-          "test/a.test.ts": "test('one', () => { a() });\n",
+          "test/a.test.ts": "test('one', () => { a(); assert.ok(/a/.test(name)) });\n",
         },
         commits: [
           {
+            // a regex's .test( call is not a test case: removing one removes no case
             files: {
               "src/a.ts": "export const b = 1;\n",
               "test/a.test.ts": "test('one', () => { b() });\n",

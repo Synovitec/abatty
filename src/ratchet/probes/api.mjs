@@ -29,6 +29,17 @@ const DEFAULT_MONEY = ["price", "amount", "cost", "fee", "subtotal", "balance"];
 const SERVER_CACHE =
   /\bunstable_cache\s*\(|(['"])use cache(?::\s*\w+)?\1|\bcacheLife\s*\(|\bcacheTag\s*\(|^\s*export const revalidate\s*=|^\s*export const dynamic\s*=\s*['"]force-static['"]|\bgenerateStaticParams\b|\bnext:\s*\{[^}]*\brevalidate\b|\bcache:\s*['"]force-cache['"]|from\s+['"](?:ioredis|redis|@upstash\/redis|@vercel\/kv|memcached|lru-cache)['"]/gm;
 
+/**
+ * The text from `at` to the start of the next top-level function (an export or a declaration at
+ * the start of a line), or to the end: the rest of the function `at` sits in, near enough.
+ * @param {string} text @param {number} at
+ */
+function untilNextFunction(text, at) {
+  const rest = text.slice(at + 1);
+  const next = rest.search(/\n(?:export\s|async\s+function\s|function\s)/);
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
 /** A regex over any of the names, as whole words. @param {string[]} names */
 const anyOf = (names) => names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
 
@@ -122,7 +133,8 @@ export const probes = [
         scanned++;
         for (const m of text.matchAll(ROW_RETURN)) judge(f, text, m, "a row");
         for (const m of text.matchAll(ROW_KEPT))
-          if (new RegExp(`\\breturn\\s+${m[1]}\\b`).test(text.slice(m.index ?? 0)))
+          // Returned by the same function: the text up to the next top-level function, not the file.
+          if (new RegExp(`\\breturn\\s+${m[1]}\\b`).test(untilNextFunction(text, m.index ?? 0)))
             judge(f, text, m, `the row ${m[1]}`);
       }
       return { scanned, findings };
@@ -142,6 +154,9 @@ export const probes = [
           "app/actions/a.ts":
             "'use server'\nexport async function create(raw: unknown) {\n  return prisma.user.create({ data: input.parse(raw), select: { id: true } })\n}\n",
           "lib/x.ts": "export const f = () => prisma.user.create({ data: {} })\n",
+          // a row kept in one action and a same-named local returned by another are two things
+          "app/actions/b.ts":
+            "'use server'\nexport async function touch(id: string) {\n  const user = await db.user.update({ where: { id }, data: {} })\n  log(user.id)\n}\nexport async function me() {\n  const user = { id: 1 }\n  return user\n}\n",
         },
         expect: 0,
       },
@@ -155,7 +170,7 @@ export const probes = [
     title: "Money as a float",
     why: "An amount of money is exact: a decimal string beside its currency on the wire, a decimal or integer minor units in the database. A JavaScript number or a Float column rounds on the way. The count is the places a money field (`ratchet.moneyFields`) is made a number to send or receive it, and the Float columns that hold one.",
     approximates:
-      "stands in for a parser, which would be a dependency: a text reading of `<field>: Number(`, `parseFloat(`, `parseInt(`, `z.number(` or `z.coerce.number(` in the source, and of a `<field> Float` column in a .prisma schema, for each money field name. Arithmetic on an amount already received (a formatter) is not a crossing and is not read.",
+      "stands in for a parser, which would be a dependency: a text reading of `<field>: Number(`, `parseFloat(`, `z.number()` or `z.coerce.number()` not followed by `.int()` in the source, and of a `<field> Float` column in a .prisma schema, for each money field name. Arithmetic on an amount already received (a formatter) is not a crossing and is not read.",
     axis: "boundary-clarity",
     lossAt: 10,
     scan: (c, o) => {
@@ -163,7 +178,9 @@ export const probes = [
         Array.isArray(o.config.moneyFields) ? o.config.moneyFields : DEFAULT_MONEY,
       );
       const wire = new RegExp(
-        `\\b(?:${names})\\s*:\\s*(?:Number|parseFloat|parseInt)\\s*\\(|\\b(?:${names})\\s*:\\s*z\\.(?:number|coerce\\.number)\\s*\\(`,
+        // Integer minor units are the exact form the why recommends: parseInt and z.number().int()
+        // are not a float.
+        `\\b(?:${names})\\s*:\\s*(?:Number|parseFloat)\\s*\\(|\\b(?:${names})\\s*:\\s*z\\.(?:number|coerce\\.number)\\s*\\(\\s*\\)(?!\\s*\\.int\\s*\\()`,
         "gi",
       );
       const column = new RegExp(`^\\s*\\w*(?:${names})\\w*\\s+Float\\b`, "gim");
@@ -206,6 +223,9 @@ export const probes = [
             "export function formatPrice(price: string) {\n  return Number(price).toFixed(2)\n}\n",
           "prisma/schema.prisma":
             "model Dish {\n  id    String  @id\n  price Decimal @db.Decimal(10, 2)\n}\n",
+          // integer minor units are the exact form, not a float
+          "lib/schemas/c.ts":
+            "export const cents = z.object({ amount: z.number().int().min(0) })\nexport const read = (q) => ({ amount: parseInt(q.amount, 10) })\n",
         },
         expect: 0,
       },
