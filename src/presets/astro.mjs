@@ -6,6 +6,7 @@
  * tests proves the package does not break on the shape, not the stack.
  */
 import { COMMON_PROBES } from "./probes.mjs";
+import { CHANGED_COVERAGE } from "./steps.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const astro = {
@@ -85,6 +86,7 @@ export const astro = {
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
       { label: "unit tests (TEST.1)", script: "test", required: true },
+      CHANGED_COVERAGE,
       {
         label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",

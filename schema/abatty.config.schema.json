@@ -86,6 +86,10 @@
         "changelog": {
           "type": "string"
         },
+        "changelogFragments": {
+          "type": "string",
+          "description": "A folder of changelog fragments (<slug>.<added|changed|fixed|...>.md), one file per change, which count as the changelog entry and `abatty changelog --release <version>` folds into the dated section. Parallel branches never edit the same hunk."
+        },
         "version": {
           "type": "string"
         },
@@ -211,7 +215,7 @@
           "items": {
             "type": "string"
           },
-          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions)."
+          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions, types.nonNull)."
         },
         "boundedBy": {
           "type": "array",
@@ -330,6 +334,10 @@
         },
         "changelog": {
           "type": "string"
+        },
+        "changelogFragments": {
+          "type": "string",
+          "description": "The same as files.changelogFragments, for the ratchet alone."
         },
         "changelogRequiredFor": {
           "type": "array",

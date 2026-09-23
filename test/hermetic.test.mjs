@@ -104,3 +104,28 @@ test("a dotenv file is read for the name only, and a commented-out line declares
   writeFileSync(join(dir, ".env.local"), "export DATABASE_URL=postgres://x\n");
   assert.equal(suiteDatabase([dir], { db: { url: "", test: "" } }).ok, false);
 });
+
+test("every step, not only the suites, runs with the run's own database when one is named", () => {
+  /** @param {{ url: string, test: string }} db */
+  const typecheckEnv = (db) => {
+    /** @type {Record<string, Record<string, string> | undefined>} */
+    const env = {};
+    runGate({
+      repoDir: touched("herm-steps"),
+      preset: /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next")),
+      run: (_d, script, _a, e) => {
+        env[script] = e;
+        return 0;
+      },
+      audit: () => ({ status: 0, output: "" }),
+      dockerUp: () => true,
+      db,
+      log: () => {},
+    });
+    return env.typecheck;
+  };
+  const named = typecheckEnv({ url: "postgres://live/app", test: "postgres://throwaway/t" });
+  assert.equal(named?.DATABASE_URL, "postgres://throwaway/t", "a tool reading it loads its config");
+  const none = typecheckEnv({ url: "postgres://live/app", test: "" });
+  assert.equal(none?.DATABASE_URL, undefined, "the ambient one is never handed on");
+});

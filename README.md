@@ -64,16 +64,25 @@ npx abatty                   # where the repository stands
 
 One definition drives the local command, the git hook and CI, so they cannot disagree about which
 steps exist. Steps run in a fixed order and stop at the first failure: format, lint, typecheck,
-import graph, dead code, tests, the ratchet with the changelog over the pushed range, the secret
-scan, the dependency audit.
+import graph, dead code, tests, the coverage of the changed lines (a `coverage:changed` or
+`test:changed` script, told the range in `ABATTY_RANGE`), the ratchet with the changelog over the
+pushed range, the secret scan, the dependency audit.
 
 Heavy suites are selected by path, so a change that touches no database code does not wait for the
 database suite, and a push that only changes comments builds nothing. A step whose script the repository does not have yet is reported as skipped rather
 than passed, and the verdict leads with how many steps did not run. Steps the preset requires
 cannot be skipped: without them the gate reports that it could not run.
 
+The changelog entry a source change carries can be a line under `## [Unreleased]`, or, where
+parallel branches keep colliding on that one hunk, a fragment: set `files.changelogFragments` to
+a folder (`changes/unreleased`) and each change adds its own `<slug>.<added|changed|fixed|...>.md`
+there, which the commit hook, the gate and the Stop hook accept as the entry.
+`abatty changelog --release <version>` folds `[Unreleased]` and every fragment into the dated
+section and removes the fragments.
+
 A suite that needs a database never runs against one the run did not create. With
-`TEST_DATABASE_URL` set, the suite runs with `DATABASE_URL` pointed at it; in CI the pipeline's
+`TEST_DATABASE_URL` set, the suite, and every other step with it, runs with `DATABASE_URL`
+pointed at it; in CI the pipeline's
 own service is trusted. An ambient `DATABASE_URL`, from the shell or declared in a `.env` file
 (read for the name only), defers the suite to CI and says how to give it a database of its own.
 
@@ -240,6 +249,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `change.refactorTests`    | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
 | `code.clones`             | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
 | `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
+| `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

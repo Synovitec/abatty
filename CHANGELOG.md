@@ -5,6 +5,108 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`types.nonNull`, an opt-in probe that counts non-null assertions.** To pass a coverage gate an
+  adopter's agent replaced two `?? 0` fallbacks with `!`: the uncovered branches disappeared, and
+  `types.escapes`, which counts `any` and the `@ts-` comments, did not count what replaced them, so
+  both numbers went green while the debt moved into the one form nothing measured. The probe
+  counts a postfix `!` in TypeScript (not `!=`, not a negation, not text in a string, a comment or
+  JSX), so the count can only fall. `init` enables it on every code preset; an existing repository
+  enables it in `ratchet.enable`, and today's count becomes its floor.
+- **The gate runs the coverage of the changed lines, so a green local gate is CI's green too.** An
+  adopter's push passed the full local gate and went red in CI on two untested branches, because
+  that check (TEST.4) was a separate CI step the gate never ran, and the session had already
+  reported the push green. Every code preset now carries a gate step that runs a
+  `coverage:changed` or `test:changed` script, told the range the gate judges in `ABATTY_RANGE`,
+  and reports the step as not run when the repository has neither. `doctor --controls` proves it
+  with a new source file carrying a branch no test covers.
+- **Changelog fragments, so parallel branches stop colliding on the changelog.** With the entry
+  written as a line under `## [Unreleased]`, every pair of parallel branches edits the same hunk:
+  an adopter merging eight pull requests in a day resolved four conflicts, all in the changelog,
+  none in code. Set `files.changelogFragments` to a folder and a change may instead add its own
+  `<slug>.<section>.md` there; the commit hook, the gate's changelog range and the Stop hook all
+  accept it as the entry. `abatty changelog --release <version>` folds `[Unreleased]` and every
+  fragment into the dated section, grouped by section, and removes the fragments. Off by default:
+  the line under `[Unreleased]` works as before.
+- **`doctor` and `update` name a stale patch of abatty.** An adopter patched 0.4.0 in
+  `node_modules` to get past a defect 0.5.0 fixed; on the upgrade such a patch fails to apply, or
+  applies to code it was never written for. A patch of an abatty version other than the one
+  running, declared in `patchedDependencies` (bun, npm), `pnpm.patchedDependencies` or as a file
+  under `patches/`, is now named with where it is declared.
+
+### Fixed
+
+- **A red cross means the run failed.** The ratchet listed every finding in a file the push
+  touched with ✗, the debt the file already carried within its floor included, and an adopter's
+  session read a push that had gone through as refused and had to ask the remote. A finding whose
+  metric holds its floor is now listed with a neutral mark, the heading says how many of them are
+  within the floor and not failing, and ✗ stays for a metric that fails.
+- **Every gate step runs with the run's own database, not only the suites.** With
+  `TEST_DATABASE_URL` set, only the database and browser suites were pointed at it; an adopter who
+  unset their own `DATABASE_URL`, as the deferral message implied, then saw the dead-code step go
+  red for nothing, because its tool loads the ORM's config and that reads `DATABASE_URL`. Every
+  step now gets `TEST_DATABASE_URL` as `DATABASE_URL` when one is named, and the deferral message
+  says to keep `DATABASE_URL` for the tools that read it.
+- **`update` no longer reports a conflict on a file whose template did not change.** A file `init`
+  kept (the repository's own `.claude/settings.json`) has no ancestor, so every upgrade asked for
+  a merge base that lives under the gitignored `.abatty/` and so is on no other clone, and wrote
+  an `.abatty-new` conflict beside a file whose template was byte for byte the same. The lock,
+  which is committed, now records the template each kept file was offered, by hash; when the
+  package offers the same one again, the file is kept without a word. A changed template is still
+  put beside yours.
+- **`update` refreshes the git hooks, and `doctor` reads them.** Only `init` wrote
+  `.githooks/pre-push`, `pre-commit` and `commit-msg`, so an adopter who upgraded with `update`
+  kept a pre-push hook from before `--refs` (the gate judging the checkout rather than the push)
+  and `npm run` on a pnpm repository, while `doctor` reported no drift. `update` now rewrites a
+  hook it last wrote, or one that is exactly a form an earlier `init` wrote, in the repository's
+  own manager; a hook the repository edited is kept, with the new version beside it as
+  `.abatty-new`. A repository without a `.githooks` folder is left alone. `doctor` lists the git
+  hooks in its drift.
+- **A hook committed as not executable is named.** git skips a hook recorded as 100644 on every
+  machine but the one that wrote it, and an adopter's three hooks were committed that way with
+  nothing saying so. `doctor` fails on one, reading the mode git records rather than the disk, and
+  points to `abatty hooks` (what `hooks:install` runs), which now stages the bit for a hook git
+  tracks without it; INST-GATE reads the pre-push hook the same way.
+- **A monorepo's gate steps are proven where they look.** `doctor --controls` planted every
+  violation in a root `src/`, which no workspace of a monorepo scans, so its lint, typecheck and
+  test steps stayed green on the plant and `measure` dropped three findings to partial, on steps
+  the adopter had watched fail by hand. The plants now go in `src/` where there is one, and
+  otherwise in the source folder of the first workspace, in the language its own tsconfig checks.
+  The controls run also records the abatty version that planted it, and `measure` no longer reads
+  a run from an older minor version as proof either way: its steps read unproven until the
+  controls run again. A planted file is marked as about to be committed while its step runs, so
+  the ratchet, which reads the tracked tree, sees it.
+- **`measure --out` writes the measurement there, and only there.** With `--json` or `--sarif`
+  the output went to the screen and no file was written, and every run replaced the
+  repository's latest report under `.abatty/reports/`, which the dashboard and the MCP server
+  read as the truth. A run with `--out` now writes that file alone.
+- **Three rules read a bun monorepo right after 0.5.1's verification on it.** A pipeline step
+  that runs a file (`bun run scripts/check.ts`) is no longer reported as naming a script called
+  `scripts` (INST-CI). A root `test` script that hands the run to the workspaces (`turbo run
+  test`) now reads the runner from the workspaces' own test scripts before an installed package
+  (TEST-UNIT). The health endpoint named is a route file before a shorter helper path, and never
+  a test or a mock (OBS-HEALTH).
+- **The ratchet reads what git tracks.** An adopter's docs tooling wrote a dated report under
+  `docs/` on every run, never committed and never ignored, and the ratchet counted each one as a
+  document without front matter: every push regressed a floor with no human change, until the
+  folder was ignored. A ratchet that regresses on its own teaches people to raise floors. The
+  ratchet (`abatty ratchet`, the gate's step, the baseline, the MCP server) now measures the
+  tracked tree, a staged file included; the rules and `measure` still read the working tree.
+- **The guard judges a push by the branch where it runs.** It asked for the current branch once,
+  in the folder the hook starts in, so `cd <worktree> && git push` was judged by another
+  checkout's branch. That refused a push to a feature branch while the main checkout stood on
+  main, and allowed a push from a worktree on main while the checkout stood on a feature branch.
+  The guard now follows `cd`, `pushd` and a subshell to the folder each git command runs in, and
+  reads git's own `-C`, `--git-dir` and `--work-tree`. A bare or HEAD push from a folder it
+  cannot follow (a variable, `cd -`) is refused, with the fix named: name the branch. Four
+  neighbouring holes closed with it:
+  - a force push spelled with `-C <dir>` was not seen as a push at all: the folder was read as
+    the subcommand;
+  - `-C <dir> push origin` read "origin" as the target branch;
+  - a push inside a subshell read its target with the closing parenthesis attached;
+  - at night, a push spelled with `-C` skipped the adoption-branch-only rule.
+
 ## [0.5.1] - 2026-09-23
 
 ### Added

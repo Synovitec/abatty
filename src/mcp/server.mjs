@@ -80,7 +80,12 @@ export function tools(repoDir) {
           a.range === "auto"
             ? pushRange(dir, String(adoption?.baseBranch || "main"))
             : String(a.range || "");
-        const measurements = measureAll(probes, buildContext(dir), { config, range }, baseline);
+        const measurements = measureAll(
+          probes,
+          buildContext(dir, { tracked: true }),
+          { config, range },
+          baseline,
+        );
         const verdicts = compare(measurements, baseline, config);
         return {
           ok: !failed(verdicts) && !problems.length,

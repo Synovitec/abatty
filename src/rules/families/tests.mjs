@@ -40,7 +40,7 @@ export const rules = [
     phase: "2 / 10",
     ...SOURCES,
     why: "A change without a test that goes red on the bug is a change nobody can verify; the runner is the first feedback loop an agent has.",
-    next: "Add a unit runner (vitest, jest or node --test) and colocated tests for services and guards",
+    next: "Add a unit runner (vitest, jest, bun test or node --test) and colocated tests for services and guards",
     check: (c) => {
       const others = perPack(c, "test", (p) => p.id !== "javascript");
       const testFiles = c.files(/\.(test|spec)\.(ts|tsx|js|jsx|mjs)$/);
@@ -63,8 +63,18 @@ export const rules = [
               : /\bnode\b[^&|]*--test/.test(s)
                 ? "node --test"
                 : "";
+      // A root script that only hands the run to the workspaces (`turbo run test`, `nx run-many`,
+      // a recursive run) names no runner: the workspaces' own test scripts do, and a monorepo
+      // whose apps run `bun test` read as jest because one app depended on it.
+      const workspaces = () =>
+        c
+          .files(/(^|\/)package\.json$/)
+          .filter((f) => f !== "package.json")
+          .map((f) => byScript(String(c.readJson(f)?.scripts?.test || "")))
+          .find(Boolean) || "";
       const runner =
         byScript(String(c.scripts.test || "")) ||
+        workspaces() ||
         (c.has("vitest")
           ? "vitest"
           : c.script(/\bbun test\b/)

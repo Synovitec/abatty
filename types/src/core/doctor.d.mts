@@ -51,10 +51,12 @@ export function doctor(o: {
     };
     controls: {
         at: string;
+        abatty: string;
         steps: StepOutcome[];
         absent: string[];
     } | null;
     hooks: import("./hook-modes.mjs").HookMode[];
+    notExecutable: string[];
 };
 export type DriftEvent = {
     file: string;

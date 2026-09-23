@@ -71,6 +71,7 @@ export const DEFAULT_CONFIG = {
   envModule: "(^|/)env\\.[cm]?[jt]s$",
   citationsExempt: [],
   changelog: "CHANGELOG.md",
+  changelogFragments: "",
   changelogRequiredFor: [
     "src/",
     "server/",
@@ -96,6 +97,8 @@ export function resolveConfig(adoption) {
   /** @type {RatchetConfig} */
   const c = { ...DEFAULT_CONFIG, ...r };
   if (adoption?.files?.changelog) c.changelog = String(adoption.files.changelog);
+  if (adoption?.files?.changelogFragments)
+    c.changelogFragments = String(adoption.files.changelogFragments);
   if (Array.isArray(adoption?.changelogRequiredFor) && !r.changelogRequiredFor)
     c.changelogRequiredFor = adoption.changelogRequiredFor.map(String);
   if (Array.isArray(adoption?.coupled) && !r.coupled) c.coupled = adoption.coupled;

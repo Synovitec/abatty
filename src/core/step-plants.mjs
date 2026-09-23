@@ -5,7 +5,7 @@
  * REPOSITORY'S OWN script will read it. `step-controls.mjs` plants, runs and judges; this
  * module only knows what to plant and where.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readJsonFile } from "./repo.mjs";
 
@@ -55,12 +55,46 @@ function checkedExt(dir) {
 }
 
 /**
+ * The folder a planted source file goes in: `src` where the repository has one; in a monorepo
+ * without it, the source folder of the first workspace that has one; else the framework's own.
+ * A monorepo whose steps scan `apps/web/lib` read every control planted in a root `src/` as a
+ * step that stayed green, and three steps that had been watched failing by hand read as absent.
+ * @param {string} dir
+ */
+export function plantRoot(dir) {
+  if (existsSync(join(dir, "src"))) return "src";
+  for (const group of ["apps", "packages", "services"]) {
+    let names = [];
+    try {
+      names = readdirSync(join(dir, group)).sort();
+    } catch {
+      continue;
+    }
+    for (const ws of names)
+      for (const sub of ["src", "lib", "app", "server"])
+        if (existsSync(join(dir, group, ws, sub))) return `${group}/${ws}/${sub}`;
+  }
+  for (const d of ["lib", "app", "server"]) if (existsSync(join(dir, d))) return d;
+  return "src";
+}
+
+/**
+ * The folder whose tsconfig decides a planted file's language: the workspace the plant goes in
+ * when it has its own, the repository's otherwise. @param {string} dir
+ */
+function tsHome(dir) {
+  const parts = plantRoot(dir).split("/");
+  const ws = join(dir, ...parts.slice(0, 2));
+  return parts.length === 3 && existsSync(join(ws, "tsconfig.json")) ? ws : dir;
+}
+
+/**
  * The path a failing test has to take for the repository's own test script to run it: the first
  * globbed argument of that script decides both the folder and the name. A script with no glob
  * (`vitest run`) keeps the convention-based path, because the runner's own default finds it.
- * @param {string} script @param {string} fallbackExt
+ * @param {string} script @param {string} fallbackExt @param {string} [root] where a source lives
  */
-function testPlantPath(script, fallbackExt) {
+function testPlantPath(script, fallbackExt, root = "src") {
   const tokens = String(script || "")
     .split(/\s+/)
     .map((token) => token.replace(/^['"]|['"]$/g, ""));
@@ -76,31 +110,31 @@ function testPlantPath(script, fallbackExt) {
   const folder = tokens.find((token) => /^\.?\/?(tests?|__tests__|spec)\/?$/.test(token));
   if (folder)
     return `${folder.replace(/^\.?\//, "").replace(/\/$/, "")}/${MARK}.test${fallbackExt}`;
-  return `src/${MARK}.test${fallbackExt}`;
+  return `${root}/${MARK}.test${fallbackExt}`;
 }
 
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS = {
   format: {
     means: "an unformatted file",
-    files: ({ pack }) =>
+    files: ({ pack, dir }) =>
       pack === "python"
-        ? file(`src/${MARK}.py`, "x    =   {  'a':1 }\n")
-        : file(`src/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
+        ? file(`${plantRoot(dir)}/${MARK}.py`, "x    =   {  'a':1 }\n")
+        : file(`${plantRoot(dir)}/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
   },
   lint: {
     means: "a debugger statement (an unused import for Python)",
-    files: ({ pack }) =>
+    files: ({ pack, dir }) =>
       pack === "python"
-        ? file(`src/${MARK}.py`, "import os\n")
-        : file(`src/${MARK}.ts`, "debugger;\nexport const abattyControl = 1;\n"),
+        ? file(`${plantRoot(dir)}/${MARK}.py`, "import os\n")
+        : file(`${plantRoot(dir)}/${MARK}.ts`, "debugger;\nexport const abattyControl = 1;\n"),
   },
   typecheck: {
     means: "a type error",
     files: ({ pack, dir }) => {
       if (pack === "python")
-        return file(`src/${MARK}.py`, 'abatty_control: int = "not a number"\n');
-      const ext = checkedExt(dir);
+        return file(`${plantRoot(dir)}/${MARK}.py`, 'abatty_control: int = "not a number"\n');
+      const ext = checkedExt(tsHome(dir));
       // A tsconfig that only includes JavaScript is checking JavaScript (`checkJs`), where the
       // annotation is a JSDoc type rather than a colon. Planting the colon form there is a
       // SYNTAX error the compiler never reaches, or a file it never reads: either way the step
@@ -108,7 +142,7 @@ export const STEP_CONTROLS = {
       const annotated = /[jm]js?$/.test(ext)
         ? '/** @type {number} */\nexport const abattyControl = "not a number";\n'
         : 'export const abattyControl: number = "not a number";\n';
-      return file(`src/${MARK}${ext}`, annotated);
+      return file(`${plantRoot(dir)}/${MARK}${ext}`, annotated);
     },
   },
   test: {
@@ -120,7 +154,7 @@ export const STEP_CONTROLS = {
               'def test_abatty_control():\n    raise Exception("planted")\n',
           }
         : file(
-            testPlantPath(scripts.test || "", checkedExt(dir)),
+            testPlantPath(scripts.test || "", checkedExt(tsHome(dir)), plantRoot(dir)),
             (deps.has("vitest") ? 'import { test } from "vitest";\n' : "") +
               (deps.has("vitest") ? "" : 'import { test } from "node:test";\n') +
               'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
@@ -128,14 +162,26 @@ export const STEP_CONTROLS = {
   },
   dead: {
     means: "an unused export in an unreferenced file",
-    files: ({ pack }) =>
+    files: ({ pack, dir }) =>
       pack === "python"
-        ? file(`src/${MARK}.py`, "def abatty_unused():\n    return 1\n")
-        : file(`src/${MARK}.ts`, "export const abattyUnused = 1;\n"),
+        ? file(`${plantRoot(dir)}/${MARK}.py`, "def abatty_unused():\n    return 1\n")
+        : file(`${plantRoot(dir)}/${MARK}.ts`, "export const abattyUnused = 1;\n"),
+  },
+  "coverage:changed": {
+    // A new source file no test reaches, with a branch in it: every line of it is a changed line,
+    // and none is covered. The plant is marked as about to be committed, so a check of the
+    // changed lines sees it; a check that stays green on it is not checking the change.
+    means: "a new source file with a branch no test covers",
+    files: ({ dir }) =>
+      file(
+        `${plantRoot(dir)}/${MARK}${checkedExt(tsHome(dir))}`,
+        "export function abattyUncovered(flag) {\n  if (flag) return 1;\n  return 2;\n}\n",
+      ),
   },
   standards: {
     means: "a file over the 800-line cap",
-    files: ({ pack }) => file(`src/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
+    files: ({ pack, dir }) =>
+      file(`${plantRoot(dir)}/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
   },
   secrets: {
     means: "a planted cloud access key",
@@ -147,7 +193,7 @@ export const STEP_CONTROLS = {
     means: "an integration test that throws",
     files: ({ deps, dir, scripts }) =>
       file(
-        testPlantPath(scripts["test:integration"] || "", checkedExt(dir)),
+        testPlantPath(scripts["test:integration"] || "", checkedExt(dir), plantRoot(dir)),
         (deps.has("vitest")
           ? 'import { test } from "vitest";\n'
           : 'import { test } from "node:test";\n') +

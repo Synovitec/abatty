@@ -49,9 +49,17 @@ export function inTimezone(tz, fn) {
 /** The machine's own zone, read before any case pins another. */
 const SYSTEM_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/** @param {string} dir @param {string[]} args */
+/**
+ * git in a folder. On Windows git does not get TZ: it reads a zone NAME there as UTC, and a case
+ * that pinned the machine's own zone by name then committed on yesterday's date between midnight
+ * and two in Paris, which is when a date test first failed. Without TZ it writes the system's
+ * zone, the one the context reads too.
+ * @param {string} dir @param {string[]} args
+ */
 export function git(dir, ...args) {
-  const r = spawnSync("git", args, { cwd: dir, encoding: "utf8" });
+  const env = { ...process.env };
+  if (process.platform === "win32") delete env.TZ;
+  const r = spawnSync("git", args, { cwd: dir, encoding: "utf8", env });
   return (r.stdout || "").trim();
 }
 

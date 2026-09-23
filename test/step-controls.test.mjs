@@ -307,3 +307,27 @@ test("the suites are judged too, a step red without a plant proves nothing, and 
     ["browser-tests/abatty-control.__.spec.ts"],
   );
 });
+
+test("a monorepo with no root src gets its plants in a workspace's source folder", async () => {
+  const { plantRoot } = await import("../src/core/step-plants.mjs");
+  const mono = tempRepo("plant-mono", {
+    "apps/mobile/app/index.tsx": "export default 1;\n",
+    "apps/web/lib/a.ts": "export const a = 1;\n",
+    "apps/web/tsconfig.json": JSON.stringify({ include: ["**/*.mjs"] }),
+  });
+  assert.equal(plantRoot(mono), "apps/mobile/app", "the first workspace, in name order");
+  const web = tempRepo("plant-web", {
+    "apps/web/lib/a.ts": "export const a = 1;\n",
+    "apps/web/tsconfig.json": JSON.stringify({ include: ["**/*.mjs"] }),
+  });
+  const ctx = { deps: new Set(), pack: "javascript", dir: web, scripts: {} };
+  assert.deepEqual(Object.keys(STEP_CONTROLS.lint?.files(ctx) || {}), [
+    "apps/web/lib/abatty-control.__.ts",
+  ]);
+  assert.deepEqual(
+    Object.keys(STEP_CONTROLS.typecheck?.files(ctx) || {}),
+    ["apps/web/lib/abatty-control.__.mjs"],
+    "the workspace's own tsconfig decides the language",
+  );
+  assert.equal(plantRoot(tempRepo("plant-src", { "src/a.ts": "x\n" })), "src");
+});

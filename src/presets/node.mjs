@@ -6,6 +6,7 @@
  * the scrub, a rule that read one test runner, a guard that read flags out of a heredoc).
  */
 import { COMMON_PROBES } from "./probes.mjs";
+import { CHANGED_COVERAGE } from "./steps.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const node = {
@@ -98,6 +99,7 @@ export const node = {
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
       { label: "unit tests (TEST.1)", script: "test", required: true },
+      CHANGED_COVERAGE,
       {
         label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",

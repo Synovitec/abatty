@@ -30,6 +30,7 @@ import {
 } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
 import { commandFor, managerFor } from "./package-manager.mjs";
+import { gitHooks } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
@@ -248,29 +249,8 @@ export function initRepo(o) {
 
   // 4. The pre-push hook that calls the gate, and the scripts. The hooks speak the manager the
   //    repository committed: a bun-only repository was given npx and npm run in all three.
-  const abatty = pm.exec("abatty").join(" ");
-  const installed = `Installed by \`${pm.run("hooks:install").join(" ")}\`.`;
-  put(
-    ".githooks/pre-commit",
-    `#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. ${installed}\n${abatty} secrets --staged\n`,
-    { merge: false, executable: true },
-  );
-  put(
-    ".githooks/pre-push",
-    // --refs: git hands the pushed refs on stdin, and the gate judges that push rather than
-    // whatever happens to be checked out (a branch deletion ran the whole gate before).
-    `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${pm.run("gate", ["--refs"]).join(" ")}\n`,
-    { merge: false, executable: true },
-  );
-  // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
-  // that is a no-op, so the hook is the same file either way and `scrub.enabled` decides. The
-  // changelog rule runs in the same hook: a source commit carries its line or says why, before
-  // the commit exists rather than a push later.
-  put(
-    ".githooks/commit-msg",
-    `#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; \`no-changelog: <reason>\` in the message excuses it).\n${abatty} scrub --message "$1" && ${abatty} changelog --message "$1"\n`,
-    { merge: false, executable: true },
-  );
+  for (const [rel, text] of Object.entries(gitHooks(pm)))
+    put(rel, text, { merge: false, executable: true });
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
   // `npm run hooks:install` are how the instrument is called, whatever the stack.
   if (!existsSync(join(repoDir, "package.json"))) {

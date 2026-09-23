@@ -3,6 +3,8 @@
  * hooks' lib is utilities, and this is a parser. Kept typecheckable on its own so the package's
  * suite can import it directly, the way it imports the shim.
  */
+import { resolve as resolvePath } from "node:path";
+
 // ---- reading a shell command without being a shell -----------------------------------------
 // Five families of hole in this harness came from matching a regex against a whole command line:
 // a flag bundled into a cluster, HEAD read as a branch name, a redirection token read as a
@@ -116,6 +118,30 @@ function stripRedirections(tokens) {
 }
 
 /**
+ * A segment without the parentheses of a subshell it opens or closes: `(cd wt && git push origin
+ * main)` split into `(cd wt` and `git push origin main)`, and the destination read as `main)`,
+ * which is no branch, so the push to main went through. A `$( )` keeps its own parentheses; only
+ * a leading `(` and a trailing `)` with no partner inside the segment are the subshell's; how
+ * many of each is how segmentDirs undoes a `cd` made inside it.
+ * @param {string} seg
+ */
+function ungroup(seg) {
+  let text = seg;
+  let opens = 0;
+  let closes = 0;
+  while (text.startsWith("(")) {
+    text = text.slice(1).trimStart();
+    opens++;
+  }
+  const count = (/** @type {string} */ c) => text.split(c).length - 1;
+  while (text.endsWith(")") && count(")") > count("(")) {
+    text = text.slice(0, -1).trimEnd();
+    closes++;
+  }
+  return { text, opens, closes };
+}
+
+/**
  * A command as segments a rule can question. Each carries the program's bare name, the arguments
  * after it, the raw text it came from, and `opaque`: true when this segment must NOT be trusted
  * to a precise reading, because the program is unknown, is reached through a substitution or a
@@ -125,7 +151,7 @@ function stripRedirections(tokens) {
  */
 export function shellSegments(raw) {
   return splitSegments(String(raw || "")).map((seg) => {
-    const { tokens, unterminated } = tokenize(seg);
+    const { tokens, unterminated } = tokenize(ungroup(seg).text);
     const words = stripRedirections(tokens);
     let i = 0;
     // Leading `VAR=value` assignments belong to the environment, not to the command.
@@ -142,4 +168,86 @@ export function shellSegments(raw) {
     // version through 0.3.3 allowed it.
     return { program, args, tokens: words, raw: seg, opaque: unterminated || substituted || !known };
   });
+}
+
+// ---- where each segment runs -----------------------------------------------------------------
+// A command's segments do not all run in the hook's folder: `cd <worktree> && git push` pushes
+// the worktree's branch. The guard asked git for the branch once, in its own folder, so a bare
+// push from a worktree was judged by another checkout's branch: refused when that checkout stood
+// on main, and allowed when it stood on a feature branch while the worktree was on main. An
+// adopter whose sessions push from worktrees all day hit the first on the first day.
+
+/** The commands that move the shell, whatever the shell. */
+const CD = new Set(["cd", "pushd", "chdir", "Set-Location", "sl", "Push-Location"]);
+
+/**
+ * A path as the shell handed it, resolved against `dir`, or null when this cannot know it: a
+ * variable, a substitution, `cd -`, a `~user`. Git Bash spells a Windows drive `/c/...`, which
+ * the path module would read as a folder named `c` on the current drive.
+ * @param {string} dir @param {string | undefined} target @param {string} home
+ * @returns {string | null}
+ */
+function resolveDir(dir, target, home) {
+  if (target === undefined) return home || null;
+  if (!target || target === "-" || /[$`*?]/.test(target)) return null;
+  let t = target.replace(/^["']|["']$/g, "");
+  if (t === "~" || t.startsWith("~/")) {
+    if (!home) return null;
+    t = home + t.slice(1);
+  } else if (t.startsWith("~")) return null;
+  if (process.platform === "win32") t = t.replace(/^\/([a-zA-Z])(?=\/|$)/, "$1:");
+  return resolvePath(dir, t);
+}
+
+/**
+ * The folder each segment of a command runs in, in order, or null from the point this cannot
+ * follow the shell: a `cd` it cannot resolve, a `popd`. A subshell's `cd` holds inside it and is
+ * undone where it closes. A caller that needs the folder and gets null must fail closed rather
+ * than guess the hook's own.
+ * @param {{ program: string, args: string[], raw: string }[]} segments
+ * @param {string} start the hook's folder @param {string} [home]
+ * @returns {(string | null)[]}
+ */
+export function segmentDirs(segments, start, home = "") {
+  /** @type {string | null} */
+  let dir = start;
+  /** @type {(string | null)[]} */
+  const outer = [];
+  return segments.map((s) => {
+    const { opens, closes } = ungroup(s.raw);
+    for (let n = 0; n < opens; n++) outer.push(dir);
+    const here = dir;
+    if (s.program === "popd" || s.program === "Pop-Location") dir = null;
+    else if (CD.has(s.program)) {
+      const target = s.args.filter((a) => !/^-[LPe@]$|^-Path$/i.test(a))[0];
+      dir = dir === null ? null : resolveDir(dir, target, home);
+    }
+    for (let n = 0; n < closes && outer.length; n++) dir = outer.pop() ?? null;
+    return here;
+  });
+}
+
+/**
+ * git's own options that move it before the subcommand: `-C <path>`, `--git-dir`, `--work-tree`,
+ * in both spellings. Returned as arguments to hand to another git call, or null when one names a
+ * path this cannot know.
+ * @param {string[]} args the arguments after `git`
+ * @returns {string[] | null}
+ */
+export function gitLocation(args) {
+  /** @type {string[]} */
+  const out = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] || "";
+    if (!a.startsWith("-")) break;
+    const pair = a === "-C" || a === "--git-dir" || a === "--work-tree";
+    const value = pair ? args[++i] : /^--(git-dir|work-tree)=/.test(a) ? a.slice(a.indexOf("=") + 1) : null;
+    if (value === null) {
+      if (a === "-c") i++; // a config pair belongs to git too, and is not a location
+      continue;
+    }
+    if (value === undefined || /[$`]/.test(value)) return null;
+    out.push(...(pair ? [a, value] : [a]));
+  }
+  return out;
 }
