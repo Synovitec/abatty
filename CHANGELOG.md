@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-23
+
 ### Added
 
 - **Duplication is measured without a dependency.** The new opt-in probe `code.clones` reduces
