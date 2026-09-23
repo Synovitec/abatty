@@ -6,6 +6,7 @@ import { git, tempRepo } from "./helpers.mjs";
 import { RULES } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { templatePlaceholders } from "../src/rules/families/documents.mjs";
+import { phantomScripts } from "../src/rules/families/instrument.mjs";
 
 /** @param {string} id @param {Record<string, string>} files */
 function judge(id, files) {
@@ -160,4 +161,29 @@ test("FLOW-TRAILER reads kept provenance as a practised policy, and n/a without 
   assert.equal(kept.status, "present");
   assert.match(kept.evidence, /provenance kept: 1 trailer/);
   assert.equal(judge("FLOW-TRAILER", { "a.txt": "x" }).status, "n/a");
+});
+
+test("INST-CI credits a step that runs a workspace's script in the workspace's folder", () => {
+  const ci = [
+    "jobs:",
+    "  web:",
+    "    defaults: { run: { working-directory: apps/web } }",
+    "    steps:",
+    "      - run: bun run typecheck",
+    "      - run: pnpm --filter web run lint",
+    "      - run: bun run nowhere",
+  ].join("\n");
+  const v = judge("INST-CI", {
+    "package.json": JSON.stringify({ scripts: { test: "bun test" } }),
+    "apps/web/package.json": JSON.stringify({ scripts: { typecheck: "tsc", lint: "biome" } }),
+    ".github/workflows/ci.yml": ci,
+  });
+  assert.equal(v.status, "partial");
+  assert.match(v.evidence, /does not have: nowhere$/);
+});
+
+test("a flag before run is read through, and a flag's value is not the script", () => {
+  assert.deepEqual(phantomScripts("pnpm --filter web run lint", {}), ["lint"]);
+  assert.deepEqual(phantomScripts("bun --cwd apps/api run test", {}), ["test"]);
+  assert.deepEqual(phantomScripts("pnpm -r run build", { build: "x" }), []);
 });

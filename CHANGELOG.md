@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A monorepo's pipeline is credited for its workspaces' scripts.** A step that runs
+  `bun run typecheck` in `apps/web`, or `pnpm --filter web run lint`, was reported as naming a
+  script the package does not have, because only the root's `package.json` was read and a flag
+  before `run` hid the name. INST-CI and INST-CI-STEPS now read every workspace's scripts.
 - **A `source_truth` entry with a star inside a file name is no longer read as dangling.**
   `src/core/secret*.mjs` was cut at the star into `src/core/secret`, a path that never exists;
   the probe now keeps the folder that holds the pattern.

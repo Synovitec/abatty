@@ -10,12 +10,15 @@
  * named five scripts the package lacked, was red from its first run, and still counted as
  * "present" for six points of score. A comment line runs nothing, so it is not read: a pipeline
  * whose comment said "yarn 1 comes with the runner images" was charged with a script named `1`.
+ * A flag before `run` (`pnpm --filter web run build`, `bun --cwd apps/api run test`) is read
+ * through, and the scripts a pipeline can reach are the whole tree's: a monorepo passes them
+ * with {@link treeScripts}, because its steps run in a workspace's own folder.
  * @param {string} ciText @param {Record<string, string>} scripts
  */
 export function phantomScripts(ciText, scripts) {
   const named = new Set();
   const re =
-    /\b(?:npm|pnpm|bun)\s+run\s+(?:-s\s+|--silent\s+)?([\w:.-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:.-]+)/g;
+    /\b(?:npm|pnpm|bun)\s+(?:-{1,2}[\w-]+(?:[= ](?!run\b)[^\s-]\S*)?\s+)*run\s+(?:-s\s+|--silent\s+)?([\w:.-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:.-]+)/g;
   const code = String(ciText)
     .split(/\r?\n/)
     .filter((line) => !/^\s*#/.test(line))
@@ -27,6 +30,26 @@ export function phantomScripts(ciText, scripts) {
       named.add(name);
   }
   return [...named].filter((n) => typeof scripts[n] !== "string");
+}
+
+/**
+ * Every script a pipeline could run anywhere in the tree: the root's and each workspace's. An
+ * adopter's steps ran `bun run typecheck` under `working-directory: apps/web`, and the root's
+ * package.json alone called them phantom. The root's win a name both define.
+ * @param {import("../index.mjs").RepoContext} c
+ * @returns {Record<string, string>}
+ */
+export function treeScripts(c) {
+  const all = {};
+  for (const f of c.files(/(^|\/)package\.json$/)) {
+    try {
+      const own = JSON.parse(c.read(f)).scripts;
+      if (own && typeof own === "object") Object.assign(all, own);
+    } catch {
+      // A package.json that does not parse offers no script.
+    }
+  }
+  return { ...all, ...c.scripts };
 }
 
 /** @type {import("../index.mjs").Rule[]} */
@@ -161,7 +184,7 @@ export const rules = [
         };
       // A pipeline that names a script the package does not have is a pipeline that is red, or
       // one that was never run; either way it is not the gate re-run on another machine.
-      const phantom = phantomScripts(c.ciText, c.scripts);
+      const phantom = phantomScripts(c.ciText, treeScripts(c));
       return {
         status: phantom.length ? "partial" : "present",
         evidence: `${c.ciFiles.join(", ")}${phantom.length ? `; names script(s) package.json does not have: ${phantom.join(", ")}` : ""}`,
@@ -185,7 +208,7 @@ export const rules = [
     check: (c) => {
       // A step is read for the word AND for the script behind it: `npm run -s lint` in a pipeline
       // whose package has no `lint` script is a red step, not a lint step.
-      const phantom = new Set(phantomScripts(c.ciText, c.scripts));
+      const phantom = new Set(phantomScripts(c.ciText, treeScripts(c)));
       // Commands, not comments: a generated pipeline writes the step it could not emit as a
       // comment that names it, and a word in a comment is not a step that runs.
       const text = c.ciText.replace(/^\s*#.*$/gm, "");
