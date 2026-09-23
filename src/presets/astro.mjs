@@ -33,7 +33,7 @@ export const astro = {
     protectedPaths: [".env", ".env.", "docker-compose.production", "prod.dont.touch"],
     lintExtensions: [".ts", ".tsx", ".js", ".mjs", ".astro"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
-    ratchet: { enable: ["valid.wholeEnv", "fn.shapeExemptions"] },
+    ratchet: { enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests"] },
   },
   scripts: {
     typecheck: "astro check",

@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A refactor may not rewrite the tests it is judged by.** A refactor claims the behaviour did
+  not change, and the tests are the only statement of the behaviour a machine can check. The
+  new opt-in probe `change.refactorTests` reads the pushed range. A `refactor:` commit that
+  removes a test case is counted, always. One that edits a test is counted unless its message
+  says why on a `tests-changed: <reason>` line: a renamed function is a reason, since the tests
+  that call it move with it. A test added, or moved with its cases intact, is not counted. It
+  reads JS, Python and Go test layouts. Every code preset enables it, and so does this
+  repository.
 - **`abatty report` prints the day's table.** Today's reading sits beside the newest one before
   it, with the score, the phase, the counts by status, the share held by a machine, proven and
   contradicted checks, harness drift, bypassed commits and raised floors. Each row says whether

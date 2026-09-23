@@ -24,6 +24,7 @@ import { probes as startupProbes } from "./probes/startup.mjs";
 import { probes as boundaryProbes } from "./probes/boundary.mjs";
 import { probes as apiProbes } from "./probes/api.mjs";
 import { probes as shapeProbes } from "./probes/shape.mjs";
+import { probes as refactorProbes } from "./probes/refactor.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
@@ -102,6 +103,7 @@ export const BUILTIN_PROBES = [
   ...boundaryProbes,
   ...apiProbes,
   ...shapeProbes,
+  ...refactorProbes,
 ].map((p) => ({ ...p, source: "abatty" }));
 
 /**

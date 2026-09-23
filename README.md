@@ -221,16 +221,17 @@ Some built-in probes are **opt-in**, because each reads one stack's conventions 
 noise, or a surprise red after an update, anywhere else. A repository switches them on in
 `ratchet.enable`, and `init` enables the ones that suit the preset:
 
-| Probe                    | Counts                                                                                  | Configured by  |
-| ------------------------ | --------------------------------------------------------------------------------------- | -------------- |
-| `valid.unparsedBoundary` | Route handlers, server actions and credentials callbacks reading input no schema parses |                |
-| `valid.wholeEnv`         | The environment object taken whole outside the env module                               |                |
-| `auth.unguardedPage`     | Protected pages whose first statement is not the guard                                  | `pageGuards`   |
-| `api.unboundedList`      | List reads in a route handler without a bound                                           | `boundedBy`    |
-| `api.rowReturn`          | Server actions returning the ORM's row, or a select carrying a secret column            | `secretFields` |
-| `api.floatMoney`         | Money made a number on the wire, or stored as a Float column                            | `moneyFields`  |
-| `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                |                |
-| `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                 | `shapeList`    |
+| Probe                    | Counts                                                                                             | Configured by  |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | -------------- |
+| `valid.unparsedBoundary` | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
+| `valid.wholeEnv`         | The environment object taken whole outside the env module                                          |                |
+| `auth.unguardedPage`     | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
+| `api.unboundedList`      | List reads in a route handler without a bound                                                      | `boundedBy`    |
+| `api.rowReturn`          | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
+| `api.floatMoney`         | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
+| `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                           |                |
+| `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
+| `change.refactorTests`   | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

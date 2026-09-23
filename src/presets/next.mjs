@@ -49,6 +49,7 @@ export const next = {
         "api.rowReturn",
         "api.floatMoney",
         "fn.shapeExemptions",
+        "change.refactorTests",
       ],
     },
   },
