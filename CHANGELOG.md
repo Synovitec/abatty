@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The hooks fall back to the repository's own package manager.** When the config names no
+  gate or lint command, the Stop hook and the lint-on-edit hook used npm everywhere, so a
+  bun-only repository's gate ran through a manager it did not have. They now read the lockfile
+  (bun, pnpm, yarn, else npm), and a command the config names still wins. The defaults for
+  `commands` also apply again: a config naming one command lost the fallback for the other.
 - **A monorepo's pipeline is credited for its workspaces' scripts.** A step that runs
   `bun run typecheck` in `apps/web`, or `pnpm --filter web run lint`, was reported as naming a
   script the package does not have, because only the root's `package.json` was read and a flag

@@ -6,7 +6,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { extname } from "node:path";
-import { NIGHT, loadConfig, readEvent, tail } from "./lib.mjs";
+import { NIGHT, defaultCommands, loadConfig, readEvent, tail } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -19,9 +19,9 @@ if (!file || !existsSync(file)) process.exit(0);
 if (!(config.lintExtensions || [".ts", ".tsx", ".js", ".jsx", ".mjs"]).includes(extname(file))) process.exit(0);
 if (/[\\/](node_modules|dist|build|coverage|\.next)[\\/]/.test(file)) process.exit(0);
 
-// config.commands.lintFile is "npx eslint --max-warnings=0" by default; split it into argv so the
+// config.commands.lintFile is eslint through the repository's manager by default; split it into argv so the
 // file path is passed as one argument and never re-parsed by a shell.
-const parts = String(config.commands?.lintFile || "npx eslint --max-warnings=0").split(/\s+/).filter(Boolean);
+const parts = String(config.commands?.lintFile || defaultCommands().lintFile).split(/\s+/).filter(Boolean);
 const [bin, ...args] = parts;
 const isWin = process.platform === "win32";
 

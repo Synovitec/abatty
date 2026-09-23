@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import {
   CONFIG_FILE,
@@ -163,4 +163,30 @@ test("the hooks read the repository's config, not a path settings.json pinned", 
   );
   assert.equal(seen.coupled, 1, "and its coupled pairs");
   assert.deepEqual(seen.protected, ["sacred/"], "and its protected paths, not the template's");
+});
+
+test("the hooks fall back to the repository's own package manager when the config names no command", () => {
+  const lib = new URL("../templates/harness/hooks/lib.mjs", import.meta.url).href;
+  /** @param {Record<string, string>} files */
+  const commands = (files) =>
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "-e",
+          `import {loadConfig} from ${JSON.stringify(lib)}; process.stdout.write(JSON.stringify(loadConfig().commands));`,
+        ],
+        { cwd: tempRepo("hook-manager", files), encoding: "utf8" },
+      ),
+    );
+  assert.equal(commands({ "bun.lock": "{}" }).gate, "bun run gate:fast");
+  assert.equal(commands({ "pnpm-lock.yaml": "" }).lintFile, "pnpm exec eslint --max-warnings=0");
+  assert.equal(commands({}).gate, "npm run gate:fast");
+  const own = commands({
+    "bun.lock": "{}",
+    "abatty.config.json": JSON.stringify({ commands: { gate: "make gate" } }),
+  });
+  assert.equal(own.gate, "make gate", "a command the config names wins");
+  assert.equal(own.lintFile, "bun x eslint --max-warnings=0", "and the others keep their fallback");
 });

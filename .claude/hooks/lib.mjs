@@ -53,11 +53,26 @@ export function isHarnessPath(rel) {
   return rel.startsWith(HARNESS_DIR) || rel === ROOT_CONFIG;
 }
 
+/**
+ * The commands a config that names none falls back to, in the words of the package manager whose
+ * lockfile is at the root. The fallback said npm everywhere, and a bun-only repository's Stop
+ * hook ran a gate through a manager it did not have. The hooks cannot import the package, so the
+ * lockfile is read here.
+ */
+export function defaultCommands() {
+  const has = (f) => existsSync(f);
+  if (has("bun.lock") || has("bun.lockb"))
+    return { gate: "bun run gate:fast", lintFile: "bun x eslint --max-warnings=0" };
+  if (has("pnpm-lock.yaml"))
+    return { gate: "pnpm run gate:fast", lintFile: "pnpm exec eslint --max-warnings=0" };
+  if (has("yarn.lock")) return { gate: "yarn gate:fast", lintFile: "yarn eslint --max-warnings=0" };
+  return { gate: "npm run gate:fast", lintFile: "npx eslint --max-warnings=0" };
+}
+
 function withDefaults(fromFile) {
   return {
     baseBranch: "main",
     branchPrefix: "adopt/standards",
-    commands: { gate: "npm run gate:fast", lintFile: "npx eslint --max-warnings=0" },
     files: {
       changelog: "CHANGELOG.md",
       state: "docs/ADOPTION_STATE.json",
@@ -72,7 +87,7 @@ function withDefaults(fromFile) {
     ...fromFile,
     scrub: { enabled: false, ...(fromFile.scrub || {}) },
     provenance: { trailer: "", ...(fromFile.provenance || {}) },
-    commands: { ...(fromFile.commands || {}) },
+    commands: { ...defaultCommands(), ...(fromFile.commands || {}) },
     files: { ...(fromFile.files || {}) },
   };
 }

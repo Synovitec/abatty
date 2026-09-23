@@ -26,7 +26,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { checkDirection, formatDirection } from "./check-direction.mjs";
 import { join } from "node:path";
-import { NIGHT, NIGHT_DIR, appendLog, counter, coupledOffenders, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, snapshotFile, tail, treeSnapshot, writeReceipt } from "./lib.mjs";
+import { NIGHT, NIGHT_DIR, appendLog, counter, coupledOffenders, currentBranch, defaultCommands, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, snapshotFile, tail, treeSnapshot, writeReceipt } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -80,7 +80,7 @@ pass("branch");
 // 2. The gate. The command string comes from the committed adoption.json (base copy at night), not
 // from the model or a request, and it needs a shell on Windows (npm is a .cmd shim) - which is why
 // this is execSync with shell: true rather than execFile.
-const gateCmd = config.commands?.gate || "npm run gate:fast";
+const gateCmd = config.commands?.gate || defaultCommands().gate;
 if (source === "tree") process.stderr.write(`[stop-gate] adoption.json is not on ${base}; using the working-tree copy\n`);
 try {
   execSync(gateCmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", timeout: 25 * 60 * 1000, maxBuffer: 64 * 1024 * 1024, shell: true });
