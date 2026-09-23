@@ -5,28 +5,6 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-### Fixed
-
-- **`docs.behindCode` judges a change on the day it lands, not the day after.** It exempted a
-  cited file moved today, so a change merged green and the base branch went red at midnight
-  with nothing committed, charged to whoever pushed next on work that did not cause it. An
-  outside repository lost a push to it, and so would this one have: the 0.5.0 branch changed
-  sources that five documents cite, and none had been re-read. A doc verified the same day still
-  holds. The five documents here were re-read and corrected where they were behind: duplication
-  is measured by `code.clones` without a dependency, the same-day rule is gone from DOC.5, and
-  the standard says a suite never runs against the developer's database.
-
-- **The gate no longer runs a database or browser suite against the developer's own database.**
-  On a laptop, a suite inherited `DATABASE_URL` from the shell or from `.env`, which is the
-  database the developer works against, sometimes production's. An outside trial's pre-push gate
-  ran its browser suite there: it went red on data that had drifted, wrote real orders, and
-  created administrator accounts with a known password that a killed run would have left behind.
-  Now a suite that needs a database runs with `DATABASE_URL` pointed at `TEST_DATABASE_URL` when
-  one is set, trusts the pipeline's own service in CI, and otherwise, when it can see an ambient
-  database, is deferred to CI with how to give it one of its own. The trial's session showed the
-  fix by hand: a database in the container the integration suite already starts took the same
-  suite from red to 50 of 50. `.env` files are read for the name only, never a value.
-
 ## [0.5.0] - 2026-09-23
 
 ### Added
@@ -147,6 +125,25 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`docs.behindCode` judges a change on the day it lands, not the day after.** It exempted a
+  cited file moved today, so a change merged green and the base branch went red at midnight
+  with nothing committed, charged to whoever pushed next on work that did not cause it. An
+  outside repository lost a push to it, and so would this one have: the 0.5.0 branch changed
+  sources that five documents cite, and none had been re-read. A doc verified the same day still
+  holds. The five documents here were re-read and corrected where they were behind: duplication
+  is measured by `code.clones` without a dependency, the same-day rule is gone from DOC.5, and
+  the standard says a suite never runs against the developer's database.
+
+- **The gate no longer runs a database or browser suite against the developer's own database.**
+  On a laptop, a suite inherited `DATABASE_URL` from the shell or from `.env`, which is the
+  database the developer works against, sometimes production's. An outside trial's pre-push gate
+  ran its browser suite there: it went red on data that had drifted, wrote real orders, and
+  created administrator accounts with a known password that a killed run would have left behind.
+  Now a suite that needs a database runs with `DATABASE_URL` pointed at `TEST_DATABASE_URL` when
+  one is set, trusts the pipeline's own service in CI, and otherwise, when it can see an ambient
+  database, is deferred to CI with how to give it one of its own. The trial's session showed the
+  fix by hand: a database in the container the integration suite already starts took the same
+  suite from red to 50 of 50. `.env` files are read for the name only, never a value.
 - **Re-running `init` on an adopted repository no longer switches probes on.** A config that
   already exists and never listed `ratchet.enable` keeps an empty list. A preset's opt-in
   probes are for a new repository; switching four to eight of them on at once would turn an
