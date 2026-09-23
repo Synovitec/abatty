@@ -360,7 +360,6 @@ export function initRepo(o) {
       "AGENTS.md",
       `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`,
     );
-  else events.push({ file: PRIMARY.contextFile, action: "kept" });
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
       for (const r of rules)
