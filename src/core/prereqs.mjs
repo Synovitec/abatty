@@ -84,3 +84,18 @@ export function prerequisites(repoDir, preset, o = {}) {
   }
   return list;
 }
+
+/**
+ * The gate's first line when steps look unable to run, or "". A line and never a refusal: a
+ * lookup that cannot see a layout must never stop a gate that would have run. The container
+ * runtime is not asked here; the suites ask it when they are selected.
+ * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
+ */
+export function preflightLine(repoDir, preset) {
+  const unready = prerequisites(repoDir, preset, { dockerUp: () => true }).filter(
+    (p) => p.state === "missing",
+  );
+  return unready.length
+    ? `· preflight: ${unready.length} step(s) look unable to run here: ${unready.map((p) => `${p.label} (${p.detail})`).join("; ")}`
+    : "";
+}

@@ -19,12 +19,10 @@ import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
 import { pendingPaths, pushRangeInfo } from "./range.mjs";
-import { scanSecrets } from "./secrets.mjs";
-import { auditOutcome } from "./audit.mjs";
-import { scanFiles, scrubConfig } from "./scrub.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
-import { prerequisites } from "./prereqs.mjs";
+import { preflightLine } from "./prereqs.mjs";
 import { suiteDatabase } from "./hermetic.mjs";
+import { builtinStep } from "./builtins.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -34,18 +32,6 @@ import { suiteDatabase } from "./hermetic.mjs";
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
  * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
-
-/** The audit as spawned in a repository: the package manager's command, its output in one string. @param {string} repoDir @returns {AuditRunner} */
-const spawnAudit = (repoDir) => (cmd, args) => {
-  const l = launch(cmd, args);
-  const r = spawnSync(l.file, l.args, {
-    cwd: repoDir,
-    encoding: "utf8",
-    shell: l.shell,
-    maxBuffer: 16 * 1024 * 1024,
-  });
-  return { status: r.status, output: (r.stdout || "") + (r.stderr || "") };
-};
 
 /**
  * Run the gate. Returns the events and whether it passed; the first failing step ends it.
@@ -89,15 +75,9 @@ export function runGate(o) {
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
       : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
-  // Said before the first step rather than found after the slowest one; said, not refused,
-  // because a lookup that cannot see a layout must never stop a gate that would have run.
-  const unready = prerequisites(repoDir, preset, { dockerUp: () => true }).filter(
-    (p) => p.state === "missing",
-  );
-  if (unready.length)
-    log(
-      `· preflight: ${unready.length} step(s) look unable to run here: ${unready.map((p) => `${p.label} (${p.detail})`).join("; ")}`,
-    );
+  // Said before the first step rather than found after the slowest one; said, not refused.
+  const unready = preflightLine(repoDir, preset);
+  if (unready) log(unready);
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(
@@ -106,94 +86,7 @@ export function runGate(o) {
 
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
-    if (s.builtin === "secrets") {
-      log(`\n▶ ${s.label}`);
-      const t0 = Date.now();
-      const r = scanSecrets(repoDir, { mode: "tree" });
-      if (r.findings.length) {
-        for (const f of r.findings) log(`  ${f.path}:${f.line}  ${f.kind}  ${f.sample}`);
-        events.push({
-          label: s.label,
-          outcome: "failed",
-          ms: Date.now() - t0,
-          detail: `${r.findings.length} finding(s)`,
-        });
-        log(
-          `\n✗ ${s.label} failed (${r.findings.length} finding(s)). Rotate the secret, remove it, or mark a false positive on its line with abatty:allow-secret. The gate stops here.`,
-        );
-        return false;
-      }
-      events.push({
-        label: s.label,
-        outcome: "ok",
-        ms: Date.now() - t0,
-        detail: `${r.scanned} file(s)`,
-      });
-      return true;
-    }
-    if (s.builtin === "scrub") {
-      // Opt-in, like the feature it holds: a repository that did not ask for the scrub skips it,
-      // one that did has the gate refuse the trace before a push, which is the last point a file
-      // can still be changed without rewriting history.
-      const cfg = scrubConfig(repoDir);
-      if (!cfg.enabled) {
-        events.push({ label: s.label, outcome: "skipped", detail: "scrub.enabled is off" });
-        return true;
-      }
-      log(`\n▶ ${s.label}`);
-      const t0 = Date.now();
-      const findings = scanFiles(repoDir, { allow: cfg.allow });
-      if (findings.length) {
-        for (const f of findings.slice(0, 20)) log(`  ${f.where}:${f.line}  ${f.text}`);
-        events.push({
-          label: s.label,
-          outcome: "failed",
-          ms: Date.now() - t0,
-          detail: `${findings.length} finding(s)`,
-        });
-        log(
-          `\n✗ ${s.label} failed (${findings.length} finding(s)). Say it without the name, or allow the path in scrub.allow with the reason in the decisions file. The gate stops here.`,
-        );
-        return false;
-      }
-      events.push({ label: s.label, outcome: "ok", ms: Date.now() - t0 });
-      return true;
-    }
-    if (s.builtin === "audit") {
-      log(`\n▶ ${s.label}`);
-      const t0 = Date.now();
-      const cfg = readConfig(repoDir);
-      const a = auditOutcome(repoDir, o.audit || spawnAudit(repoDir), {
-        allow: cfg?.security?.audit?.allow || [],
-        level: cfg?.security?.audit?.level,
-      });
-      // An advisory the repository allows, and an allowance whose date has run out, are said out
-      // loud on a green step: a decision nobody is reminded of is a decision nobody revisits.
-      if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
-      if (a.outcome === "failed") {
-        log(a.detail);
-        events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });
-        log(`\n✗ ${s.label} failed. The gate stops here.`);
-        return false;
-      }
-      // No lockfile is no instrument: the same verdict as a linter that is not installed, and
-      // for the same reason. A step that cannot run is never a step that passed.
-      if (a.outcome === "errored") {
-        events.push({ label: s.label, outcome: "errored", ms: Date.now() - t0, detail: a.detail });
-        log(
-          `\n✗ ${s.label} could not run: ${a.detail}. The gate stops here, and this is the instrument, not the work.`,
-        );
-        return false;
-      }
-      if (a.outcome === "deferred") log(`\n· DEFERRED to CI: ${s.label}\n  reason: ${a.detail}.`);
-      events.push({
-        label: s.label,
-        outcome: a.outcome,
-        ms: Date.now() - t0,
-        detail: a.detail || undefined,
-      });
-      return true;
-    }
+    if (s.builtin) return builtinStep(s, { repoDir, log, events, audit: o.audit });
     // A step the preset requires is the instrument itself: without its script or its config the
     // gate cannot run, and says so, rather than passing with the step skipped. A repository
     // whose every step was skipped for want of a script read "gate green" and exited 0; the
@@ -301,26 +194,23 @@ export function runGate(o) {
         log(`\n· skipped ${name}: nothing under its paths in the push or the tree`);
         continue;
       }
-      if (suite.docker && !dockerUp()) {
-        events.push({
-          label: name,
-          outcome: "deferred",
-          detail: "the Docker daemon is not running",
-        });
-        log(`\n· DEFERRED to CI: ${name}\n  reason: the Docker daemon is not running.`);
-        continue;
-      }
-      // A suite that needs a database gets one the run owns, or waits for CI: never the one the
-      // developer works against.
+      // Deferred to CI, loudly, without the Docker daemon or when the only database the suite
+      // could reach is the developer's own (src/core/hermetic.mjs).
       const db = suite.docker
         ? suiteDatabase([repoDir, join(repoDir, under)], { ci: o.ci === true, db: o.db })
         : { ok: /** @type {const} */ (true), env: {} };
-      if (!db.ok) {
-        events.push({ label: name, outcome: "deferred", detail: `not hermetic: ${db.reason}` });
-        log(`\n· DEFERRED to CI: ${name}\n  reason: ${db.reason}.`);
+      const why =
+        suite.docker && !dockerUp()
+          ? "the Docker daemon is not running"
+          : db.ok
+            ? ""
+            : `not hermetic: ${db.reason}`;
+      if (why) {
+        events.push({ label: name, outcome: "deferred", detail: why });
+        log(`\n· DEFERRED to CI: ${name}\n  reason: ${why}.`);
         continue;
       }
-      suiteEnv = db.env;
+      suiteEnv = db.ok ? db.env : {};
       for (const s of suite.steps)
         if (!step({ ...s, label: `${s.label} · ${suite.name}` })) return false;
       suiteEnv = {};
