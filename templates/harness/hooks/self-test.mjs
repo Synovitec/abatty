@@ -126,7 +126,7 @@ try {
     check("settings wires Stop → stop-gate.mjs", wired("Stop", "stop-gate.mjs"));
     check("settings wires SessionStart → session-brief.mjs", wired("SessionStart", "session-brief.mjs"));
     // The hook as the settings spell it, either way: `args` beside `command`, or the whole line in
-    // `command` (`cd "${CLAUDE_PROJECT_DIR}" && node .claude/hooks/stop-gate.mjs`). Reading only the
+    // `command` (`cd` into the project folder `&& node .claude/hooks/stop-gate.mjs`). Reading only the
     // first failed a harness written the second way.
     const stopTimeout = (settings.hooks?.Stop || []).flatMap((m) => m.hooks || []).find((h) => [h.command, ...(h.args || [])].join(" ").includes("stop-gate"))?.timeout;
     check("Stop hook timeout is long enough for a gate (>= 600s)", (stopTimeout ?? 0) >= 600, `timeout=${stopTimeout}`);

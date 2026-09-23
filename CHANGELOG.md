@@ -101,7 +101,7 @@ under Unreleased in the same commit.
   `directPushToBase: true` failed its self-test on its own, legitimate policy. The cases now run
   against the repository's config with that one key set as they assume, and two new cases prove
   the other setting: allowed by day, still refused at night. The Stop hook's timeout check also
-  reads a hook written as one `command` line (`cd "${CLAUDE_PROJECT_DIR}" && node ...`), which
+  reads a hook written as one `command` line (`cd` into the project folder `&& node ...`), which
   it failed before, and not only the `command` plus `args` form.
 
 - **A night session is judged on the files it changed, not on its neighbours'.** The Stop hook

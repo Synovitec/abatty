@@ -251,7 +251,7 @@ test("a monorepo gets a graph over the folders its sources are in, and keeps its
     "# mono\n\nOur own context, written before abatty came.\n",
   );
   const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
-  assert.match(agents, /context is `CLAUDE\.md`/, "a pointer, not an unfilled template");
+  assert.match(agents, /context is `CLAUDE.md`/, "a pointer, not an unfilled template");
   assert.doesNotMatch(agents, /<[a-z ]+>/, "no placeholder left to read as the real context");
   // --force rewrites the harness, never the repository's own context
   cli(["init", dir, "--stack", "next", "--force"], dir);
@@ -268,7 +268,7 @@ test("init --force on its own install keeps the template as the context and the 
   cli(["init", dir, "--stack", "node"], dir);
   cli(["init", dir, "--stack", "node", "--force"], dir);
   assert.equal(readFileSync(join(dir, "CLAUDE.md"), "utf8"), "@AGENTS.md\n");
-  assert.doesNotMatch(readFileSync(join(dir, "AGENTS.md"), "utf8"), /context is `CLAUDE\.md`/);
+  assert.doesNotMatch(readFileSync(join(dir, "AGENTS.md"), "utf8"), /context is `CLAUDE.md`/);
 });
 
 test("the database suite is selected by a migration in a workspace, not only at the root", async () => {
