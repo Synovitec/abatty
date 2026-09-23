@@ -9,11 +9,16 @@
  * in it (`<project name>`, `<e.g. ...>`, `<takes direct pushes | is PR-only>`). A convention
  * written the same way has none (`<topic>`, `<type>/<short-description>`, `<agent>`), and an
  * HTML comment or tag is not one. A context file that is the unfilled template passed every
- * check for two days on a trial repository, because the sections were all there.
+ * check for two days on a trial repository, because the sections were all there. Code is not a
+ * question: angle brackets inside an inline code span or a fenced block are an example written
+ * down (`-- <which case>` in a comment an adopter's context quoted), never a blank to fill.
  * @param {string} text
  */
 export function templatePlaceholders(text) {
-  return [...String(text).matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
+  const prose = String(text)
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]*`/g, "");
+  return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
     .map((m) => `<${m[1]}>`)
     .filter((p) => !/^<[a-z][a-z0-9-]*(\s+[a-z-]+="[^"]*")*\s*\/?>$/i.test(p)); // an HTML tag: attributes carry a value, or it closes itself
 }

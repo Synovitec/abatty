@@ -53,12 +53,19 @@ export const rules = [
     next: 'Set attribution.commit to "" in the user settings; install the commit-msg hook (abatty scrub --message)',
     check: (c) => {
       const enabled = c.adoption?.scrub?.enabled === true;
-      if (!enabled)
-        return { status: "n/a", evidence: "provenance kept; the scrub is off (scrub.enabled)" };
       const trailers = c
         .git("log", "-50", "--format=%b")
         .split("\n")
         .filter((l) => TRAILER.test(l)).length;
+      // Provenance is a policy too: a repository whose commits carry the trailer by rule read as
+      // n/a, as though nobody had decided anything. The history is the evidence it is practised.
+      if (!enabled)
+        return trailers
+          ? {
+              status: "present",
+              evidence: `provenance kept: ${trailers} trailer(s) in the last 50 commits; the scrub is off`,
+            }
+          : { status: "n/a", evidence: "provenance kept; the scrub is off (scrub.enabled)" };
       return {
         status: trailers === 0 ? "present" : "partial",
         evidence: `${trailers} trailer(s) in the last 50 commits`,
@@ -70,12 +77,19 @@ export const rules = [
     family: "Delivery",
     title: "No em-dash in code, copy or docs",
     standard: ["FLOW.1"],
-    level: "must",
+    level: "should",
     enforcement: "hard",
     phase: "1",
-    why: "The character is the signature of generated text and a locale problem in copy; a hyphen says the same.",
-    next: "Replace with a hyphen; add the ratchet metric i18n.emDashInCopy",
+    why: 'The character is the signature of generated text and a locale problem in copy; a hyphen says the same. It is a house style, not a defect: a repository whose typography uses it (French sets it as correct punctuation) says `style.emDash: "allowed"` in its config and the rule steps aside.',
+    next: 'Replace with a hyphen, or record that this repository\'s typography uses it: style.emDash "allowed" in the config',
     check: (c) => {
+      // A must that read 1,948 files as missing on a French repository whose house style is the
+      // dash: typography is the repository's decision, and it is recorded where the rule reads it.
+      if (c.adoption?.style?.emDash === "allowed")
+        return {
+          status: "n/a",
+          evidence: "the repository's typography uses it (style.emDash: allowed)",
+        };
       // Frozen snapshots under an archived folder are not copy and are never edited; a
       // repository that keeps them says so in its rules, and the check reads the same scope.
       const files = [...c.sourceFiles, ...c.docFiles, "CHANGELOG.md", "README.md"].filter(

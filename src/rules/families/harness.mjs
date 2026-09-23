@@ -49,7 +49,11 @@ export const rules = [
             : have.length > 0 || Object.keys(hooks).length > 0
               ? "partial"
               : "missing",
-        evidence: `hooks: ${any.join(", ") || "none"}; wired: ${["PreToolUse", "Stop", "SessionStart"].filter((e) => (hooks[e] || []).length).join(", ") || "none"}${core && tamper.length ? "; missing the tamper controls: " + tamper.join(", ") : ""}`,
+        evidence: `hooks: ${any.join(", ") || "none"}; wired: ${
+          Object.keys(hooks)
+            .filter((e) => (hooks[e] || []).length)
+            .join(", ") || "none"
+        }${core && tamper.length ? "; missing the tamper controls: " + tamper.join(", ") : ""}`,
         next:
           core && tamper.length
             ? "Copy protect.mjs, check-direction.mjs, the new stop-gate.mjs, lib.mjs and settings.project.json (abatty init --force); run the self-test"
@@ -105,18 +109,26 @@ export const rules = [
   {
     id: "HARNESS-GITIGNORE",
     family: "Harness",
-    title: ".claude/night/ ignored",
+    title: "The machine-local folders are ignored: .abatty/ and .claude/night/",
     level: "must",
     enforcement: "hard",
     phase: "A.1",
-    why: "The night's run state and receipts are machine-local; committed, they would be a trace and a merge conflict.",
-    next: "Add .claude/night/ to .gitignore",
+    why: "The reports, the installed copies and the night's receipts are machine-local; committed, they would be a trace and a merge conflict. An adopter's .abatty/ sat untracked and unignored while this rule read only the night's folder and said n/a.",
+    next: "Add .abatty/ and .claude/night/ to .gitignore",
     check: (c) => {
       const gi = c.read(".gitignore");
-      const ignored = /\.claude\/night/.test(gi);
+      const night = c.exists(`${c.agentRoot}/adoption.json`) || c.exists(`${c.agentRoot}/night`);
+      const wanted = [".abatty/", ...(night ? [".claude/night/"] : [])];
+      // A line that names the folder, with or without the leading or trailing slash.
+      const lines = gi.split(/\r?\n/).map((l) => l.trim().replace(/^\/|\/$/g, ""));
+      const missing = wanted.filter((w) => !lines.includes(w.replace(/\/$/, "")));
       return {
-        status: ignored ? "present" : c.exists(`${c.agentRoot}/adoption.json`) ? "missing" : "n/a",
-        evidence: ignored ? "ignored" : "not in .gitignore",
+        status:
+          missing.length === 0 ? "present" : missing.length < wanted.length ? "partial" : "missing",
+        evidence: missing.length
+          ? `not in .gitignore: ${missing.join(", ")}`
+          : `ignored: ${wanted.join(", ")}`,
+        next: missing.length ? `Add ${missing.join(" and ")} to .gitignore` : undefined,
       };
     },
   },

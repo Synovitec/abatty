@@ -385,6 +385,19 @@
       },
       "description": "The column names that scope a row to a tenant here, beside tenant_id, store_id, company_id and organisation_id (DATA-TENANT)."
     },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\$": {}
+      },
+      "properties": {
+        "emDash": {
+          "enum": ["refused", "allowed"],
+          "description": "Whether this repository's typography uses the em dash; allowed makes FLOW-EMDASH n/a (French sets it as punctuation)."
+        }
+      }
+    },
     "secrets": {
       "type": "object",
       "additionalProperties": false,

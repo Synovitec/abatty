@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Twelve rules stop misreading a repository that is not shaped like this one.** An adopter's
+  bun monorepo reported findings that were not true. Now: bun's lockfile counts
+  (SEC-LOCKFILE). A GitHub-only repository is no longer told its pipeline is a stray beside
+  a Woodpecker it does not have (INST-DEAD-CI). A test named `rls`, `isolation` or `tenant`
+  proves isolation wherever it sits (DATA-TENANT). The runner is read from the `test` script
+  before an installed package (TEST-UNIT). A logger module is found at any depth
+  (OBS-REDACTION, OBS-CONSOLE). The health endpoint named is the shortest path (OBS-HEALTH).
+  Angle brackets inside code are not read as template blanks (DOC-CONTEXT). Every wired hook
+  event is listed (HARNESS-HOOKS). `.abatty/` must be ignored as well as the night's folder
+  (HARNESS-GITIGNORE). The git shim counts only where the night or an `.envrc` puts it on PATH
+  (SEC-AGENT-SHIM). Commits that carry the authorship trailer by policy read as a practised
+  policy rather than n/a (FLOW-TRAILER). The em dash rule is now a `should`, and a repository
+  whose typography uses the dash, as French does, says `style.emDash: "allowed"` in its config
+  (FLOW-EMDASH).
 - **The secret scan stops reporting variable reads and fixture samples.** On an adopter's repository
   it reported twenty-six findings and none was a secret, which trains people to add allow
   comments until the real one is waved through too. In source code the unquoted shape is no

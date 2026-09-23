@@ -68,9 +68,16 @@ export const rules = [
       // A negative scope test on a real database counts whatever it is named after: the proof
       // that one caller cannot read another's rows is called `visibility` or `scope` as often as
       // `tenant`.
+      // Named for what it proves (rls, isolation, tenant), it is the proof wherever it sits: an
+      // adopter's sixty-five `*.rls.test.ts` under packages/db read as none. The weaker words
+      // (visibility, scope) still need a database suite's folder to be read as one.
       const isolationTest = c
-        .files(/(isolation|tenant|rls|visibility|scope).*\.test\.|\/rls\//i)
-        .some((f) => /^tests\/(db|integration|rls)\//.test(f));
+        .files(/(isolation|tenant|rls|visibility|scope)[^/]*\.test\.|(^|\/)rls\//i)
+        .some(
+          (f) =>
+            /(^|\/)(rls\/|[^/]*(isolation|tenant|rls)[^/]*\.test\.)/i.test(f) ||
+            /(^|\/)tests?\/(db|integration|rls)\//.test(f),
+        );
       return {
         status: rls || isolationTest ? "present" : tenantCol ? "partial" : "n/a",
         evidence: `${rls ? "RLS in migrations" : tenantCol ? "tenant column, no RLS" : "no tenant column found"}${isolationTest ? "; isolation test present" : "; no isolation test"}`,

@@ -114,17 +114,21 @@ export const rules = [
     phase: "0",
     ...PACKAGE,
     why: "An install that resolves versions at build time builds a different product each time; the lockfile, frozen, is the one that was tested.",
-    next: "Use npm ci / pnpm install --frozen-lockfile in CI",
+    next: "Commit the lockfile and install frozen in CI: npm ci, pnpm install --frozen-lockfile, yarn install --immutable, bun install --frozen-lockfile",
     check: (c) => {
-      const lockfile = ["pnpm-lock.yaml", "package-lock.json", "yarn.lock"].find(c.exists);
+      // Every manager's lockfile: bun's text lockfile was missed, and an adopter on bun with its
+      // lockfile committed and frozen in CI read "no lockfile".
+      const lockfile = [
+        "pnpm-lock.yaml",
+        "package-lock.json",
+        "npm-shrinkwrap.json",
+        "yarn.lock",
+        "bun.lock",
+        "bun.lockb",
+      ].find(c.exists);
       const frozen = /npm ci|--frozen-lockfile|--immutable/.test(c.ciText);
       return {
-        status:
-          lockfile && /npm ci|--frozen-lockfile|yarn install --immutable/.test(c.ciText)
-            ? "present"
-            : lockfile
-              ? "partial"
-              : "missing",
+        status: lockfile && frozen ? "present" : lockfile ? "partial" : "missing",
         evidence: `${lockfile || "no lockfile"}${frozen ? ", frozen install in CI" : ", CI install not frozen"}`,
       };
     },

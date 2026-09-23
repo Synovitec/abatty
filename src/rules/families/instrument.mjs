@@ -222,12 +222,21 @@ export const rules = [
     phase: "0",
     stages: ["build", "run"],
     why: "A red check nobody reads teaches everyone to ignore red checks.",
-    next: "Reduce GitHub workflows to workflow_dispatch or delete them",
-    check: (c) => ({
-      status: c.ghWorkflows.length === 0 ? "present" : c.ciFiles.length > 0 ? "partial" : "n/a",
-      evidence: c.ghWorkflows.length
-        ? `${c.ghWorkflows.length} GitHub workflow(s) beside Woodpecker`
-        : "none",
-    }),
+    next: "Keep one CI system: reduce the other's workflows to a manual trigger or delete them",
+    // A dead workflow is one CI system beside another. It read every GitHub workflow as dead, as
+    // though Woodpecker were everybody's CI, and told a GitHub-only repository its only pipeline
+    // was a stray beside a Woodpecker it did not have.
+    check: (c) => {
+      const woodpecker = c.ciFiles.filter((f) => f.startsWith(".woodpecker"));
+      if (!woodpecker.length || !c.ghWorkflows.length)
+        return {
+          status: c.ciFiles.length ? "present" : "n/a",
+          evidence: c.ciFiles.length ? "one CI system" : "no CI",
+        };
+      return {
+        status: "partial",
+        evidence: `${c.ghWorkflows.length} GitHub workflow(s) beside ${woodpecker.length} Woodpecker pipeline(s)`,
+      };
+    },
   },
 ];
