@@ -30,6 +30,14 @@ under Unreleased in the same commit.
   process or a default parameter, and is a new ratchet floor. No existing floor moved. The
   readability score in the baseline falls from 98 to 92, because the new metric counts against
   boundary clarity. The decision is logged in `docs/STANDARDS_PROGRESS.md`.
+- **The gate audits yarn repositories, yarn 1 and yarn berry both.** Each was run against a
+  package with a known advisory before it was wired, as npm, pnpm and bun were. yarn 1's exit
+  code turned out to be a bitmask of every severity found, and it ignores `--level`: it reads 12
+  (moderate and high) even at `--level critical`. So yarn 1 is judged from its JSON report alone,
+  and the pipeline `abatty ci` writes fails only on a code of 8 or more (high or critical). yarn
+  berry's code honours `--severity`, and its line-per-advisory report is read for the
+  allowances. Until now a yarn repository's audit was deferred to CI, where yarn 1's raw
+  command would have failed on moderate advisories below the floor.
 - **DATA-TENANT reads the tenant column a repository names.** `tenantKeys` in the config adds
   to `tenant_id`, `store_id`, `company_id` and `organisation_id`, so a product whose tenant is
   a restaurant or a workspace is no longer read as single-tenant.

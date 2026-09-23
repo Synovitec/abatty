@@ -44,11 +44,16 @@ export function splitAllowances(allow, today) {
  * with every advisory id behind it, so an allowance may name either. Three shapes, each read
  * from a real run: npm 7+ (`vulnerabilities` by package, the advisories under `via`), pnpm (the
  * registry's own bulk response, `advisories` by id with `module_name`) and bun (packages as
- * keys, an array of advisories each). A banner before the JSON (bun prints one) is skipped.
+ * keys, an array of advisories each). A banner before the JSON (bun prints one) is skipped. Both
+ * yarns print one record per line instead, read first (`linesOf`).
  * @param {string} json @param {string} floor
  * @returns {Advisory[] | null}
  */
 export function advisoriesOf(json, floor) {
+  const min = Math.max(0, SEVERITY.indexOf(floor));
+  const aboveFloor = (/** @type {Advisory} */ a) => SEVERITY.indexOf(a.severity) >= min;
+  const lines = linesOf(json);
+  if (lines) return lines.filter(aboveFloor);
   let report;
   try {
     report = JSON.parse(String(json).slice(Math.max(0, String(json).indexOf("{"))));
@@ -56,8 +61,6 @@ export function advisoriesOf(json, floor) {
     return null;
   }
   if (!report || typeof report !== "object") return null;
-  const min = Math.max(0, SEVERITY.indexOf(floor));
-  const aboveFloor = (/** @type {Advisory} */ a) => SEVERITY.indexOf(a.severity) >= min;
   const vulns = report.vulnerabilities;
   if (vulns && typeof vulns === "object") {
     const out = [];
@@ -113,6 +116,46 @@ export function advisoriesOf(json, floor) {
 }
 
 /**
+ * The advisories of an audit that prints one JSON record per line, both yarns' form, or null when
+ * the output is not that form. yarn 1 writes `auditAdvisory` records and a closing
+ * `auditSummary` (the only line when nothing was found, which is an empty list, not an
+ * unreadable report); yarn berry writes `{ value: <package>, children: { ID, Issue, Severity } }`.
+ * @param {string} text @returns {Advisory[] | null}
+ */
+function linesOf(text) {
+  /** @type {any[]} */
+  const records = [];
+  for (const line of String(text).split(/\r?\n/)) {
+    if (!line.trim().startsWith("{")) continue;
+    try {
+      records.push(JSON.parse(line));
+    } catch {
+      return null;
+    }
+  }
+  const classic = records.some((r) => r?.type === "auditSummary" || r?.type === "auditAdvisory");
+  const berry = records.length > 0 && records.every((r) => r?.children && "value" in r);
+  if (!classic && !berry) return null;
+  /** @type {Map<string, Advisory>} */
+  const byPackage = new Map();
+  for (const r of records) {
+    const a = classic ? r?.data?.advisory : r?.children;
+    if (classic && r?.type !== "auditAdvisory") continue;
+    const name = String(classic ? a?.module_name : r.value);
+    const severity = String(classic ? a?.severity : a?.Severity).toLowerCase();
+    const entry = byPackage.get(name) || { package: name, severity: "info", ids: [], title: "" };
+    entry.ids.push(String(classic ? a?.id : a?.ID));
+    if (classic && a?.github_advisory_id) entry.ids.push(String(a.github_advisory_id));
+    if (SEVERITY.indexOf(severity) > SEVERITY.indexOf(entry.severity)) {
+      entry.severity = severity;
+      entry.title = String(classic ? a?.title || "" : a?.Issue || "");
+    }
+    byPackage.set(name, entry);
+  }
+  return [...byPackage.values()];
+}
+
+/**
  * The audit as the gate runs it: production dependencies only, at or above the floor, less the
  * advisories this repository allows today. An allowance may name the package or the advisory id.
  * @param {string} repoDir
@@ -146,7 +189,9 @@ export function auditOutcome(repoDir, run, o = {}) {
     : "";
 
   const r = run(String(cmd.check[0]), cmd.check.slice(1));
-  if (r.status === 0)
+  // A manager whose exit code does not honour the floor is judged from its report alone.
+  const clean = cmd.byJson ? advisoriesOf(r.output, level)?.length === 0 : r.status === 0;
+  if (clean)
     return {
       outcome: "ok",
       detail: expiredNote,
@@ -154,11 +199,11 @@ export function auditOutcome(repoDir, run, o = {}) {
     };
   if (offline(r.output))
     return { outcome: "deferred", detail: "the registry is unreachable; CI runs the audit" };
-  if (!live.length) return failure(r.output, expiredNote);
+  if (!live.length && !cmd.byJson) return failure(r.output, expiredNote);
 
   // Something is above the floor and this repository allows some of it: read the report properly
   // rather than guessing from the text, and fail on whatever is left.
-  const json = run(String(cmd.json[0]), cmd.json.slice(1));
+  const json = cmd.byJson ? r : run(String(cmd.json[0]), cmd.json.slice(1));
   const found = advisoriesOf(json.output, level);
   if (!found)
     return failure(

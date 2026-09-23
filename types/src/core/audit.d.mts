@@ -12,7 +12,8 @@ export function splitAllowances(allow: Allowance[], today: string): {
  * with every advisory id behind it, so an allowance may name either. Three shapes, each read
  * from a real run: npm 7+ (`vulnerabilities` by package, the advisories under `via`), pnpm (the
  * registry's own bulk response, `advisories` by id with `module_name`) and bun (packages as
- * keys, an array of advisories each). A banner before the JSON (bun prints one) is skipped.
+ * keys, an array of advisories each). A banner before the JSON (bun prints one) is skipped. Both
+ * yarns print one record per line instead, read first (`linesOf`).
  * @param {string} json @param {string} floor
  * @returns {Advisory[] | null}
  */

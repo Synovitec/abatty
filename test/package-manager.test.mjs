@@ -32,16 +32,23 @@ test("the package manager is read from what the repository committed: the field 
   assert.equal(declared?.id, "pnpm");
 });
 
-test("yarn 1 and yarn berry are told apart by the lockfile, and neither has an audit the gate runs yet", () => {
+test("yarn 1 and yarn berry are told apart by the lockfile, each with the audit it was watched to run", () => {
   const classic = packageManager(
     tempRepo("pm-yarn1", { "package.json": PKG, "yarn.lock": "# yarn lockfile v1\n" }),
   );
   assert.deepEqual(classic?.install, ["yarn", "install", "--frozen-lockfile"]);
-  assert.equal(classic?.audit, null);
-  assert.match(classic?.auditCommand || "", /^yarn audit --groups dependencies/);
+  const c = classic?.audit?.("high");
+  assert.equal(c?.byJson, true, "yarn 1's exit code ignores the floor: the report decides");
+  assert.deepEqual(c?.check.slice(0, 3), ["yarn", "audit", "--json"]);
+  // the pipeline reads the same bitmask: 8 and up is high or critical
+  assert.match(
+    classic?.auditCommand || "",
+    /^yarn audit --groups dependencies --level high \|\| \[ \$\? -lt 8 \]$/,
+  );
   const berry = packageManager(
     tempRepo("pm-berry", { "package.json": PKG, "yarn.lock": "__metadata:\n  version: 8\n" }),
   );
   assert.deepEqual(berry?.install, ["yarn", "install", "--immutable"]);
+  assert.equal(berry?.audit?.("high").byJson, undefined, "berry's code honours --severity");
   assert.match(berry?.auditCommand || "", /^yarn npm audit/);
 });

@@ -14,6 +14,7 @@ export type PackageManager = {
     audit: ((level: string) => {
         check: string[];
         json: string[];
+        byJson?: boolean;
     }) | null;
     auditCommand: string;
 };

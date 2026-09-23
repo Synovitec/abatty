@@ -5,10 +5,9 @@
  * assuming npm. The assumption was the second kind of defect an outside trial reported: a
  * pnpm + Windows team got `npm ci` in its pipeline and an audit that quietly did not run.
  *
- * What is wired is what was watched: npm, pnpm and bun were each run against a package with a
- * known advisory and their JSON read (`src/core/audit.mjs` parses the three shapes). yarn's
- * audit is named for CI and deferred by the gate until somebody has watched it too; a manager
- * this module does not recognise is reported, never guessed.
+ * What is wired is what was watched: npm, pnpm, bun, yarn 1 and yarn berry were each run against
+ * a package with a known advisory and their JSON read (`src/core/audit.mjs` parses the shapes);
+ * a manager this module does not recognise is reported, never guessed.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,7 +21,7 @@ import { readPackage } from "./repo.mjs";
  *   install: string[],
  *   run: (script: string, args?: string[]) => string[],
  *   exec: (tool: string) => string[],
- *   audit: ((level: string) => { check: string[], json: string[] }) | null,
+ *   audit: ((level: string) => { check: string[], json: string[], byJson?: boolean }) | null,
  *   auditCommand: string,
  * }} PackageManager
  */
@@ -102,14 +101,27 @@ const MANAGERS = {
           install: ["yarn", "install", "--immutable"],
           run: (s, args = []) => ["yarn", "run", s, ...args],
           exec: (t) => ["yarn", "exec", t],
-          audit: null,
+          // Watched on 2026-09-23 with yarn 4.5 against lodash 4.17.20: the exit code honours
+          // --severity (1 at high, 0 at critical), and --json prints one advisory per line.
+          audit: (level) => ({
+            check: ["yarn", "npm", "audit", "--environment", "production", "--severity", level],
+            json: ["yarn", "npm", "audit", "--environment", "production", "--json"],
+          }),
           auditCommand: "yarn npm audit --environment production --severity high",
         }
       : {
           install: ["yarn", "install", "--frozen-lockfile"],
           run: (s, args = []) => ["yarn", "run", "-s", s, ...args],
           exec: (t) => ["yarn", "exec", t],
-          audit: null,
-          auditCommand: "yarn audit --groups dependencies --level high",
+          // Watched on 2026-09-23 against lodash 4.17.20: yarn 1's exit code is a bitmask of every
+          // severity found and ignores --level (12, moderate and high, even at --level critical),
+          // so the verdict is read from the JSON and never from the code.
+          audit: (level) => {
+            const argv = ["yarn", "audit", "--json", "--groups", "dependencies", "--level", level];
+            return { check: argv, json: argv, byJson: true };
+          },
+          // The same bitmask in the pipeline: 8 is high and 16 critical, so a code under 8 is a
+          // report of moderates only, which the floor lets through.
+          auditCommand: "yarn audit --groups dependencies --level high || [ $? -lt 8 ]",
         },
 };
