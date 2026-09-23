@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty report` prints the day's table.** Today's reading sits beside the newest one before
+  it, with the score, the phase, the counts by status, the share held by a machine, proven and
+  contradicted checks, harness drift, bypassed commits and raised floors. Each row says whether
+  it got better, worse or stayed the same. Below the table it names every check whose status
+  moved, the ones that got worse first, since a flat score can hide one check fixed and another
+  broken. The outside trial's reviewer assembled this table by hand from two reports and the
+  commit log for two days.
 - **Eight opt-in probes, and `ratchet.enable` to switch them on.** They grew out of one
   outside repository's own probes, written during its trial, and are generalised here: what
   was particular to that product is now configuration. `valid.unparsedBoundary` counts route
