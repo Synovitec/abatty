@@ -12,11 +12,14 @@ export function liveDevServer(dir: string, locks?: string[]): {
     port?: number;
 } | null;
 /**
- * The files of a range whose every added and removed line is a comment or blank: they change no
- * behaviour, so they select no suite. Read line by line from a zero-context diff; a file the diff
- * cannot show (binary, deleted, renamed) is never counted as comment-only, because a guess that
- * skips a suite is the expensive direction to be wrong in.
- * @param {string} repoDir @param {string} range @param {string[]} files
+ * The files of a range whose two versions differ only in comments and blank lines: they change
+ * no behaviour, so they select no suite. Both versions are read whole and compared with their
+ * comments blanked by the probes' lexer, rather than judged line by line from a diff, where a
+ * CSS `#id` selector or a `* 2` continuation reads as a comment. Only the languages the lexer
+ * knows are judged, and a file missing at either end is never counted: a guess that skips a
+ * suite is the expensive direction to be wrong in.
+ * @param {string} repoDir @param {string} range `from..to`; a three-dot range judges nothing
+ * @param {string[]} files
  * @returns {Set<string>}
  */
 export function commentOnly(repoDir: string, range: string, files: string[]): Set<string>;
