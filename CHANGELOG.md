@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The guard judges a push by the branch where it runs.** It asked for the current branch once,
+  in the folder the hook starts in, so `cd <worktree> && git push` was judged by another
+  checkout's branch. That refused a push to a feature branch while the main checkout stood on
+  main, and allowed a push from a worktree on main while the checkout stood on a feature branch.
+  The guard now follows `cd`, `pushd` and a subshell to the folder each git command runs in, and
+  reads git's own `-C`, `--git-dir` and `--work-tree`. A bare or HEAD push from a folder it
+  cannot follow (a variable, `cd -`) is refused, with the fix named: name the branch. Four
+  neighbouring holes closed with it:
+  - a force push spelled with `-C <dir>` was not seen as a push at all: the folder was read as
+    the subcommand;
+  - `-C <dir> push origin` read "origin" as the target branch;
+  - a push inside a subshell read its target with the closing parenthesis attached;
+  - at night, a push spelled with `-C` skipped the adoption-branch-only rule.
+
 ## [0.5.1] - 2026-09-23
 
 ### Added

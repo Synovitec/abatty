@@ -11,9 +11,10 @@
 // unattended run an ask becomes a denial, which is the intent. Everything else exits 0 with no
 // output and the normal permission flow decides. protect.mjs is the twin for the file tools.
 
-import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, loadConfig, readEvent } from "./lib.mjs";
+import { homedir } from "node:os";
+import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
-import { shellSegments } from "./shell.mjs";
+import { gitLocation, segmentDirs, shellSegments } from "./shell.mjs";
 
 // Fail closed: a crashed PreToolUse hook does not block, so at night an internal error denies.
 process.on("uncaughtException", (err) => {
@@ -60,6 +61,20 @@ const argv = raw
 // are tested, since a quote sits exactly where these patterns anchor a short flag.
 const segments = shellSegments(argv);
 const opaqueText = segments.filter((s) => s.opaque).map((s) => s.raw).join(" ; ");
+// The folder each segment runs in: `cd <worktree> && git push` pushes the worktree's branch, not
+// the one checked out where this hook runs (shell.mjs). Asked once, here, the branch was another
+// checkout's, and a push from a worktree was judged by it in both directions.
+const dirs = segmentDirs(segments, process.cwd(), homedir());
+/** What a push whose branch cannot be known resolves to: it is refused, never guessed. A branch name holds no space, so this is never one. */
+const UNKNOWN = "an unresolved folder";
+/** The branch checked out where segment `i` runs, with git's own `-C`/`--git-dir` applied. */
+function branchAt(i, args = []) {
+  const dir = dirs[i];
+  const loc = gitLocation(args);
+  if (dir === null || dir === undefined || loc === null) return UNKNOWN;
+  if (dir === process.cwd() && !loc.length) return branch;
+  return git("-C", dir, ...loc, "rev-parse", "--abbrev-ref", "HEAD") || UNKNOWN;
+}
 const hasFlag = (re) => re.test(opaqueText) || re.test(opaqueText.replace(/['"]/g, ""));
 /** The argument lists of one program, from the segments that were understood. */
 const invocations = (name) => segments.filter((s) => !s.opaque && s.program === name).map((s) => s.args);
@@ -71,8 +86,18 @@ const maybeGit = segments.filter((s) => s.opaque).map((s) => s.tokens);
 /** A short flag as git reads it: `-fu` carries `-f`, and a long flag is its own token. */
 const carries = (args, short, ...longs) =>
   args.some((a) => (/^-[a-zA-Z]+$/.test(a) ? a.slice(1).includes(short) : longs.includes(a)));
-/** The git subcommand, past git's own global options. */
-const sub = (args) => args.find((a) => !a.startsWith("-") && !/^[A-Za-z_]\w*=/.test(a)) || "";
+/**
+ * The git subcommand, past git's own global options and their values. `git -C wt push --force`
+ * read `wt` as the subcommand, so the precise reading never saw a push there at all.
+ */
+const sub = (args) => {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (/^(-C|-c|--git-dir|--work-tree|--namespace|--config-env)$/.test(a)) i++;
+    else if (!a.startsWith("-") && !/^[A-Za-z_]\w*=/.test(a)) return a;
+  }
+  return "";
+};
 function deny(reason) {
   if (NIGHT) appendLog("guard-denials", { tool: event.tool_name, command: cmd.slice(0, 300), reason });
   decide("deny", reason);
@@ -147,9 +172,9 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
  */
 const unquote = (w) => w.replace(/^['"]+/, "").replace(/['"]+$/, "");
 /** The branch a push writes to, from an argument list a shell has already been read off. */
-function destinationOf(args) {
+function destinationOf(args, here = branch) {
   const positional = args.filter((a) => !a.startsWith("-"));
-  if (positional.length < 3) return branch; // `git`, `push`, and nothing said: the upstream
+  if (positional.length < 3) return here; // `git`, `push`, and nothing said: the upstream
   const spec = positional[positional.length - 1];
   const dest = (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
   // `HEAD` and its alias `@` are not the name of a branch: git resolves them to the branch you
@@ -157,7 +182,7 @@ function destinationOf(args) {
   // as a literal it matched no branch name and the push went through - this hook's own
   // repository, 2026-09-22, by the agent that had just finished closing the two flag holes.
   // `HEAD:main` is unaffected: the destination side is read before this, and it says main.
-  return dest === "HEAD" || dest === "@" ? branch : dest;
+  return dest === "HEAD" || dest === "@" ? here : dest;
 }
 /** The old whole-line reading, kept for the segments a shell could not be read off. */
 function opaqueTarget() {
@@ -169,15 +194,27 @@ function opaqueTarget() {
     const bare = unquote(w);
     if (bare && !bare.startsWith("-")) args.push(bare);
   }
-  return args.length < 2 ? branch : destinationOf(["push", ...args]);
+  // The whole-line reading cannot tell which segment moved the shell: any `cd` makes it unknown.
+  const here = dirs.every((d) => d === process.cwd()) ? branch : UNKNOWN;
+  return args.length < 2 ? here : destinationOf(["push", ...args], here);
 }
 // Every destination this command writes to: one per understood `git push`, plus the conservative
 // reading of anything that was not understood. A command can carry several.
 const targets = [
-  ...invocations("git").filter((a) => sub(a) === "push").map(destinationOf),
+  // Read from `push` on: git's own `-C <dir>` before it is a location, not an argument, and read
+  // as one it made `git -C wt push origin` a push to a branch named origin.
+  ...segments.flatMap((s, i) =>
+    !s.opaque && s.program === "git" && sub(s.args) === "push"
+      ? [destinationOf(s.args.slice(s.args.indexOf("push")), branchAt(i, s.args))]
+      : [],
+  ),
   // An opaque segment that mentions `push` is read from that word on, so a substitution in
   // command position cannot hide the destination either.
-  ...maybeGit.filter((t) => t.includes("push")).map((t) => destinationOf(t.slice(t.indexOf("push")))),
+  ...segments.flatMap((s, i) =>
+    s.opaque && s.tokens.includes("push")
+      ? [destinationOf(s.tokens.slice(s.tokens.indexOf("push")), branchAt(i, s.tokens.slice(s.tokens.indexOf("git") + 1)))]
+      : [],
+  ),
   hasFlag(/\bgit push\b/) ? opaqueTarget() : null,
 ].filter(Boolean);
 // A push is not the only write to a branch: the forge's API moves a ref or merges into it
@@ -196,6 +233,8 @@ const apiRefWritePrecise = invocations("gh").some((a) => {
 const apiWrite = /\bgh api\b/.test(opaqueText) && /\s(-X|--method)\s+(PATCH|POST|PUT|DELETE)\b|\s(-f|-F|--field|--raw-field|--input)\b/i.test(opaqueText);
 const B = "\\b"; // a word boundary as a string: in a template literal the same two characters are a backspace
 const apiRefWrite = apiRefWritePrecise || (apiWrite && new RegExp(B + "gh api" + B + "[^;&|]*/(git/refs/heads/(" + base + "|master)" + B + "|merges" + B + ")").test(opaqueText));
+if (targets.includes(UNKNOWN))
+  deny("This push names no branch and runs in a folder the guard cannot follow (a variable, a subshell, `cd -`), so the branch it writes to is unknown. Name it: git push origin <branch>.");
 const pushesBase = targets.some((t) => t === base || t === "master") || apiRefWrite;
 if (pushesBase && (NIGHT || config.directPushToBase !== true)) {
   deny(
@@ -211,12 +250,11 @@ if (NIGHT) {
   // Every push goes to the adoption branch or nowhere. The base-branch rule above is not
   // enough: with a base other than main, `git push origin main` slipped through it (caught by
   // the self-test on the first dry run). A bare `git push` is judged by the current branch.
-  if (has(/\bgit push\b/)) {
-    const target = cmd.match(/\bgit push\b(?:\s+-[-\w]+)*\s+\S+\s+([^\s:]+)(?::(\S+))?/);
-    const pushed = target ? target[2] || target[1] : branch;
-    if (!adoption || pushed !== adoption) {
-      deny(`Unattended run: pushes go to ${adoption || "the adoption branch"} only (this one targets "${pushed}").`);
-    }
+  // Read from the targets above, not from the words `git push`: `git -C wt push origin main`
+  // carries no contiguous `git push`, and a pattern for it let every such spelling through.
+  const stray = targets.find((t) => t !== adoption);
+  if (targets.length && (!adoption || stray !== undefined)) {
+    deny(`Unattended run: pushes go to ${adoption || "the adoption branch"} only (this one targets "${stray ?? targets[0]}").`);
   }
   // `git checkout <base> -- <path>` restores a file from the base and stays on the branch; it is
   // how the harness is put back when the direction check names it. Only a checkout WITHOUT the
