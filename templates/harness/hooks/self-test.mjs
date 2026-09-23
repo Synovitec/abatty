@@ -45,7 +45,21 @@ function check(name, ok, detail = "") {
 
 const tmp = mkdtempSync(join(tmpdir(), "harness-"));
 const nightDir = join(tmp, "night");
-const baseEnv = { ADOPTION_RUN: "", ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_BASE: "", ADOPTION_NIGHT_DIR: nightDir };
+// The cases assume the base branch is PR-only. A repository that allows a direct push to it
+// (directPushToBase: true) is right to, and its own config made ten of these cases fail: they
+// run against its config with that one key set as they assume, and one case proves its setting.
+const ownConfig = (() => {
+  try {
+    return readJson(ADOPTION);
+  } catch {
+    return {};
+  }
+})();
+const policyCfg = join(tmp, "policy.json");
+writeFileSync(policyCfg, JSON.stringify({ ...ownConfig, directPushToBase: false }));
+const directCfg = join(tmp, "direct.json");
+writeFileSync(directCfg, JSON.stringify({ ...ownConfig, directPushToBase: true }));
+const baseEnv = { ADOPTION_RUN: "", ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_BASE: "", ADOPTION_NIGHT_DIR: nightDir, ADOPTION_CONFIG: policyCfg };
 
 /** Run a hook with an event on stdin and an environment; returns { code, stdout, stderr }. */
 function hook(file, event, env = {}, cwd = process.cwd()) {
@@ -111,7 +125,10 @@ try {
     check("settings wires PreToolUse mcp__* → protect.mjs", Boolean(mcpMatcher), `matcher: ${matchers("PreToolUse", "protect.mjs").map((m) => m.matcher).join(", ") || "none"}`);
     check("settings wires Stop → stop-gate.mjs", wired("Stop", "stop-gate.mjs"));
     check("settings wires SessionStart → session-brief.mjs", wired("SessionStart", "session-brief.mjs"));
-    const stopTimeout = (settings.hooks?.Stop || []).flatMap((m) => m.hooks || []).find((h) => (h.args || []).join(" ").includes("stop-gate"))?.timeout;
+    // The hook as the settings spell it, either way: `args` beside `command`, or the whole line in
+    // `command` (`cd "${CLAUDE_PROJECT_DIR}" && node .claude/hooks/stop-gate.mjs`). Reading only the
+    // first failed a harness written the second way.
+    const stopTimeout = (settings.hooks?.Stop || []).flatMap((m) => m.hooks || []).find((h) => [h.command, ...(h.args || [])].join(" ").includes("stop-gate"))?.timeout;
     check("Stop hook timeout is long enough for a gate (>= 600s)", (stopTimeout ?? 0) >= 600, `timeout=${stopTimeout}`);
     // The hooks read the config through lib.mjs; this file resolves it its own way. When the two
     // disagree the hooks quietly run on defaults: no scrub, no coupled pairs, the repository's
@@ -255,6 +272,8 @@ try {
   // The push target, not a word in the command: both directions, because a guard that refuses a
   // branch for carrying the base's name in it is a guard a team switches off.
   cases.push(["a push to the base branch is refused", bash("git push origin main"), {}, "deny"]);
+  cases.push(["directPushToBase: true lets the same push through by day", bash("git push origin main"), { ADOPTION_CONFIG: directCfg }, "none"]);
+  cases.push(["directPushToBase: true still refuses it at night", bash("git push origin main"), { ...night, ADOPTION_CONFIG: directCfg }, "deny"]);
   cases.push(["a push to the base by refspec is refused", bash("git push origin HEAD:main"), {}, "deny"]);
   cases.push(["deleting the base branch is refused", bash("git push origin :main"), {}, "deny"]);
   // Quotes are the shell's: git never sees them, so a target compared with them still attached

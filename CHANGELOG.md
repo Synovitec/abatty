@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The harness self-test passes on a repository that allows direct pushes to its base.** Ten
+  guard cases assumed a PR-only base and read the repository's own config, so a repository with
+  `directPushToBase: true` failed its self-test on its own, legitimate policy. The cases now run
+  against the repository's config with that one key set as they assume, and two new cases prove
+  the other setting: allowed by day, still refused at night. The Stop hook's timeout check also
+  reads a hook written as one `command` line (`cd "${CLAUDE_PROJECT_DIR}" && node ...`), which
+  it failed before, and not only the `command` plus `args` form.
+
 - **A night session is judged on the files it changed, not on its neighbours'.** The Stop hook
   refused to end a session while anything in the worktree was uncommitted, and told the agent to
   commit it or restore it. In a worktree several sessions share, that was an instruction to take
