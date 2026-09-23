@@ -1,5 +1,7 @@
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string> }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[] }} Lock
+ *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
+ *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
  * @typedef {{ file: string, action: UpdateAction, detail?: string }} UpdateEvent
  */
@@ -64,10 +66,15 @@ export function updateRepo(o: {
 };
 export const LOCK: ".claude/harness.lock.json";
 export const BASE_DIR: ".abatty/harness";
+/**
+ * `scripts`: the package scripts offered to this repository so far. Absent in a lock written
+ * before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
+ */
 export type Lock = {
     abatty: string;
     installedAt: string;
     files: Record<string, string>;
+    scripts?: string[];
 };
 export type UpdateAction = "in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten";
 export type UpdateEvent = {

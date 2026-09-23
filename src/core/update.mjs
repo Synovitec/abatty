@@ -10,7 +10,10 @@
  * change it → yours, kept; both changed → `git merge-file`, and when the merge conflicts the
  * new version is written beside yours as `<file>.abatty-new` and nothing of yours is touched.
  * The config files are merged key by key (a key the template gained is added, a value you set
- * is never replaced) and the package scripts are added where absent, as `init` does.
+ * is never replaced). A package script is added where absent unless it was offered before and the
+ * repository removed it: the lock lists the scripts offered, and a removal is a decision (this
+ * repository declined `lint`, and every update wrote it back). A script a required gate step
+ * runs is the exception, since without it the gate cannot run at all.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -35,7 +38,9 @@ export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
 
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string> }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[] }} Lock
+ *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
+ *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
  * @typedef {{ file: string, action: UpdateAction, detail?: string }} UpdateEvent
  */
@@ -115,10 +120,35 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     mkdirSync(dirname(base), { recursive: true });
     writeFileSync(base, text);
   }
+  const offered = new Set([
+    ...offeredScripts(previous, preset),
+    ...Object.keys(preset?.scripts || {}),
+  ]);
   /** @type {Lock} */
-  const lock = { abatty: version, installedAt: localToday(), files };
+  const lock = { abatty: version, installedAt: localToday(), files, scripts: [...offered].sort() };
   writeJsonFile(repoDir, LOCK, lock);
   return lock;
+}
+
+/**
+ * The scripts already offered to a repository: the lock's list, or for a lock that predates the
+ * list, the preset's own names (init wrote them all). No lock, nothing offered.
+ * @param {Lock | null} lock @param {import("../presets/index.mjs").Preset | null} preset
+ * @returns {string[]}
+ */
+function offeredScripts(lock, preset) {
+  if (!lock) return [];
+  return lock.scripts ?? Object.keys(preset?.scripts || {});
+}
+
+/**
+ * The scripts a required gate step runs: the ones a repository cannot decline, because the gate
+ * errors without them rather than skipping.
+ * @param {import("../presets/index.mjs").Preset} preset @returns {Set<string>}
+ */
+function requiredScripts(preset) {
+  const steps = [...preset.gate.always, ...preset.gate.suites.flatMap((s) => s.steps)];
+  return new Set(steps.filter((s) => s.required && s.script).map((s) => String(s.script)));
 }
 
 /**
@@ -276,20 +306,25 @@ export function updateRepo(o) {
       });
     } else events.push({ file: adoptionRel, action: "in step" });
   }
-  // The scripts, as init adds them: absent ones only.
+  // The scripts: absent ones the repository has not declined (see the header).
   if (preset && existsSync(join(repoDir, "package.json"))) {
     const pkg = readPackage(repoDir);
     const scripts = { ...(pkg.scripts || {}) };
-    const added = Object.entries(preset.scripts).filter(([k]) => !(k in scripts));
+    const offered = new Set(offeredScripts(lock, preset));
+    const required = requiredScripts(preset);
+    const missing = Object.entries(preset.scripts).filter(([k]) => !(k in scripts));
+    const added = missing.filter(([k]) => required.has(k) || !offered.has(k));
+    const declined = missing.filter(([k]) => !required.has(k) && offered.has(k)).map(([k]) => k);
     for (const [k, v] of added) scripts[k] = v;
+    const kept = declined.length ? `left out, as removed here: ${declined.join(", ")}` : "";
     if (added.length) {
       if (!dryRun) writeJsonFile(repoDir, "package.json", { ...pkg, scripts });
       events.push({
         file: "package.json",
         action: "merged",
-        detail: `added ${added.map(([k]) => k).join(", ")}`,
+        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept].filter(Boolean).join("; "),
       });
-    } else events.push({ file: "package.json", action: "in step" });
+    } else events.push({ file: "package.json", action: "in step", ...(kept && { detail: kept }) });
   }
   if (!dryRun) writeLock(repoDir, preset, version);
   return {

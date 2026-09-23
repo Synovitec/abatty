@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`abatty update` no longer writes back a script you removed.** The harness lock now lists
+  the package scripts offered to the repository, and a script offered before and absent now is
+  read as declined and left out, which the update says. A script the gate cannot run without
+  (the tests, the ratchet, the typecheck on a TypeScript preset) still comes back. A lock
+  written before this lists nothing, and reads as though every preset script had been offered,
+  since `init` wrote them all. This repository declined `lint`, and every update added it back.
+
 ## [0.4.0] - 2026-09-22
 
 ### Changed
