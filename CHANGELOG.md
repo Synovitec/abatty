@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A floor raised lands only with an approval its raiser cannot give itself.** `abatty
+  baseline` asks for a reason and an owner, but the owner is a name the raiser typed, and an
+  agent types one as easily as a person does (it can also edit the baseline by hand). The new
+  `abatty raises` compares the baseline with the one on the base branch and names every floor
+  that rose, vanished or stopped being hard. With `--require-review <number>` it passes only
+  when somebody other than the pull request's author approved its head commit, a review the
+  forge does not let an author give. The GitHub pipeline `abatty ci` generates runs it as a
+  `floors` job on pull requests and again when a review is submitted or dismissed. That
+  event runs the `floors` job only.
+
 - **`abatty doctor` says what each hook actually does here, by day and at night.** It reads
   the settings that wire each hook, the config keys it reads and the tool it calls. It names a
   hook that no settings file wires, every hook switched off by `disableAllHooks` (in the

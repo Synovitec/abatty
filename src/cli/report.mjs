@@ -36,8 +36,9 @@ export async function reportCommand(cx) {
     out(
       `${t.glyph.ok} report written: .abatty/reports/${r.date}.json ${t.gray(`· score ${r.score}/100 · ${allReports(dir).length} reading(s)`)}\n`,
     );
-    // Said every time there is one, until a raise carries an approval the raiser cannot give
-    // itself: an unverified row in the open beats a verified row nobody has yet.
+    // Said every time there is one: the owner is a string the raiser typed. The approval that is
+    // not is the forge's, read by `abatty raises --require-review` in the pipeline, which this
+    // machine cannot see, so the row stays unverified here and says where it is verified.
     for (const f of r.floors.raised)
       out(
         `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,

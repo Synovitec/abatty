@@ -100,6 +100,12 @@ survives an unrelated rebaseline and disappears when the debt it explained does.
 scans zero files where the baseline saw some fails the run, so a moved directory never reports
 green forever.
 
+The owner is a name the raiser typed, and an agent can type one as easily as a person can. So a
+raise lands only through a pull request approved at its head by somebody other than its author.
+`abatty raises --require-review <number>` reads that review in the pipeline that `abatty ci`
+generates, and it counts a floor that vanished or a hard metric that was demoted the same way as
+a rise.
+
 ### Proving the guards
 
 Every probe ships control cases in both directions: a case it must report, and a case it must not.
@@ -119,6 +125,7 @@ by mutation.
 | `abatty gate`         | The gate. `--fast` omits the heavy suites                                                   |
 | `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases             |
 | `abatty baseline`     | Record today's numbers as the floor                                                         |
+| `abatty raises`       | The floors loosened against the base, and the review that can land them                     |
 | `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps     |
 | `abatty measure`      | The gap analysis: every check, with next steps by phase                                     |
 | `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document |

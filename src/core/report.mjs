@@ -109,8 +109,9 @@ function bypassOf(repoDir) {
  * Every floor the baseline records as raised, with the reason and the owner it was raised under.
  * `verified` is false on every row, and says so rather than implying otherwise: the owner is a
  * string the command was given, and an agent session can type a person's name as easily as a
- * person can. Until a raise needs an approval the raising process cannot give itself, the row
- * is printed as what it is, an unverified claim, so the reader sees it instead of nothing.
+ * person can. The approval the raiser cannot give itself is a review on the forge, read in the
+ * pipeline by `abatty raises` (src/core/raises.mjs); this machine cannot see it, so here the
+ * row is printed as what it is, an unverified claim, so the reader sees it instead of nothing.
  * @param {string} repoDir @returns {FloorRaise[]}
  */
 function floorsRaised(repoDir) {
