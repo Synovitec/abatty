@@ -213,6 +213,12 @@ test("a CI step is credited for the script behind it, not for the word: phantom 
     phantomScripts(CI, { test: "x", standards: "y", lint: "z", typecheck: "w" }),
     [],
   );
+  // a comment runs nothing: "yarn 1 comes with the runner images" once read as a script named 1
+  const commented = `# yarn 1 comes with the runner images; npm run nothing-here\n${CI}`;
+  assert.deepEqual(phantomScripts(commented, { test: "x", standards: "y" }).sort(), [
+    "lint",
+    "typecheck",
+  ]);
 
   const pkg = (/** @type {Record<string, string>} */ scripts) =>
     JSON.stringify({ name: "p", private: true, scripts, dependencies: { next: "15" } });

@@ -88,6 +88,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **INST-CI no longer reads a comment in a pipeline as a script it runs.** A comment saying
+  "yarn 1 comes with the runner images" was charged as a script named `1` that the package
+  lacks, and the check dropped to partial. Comment lines are skipped now; a comment runs
+  nothing. The day's table caught it on its first run.
 - **`abatty update` no longer writes back a script you removed.** The harness lock now lists
   the package scripts offered to the repository, and a script offered before and absent now is
   read as declined and left out, which the update says. A script the gate cannot run without
