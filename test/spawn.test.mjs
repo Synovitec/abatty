@@ -77,7 +77,8 @@ test("cmd.exe's exit 1 is read again: a script whose program is found nowhere co
   );
   mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
   writeFileSync(join(dir, "node_modules", ".bin", "localtool.cmd"), "");
-  const env = { PATH: "", PATHEXT: ".CMD" };
+  // the extension spelled as the file is, so the case-sensitive filesystem of a Linux runner agrees
+  const env = { PATH: "", PATHEXT: ".cmd" };
   const failed = { code: 1 };
   const missing = notInstalled(failed, dir, "lint", "win32", env);
   assert.equal(missing.errored, true);
