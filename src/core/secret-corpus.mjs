@@ -142,6 +142,12 @@ export const POSITIVES = [
     secret: true,
     why: "a generated-looking key in a fixture: a fixture is where a real one gets pasted to make a test pass",
   },
+  {
+    text: '  const client = connect({ client_secret: "9f86d081884c7d659a2feaa0c55ad015" });',
+    path: "apps/api/test/connector.test.ts",
+    secret: true,
+    why: "a hex key in a test: sixteen symbols never reach four bits a character, so an entropy cut alone read every hex key as a sample",
+  },
 ];
 
 /** Shapes that look like a secret and are not: the cases that decide whether people keep the scan on. @type {Case[]} */

@@ -88,6 +88,21 @@ function entropy(v) {
   return Object.values(n).reduce((h, k) => h - (k / v.length) * Math.log2(k / v.length), 0);
 }
 
+/** A lowercase word standing between separators, or a word a sample is named with. */
+const WORDS =
+  /(?:^|[_\-.])[a-z]{4,}(?=[_\-.]|$)|test|fake|dummy|example|sample|mock|demo|changeme|placeholder/;
+
+/**
+ * A value a person wrote rather than a generator: a word in it and low entropy, both. Entropy
+ * alone let every hex key through, since sixteen symbols never reach four bits a character, so a
+ * real key pasted into a test to make it pass read as a sample. A hex or base64 key carries no
+ * lowercase word between separators.
+ * @param {string} v
+ */
+function readable(v) {
+  return WORDS.test(v) && entropy(v) < 4;
+}
+
 /**
  * Scan one text. Two readings are narrowed by where the text lives, because an adopter's scan
  * reported twenty-six findings and none was a secret. In source code the unquoted shape is not
@@ -116,7 +131,7 @@ export function scanText(path, text) {
       if (isUrl && (value === m[1] || THROWAWAY.test(value))) continue;
       if (PLACEHOLDER_WHOLE.test(value) || PLACEHOLDER_START.test(value)) continue;
       if (EXPRESSION.test(value)) continue;
-      if (sample && GENERIC.has(kind) && entropy(value) < 4) continue;
+      if (sample && GENERIC.has(kind) && readable(value)) continue;
       out.push({ path, line: i + 1, kind, sample: value.slice(0, 6) + "…" + value.slice(-3) });
       break;
     }
