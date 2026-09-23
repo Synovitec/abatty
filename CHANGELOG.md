@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`test.coverageExclusions`, an opt-in probe that counts what a coverage floor stopped
+  watching.** Splitting a file and then excluding the untested half keeps a coverage total green
+  over code no test reaches; an adopter watched it happen in a week. The probe counts the entries
+  of the coverage exclude lists (vitest, jest, nyc, c8, coverage.py) and each inline ignore
+  comment, so they may only shrink. `init` enables it with the other opt-in probes on every
+  preset but docs.
+
 ### Fixed
 
 - **The gate no longer builds for a comment, or over a running dev server.** A pushed file whose

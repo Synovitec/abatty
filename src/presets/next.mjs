@@ -51,6 +51,7 @@ export const next = {
         "fn.shapeExemptions",
         "change.refactorTests",
         "code.clones",
+        "test.coverageExclusions",
       ],
     },
   },

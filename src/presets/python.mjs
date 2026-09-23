@@ -37,7 +37,14 @@ export const python = {
     ],
     lintExtensions: [".py"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
-    ratchet: { enable: ["fn.shapeExemptions", "change.refactorTests", "code.clones"] },
+    ratchet: {
+      enable: [
+        "fn.shapeExemptions",
+        "change.refactorTests",
+        "code.clones",
+        "test.coverageExclusions",
+      ],
+    },
   },
   scripts: {
     standards: "abatty ratchet",

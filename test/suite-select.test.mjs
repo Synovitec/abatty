@@ -66,10 +66,11 @@ test("a file whose diff is only comments or blank lines is comment-only, and a c
 
 /** @param {string} dir */
 function gate(dir) {
+  /** @type {string[]} */
   const ran = [];
   const r = runGate({
     repoDir: dir,
-    preset: presetById("next"),
+    preset: /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next")),
     range: "HEAD~1..HEAD",
     run: (_d, script) => {
       ran.push(script);
