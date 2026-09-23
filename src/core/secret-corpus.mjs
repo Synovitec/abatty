@@ -16,7 +16,7 @@
  * fail the scan it defines.
  */
 
-/** @typedef {{ text: string, secret: boolean, why: string }} Case */
+/** @typedef {{ text: string, secret: boolean, why: string, path?: string }} Case `path`: the file the text sits in, where the reading depends on it */
 
 /*
  * The credential-shaped values, assembled from their parts.
@@ -135,6 +135,12 @@ export const POSITIVES = [
     text: "AZURE=DefaultEndpointsProtocol=https;AccountKey=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcd==;",
     secret: true,
     why: "a storage account key inside a connection string",
+  },
+  {
+    text: 'export const creds = { apiKey: "Zq8Lw3Rt9Xv2Nb7Kd4Hf6Jm1pQ5sY0" };',
+    path: "packages/pos/src/fixtures.ts",
+    secret: true,
+    why: "a generated-looking key in a fixture: a fixture is where a real one gets pasted to make a test pass",
   },
 ];
 
@@ -255,6 +261,18 @@ export const NEGATIVES = [
     secret: false,
     why: "the same throwaway shape under another name",
   },
+  {
+    text: "  const client = new Client({ accessToken: settings.posAccessTokenValue,",
+    path: "packages/pos/src/connector.ts",
+    secret: false,
+    why: "a variable read in source code: the credential comes from configuration, which is the correct pattern (an adopter's scan reported sixteen of these)",
+  },
+  {
+    text: 'export const creds = { apiKey: "mp_access_xyz789abcdef" };',
+    path: "packages/pos/src/fixtures.ts",
+    secret: false,
+    why: "a readable sample in a fixture: a person typed it to look like a key",
+  },
 ];
 
 /** Every case, positives first. @type {Case[]} */
@@ -264,7 +282,7 @@ export const CORPUS = [...POSITIVES, ...NEGATIVES];
  * Score a scanner against the corpus. Precision is the share of what it reported that is really
  * a secret; recall is the share of the secrets it found. A scanner is judged on both: one that
  * reports everything has perfect recall and is switched off within a week.
- * @param {(text: string) => unknown[]} scan a scanner over one text, returning its findings
+ * @param {(text: string, path: string) => unknown[]} scan a scanner over one text and the path it sits in, returning its findings
  * @returns {{ precision: number, recall: number, truePositives: number, falsePositives: Case[], falseNegatives: Case[], total: number }}
  */
 export function scoreCorpus(scan) {
@@ -274,7 +292,7 @@ export function scoreCorpus(scan) {
   const falseNegatives = [];
   let truePositives = 0;
   for (const c of CORPUS) {
-    const found = scan(c.text).length > 0;
+    const found = scan(c.text, c.path || "corpus").length > 0;
     if (c.secret && found) truePositives++;
     else if (c.secret) falseNegatives.push(c);
     else if (found) falsePositives.push(c);

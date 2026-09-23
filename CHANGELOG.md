@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The secret scan stops reporting variable reads and fixture samples.** On an adopter's repository
+  it reported twenty-six findings and none was a secret, which trains people to add allow
+  comments until the real one is waved through too. In source code the unquoted shape is no
+  longer read: a literal there is quoted, so `accessToken: settings.token` is a variable read,
+  the correct pattern. In a fixture, a test or a fake, a match on a secret-like name counts only
+  when its value looks generated (by its entropy), so a readable sample like `mp_access_xyz789`
+  is left alone. A provider's own key format is still reported wherever it appears. The corpus
+  gained the three cases, each case can now name the file it sits in, and the scan still
+  scores 100% precision and recall.
+
 - **The pre-push gate judges the push, not whatever is checked out.** git hands a pre-push hook
   the refs being pushed; the hook `init` writes ignored them. So a push deleting three branches
   ran the whole gate, build and browser suite included, on the branch the developer happened to
