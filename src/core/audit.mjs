@@ -62,7 +62,7 @@ export function advisoriesOf(json, floor) {
   if (lines) return lines.filter(aboveFloor);
   let report;
   try {
-    report = JSON.parse(String(json).slice(Math.max(0, String(json).indexOf("{"))));
+    report = JSON.parse(firstDocument(String(json)));
   } catch {
     return null;
   }
@@ -119,6 +119,26 @@ export function advisoriesOf(json, floor) {
       .filter(aboveFloor);
   }
   return null;
+}
+
+/**
+ * The JSON document that opens at the first `{`, up to the brace that closes it, whatever is
+ * printed before or after. bun prints a banner on stderr after its report, and reading to the end
+ * of the output made every bun report unreadable, so an allowance could never apply there.
+ * @param {string} text
+ */
+function firstDocument(text) {
+  const start = text.indexOf("{");
+  if (start < 0) return text;
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      for (i++; i < text.length && text[i] !== '"'; i++) if (text[i] === "\\") i++;
+    } else if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  return text.slice(start);
 }
 
 /**

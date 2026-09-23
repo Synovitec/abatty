@@ -125,6 +125,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A bun repository's audit allowances apply.** bun prints its report on stdout and a banner on
+  stderr after it, and the audit read from the first brace to the end of both, so every bun
+  report was unreadable and the step failed even when every advisory left was allowed. An
+  adopter with nineteen dated allowances had a red pre-push it could not get past, with a
+  critical fix waiting behind it. The report is now read up to the brace that closes it.
 - **The package's entry point is executable in git.** `bin/abatty.mjs` was committed 644; the
   published tarball never showed it, because the registry sets the bit, but this repository's
   own pipeline ran `npx abatty` against the checkout and got "permission denied", which left its

@@ -297,3 +297,32 @@ test("SEC-AUDIT reads for the scoping, not for the word: an unscoped audit is pa
   assert.equal(viaGate.status, "present");
   assert.match(viaGate.evidence, /built-in audit/);
 });
+
+test("bun's banner after its report does not hide the report, so its allowances apply", () => {
+  // bun prints the report on stdout and its banner on stderr; the gate reads both, the banner
+  // last, and reading to the end made every bun report unreadable: an adopter with nineteen
+  // dated allowances had a red audit and a pre-push it could not get past.
+  const after =
+    JSON.stringify(JSON.parse(BUN_REPORT.slice(BUN_REPORT.indexOf("{")))) +
+    "\nbun audit v1.3.13 (bf2e2cec)\n";
+  assert.deepEqual(
+    advisoriesOf(after, "low")
+      ?.map((a) => a.package)
+      .sort(),
+    ["tar-fs", "tmp"],
+  );
+  const bun = tempRepo("audit-bun-after", { "package.json": NEXT_PKG, "bun.lock": "{}\n" });
+  const r = auditOutcome(
+    bun,
+    (cmd, args) =>
+      args.includes("--json") ? { status: 1, output: after } : { status: 1, output: "1 high" },
+    { allow: [{ id: "tar-fs", reason: "no fix released yet", until: "2099-01-01" }] },
+  );
+  assert.equal(r.outcome, "ok", r.detail);
+  // a brace inside a string is not the end of the document
+  assert.equal(
+    advisoriesOf('{"a":[{"id":1,"title":"x }","severity":"high"}]}\ntrailer }', "high")?.[0]
+      ?.package,
+    "a",
+  );
+});
