@@ -161,6 +161,7 @@ when two readings of the request lead to materially different work.
 - The `lint` step is skipped here: this repository has no `lint` script, because it has not
   adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
   gap analysis names it, so it is visible rather than silently green.
-- TEST-COVERAGE, TEST-MUTATION, CODE-DUP and CODE-JSDOC are missing here: each wants a
-  dependency (coverage thresholds, StrykerJS, jscpd, eslint-plugin-jsdoc) and §1.1 says a
-  dependency is a decision, not a default. They are open, not waived.
+- TEST-COVERAGE, TEST-MUTATION and CODE-JSDOC are missing here: each wants a dependency
+  (coverage thresholds, StrykerJS, eslint-plugin-jsdoc) and §1.1 says a dependency is a
+  decision, not a default. They are open, not waived. CODE-DUP was on this list until
+  2026-09-23; the package's own `code.clones` reading needs no dependency and holds it now.

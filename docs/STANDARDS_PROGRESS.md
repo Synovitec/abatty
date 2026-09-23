@@ -315,3 +315,13 @@ the MCP server) and two default parameters in `src/core/which.mjs`. Each is a ta
 definition, and whether a child should get a narrowed environment instead is the open question
 the floor now keeps visible. The readability score in the baseline fell from 98 to 92 because the
 new metric counts against boundary clarity: the same code, measured further.
+
+### 2026-09-23 - Duplication measured here, with no dependency
+
+CODE-DUP was open because the only detector the package knew was a dependency. The package now
+ships `code.clones`, a line-level reading with no dependency, and this repository enables it
+together with `change.refactorTests`. `code.clones` reads 27 and is a new ratchet floor:
+the preset tables repeat each other's blocks, the installed graph config repeats its template,
+and the probes repeat their own scaffolding. `change.refactorTests` reads 0 and is hard. No
+existing floor moved; the baseline's readability score falls from 92 to 91, because the clone
+count now counts against navigability.
