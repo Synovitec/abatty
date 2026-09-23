@@ -61,12 +61,20 @@ export function isHarnessPath(rel) {
  */
 export function defaultCommands() {
   const has = (f) => existsSync(f);
-  if (has("bun.lock") || has("bun.lockb"))
-    return { gate: "bun run gate:fast", lintFile: "bun x eslint --max-warnings=0" };
-  if (has("pnpm-lock.yaml"))
-    return { gate: "pnpm run gate:fast", lintFile: "pnpm exec eslint --max-warnings=0" };
-  if (has("yarn.lock")) return { gate: "yarn gate:fast", lintFile: "yarn eslint --max-warnings=0" };
-  return { gate: "npm run gate:fast", lintFile: "npx eslint --max-warnings=0" };
+  const [run, lint] =
+    has("bun.lock") || has("bun.lockb")
+      ? ["bun run", "bun x eslint"]
+      : has("pnpm-lock.yaml")
+        ? ["pnpm run", "pnpm exec eslint"]
+        : has("yarn.lock")
+          ? ["yarn", "yarn eslint"]
+          : ["npm run", "npx eslint"];
+  return {
+    gate: `${run} gate:fast`,
+    gateFull: `${run} gate`,
+    standards: `${run} standards`,
+    lintFile: `${lint} --max-warnings=0`,
+  };
 }
 
 function withDefaults(fromFile) {

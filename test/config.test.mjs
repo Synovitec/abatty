@@ -181,6 +181,7 @@ test("the hooks fall back to the repository's own package manager when the confi
       ),
     );
   assert.equal(commands({ "bun.lock": "{}" }).gate, "bun run gate:fast");
+  assert.equal(commands({ "yarn.lock": "" }).standards, "yarn standards", "the brief's too");
   assert.equal(commands({ "pnpm-lock.yaml": "" }).lintFile, "pnpm exec eslint --max-warnings=0");
   assert.equal(commands({}).gate, "npm run gate:fast");
   const own = commands({

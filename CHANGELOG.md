@@ -27,7 +27,7 @@ under Unreleased in the same commit.
   named, because a production build over a running dev server emptied an adopter's
   node_modules three times in a day. A lock left by a crash defers nothing.
 - **The hooks fall back to the repository's own package manager.** When the config names no
-  gate or lint command, the Stop hook and the lint-on-edit hook used npm everywhere, so a
+  gate or lint command, the Stop hook, the lint-on-edit hook and the session brief used npm everywhere, so a
   bun-only repository's gate ran through a manager it did not have. They now read the lockfile
   (bun, pnpm, yarn, else npm), and a command the config names still wins. The defaults for
   `commands` also apply again: a config naming one command lost the fallback for the other.
