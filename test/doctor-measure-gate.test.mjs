@@ -17,6 +17,10 @@ test("doctor after init: the repository's self-test runs and every shipped file 
   cli(["init", dir, "--stack", "next"], dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");
+  // As hooks:install does on every clone: on a machine without file modes the commit above
+  // recorded the hooks 100644, and this stages the bit git needs to run them anywhere else.
+  cli(["hooks", dir], dir);
+  git(dir, "commit", "-q", "--allow-empty", "-m", "chore: the hooks executable");
   const r = cli(["doctor", dir], dir);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /harness ok/);

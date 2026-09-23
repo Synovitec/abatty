@@ -181,7 +181,7 @@ export async function doctorCommand(cx, preset) {
   );
   if (r.notExecutable.length)
     out(
-      `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(` · git update-index --chmod=+x -- ${r.notExecutable.join(" ")}, then commit`)}\n`,
+      `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(" · abatty hooks stages the mode (git update-index --chmod=+x); then commit")}\n`,
     );
   if (r.missingScripts.length)
     out(

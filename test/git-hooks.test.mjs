@@ -78,3 +78,12 @@ test("doctor fails a hook git records as not executable, whatever the disk says"
   assert.match(bad.out, /git records \.githooks\/pre-push as not executable/);
   assert.notEqual(bad.code, 0);
 });
+
+test("abatty hooks stages the executable bit for a hook git tracks without it", () => {
+  const dir = installed("hooks-stage-mode");
+  git(dir, "update-index", "--chmod=-x", "--", ".githooks/pre-push");
+  git(dir, "commit", "-q", "-m", "chore: committed without modes");
+  const r = cli(["hooks", dir], dir);
+  assert.match(r.out, /committed as not executable; the mode is staged now/);
+  assert.match(git(dir, "ls-files", "-s", "--", ".githooks/pre-push"), /^100755 /);
+});

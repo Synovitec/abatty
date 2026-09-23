@@ -55,7 +55,8 @@ under Unreleased in the same commit.
 - **A hook committed as not executable is named.** git skips a hook recorded as 100644 on every
   machine but the one that wrote it, and an adopter's three hooks were committed that way with
   nothing saying so. `doctor` fails on one, reading the mode git records rather than the disk, and
-  gives the command that fixes it; INST-GATE reads the pre-push hook the same way.
+  points to `abatty hooks` (what `hooks:install` runs), which now stages the bit for a hook git
+  tracks without it; INST-GATE reads the pre-push hook the same way.
 - **A monorepo's gate steps are proven where they look.** `doctor --controls` planted every
   violation in a root `src/`, which no workspace of a monorepo scans, so its lint, typecheck and
   test steps stayed green on the plant and `measure` dropped three findings to partial, on steps
