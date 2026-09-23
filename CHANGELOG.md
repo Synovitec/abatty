@@ -7,6 +7,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A `source_truth` entry with a star inside a file name is no longer read as dangling.**
+  `src/core/secret*.mjs` was cut at the star into `src/core/secret`, a path that never exists;
+  the probe now keeps the folder that holds the pattern.
 - **Twelve rules stop misreading a repository that is not shaped like this one.** An adopter's
   bun monorepo reported findings that were not true. Now: bun's lockfile counts
   (SEC-LOCKFILE). A GitHub-only repository is no longer told its pipeline is a stray beside
