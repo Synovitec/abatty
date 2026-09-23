@@ -92,8 +92,5 @@ test("with no protected paths in the config, doctor counts the ones the hooks pr
   const settings = { hooks: { ...WIRED.hooks, ...hook("protect", "PreToolUse", "Edit") } };
   const { dir, home } = repo({ ".claude/settings.json": settings, "abatty.config.json": {} });
   const protect = hookModes(dir, { home }).find((m) => m.hook === "protect");
-  assert.ok(
-    (protect?.night || "").includes(`protected path (${defaults.length})`),
-    protect?.night,
-  );
+  assert.ok((protect?.night || "").includes(`protected path (${defaults.length})`), protect?.night);
 });
