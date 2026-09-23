@@ -111,6 +111,20 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
     );
+  out(
+    t.heading(
+      "Hooks",
+      "what each one does here, by day and at night, from the settings and the config",
+    ),
+  );
+  for (const h of r.hooks) {
+    out(
+      `  ${h.warn ? t.glyph.warn : t.glyph.ok} ${h.hook}${t.gray("  · " + (h.wired.join(", ") || "unwired"))}\n`,
+    );
+    out(t.gray(`      day    ${h.day}\n      night  ${h.night}\n`));
+    if (h.warn) out(`      ${t.yellow(h.warn)}\n`);
+  }
+  out("\n");
   for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);
   // What the guard holds and what it cannot: a regex over the agent's shell is a guard on this
   // machine's agent, not a policy on the branch. It is a warning rather than a note because the

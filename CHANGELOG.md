@@ -5,6 +5,16 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`abatty doctor` says what each hook actually does here, by day and at night.** It reads
+  the settings that wire each hook, the config keys it reads and the tool it calls. It names a
+  hook that no settings file wires, every hook switched off by `disableAllHooks` (in the
+  project's settings, the local ones or the user's own), and a lint-on-edit whose linter this
+  machine cannot find. `--strict` fails on any of them. The first run found one here: at night
+  lint-on-edit ran `npx eslint` in a repository that declined eslint, so every edit read as a
+  red lint. `lintOnEdit` is now `false` in this repository's config.
+
 ### Fixed
 
 - **`abatty update` no longer writes back a script you removed.** The harness lock now lists

@@ -104,7 +104,7 @@
     ],
     "citationsExempt": ["^docs/standard/"]
   },
-  "lintOnEdit": true,
+  "lintOnEdit": false,
   "lintExtensions": [".ts", ".js", ".mjs"],
   "maxStopBlocks": 6,
   "maxSessionsPerPhase": 2,
