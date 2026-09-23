@@ -25,6 +25,11 @@ under Unreleased in the same commit.
   and API probes. An opt-in probe that is not enabled does not reserve its name, so a repository
   that wrote its own version keeps it until it switches to the package's. `abatty ratchet
   --controls` proves every shipped probe, enabled or not.
+- **This repository runs the two opt-in probes that apply to it.** `fn.shapeExemptions` reads
+  0 and is now hard. `valid.wholeEnv` reads 8, each one the environment handed whole to a child
+  process or a default parameter, and is a new ratchet floor. No existing floor moved. The
+  readability score in the baseline falls from 98 to 92, because the new metric counts against
+  boundary clarity. The decision is logged in `docs/STANDARDS_PROGRESS.md`.
 - **DATA-TENANT reads the tenant column a repository names.** `tenantKeys` in the config adds
   to `tenant_id`, `store_id`, `company_id` and `organisation_id`, so a product whose tenant is
   a restaurant or a workspace is no longer read as single-tenant.

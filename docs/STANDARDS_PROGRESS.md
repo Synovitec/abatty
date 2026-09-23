@@ -303,3 +303,15 @@ run and exited 3. What was missing is that nothing downstream acts on it, becaus
 self-test skipped (§10) and the two machine-setup failures make a red `doctor` the expected
 result on any machine not set up for a night. A permanent red is a red nobody reads. That is the
 open item this leaves behind, and it is a harness change rather than a code one.
+
+### 2026-09-23 - Two opt-in probes enabled here, two new floors
+
+The package now ships opt-in probes (`ratchet.enable`): readings of one stack's conventions that
+would turn every adopter red on update if they ran by default. Two of them apply to this
+repository and are enabled: `fn.shapeExemptions` reads 0 and is promoted to hard, and
+`valid.wholeEnv` reads 8 and is a new ratchet floor. No existing floor moved. The eight are the
+environment handed whole to a child process (the controls, the night's session and pre-flight,
+the MCP server) and two default parameters in `src/core/which.mjs`. Each is a take by the probe's
+definition, and whether a child should get a narrowed environment instead is the open question
+the floor now keeps visible. The readability score in the baseline fell from 98 to 92 because the
+new metric counts against boundary clarity: the same code, measured further.

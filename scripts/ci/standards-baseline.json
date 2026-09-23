@@ -1,7 +1,7 @@
 {
-  "measuredAt": "2026-09-19",
+  "measuredAt": "2026-09-23",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
-  "score": 98,
+  "score": 92,
   "hard": [
     "change.changelogMissing",
     "change.coupledMissing",
@@ -13,6 +13,7 @@
     "docs.danglingSource",
     "docs.frontMatter",
     "docs.indexDrift",
+    "fn.shapeExemptions",
     "size.excessCode",
     "size.overBudget",
     "size.overRaw",
@@ -29,28 +30,31 @@
     "docs.danglingSource": 0,
     "docs.frontMatter": 0,
     "docs.indexDrift": 0,
+    "fn.shapeExemptions": 0,
     "size.excessCode": 0,
     "size.overBudget": 0,
     "size.overRaw": 0,
     "startup.eagerModules": 3,
     "types.escapes": 7,
     "valid.rawEnv": 7,
-    "valid.utcDay": 0
+    "valid.utcDay": 0,
+    "valid.wholeEnv": 8
   },
   "scanned": {
     "code.barrels": 7,
     "context.overCap": 1,
     "docs.behindCode": 7,
-    "docs.citations": 69,
+    "docs.citations": 71,
     "docs.danglingSource": 14,
     "docs.frontMatter": 33,
     "docs.indexDrift": 32,
-    "size.excessCode": 109,
-    "size.overBudget": 109,
-    "size.overRaw": 124,
-    "types.escapes": 109,
-    "valid.rawEnv": 108,
-    "valid.utcDay": 115
+    "size.excessCode": 131,
+    "size.overBudget": 131,
+    "size.overRaw": 148,
+    "types.escapes": 131,
+    "valid.rawEnv": 130,
+    "valid.utcDay": 131,
+    "valid.wholeEnv": 130
   },
   "debt": {
     "startup.eagerModules": {
@@ -66,6 +70,14 @@
       "src/ratchet/probes/code.mjs": 3,
       "src/rules/families/tests.mjs": 1,
       "src/ui/term.mjs": 3
+    },
+    "valid.wholeEnv": {
+      "src/core/step-controls.mjs": 1,
+      "src/core/which.mjs": 2,
+      "src/mcp/server.mjs": 1,
+      "src/night/preflight.mjs": 1,
+      "src/night/session.mjs": 1,
+      "src/ratchet/controls.mjs": 2
     }
   },
   "versions": {
@@ -79,13 +91,15 @@
     "docs.danglingSource": 1,
     "docs.frontMatter": 1,
     "docs.indexDrift": 1,
+    "fn.shapeExemptions": 1,
     "size.excessCode": 1,
     "size.overBudget": 1,
     "size.overRaw": 1,
     "startup.eagerModules": 1,
     "types.escapes": 1,
     "valid.rawEnv": 1,
-    "valid.utcDay": 1
+    "valid.utcDay": 1,
+    "valid.wholeEnv": 1
   },
   "entries": {}
 }
