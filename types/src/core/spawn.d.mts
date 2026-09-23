@@ -6,10 +6,12 @@
  */
 export function launch(command: string, args?: string[]): Launch;
 /**
- * Run an npm script and say how it went; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
+ * Run an npm script and say how it went; output goes straight to the terminal. `env` is laid
+ * over this process's environment: how a suite is given a database of its own.
+ * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
+ * @param {Record<string, string>} [env] @returns {RunResult}
  */
-export function runScript(repoDir: string, script: string, extraArgs?: string[]): RunResult;
+export function runScript(repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>): RunResult;
 /**
  * A script that exited 1 on Windows, read again: when its program is found nowhere, cmd.exe's 1
  * meant "not recognized", and the step could not run rather than failed.

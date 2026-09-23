@@ -72,6 +72,11 @@ database suite. A step whose script the repository does not have yet is reported
 than passed, and the verdict leads with how many steps did not run. Steps the preset requires
 cannot be skipped: without them the gate reports that it could not run.
 
+A suite that needs a database never runs against one the run did not create. With
+`TEST_DATABASE_URL` set, the suite runs with `DATABASE_URL` pointed at it; in CI the pipeline's
+own service is trusted. An ambient `DATABASE_URL`, from the shell or declared in a `.env` file
+(read for the name only), defers the suite to CI and says how to give it a database of its own.
+
 Exit codes are a contract:
 
 | Code | Meaning                                      |

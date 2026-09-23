@@ -24,6 +24,7 @@ import { auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { prerequisites } from "./prereqs.mjs";
+import { suiteDatabase } from "./hermetic.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -31,7 +32,7 @@ import { prerequisites } from "./prereqs.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /** The audit as spawned in a repository: the package manager's command, its output in one string. @param {string} repoDir @returns {AuditRunner} */
@@ -62,6 +63,9 @@ export function runGate(o) {
   let cwd = repoDir;
   let prefix = "";
   let presetId = preset.id;
+  /** The variables a suite's steps run with: a database of the run's own (src/core/hermetic.mjs). */
+  /** @type {Record<string, string>} */
+  let suiteEnv = {};
 
   const info = pushRangeInfo(repoDir, o.base, o.range);
   const range = info.range;
@@ -250,7 +254,7 @@ export function runGate(o) {
     }
     log(`\n▶ ${prefix}${s.label}`);
     const t0 = Date.now();
-    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : []));
+    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], suiteEnv));
     const ms = Date.now() - t0;
     if (res.errored) {
       events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
@@ -306,8 +310,20 @@ export function runGate(o) {
         log(`\n· DEFERRED to CI: ${name}\n  reason: the Docker daemon is not running.`);
         continue;
       }
+      // A suite that needs a database gets one the run owns, or waits for CI: never the one the
+      // developer works against.
+      const db = suite.docker
+        ? suiteDatabase([repoDir, join(repoDir, under)], { ci: o.ci === true, db: o.db })
+        : { ok: /** @type {const} */ (true), env: {} };
+      if (!db.ok) {
+        events.push({ label: name, outcome: "deferred", detail: `not hermetic: ${db.reason}` });
+        log(`\n· DEFERRED to CI: ${name}\n  reason: ${db.reason}.`);
+        continue;
+      }
+      suiteEnv = db.env;
       for (const s of suite.steps)
         if (!step({ ...s, label: `${s.label} · ${suite.name}` })) return false;
+      suiteEnv = {};
     }
     return true;
   };

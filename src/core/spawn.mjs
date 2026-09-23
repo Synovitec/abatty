@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { missingTool } from "./which.mjs";
+import { childEnv, searchFromEnv } from "./env.mjs";
 
 /**
  * How a command is spawned, in one place. `shell: true` was on every spawn site in this package,
@@ -75,13 +76,20 @@ function resultOf(r) {
 export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
 
 /**
- * Run an npm script and say how it went; output goes straight to the terminal.
- * @param {string} repoDir @param {string} script @param {string[]} [extraArgs] @returns {RunResult}
+ * Run an npm script and say how it went; output goes straight to the terminal. `env` is laid
+ * over this process's environment: how a suite is given a database of its own.
+ * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
+ * @param {Record<string, string>} [env] @returns {RunResult}
  */
-export function runScript(repoDir, script, extraArgs = []) {
+export function runScript(repoDir, script, extraArgs = [], env = {}) {
   const l = launch("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])]);
   const res = resultOf(
-    spawnSync(l.file, l.args, { cwd: repoDir, stdio: "inherit", shell: l.shell }),
+    spawnSync(l.file, l.args, {
+      cwd: repoDir,
+      stdio: "inherit",
+      shell: l.shell,
+      env: childEnv(env),
+    }),
   );
   return notInstalled(res, repoDir, script);
 }
@@ -92,7 +100,13 @@ export function runScript(repoDir, script, extraArgs = []) {
  * @param {RunResult} res @param {string} repoDir @param {string} script
  * @param {string} [platform] @param {NodeJS.ProcessEnv} [env] @returns {RunResult}
  */
-export function notInstalled(res, repoDir, script, platform = process.platform, env = process.env) {
+export function notInstalled(
+  res,
+  repoDir,
+  script,
+  platform = process.platform,
+  env = searchFromEnv(),
+) {
   if (platform !== "win32" || res.code !== 1 || res.errored) return res;
   const tool = missingTool(repoDir, script, env);
   return tool

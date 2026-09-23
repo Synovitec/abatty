@@ -40,9 +40,13 @@ export type GateOptions = {
     range?: string;
     base?: string;
     ci?: boolean;
-    run?: (repoDir: string, script: string, extraArgs?: string[]) => RunResult | number;
+    run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number;
     audit?: AuditRunner;
     dockerUp?: () => boolean;
+    db?: {
+        url: string;
+        test: string;
+    };
     log?: (line: string) => void;
     workspaces?: {
         path: string;

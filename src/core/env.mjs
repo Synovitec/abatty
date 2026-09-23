@@ -32,6 +32,24 @@ export function searchFromEnv() {
   return { PATH: process.env.PATH ?? process.env.Path ?? "", PATHEXT: process.env.PATHEXT ?? "" };
 }
 
+/**
+ * The databases the environment names: the application's (`DATABASE_URL`, which on a laptop is
+ * whatever the developer works against) and a throwaway one for suites (`TEST_DATABASE_URL`).
+ */
+export function databaseFromEnv() {
+  return { url: process.env.DATABASE_URL || "", test: process.env.TEST_DATABASE_URL || "" };
+}
+
+/**
+ * A child's environment: this process's, with `extra` over it, or undefined when there is nothing
+ * to add (the child then inherits, which is spawn's default). The one place the package hands
+ * the whole environment on.
+ * @param {Record<string, string>} extra @returns {NodeJS.ProcessEnv | undefined}
+ */
+export function childEnv(extra) {
+  return Object.keys(extra).length ? { ...process.env, ...extra } : undefined;
+}
+
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";
