@@ -33,7 +33,7 @@
   ],
   "coupled": [
     {
-      "when": "src/rules/families/",
+      "when": "src/rules/families/**",
       "then": "docs/CATALOG.md",
       "why": "a rule change regenerates the catalog (abatty rules --md)"
     },
@@ -88,7 +88,7 @@
     "$comment": "The ratchet's configuration (abatty ratchet / abatty baseline): the repository's own probes file, metrics to exclude, kind overrides (hard, ratchet), exempt path patterns; the budgets by kind, the caps and the env module take the standard's defaults unless set here.",
     "local": "abatty.probes.mjs",
     "exclude": [],
-    "enable": ["valid.wholeEnv", "fn.shapeExemptions"],
+    "enable": ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests"],
     "hard": [],
     "ratchet": [],
     "exempt": [

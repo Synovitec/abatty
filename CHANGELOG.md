@@ -40,6 +40,11 @@ under Unreleased in the same commit.
   and API probes. An opt-in probe that is not enabled does not reserve its name, so a repository
   that wrote its own version keeps it until it switches to the package's. `abatty ratchet
   --controls` proves every shipped probe, enabled or not.
+- **This repository enables `change.refactorTests` too, and its catalog pair is anchored to the
+  root.** The coupled pair `src/rules/families/` also matched the generated
+  `types/src/rules/families/`, because a prefix matches under any folder (on purpose, for
+  workspaces), so a regenerated declaration asked for a catalog change nothing had caused. The
+  pair is now the glob `src/rules/families/**`, which matches from the root.
 - **This repository runs the two opt-in probes that apply to it.** `fn.shapeExemptions` reads
   0 and is now hard. `valid.wholeEnv` reads 8, each one the environment handed whole to a child
   process or a default parameter, and is a new ratchet floor. No existing floor moved. The
