@@ -40,7 +40,12 @@ function literalEnd(text, i) {
   }
   if (ch !== "'" && ch !== '"' && ch !== "`") return null;
   let j = i + 1;
-  for (; j < text.length && text[j] !== ch; j++) if (text[j] === "\\") j++;
+  for (; j < text.length && text[j] !== ch; j++) {
+    if (text[j] === "\\") j++;
+    // A quoted string ends on its line; a quote that does not is an apostrophe in JSX text or a
+    // character of a regex literal, and reading it as a string unbalanced every body after it.
+    else if (text[j] === "\n" && ch !== "`") return null;
+  }
   return j;
 }
 

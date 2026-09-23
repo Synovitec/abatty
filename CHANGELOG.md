@@ -121,6 +121,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The boundary probes read JSX text and guard calls correctly.** Both were caught by review
+  before release. An apostrophe in JSX text (`Don't`) was read as the start of a string that
+  never ended, which unbalanced every function body after it: a page that guarded first read as
+  "no default export function found". A quoted string now ends on its line. And every call of
+  `authorize(` was read as a credentials callback, so a guard helper of that name counted as
+  an unparsed boundary. Only a definition counts now: a method, or an `authorize:` property
+  holding a function.
 - **An advisory about a network no longer reads as an unreachable registry.** The audit's offline
   check matched the bare word "network", so a high advisory whose text mentioned one (a request
   forgery, say) was deferred to CI, and the gate counts a deferral as a pass. The check now reads

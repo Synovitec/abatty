@@ -6,6 +6,7 @@
  * each found real defects, with what was particular to that product made configuration.
  */
 import {
+  closeOf,
   codeOnly,
   exportedFunctions,
   functionAt,
@@ -22,7 +23,28 @@ const READS_INPUT = /\.(json|formData|text)\(\)|searchParams|\bparams\b/;
 const ROUTE_FILE = /(^|\/)app\/api\/.*route\.[jt]sx?$/;
 const USE_SERVER = /^\s*(['"])use server\1/m;
 const HTTP_METHOD = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/;
-const AUTHORIZE = /\bauthorize\s*\(/g;
+/** A credentials callback as it is defined: `authorize(...) {`, or `authorize: (async) (...)`/`function (`. */
+const AUTHORIZE_METHOD = /(?:^|[\s{,])(?:async\s+)?authorize\s*\(/gm;
+const AUTHORIZE_PROPERTY = /\bauthorize\s*:\s*(?:async\s+)?(?:function\s*)?\(/g;
+
+/**
+ * The `(` of every credentials callback a file defines. A call (`if (!authorize(s))`, `return
+ * authorize(user)`) is not one: it was read as one, and every guard that called its own helper
+ * `authorize` counted as an unparsed boundary.
+ * @param {string} text @returns {number[]}
+ */
+function authorizeCallbacks(text) {
+  const methods = [...text.matchAll(AUTHORIZE_METHOD)]
+    .map((m) => (m.index ?? 0) + m[0].length - 1)
+    .filter((paren) => {
+      const end = closeOf(text, paren, "()");
+      return end > 0 && /^\s*(?::[^{;]*)?\{/.test(text.slice(end));
+    });
+  const properties = [...text.matchAll(AUTHORIZE_PROPERTY)].map(
+    (m) => (m.index ?? 0) + m[0].length - 1,
+  );
+  return [...methods, ...properties];
+}
 /** Spelled apart so the probe does not count its own text. */
 const ENV = "process" + ".env";
 const WHOLE_ENV = new RegExp(`\\b${ENV.replace(".", "\\.")}\\b(?![.[?])`, "g");
@@ -50,12 +72,12 @@ function boundaryFindings(f, text) {
     }
     if (detail) findings.push({ path: f, line: lineAt(text, index), detail });
   }
-  for (const m of text.matchAll(AUTHORIZE)) {
-    const fn = functionAt(text, (m.index ?? 0) + m[0].length - 1);
+  for (const paren of authorizeCallbacks(text)) {
+    const fn = functionAt(text, paren);
     if (fn && unparsedParams(fn.params, fn.body).length)
       findings.push({
         path: f,
-        line: lineAt(text, m.index ?? 0),
+        line: lineAt(text, paren),
         detail: "authorize() reads the credentials without a schema",
       });
   }
@@ -81,9 +103,8 @@ export const probes = [
       for (const f of c.sourceFiles) {
         if (!/\.[jt]sx?$/.test(f)) continue;
         const text = c.read(f);
-        AUTHORIZE.lastIndex = 0;
-        if (!ROUTE_FILE.test(f) && !USE_SERVER.test(text) && !AUTHORIZE.test(text)) continue;
-        AUTHORIZE.lastIndex = 0;
+        if (!ROUTE_FILE.test(f) && !USE_SERVER.test(text) && !authorizeCallbacks(text).length)
+          continue;
         scanned++;
         findings.push(...boundaryFindings(f, text));
       }
@@ -133,12 +154,23 @@ export const probes = [
         expect: 2,
       },
       {
-        name: "an exported function of an ordinary module is not a boundary",
+        name: "an exported function of an ordinary module is not a boundary, nor a call of authorize",
         files: {
           "lib/money.ts":
             "export async function format(amount: number) {\n  return String(amount)\n}\n",
+          // calls, without semicolons: each was once read as a callback with unparsed parameters
+          "lib/perm.ts":
+            "export function check(s) {\n  if (!authorize(s)) {\n    throw new Error('no')\n  }\n  return authorize(s.user)\n}\nexport async function load(user) {\n  await authorize(user)\n  if (user) {\n    return 1\n  }\n}\n",
         },
         expect: 0,
+      },
+      {
+        name: "a credentials callback written as a property is read like a method",
+        files: {
+          "auth.ts":
+            "export const config = { providers: [{\n  authorize: async (credentials) => {\n    return { email: credentials.email }\n  },\n}] }\n",
+        },
+        expect: 1,
       },
     ],
   },
@@ -254,6 +286,10 @@ export const probes = [
           "app/admin/a/page.tsx":
             "export default async function Page({ params }: { params: Promise<{ id: string }> }) {\n  const me = await requireAdmin()\n  return me.email\n}\n",
           "app/shop/page.tsx": "export default async function Page() {\n  return null\n}\n",
+          // an apostrophe in JSX text is not a string: it once unbalanced the body and the page
+          // read as "no default export function found"
+          "app/admin/c/page.tsx":
+            "export default async function Page() {\n  await requireAdmin()\n  return <p>Don't forget {1}</p>\n}\n",
         },
         expect: 0,
       },
