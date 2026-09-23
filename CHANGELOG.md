@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The score reads presence against truth.** A rule that finds a lint script counted as
+  present whether or not the linter was installed, or whether the step had ever gone red. The
+  gap analysis now checks each present check that a gate step backs (format, lint, typecheck,
+  import graph, dead code, unit tests, audit, secret scan) against two facts already on disk.
+  If the step cannot run here (the new prerequisites), or stayed green on a planted violation
+  (the last `doctor --controls`), the check drops to partial and its evidence says why. If the
+  step went red on its plant, it is marked proven. `measure` and the report carry one line,
+  "presence and truth", with the three counts, and the JSON report carries them as `truth`.
+  The measurement cache now keys on `.abatty/controls.json` and the installed tools, which git
+  ignores, so a cached reading can no longer outlive either.
 - **`abatty gate --preflight` says what each step needs and whether it is here, running
   nothing.** For each step it checks the script, the program the script starts (in
   `node_modules/.bin` up the tree, then on PATH), the config file the step wants, the lockfile

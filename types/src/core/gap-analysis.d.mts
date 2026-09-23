@@ -39,6 +39,12 @@ export function todoOf(findings: Finding[], order?: string[]): import("../rules/
  * @param {GapResult} result
  */
 export function renderMarkdown(result: GapResult): string;
+/**
+ * What the present gate-step checks are worth: proven by a control, contradicted by the machine
+ * (and counted as partial above), or not yet shown either way. Empty when no step was read.
+ * @param {Pick<GapResult, "truth">} result
+ */
+export function truthLine(result: Pick<GapResult, "truth">): string;
 /** The console summary the CLI prints under the report. @param {GapResult} result @param {string} [reportPath] */
 export function renderSummary(result: GapResult, reportPath?: string): string;
 export type Finding = import("../rules/index.mjs").Finding;
@@ -50,6 +56,7 @@ export type GapResult = {
     date: string;
     score: number;
     applicable: number;
+    truth?: import("./truth.mjs").Truth;
     enforced: Enforced;
     findings: Finding[];
     families: string[];

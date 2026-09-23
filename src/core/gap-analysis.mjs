@@ -11,12 +11,15 @@ import { buildContext } from "../rules/context.mjs";
 import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf, waiverOf } from "../rules/index.mjs";
 import { phaseOf, standing } from "../rules/phases.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
+import { detectPreset, presetById } from "../presets/index.mjs";
+import { dependencyNames, readAdoption } from "./repo.mjs";
+import { applyTruth } from "./truth.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Finding} Finding
  * @typedef {ReturnType<typeof enforcedOf>} Enforced
  * @typedef {ReturnType<typeof waiverOf>} Waivers
- * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, enforced: Enforced, findings: Finding[], families: string[], waived: number, waivers?: Waivers, problems: string[], profiles: string[], stage: string, stageFrom: string, plan: import("../rules/phases.mjs").PhaseCount[], phase: import("../rules/phases.mjs").PhaseCount | null }} GapResult
+ * @typedef {{ repo: string, name: string, date: string, score: number, applicable: number, truth?: import("./truth.mjs").Truth, enforced: Enforced, findings: Finding[], families: string[], waived: number, waivers?: Waivers, problems: string[], profiles: string[], stage: string, stageFrom: string, plan: import("../rules/phases.mjs").PhaseCount[], phase: import("../rules/phases.mjs").PhaseCount | null }} GapResult
  */
 
 /** @param {import("../rules/phases.mjs").PhaseStanding} p the counts a reader sees, without the list behind them */
@@ -34,7 +37,12 @@ const counts = (p) => ({
  */
 export function analyze(repoDir, o = {}) {
   const ctx = buildContext(repoDir, { today: o.today });
-  const findings = runCatalog(ctx, o.catalog || RULES);
+  // Presence read against the two facts on disk that say whether it is true (src/core/truth.mjs).
+  const stack = readAdoption(repoDir)?.stack;
+  const preset = stack
+    ? presetById(String(stack))
+    : detectPreset(dependencyNames(repoDir), ctx.files);
+  const { findings, truth } = applyTruth(runCatalog(ctx, o.catalog || RULES), repoDir, preset);
   const { score, applicable } = scoreOf(findings);
   // The plan of the profiles this repository follows, narrowed to its stage: a phase that
   // belongs to another stage is not work this repository owes, so it is not in its denominator.
@@ -48,6 +56,7 @@ export function analyze(repoDir, o = {}) {
     date: ctx.today,
     score,
     applicable,
+    truth,
     enforced: enforcedOf(findings),
     findings,
     families: [...new Set(findings.map((f) => f.family))],
@@ -147,6 +156,7 @@ export function renderMarkdown(result) {
     `**Score ${score}/100** over ${applicable.length} applicable checks of the ${result.profiles.join(", ")} profile${result.profiles.length > 1 ? "s" : ""}, the repository at the ${result.stage} stage${result.stageFrom === "tree" ? " (read from the tree)" : ""}. Present = the mechanism exists; partial = it exists but not to the standard; missing = nothing found; n/a = the rule does not apply to this stack; waived = set aside with a reason in the adoption config. The score is a trend to compare readings, not a grade: a repository with the gate and the ratchet but a long context file scores below one with neither and a short file.`,
     "",
     enforcedLine(result),
+    ...(truthLine(result) ? ["", truthLine(result)] : []),
   );
   md.push("");
   md.push("| Family | Present | Partial | Missing | n/a | Waived |");
@@ -218,6 +228,17 @@ function enforcedLine(r) {
   return `**Enforced share ${e.share}%**: of the ${e.total} rules this repository has, ${e.hard + e.ratchet} are held by a machine (${e.hard} hard, ${e.ratchet} ratchet) and ${e.review + e.prose} by a reviewer or a sentence (${e.review} review, ${e.prose} prose). The second group is what a night moves up a level next${e.promotable.length ? ": " + e.promotable.slice(0, 8).join(", ") + (e.promotable.length > 8 ? ", ..." : "") : ""}.${ceiling}`;
 }
 
+/**
+ * What the present gate-step checks are worth: proven by a control, contradicted by the machine
+ * (and counted as partial above), or not yet shown either way. Empty when no step was read.
+ * @param {Pick<GapResult, "truth">} result
+ */
+export function truthLine(result) {
+  const t = result.truth;
+  if (!t || t.proven + t.contradicted + t.unproven === 0) return "";
+  return `**Presence and truth**: of ${t.proven + t.contradicted + t.unproven} present check(s) a gate step backs, ${t.proven} proven (the step went red on a planted violation), ${t.contradicted} contradicted (the step cannot run here, or stayed green on its plant; scored as partial) and ${t.unproven} unproven (\`abatty doctor --controls\` has not judged the step).`;
+}
+
 /** The console summary the CLI prints under the report. @param {GapResult} result @param {string} [reportPath] */
 export function renderSummary(result, reportPath) {
   const { findings, families, score, date, name } = result;
@@ -236,6 +257,8 @@ export function renderSummary(result, reportPath) {
     lines.push(
       `  ${fam.padEnd(12)} present ${String(count(fam, "present")).padStart(2)}  partial ${String(count(fam, "partial")).padStart(2)}  missing ${String(count(fam, "missing")).padStart(2)}  n/a ${count(fam, "n/a")}`,
     );
+  const tl = truthLine(result);
+  if (tl) lines.push("", `  ${tl.replace(/\*\*|`/g, "")}`);
   lines.push("", `  ${todo.length} next step(s)${reportPath ? " · report: " + reportPath : ""}`);
   return lines.join("\n") + "\n";
 }

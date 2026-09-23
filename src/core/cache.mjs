@@ -49,6 +49,12 @@ export function cacheKey(repoDir, o = {}) {
       `file:${rel}:${existsSync(abs) ? createHash("sha256").update(readFileSync(abs)).digest("hex") : "gone"}\n`,
     );
   }
+  // Two inputs git does not see, because both are ignored: the last controls run, and the tools
+  // installed, which decide whether a present gate step is proven, contradicted or neither.
+  const controls = join(repoDir, CACHE_ROOT, "controls.json");
+  h.update(`controls:${existsSync(controls) ? readFileSync(controls, "utf8") : "none"}\n`);
+  const bin = join(repoDir, "node_modules", ".bin");
+  h.update(`bin:${existsSync(bin) ? readdirSync(bin).sort().join(",") : "none"}\n`);
   return h.digest("hex").slice(0, 32);
 }
 

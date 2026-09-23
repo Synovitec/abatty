@@ -18,6 +18,7 @@ export function allReports(repoDir: string): Report[];
  *   abatty: string,
  *   repo: string, name: string, date: string, at: string, branch: string, commit: string,
  *   score: number, applicable: number, waived: number,
+ *   truth?: import("./truth.mjs").Truth,
  *   enforced: import("./gap-analysis.mjs").Enforced,
  *   waivers?: import("./gap-analysis.mjs").Waivers,
  *   families: { name: string, present: number, partial: number, missing: number, na: number, waived: number }[],
@@ -49,6 +50,7 @@ export type Report = {
     score: number;
     applicable: number;
     waived: number;
+    truth?: import("./truth.mjs").Truth;
     enforced: import("./gap-analysis.mjs").Enforced;
     waivers?: import("./gap-analysis.mjs").Waivers;
     families: {

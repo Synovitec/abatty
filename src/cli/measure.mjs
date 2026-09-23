@@ -5,7 +5,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { buildReport } from "../core/report.mjs";
-import { renderMarkdown } from "../core/gap-analysis.mjs";
+import { renderMarkdown, truthLine } from "../core/gap-analysis.mjs";
 import { enforcedLine, nextSteps, phaseLine } from "./status.mjs";
 import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
@@ -44,7 +44,10 @@ export async function measureCommand(cx) {
     `\n${t.banner(VERSION)}  ${t.bold("measure")} ${t.gray("·")} ${r.name} ${t.gray(r.date)}\n\n`,
   );
   out(phaseLine(r) + "\n");
-  out(enforcedLine(r.enforced) + "\n\n");
+  out(enforcedLine(r.enforced) + "\n");
+  const truth = truthLine(r).replace(/\*\*|`/g, "");
+  if (truth) out(`  ${t.gray(truth)}\n`);
+  out("\n");
   out(
     t.table(
       [
