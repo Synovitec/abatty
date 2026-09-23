@@ -12,7 +12,7 @@
  *   abatty serve [--port 8787] [--data <dir>] [--token <t>|--no-auth]   the dashboard hosted: CI posts reports, one page over every repository
  *   abatty publish [dir] --to <url> [--token <t>]                       post this repository's newest report to a service (the CI step)
  *   abatty measure [dir] [--out <file>] [--json] [--quiet]
- *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>]
+ *   abatty gate [dir] [--fast] [--range <git-range>] [--base <branch>] [--preflight]
  *   abatty doctor [dir] [--strict] [--skip-self-test] [--controls]      the harness in step; --controls plants a violation per gate step and reports a step that stays green as absent
  *   abatty update [dir] [--force] [--dry-run]                          the harness to the package's version, your edits kept
  *   abatty config [dir] [--json] [--migrate] [--dry-run]                the one config: its files, its problems against the schema

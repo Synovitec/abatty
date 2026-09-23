@@ -23,6 +23,7 @@ import { scanSecrets } from "./secrets.mjs";
 import { auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
+import { prerequisites } from "./prereqs.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -84,6 +85,15 @@ export function runGate(o) {
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
       : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
+  // Said before the first step rather than found after the slowest one; said, not refused,
+  // because a lookup that cannot see a layout must never stop a gate that would have run.
+  const unready = prerequisites(repoDir, preset, { dockerUp: () => true }).filter(
+    (p) => p.state === "missing",
+  );
+  if (unready.length)
+    log(
+      `· preflight: ${unready.length} step(s) look unable to run here: ${unready.map((p) => `${p.label} (${p.detail})`).join("; ")}`,
+    );
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(

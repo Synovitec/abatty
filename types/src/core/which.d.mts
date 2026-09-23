@@ -8,7 +8,8 @@ export function scriptProgram(text: string): string | null;
 /**
  * Is `name` a program the shell would find from `dir`: a builtin, a `node_modules/.bin` entry in
  * the directory or any parent (where npm puts a workspace's tools), or a file on PATH with one of
- * PATHEXT's extensions.
+ * PATHEXT's extensions. Under Plug'n'Play there is no `.bin` to read and the package manager
+ * resolves the tool itself, so a tree with a `.pnp.cjs` answers yes rather than guess.
  * @param {string} dir @param {string} name @param {NodeJS.ProcessEnv} [env]
  */
 export function toolFound(dir: string, name: string, env?: NodeJS.ProcessEnv): boolean;

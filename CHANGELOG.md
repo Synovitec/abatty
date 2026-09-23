@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty gate --preflight` says what each step needs and whether it is here, running
+  nothing.** For each step it checks the script, the program the script starts (in
+  `node_modules/.bin` up the tree, then on PATH), the config file the step wants, the lockfile
+  the audit reads, and a container runtime for a suite that starts a database. It exits 4 when a
+  configured or required step cannot run. The gate itself now prints the same finding as its
+  first line, before the slowest step rather than after it, but it does not refuse: a lookup that
+  cannot see a layout must never stop a gate that would have run. Plug'n'Play trees are not
+  judged. This is the second half of the prerequisite preflight; the confirm-clean run of
+  `doctor --controls` was the first.
+
 - **A floor raised lands only with an approval its raiser cannot give itself.** `abatty
   baseline` asks for a reason and an owner, but the owner is a name the raiser typed, and an
   agent types one as easily as a person does (it can also edit the baseline by hand). The new

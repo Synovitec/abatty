@@ -2,17 +2,17 @@
  * Whether the program a package script starts can be found at all. cmd.exe answers a missing
  * tool with exit 1, the same code a tool that ran and judged the work returns, so on Windows the
  * gate reported "lint failed" for a repository that had never installed eslint. POSIX shells say
- * 127 and need none of this. The question is asked only after a script exited 1 on Windows, and
- * only a program that is found nowhere turns the answer into "not installed": a builtin, a path
- * or anything this cannot read keeps the tool's own verdict.
+ * 127 and need none of this. The gate asks after a script exited 1 on Windows, and the preflight
+ * and `doctor` ask before anything runs. Only a program that is found nowhere reads as "not
+ * installed": a builtin, a path or anything this cannot read keeps the tool's own verdict.
  */
 import { existsSync } from "node:fs";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { readPackage } from "./repo.mjs";
 
-/** cmd.exe's own commands: never on PATH, always there. */
+/** The shells' own commands (cmd.exe's, and the POSIX ones a script starts with): never on PATH, always there. */
 const BUILTINS = new Set(
-  "assoc break call cd chdir cls color copy date del dir echo endlocal erase exit for ftype goto if md mkdir mklink move path pause popd prompt pushd rd rem ren rename rmdir set setlocal shift start time title type ver verify vol".split(
+  "assoc break call cd chdir cls color copy date del dir echo endlocal erase exit for ftype goto if md mkdir mklink move path pause popd prompt pushd rd rem ren rename rmdir set setlocal shift start time title type ver verify vol export unset true false test".split(
     " ",
   ),
 );
@@ -32,7 +32,8 @@ export function scriptProgram(text) {
 /**
  * Is `name` a program the shell would find from `dir`: a builtin, a `node_modules/.bin` entry in
  * the directory or any parent (where npm puts a workspace's tools), or a file on PATH with one of
- * PATHEXT's extensions.
+ * PATHEXT's extensions. Under Plug'n'Play there is no `.bin` to read and the package manager
+ * resolves the tool itself, so a tree with a `.pnp.cjs` answers yes rather than guess.
  * @param {string} dir @param {string} name @param {NodeJS.ProcessEnv} [env]
  */
 export function toolFound(dir, name, env = process.env) {
@@ -44,7 +45,8 @@ export function toolFound(dir, name, env = process.env) {
       .filter(Boolean),
   ];
   const bins = [];
-  for (let d = dir; ; d = dirname(d)) {
+  for (let d = resolve(dir); ; d = dirname(d)) {
+    if (existsSync(join(d, ".pnp.cjs"))) return true;
     bins.push(join(d, "node_modules", ".bin"));
     if (dirname(d) === d) break;
   }
