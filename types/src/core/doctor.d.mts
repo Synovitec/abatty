@@ -56,6 +56,7 @@ export function doctor(o: {
         absent: string[];
     } | null;
     hooks: import("./hook-modes.mjs").HookMode[];
+    notExecutable: string[];
 };
 export type DriftEvent = {
     file: string;

@@ -15,6 +15,8 @@ import { runStepControls } from "./step-controls.mjs";
 import { readAdoption } from "./repo.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 import { hookModes } from "./hook-modes.mjs";
+import { gitHooks, hooksNotExecutable } from "./git-hooks.mjs";
+import { managerFor } from "./package-manager.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -68,9 +70,22 @@ export function shippedFiles() {
  * @returns {DriftEvent[]}
  */
 export function drift(repoDir) {
-  return shippedFiles().map(
+  const templates = shippedFiles().map(
     ([tpl, rel]) => /** @type {DriftEvent} */ ({ file: rel, state: driftState(repoDir, tpl, rel) }),
   );
+  // The git hooks, against what this version would write in this repository's manager: they are
+  // generated, not copied, and a pre-push from before --refs read as no drift at all.
+  if (!existsSync(join(repoDir, ".githooks"))) return templates;
+  const hooks = Object.entries(gitHooks(managerFor(repoDir))).map(([rel, text]) => {
+    const target = join(repoDir, rel);
+    const state = !existsSync(target)
+      ? "missing"
+      : normalise(readFileSync(target, "utf8")) === normalise(text)
+        ? "in step"
+        : "differs";
+    return /** @type {DriftEvent} */ ({ file: rel, state });
+  });
+  return [...templates, ...hooks];
 }
 
 /** @param {string} repoDir @param {string} tpl @param {string} rel @returns {DriftEvent["state"]} */
@@ -109,9 +124,12 @@ export function doctor(o) {
   const problems = configProblems(repoDir);
   // What each hook does here, day and night; one that does nothing it seems to fails --strict.
   const hooks = hookModes(repoDir);
+  // A hook git records as 100644 is skipped by git on every machine but the one it was written on.
+  const notExecutable = hooksNotExecutable(repoDir);
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
+    notExecutable.length === 0 &&
     problems.length === 0 &&
     (!controls || controls.absent.length === 0) &&
     (!o.strict || (differs.length === 0 && hooks.every((h) => !h.warn)));
@@ -132,5 +150,6 @@ export function doctor(o) {
     config: { files: configFiles(repoDir), problems },
     controls,
     hooks,
+    notExecutable,
   };
 }

@@ -245,3 +245,21 @@ test("a pipeline running a file is not naming a script, turbo hands the runner t
   });
   assert.equal(health.evidence, "apps/web/app/api/health/route.ts");
 });
+
+test("INST-GATE reads a pre-push hook git records as not executable as partial", () => {
+  const files = {
+    "package.json": JSON.stringify({ scripts: { gate: "abatty gate" } }),
+    ".githooks/pre-push": "#!/bin/sh\nnpm run -s gate -- --refs\n",
+  };
+  const rule = RULES.find((r) => r.id === "INST-GATE");
+  assert.ok(rule);
+  const dir = tempRepo("inst-gate-mode", files);
+  git(dir, "update-index", "--chmod=+x", "--", ".githooks/pre-push");
+  git(dir, "commit", "-q", "-m", "x");
+  assert.equal(rule.check(buildContext(dir)).status, "present");
+  git(dir, "update-index", "--chmod=-x", "--", ".githooks/pre-push");
+  git(dir, "commit", "-q", "-m", "y");
+  const v = rule.check(buildContext(dir));
+  assert.equal(v.status, "partial");
+  assert.match(v.evidence, /committed as not executable/);
+});

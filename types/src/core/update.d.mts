@@ -1,5 +1,5 @@
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[] }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string> }} Lock
  *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
  *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
@@ -32,7 +32,13 @@ export function readLock(repoDir: string): Lock | null;
  * and `update` refused to deliver a real change to it for as long as the repository lived.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset | null} preset @param {string} [version]
  */
-export function writeLock(repoDir: string, preset: import("../presets/index.mjs").Preset | null, version?: string): Lock;
+export function writeLock(repoDir: string, preset: import("../presets/index.mjs").Preset | null, version?: string): {
+    abatty: string;
+    installedAt: string;
+    files: Record<string, string>;
+    scripts: string[];
+    hooks: Record<string, string>;
+};
 /**
  * Three-way merge with git: yours, the base, theirs. Returns the merged text and the number of
  * conflicts (0 is clean), or null when git could not merge at all.
@@ -75,6 +81,7 @@ export type Lock = {
     installedAt: string;
     files: Record<string, string>;
     scripts?: string[];
+    hooks?: Record<string, string>;
 };
 export type UpdateAction = "in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten";
 export type UpdateEvent = {

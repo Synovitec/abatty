@@ -179,6 +179,10 @@ export async function doctorCommand(cx, preset) {
   out(
     `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits; or keep yours and say why in the decisions file") : ""}\n`,
   );
+  if (r.notExecutable.length)
+    out(
+      `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(` · git update-index --chmod=+x -- ${r.notExecutable.join(" ")}, then commit`)}\n`,
+    );
   if (r.missingScripts.length)
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,

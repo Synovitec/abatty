@@ -150,16 +150,20 @@ export const rules = [
     phase: "0",
     stages: ["build", "run"],
     why: "One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart.",
-    next: "Add a gate.mjs under scripts/ci and a .githooks/pre-push calling it (npm run hooks:install)",
+    next: "Add a gate.mjs under scripts/ci and a .githooks/pre-push calling it (npm run hooks:install), committed executable (git update-index --chmod=+x)",
     check: (c) => {
       const gate = c.script(/^gate$|^gate:fast$|scripts\/ci\/gate/);
       const hook = c.firstFile(
         /^\.githooks\/pre-push$|^\.husky\/pre-push$|^lefthook\.ya?ml$|^scripts\/hooks\/pre-push/,
       );
       const hooksPath = c.git("config", "core.hooksPath");
+      // A hook git records as 100644 runs on the machine that wrote it and nowhere else: an
+      // adopter's three hooks were committed that way, and nothing said so.
+      const entry = hook ? c.git("ls-files", "-s", "--", hook) : "";
+      const inert = Boolean(entry) && !entry.startsWith("100755 ");
       return {
-        status: gate && hook ? "present" : gate || hook ? "partial" : "missing",
-        evidence: `${gate ? "`" + gate[0] + "`" : "no gate script"}; ${hook || "no pre-push hook"}${hooksPath ? "; core.hooksPath=" + hooksPath : ""}`,
+        status: gate && hook && !inert ? "present" : gate || hook ? "partial" : "missing",
+        evidence: `${gate ? "`" + gate[0] + "`" : "no gate script"}; ${hook || "no pre-push hook"}${inert ? " (committed as not executable: git skips it on every other machine)" : ""}${hooksPath ? "; core.hooksPath=" + hooksPath : ""}`,
       };
     },
   },

@@ -21,6 +21,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { TEMPLATES, makeExecutable } from "./init.mjs";
+import { gitHooks, writtenByInit } from "./git-hooks.mjs";
+import { managerFor } from "./package-manager.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
 import { shimExecutable } from "./shim.mjs";
 import {
@@ -38,7 +40,7 @@ export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
 
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[] }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string> }} Lock
  *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
  *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
@@ -125,7 +127,22 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     ...Object.keys(preset?.scripts || {}),
   ]);
   /** @type {Lock} */
-  const lock = { abatty: version, installedAt: localToday(), files, scripts: [...offered].sort() };
+  // The git hooks as they were written, by hash, so the next update knows an untouched one.
+  /** @type {Record<string, string>} */
+  const hooks = {};
+  for (const [rel, text] of Object.entries(gitHooks(managerFor(repoDir)))) {
+    const target = join(repoDir, rel);
+    if (existsSync(target) && hashOf(readFileSync(target, "utf8")) === hashOf(text))
+      hooks[rel] = hashOf(text);
+    else if (previous?.hooks?.[rel]) hooks[rel] = previous.hooks[rel];
+  }
+  const lock = {
+    abatty: version,
+    installedAt: localToday(),
+    files,
+    scripts: [...offered].sort(),
+    hooks,
+  };
   writeJsonFile(repoDir, LOCK, lock);
   return lock;
 }
@@ -284,6 +301,41 @@ export function updateRepo(o) {
           : `your edit and the package's change touch the same lines: the new version is beside yours as ${rel}.abatty-new; merge by hand, then delete it`,
     });
   }
+
+  // The git hooks, generated in the repository's own manager. Only init wrote them once, so an
+  // adopter who upgraded kept a pre-push hook from before --refs while doctor said no drift. A
+  // hook is refreshed when it is the one last written (its hash in the lock) or exactly a form
+  // an earlier init wrote; one the repository edited gets the new version beside it. A
+  // repository whose hooks live elsewhere (no .githooks folder) is left alone.
+  if (existsSync(join(repoDir, ".githooks")))
+    for (const [rel, text] of Object.entries(gitHooks(managerFor(repoDir)))) {
+      const target = join(repoDir, rel);
+      const ours = existsSync(target) ? readFileSync(target, "utf8") : null;
+      if (ours !== null && hashOf(ours) === hashOf(text)) {
+        events.push({ file: rel, action: "in step" });
+        continue;
+      }
+      const untouched =
+        ours === null || force || lock?.hooks?.[rel] === hashOf(ours) || writtenByInit(rel, ours);
+      if (untouched) {
+        if (!dryRun) {
+          writeFileSync(target, text);
+          makeExecutable(target);
+        }
+        events.push({
+          file: rel,
+          action: ours === null ? "added" : "updated",
+          detail: ours === null ? undefined : "the hook as this version writes it",
+        });
+        continue;
+      }
+      if (!dryRun) writeFileSync(`${target}.abatty-new`, text);
+      events.push({
+        file: rel,
+        action: "conflict",
+        detail: `edited here: the hook this version writes is beside yours as ${rel}.abatty-new`,
+      });
+    }
 
   // The config the hooks trust: keys the template gained are added, values you set are never replaced.
   const adoptionRel = existsSync(join(repoDir, CONFIG_FILE)) ? CONFIG_FILE : LEGACY_CONFIG;
