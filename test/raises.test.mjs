@@ -103,3 +103,57 @@ test("only an approval of the head commit by somebody other than the author land
   assert.equal(reviewApproval("7", forge([], false)).approved, false, "the forge unreachable");
   assert.equal(reviewApproval("7", () => ({ ok: true, stdout: "not json" })).approved, false);
 });
+
+test("debt moved into a file, or a floor loosened through the config, is a raise too", () => {
+  const withDebt = {
+    ...BASE,
+    debt: { "size.overBudget": { "src/a.ts": 3 } },
+  };
+  const cfg = {
+    ratchet: {
+      exclude: [],
+      exempt: ["^scripts/"],
+      hard: ["fn.complexity"],
+      enable: ["code.clones"],
+      cap: 800,
+    },
+  };
+  const dir = tempRepo("raises-debt", {
+    [REL]: JSON.stringify(withDebt),
+    "abatty.config.json": JSON.stringify(cfg),
+  });
+  // the total holds at 3, but a file that carried none carries 1 and a.ts falls to 2
+  writeFileSync(
+    join(dir, REL),
+    JSON.stringify({ ...withDebt, debt: { "size.overBudget": { "src/a.ts": 2, "src/b.ts": 1 } } }),
+  );
+  writeFileSync(
+    join(dir, "abatty.config.json"),
+    JSON.stringify({
+      ratchet: {
+        exclude: ["docs.citations"],
+        exempt: ["^scripts/", "^src/legacy/"],
+        hard: [],
+        enable: [],
+        cap: 1000,
+      },
+    }),
+  );
+  const got = floorRises(dir, "main").loosened.map(
+    (l) => `${l.metric} ${l.how} ${l.path || (l.now ?? l.was)}`,
+  );
+  assert.deepEqual(got.sort(), [
+    "ratchet.cap config 1000",
+    "ratchet.enable config code.clones",
+    "ratchet.exclude config docs.citations",
+    "ratchet.exempt config ^src/legacy/",
+    "ratchet.hard config fn.complexity",
+    "size.overBudget rose in a file src/b.ts",
+  ]);
+  // and the same config and debt, unchanged, loosen nothing
+  const same = tempRepo("raises-same", {
+    [REL]: JSON.stringify(withDebt),
+    "abatty.config.json": JSON.stringify(cfg),
+  });
+  assert.deepEqual(floorRises(same, "main").loosened, []);
+});

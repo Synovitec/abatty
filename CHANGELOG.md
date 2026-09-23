@@ -103,7 +103,9 @@ under Unreleased in the same commit.
   baseline` asks for a reason and an owner, but the owner is a name the raiser typed, and an
   agent types one as easily as a person does (it can also edit the baseline by hand). The new
   `abatty raises` compares the baseline with the one on the base branch and names every floor
-  that rose, vanished or stopped being hard. With `--require-review <number>` it passes only
+  that rose, vanished or stopped being hard, every file whose debt grew while the total held,
+  and the same done through the config: a metric excluded, a path exempted, a metric taken off
+  the hard list, an opt-in probe switched off, a cap or a budget raised. With `--require-review <number>` it passes only
   when somebody other than the pull request's author approved its head commit, a review the
   forge does not let an author give. The GitHub pipeline `abatty ci` generates runs it as a
   `floors` job on pull requests and again when a review is submitted or dismissed. That

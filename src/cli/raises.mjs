@@ -9,7 +9,11 @@ import { git, readAdoption } from "../core/repo.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
 
-/** @param {import("./ratchet.mjs").CliContext} cx @returns {number} */
+/**
+ * The floors loosened against the base, judged. Exit 3 when one is loosened and no approval was
+ * read, which is always the case without `--require-review`: this machine has no approval to read.
+ * @param {import("./ratchet.mjs").CliContext} cx @returns {number}
+ */
 export function raisesCommand(cx) {
   const { dir, opt, flag, out } = cx;
   // The pipeline has the remote's branch and may not have a local one; a laptop has both.
@@ -30,10 +34,17 @@ export function raisesCommand(cx) {
     out(`${t.glyph.skip} ${t.gray(`no baseline on ${base}: no floor to raise`)}\n`);
     return EXIT.clean;
   }
-  for (const l of r.loosened)
-    out(
-      `  ${t.glyph.warn} ${l.metric}  ${l.how}${l.now === null ? "" : ` · ${l.was} → ${l.now}`}\n`,
-    );
+  for (const l of r.loosened) {
+    const change =
+      l.now === null
+        ? l.how === "config"
+          ? ` · removed ${l.was}`
+          : ""
+        : l.was === ""
+          ? ` · added ${l.now}`
+          : ` · ${l.was} → ${l.now}`;
+    out(`  ${t.glyph.warn} ${l.metric}  ${l.how}${l.path ? ` ${l.path}` : ""}${change}\n`);
+  }
   if (!r.loosened.length) out(`${t.glyph.ok} ${t.green(`no floor loosened against ${base}`)}\n`);
   else if (approval?.approved)
     out(`${t.glyph.ok} ${t.green(`floor(s) loosened, ${approval.detail}`)}\n`);

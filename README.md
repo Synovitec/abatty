@@ -103,8 +103,9 @@ green forever.
 The owner is a name the raiser typed, and an agent can type one as easily as a person can. So a
 raise lands only through a pull request approved at its head by somebody other than its author.
 `abatty raises --require-review <number>` reads that review in the pipeline that `abatty ci`
-generates, and it counts a floor that vanished or a hard metric that was demoted the same way as
-a rise.
+generates. It counts as a rise anything else that loosens a floor: a floor that vanished, a hard
+metric demoted, a file whose debt grew while the total held, or the same done through the config
+(a metric excluded, a path exempted, a probe switched off, a cap or a budget raised).
 
 ### Proving the guards
 

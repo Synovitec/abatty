@@ -7,32 +7,37 @@
  * that one to itself, since a forge does not let an author approve their own pull request.
  */
 import { spawnSync } from "node:child_process";
-import { git, readAdoption } from "./repo.mjs";
+import { CONFIG_FILE, LEGACY_CONFIG, git, readAdoption, readJsonFile } from "./repo.mjs";
 import { baselinePath } from "../ratchet/config.mjs";
 import { readBaseline } from "../ratchet/baseline.mjs";
 
 /**
- * @typedef {{ metric: string, was: number, now: number | null, how: "rose" | "vanished" | "no longer hard" }} Loosened
+ * @typedef {{ metric: string, was: number | string, now: number | string | null, how: "rose" | "vanished" | "no longer hard" | "rose in a file" | "config", path?: string }} Loosened
  * @typedef {{ approved: boolean, by: string[], detail: string }} Approval
  * @typedef {(args: string[]) => { ok: boolean, stdout: string }} Gh
  */
 
+/** A JSON file as the base branch has it, or null. @param {string} repoDir @param {string} base @param {string} rel */
+function onBase(repoDir, base, rel) {
+  try {
+    const text = git(repoDir, "show", `${base}:${rel}`);
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Every floor the working baseline loosened against the one on `base`: a number above the base's,
- * a metric the base had and this one dropped, a HARD metric demoted. A base with no baseline
- * loosens nothing, since there was no floor to raise.
+ * Every floor the working baseline and config loosened against `base`: a total above the base's,
+ * a file's debt above its own floor or a file newly carrying some (debt moved is debt loosened),
+ * a metric dropped, a HARD metric demoted, and the config's ways to the same end (see
+ * `configLoosened`). A base with no baseline loosens nothing, since there was no floor to raise.
  * @param {string} repoDir @param {string} base @returns {{ base: string, found: boolean, loosened: Loosened[] }}
  */
 export function floorRises(repoDir, base) {
   const rel = baselinePath(readAdoption(repoDir));
-  const text = git(repoDir, "show", `${base}:${rel}`);
   /** @type {import("../ratchet/index.mjs").Baseline | null} */
-  let before = null;
-  try {
-    before = text ? JSON.parse(text) : null;
-  } catch {
-    before = null;
-  }
+  const before = onBase(repoDir, base, rel);
   const now = readBaseline(repoDir, rel);
   if (!before?.metrics) return { base, found: false, loosened: [] };
   /** @type {Loosened[]} */
@@ -41,6 +46,10 @@ export function floorRises(repoDir, base) {
     const v = now?.metrics?.[metric];
     if (typeof v !== "number") loosened.push({ metric, was, now: null, how: "vanished" });
     else if (v > was) loosened.push({ metric, was, now: v, how: "rose" });
+    const debtWas = before.debt?.[metric] || {};
+    for (const [path, n] of Object.entries(now?.debt?.[metric] || {}))
+      if (n > (debtWas[path] ?? 0))
+        loosened.push({ metric, was: debtWas[path] ?? 0, now: n, how: "rose in a file", path });
   }
   const hardNow = new Set(now?.hard || []);
   for (const metric of before.hard || [])
@@ -51,7 +60,50 @@ export function floorRises(repoDir, base) {
         now: now.metrics[metric] ?? 0,
         how: "no longer hard",
       });
+  loosened.push(...configLoosened(repoDir, base));
   return { base, found: true, loosened: loosened.sort((a, b) => a.metric.localeCompare(b.metric)) };
+}
+
+/**
+ * The config's ways to loosen a floor without touching the baseline: a metric excluded, a path
+ * exempted, a metric held as a ratchet instead of hard or taken off the hard list, an opt-in
+ * probe switched off, a cap or a budget raised. Each is the same decision as a raised number.
+ * @param {string} repoDir @param {string} base @returns {Loosened[]}
+ */
+function configLoosened(repoDir, base) {
+  const file = readJsonFile(repoDir, CONFIG_FILE) ? CONFIG_FILE : LEGACY_CONFIG;
+  const was = onBase(repoDir, base, file)?.ratchet;
+  const now = readJsonFile(repoDir, file)?.ratchet;
+  if (!was || typeof was !== "object") return [];
+  const list = (/** @type {any} */ r, /** @type {string} */ k) =>
+    Array.isArray(r?.[k]) ? r[k].map(String) : [];
+  /** @type {Loosened[]} */
+  const out = [];
+  /** @param {string} key @param {string[]} from @param {string[]} to */
+  const grew = (key, from, to) => {
+    for (const v of to.filter((x) => !from.includes(x)))
+      out.push({ metric: `ratchet.${key}`, was: "", now: v, how: "config" });
+  };
+  grew("exclude", list(was, "exclude"), list(now, "exclude"));
+  grew("exempt", list(was, "exempt"), list(now, "exempt"));
+  grew("ratchet", list(was, "ratchet"), list(now, "ratchet"));
+  for (const [key, from, to] of /** @type {const} */ ([
+    ["hard", list(was, "hard"), list(now, "hard")],
+    ["enable", list(was, "enable"), list(now, "enable")],
+  ]))
+    for (const v of from.filter((x) => !to.includes(x)))
+      out.push({ metric: `ratchet.${key}`, was: v, now: null, how: "config" });
+  for (const key of ["cap", "defaultMax", "contextMax", "barrelMax"])
+    if (typeof was[key] === "number" && typeof now?.[key] === "number" && now[key] > was[key])
+      out.push({ metric: `ratchet.${key}`, was: was[key], now: now[key], how: "config" });
+  for (const k of Array.isArray(now?.kinds) ? now.kinds : []) {
+    const b = (Array.isArray(was.kinds) ? was.kinds : []).find(
+      (/** @type {any} */ x) => x?.kind === k?.kind,
+    );
+    if (b && typeof k.max === "number" && k.max > b.max)
+      out.push({ metric: `ratchet.kinds.${k.kind}`, was: b.max, now: k.max, how: "config" });
+  }
+  return out;
 }
 
 /** The forge's CLI, as the pipeline has it. @type {Gh} */

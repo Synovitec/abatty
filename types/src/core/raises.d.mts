@@ -1,12 +1,8 @@
 /**
- * @typedef {{ metric: string, was: number, now: number | null, how: "rose" | "vanished" | "no longer hard" }} Loosened
- * @typedef {{ approved: boolean, by: string[], detail: string }} Approval
- * @typedef {(args: string[]) => { ok: boolean, stdout: string }} Gh
- */
-/**
- * Every floor the working baseline loosened against the one on `base`: a number above the base's,
- * a metric the base had and this one dropped, a HARD metric demoted. A base with no baseline
- * loosens nothing, since there was no floor to raise.
+ * Every floor the working baseline and config loosened against `base`: a total above the base's,
+ * a file's debt above its own floor or a file newly carrying some (debt moved is debt loosened),
+ * a metric dropped, a HARD metric demoted, and the config's ways to the same end (see
+ * `configLoosened`). A base with no baseline loosens nothing, since there was no floor to raise.
  * @param {string} repoDir @param {string} base @returns {{ base: string, found: boolean, loosened: Loosened[] }}
  */
 export function floorRises(repoDir: string, base: string): {
@@ -23,9 +19,10 @@ export function floorRises(repoDir: string, base: string): {
 export function reviewApproval(pr: string, gh?: Gh): Approval;
 export type Loosened = {
     metric: string;
-    was: number;
-    now: number | null;
-    how: "rose" | "vanished" | "no longer hard";
+    was: number | string;
+    now: number | string | null;
+    how: "rose" | "vanished" | "no longer hard" | "rose in a file" | "config";
+    path?: string;
 };
 export type Approval = {
     approved: boolean;
