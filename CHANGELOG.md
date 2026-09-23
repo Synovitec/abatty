@@ -13,6 +13,12 @@ under Unreleased in the same commit.
   (the tests, the ratchet, the typecheck on a TypeScript preset) still comes back. A lock
   written before this lists nothing, and reads as though every preset script had been offered,
   since `init` wrote them all. This repository declined `lint`, and every update added it back.
+- **On Windows, a gate step whose tool is not installed now reads "could not run" instead of
+  failed.** cmd.exe exits 1 both for a tool it cannot find and for a tool that ran and judged
+  the work. After a script exits 1 on Windows, the gate now looks up the script's program
+  (`node_modules/.bin` up the tree, then PATH with PATHEXT, and cmd.exe's builtins), and a
+  program found nowhere makes the step errored (exit 4, the instrument) rather than failed
+  (exit 3, the work). A path, a quoted program or a builtin keeps the tool's own verdict.
 - **The best-practices digest was re-read** against the standard's guard paragraph that changed
   on 2026-09-22. The digest only says that enforcement is a hook, which is still true, so it
   is dated today. It had turned `docs.behindCode` red on main overnight with nothing pushed.

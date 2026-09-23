@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { missingTool } from "./which.mjs";
 
 /**
  * How a command is spawned, in one place. `shell: true` was on every spawn site in this package,
@@ -64,8 +65,7 @@ function resultOf(r) {
     };
   if (r.signal) return { code: 1, errored: true, detail: `killed by ${r.signal}` };
   // POSIX shells answer a missing or unrunnable tool with 127 and 126. cmd.exe answers both with
-  // 1, the same code a tool that ran and failed returns, so on Windows a script whose tool is not
-  // installed is reported as failed, with the shell's own "not recognized" line above it.
+  // 1, the same code a tool that ran and failed returns; runScript asks which it was.
   if (r.status === 127) return { code: 127, errored: true, detail: "command not found" };
   if (r.status === 126) return { code: 126, errored: true, detail: "command not executable" };
   return { code: r.status ?? 1 };
@@ -80,7 +80,24 @@ export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
  */
 export function runScript(repoDir, script, extraArgs = []) {
   const l = launch("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])]);
-  return resultOf(spawnSync(l.file, l.args, { cwd: repoDir, stdio: "inherit", shell: l.shell }));
+  const res = resultOf(
+    spawnSync(l.file, l.args, { cwd: repoDir, stdio: "inherit", shell: l.shell }),
+  );
+  return notInstalled(res, repoDir, script);
+}
+
+/**
+ * A script that exited 1 on Windows, read again: when its program is found nowhere, cmd.exe's 1
+ * meant "not recognized", and the step could not run rather than failed.
+ * @param {RunResult} res @param {string} repoDir @param {string} script
+ * @param {string} [platform] @param {NodeJS.ProcessEnv} [env] @returns {RunResult}
+ */
+export function notInstalled(res, repoDir, script, platform = process.platform, env = process.env) {
+  if (platform !== "win32" || res.code !== 1 || res.errored) return res;
+  const tool = missingTool(repoDir, script, env);
+  return tool
+    ? { code: 127, errored: true, detail: `${tool}: not installed (cmd.exe said 1)` }
+    : res;
 }
 
 /** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
