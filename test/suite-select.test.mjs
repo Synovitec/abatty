@@ -75,7 +75,7 @@ test("a line that only looks like a comment is code, and a file the lexer cannot
   writeFileSync(join(dir, "src", "a.css"), "a { background: url(//cdn.example/two.png); }\n");
   writeFileSync(
     join(dir, "src", "doc.ts"),
-    "/**\n * Two lines,\n * now.\n */\n\nexport const y = 1;\n",
+    "/**\n * Two lines,\n * now.\n */\nexport const y = 1;\n",
   );
   git(dir, "commit", "-qam", "change");
   const quiet = commentOnly(dir, "HEAD~1..HEAD", ["src/sum.ts", "src/a.css", "src/doc.ts"]);
@@ -83,8 +83,36 @@ test("a line that only looks like a comment is code, and a file the lexer cannot
   assert.equal(commentOnly(dir, "HEAD~1...HEAD", ["src/doc.ts"]).size, 0, "a three-dot range");
 });
 
-/** @param {string} dir */
-function gate(dir) {
+test("text the lexer mistakes for a comment, and a directive comment, keep the suites", () => {
+  /** @type {Record<string, [string, string]>} file: [before, after] */
+  const cases = {
+    // `\//` inside a regular expression literal reads as the start of a line comment
+    "src/re.ts": [
+      "export const ok = (s) => /https?:\/\//.test(s) && s.length > 10;\n",
+      "export const ok = (s) => /https?:\/\//.test(s) && s.length > 100;\n",
+    ],
+    // a URL in JSX text reads the same way
+    "src/link.tsx": [
+      'export const L = () => <a href="/x">Visit https://old.example</a>;\n',
+      'export const L = () => <a href="/x">Visit https://new.example</a>;\n',
+    ],
+    // a comment after code on the same line is not a whole-line comment
+    "src/tail.ts": ["export const t = 1; // one\n", "export const t = 1; // two\n"],
+    // adding a coverage ignore changes what the coverage step measures
+    "src/cov.ts": ["// note\nexport const c = 1;\n", "/* v8 ignore next */\nexport const c = 1;\n"],
+  };
+  const files = Object.keys(cases);
+  const dir = tempRepo(
+    "comment-mistaken",
+    Object.fromEntries(files.map((f) => [f, cases[f]?.[0] ?? ""])),
+  );
+  for (const f of files) writeFileSync(join(dir, f), cases[f]?.[1] ?? "");
+  git(dir, "commit", "-qam", "change");
+  assert.deepEqual([...commentOnly(dir, "HEAD~1..HEAD", files)], []);
+});
+
+/** @param {string} dir @param {boolean} [ci] */
+function gate(dir, ci = false) {
   /** @type {string[]} */
   const ran = [];
   const r = runGate({
@@ -97,6 +125,7 @@ function gate(dir) {
     },
     audit: () => ({ status: 0, output: "" }),
     dockerUp: () => true,
+    ci,
     log: () => {},
   });
   const suite = r.events.find((e) => /browser suite/.test(e.label));
@@ -113,7 +142,15 @@ test("the gate runs no build for a push that only rewords a comment, and builds 
 
 test("the gate defers the build to CI while a dev server serves the checkout, and says which", () => {
   const dir = pushed("gate-dev", (t) => t.replace("=> 1", "=> 2"));
-  lock(dir, { pid: process.pid, port: 3000 });
+  // The shape `next dev` 16 writes, copied from a live lock on an adopter's checkout.
+  lock(dir, {
+    pid: process.pid,
+    port: 3000,
+    hostname: "localhost",
+    appUrl: "http://localhost:3000",
+    startedAt: 1790171006744,
+  });
+  assert.equal(gate(dir, true).built, true, "in CI a lock defers nothing");
   const live = gate(dir);
   assert.equal(live.suite?.outcome, "deferred");
   assert.match(String(live.suite?.detail), /dev server is running .*port 3000/);

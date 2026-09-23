@@ -12,7 +12,7 @@ export function liveDevServer(dir: string, locks?: string[]): {
     port?: number;
 } | null;
 /**
- * The files of a range whose two versions differ only in comments and blank lines: they change
+ * The files of a range whose two versions differ only in whole-line comments: they change
  * no behaviour, so they select no suite. Both versions are read whole and compared with their
  * comments blanked by the probes' lexer, rather than judged line by line from a diff, where a
  * CSS `#id` selector or a `* 2` continuation reads as a comment. Only the languages the lexer

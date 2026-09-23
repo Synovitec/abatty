@@ -214,7 +214,9 @@ export function runGate(o) {
       const db = suite.docker
         ? suiteDatabase([repoDir, join(repoDir, under)], { ci: o.ci === true, db: o.db })
         : { ok: /** @type {const} */ (true), env: {} };
-      const dev = liveDevServer(join(repoDir, under), suite.devLocks);
+      // Not in CI: a lock restored from a cache can name a pid the runner reused, and there a
+      // deferral means the suite never runs.
+      const dev = o.ci ? null : liveDevServer(join(repoDir, under), suite.devLocks);
       const why = dev
         ? `a dev server is running on this checkout (pid ${dev.pid}${dev.port ? `, port ${dev.port}` : ""}, ${dev.lock}), and a build now would overwrite what it serves`
         : suite.docker && !dockerUp()

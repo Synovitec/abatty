@@ -44,7 +44,7 @@ function alive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (e) {
-    return /** @type {any} */ (e)?.code === "EPERM";
+    return /** @type {NodeJS.ErrnoException} */ (e)?.code === "EPERM";
   }
 }
 
@@ -52,19 +52,38 @@ function alive(pid) {
 const LEXED = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/;
 
 /**
- * A source with its comments blanked, each line trimmed and the empty ones dropped: two versions
- * that read the same here differ only in comments or blank lines.
- * @param {string} text
+ * A comment that changes what a tool does: a coverage ignore, a type or lint switch, a bundler
+ * or JSX pragma. Adding one is a change of behaviour, so it is never read as prose.
  */
-const behaviour = (text) =>
-  codeOnly(text, { strings: "keep" })
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .join("\n");
+const DIRECTIVE =
+  /@ts-|eslint-|oxlint-|biome-ignore|prettier-ignore|(istanbul|c8|v8)\s+ignore|webpack\w*:|@vite-ignore|@jsx|@refresh|["']use (client|server|strict)["']/;
 
 /**
- * The files of a range whose two versions differ only in comments and blank lines: they change
+ * A source as behaviour sees it, or null when this cannot tell. Every line the lexer changed
+ * must be a comment and nothing else once blanked: a comment after code, or text the lexer
+ * mistook for one (a `//` inside a regular expression literal, a URL in JSX text), makes the file
+ * unjudgeable rather than quiet. Comment lines are dropped, and the directives among them kept
+ * apart so adding one still counts; every other line, blank ones and template literals included,
+ * is compared exactly.
+ * @param {string} text
+ * @returns {string | null}
+ */
+function reading(text) {
+  const src = text.split("\n");
+  const out = codeOnly(text, { strings: "keep" }).split("\n");
+  const code = [];
+  const directives = [];
+  for (const [i, line] of src.entries()) {
+    const blanked = out[i] ?? "";
+    if (line === blanked) code.push(blanked);
+    else if (blanked.trim()) return null;
+    else if (DIRECTIVE.test(line)) directives.push(line.trim());
+  }
+  return `${code.join("\n")}\0${directives.sort().join("\n")}`;
+}
+
+/**
+ * The files of a range whose two versions differ only in whole-line comments: they change
  * no behaviour, so they select no suite. Both versions are read whole and compared with their
  * comments blanked by the probes' lexer, rather than judged line by line from a diff, where a
  * CSS `#id` selector or a `* 2` continuation reads as a comment. Only the languages the lexer
@@ -81,7 +100,8 @@ export function commentOnly(repoDir, range, files) {
   for (const f of files.filter((p) => LEXED.test(p))) {
     const [before, after] = ends.map((ref) => git(repoDir, "show", `${ref}:${f}`));
     if (!before || !after || before === after) continue;
-    if (behaviour(before) === behaviour(after)) only.add(f);
+    const was = reading(before);
+    if (was !== null && was === reading(after)) only.add(f);
   }
   return only;
 }
