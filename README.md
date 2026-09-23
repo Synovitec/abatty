@@ -217,6 +217,26 @@ export const rules = [
 Add your own probes in `abatty.probes.mjs`, in the same shape. Control cases are required and a
 built-in metric name is refused.
 
+Some built-in probes are **opt-in**, because each reads one stack's conventions and would be
+noise, or a surprise red after an update, anywhere else. A repository switches them on in
+`ratchet.enable`, and `init` enables the ones that suit the preset:
+
+| Probe                    | Counts                                                                                  | Configured by  |
+| ------------------------ | --------------------------------------------------------------------------------------- | -------------- |
+| `valid.unparsedBoundary` | Route handlers, server actions and credentials callbacks reading input no schema parses |                |
+| `valid.wholeEnv`         | The environment object taken whole outside the env module                               |                |
+| `auth.unguardedPage`     | Protected pages whose first statement is not the guard                                  | `pageGuards`   |
+| `api.unboundedList`      | List reads in a route handler without a bound                                           | `boundedBy`    |
+| `api.rowReturn`          | Server actions returning the ORM's row, or a select carrying a secret column            | `secretFields` |
+| `api.floatMoney`         | Money made a number on the wire, or stored as a Float column                            | `moneyFields`  |
+| `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                |                |
+| `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                 | `shapeList`    |
+
+A probe that is not enabled does not reserve its name, so a repository that wrote its own version
+keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,
+enabled or not. A multi-tenant repository whose tenant column is not `tenant_id` names it in
+`tenantKeys` so DATA-TENANT can see it.
+
 Rules can also arrive as a **profile**: a standard packaged as a unit of rules, adoption phases,
 presets and harness files. The built-in profile is one company's standard. A repository that names
 only its own carries only its own, with the same instrument underneath.

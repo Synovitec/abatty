@@ -550,3 +550,18 @@ test("mutation testing is read for its two bounds, not for the runner's name", (
   assert.equal(/mutates the whole tree/.test(half.evidence), false);
   assert.match(half.evidence, /nothing is ignored/);
 });
+
+test("DATA-TENANT reads a tenant column this repository names in tenantKeys, and not before", () => {
+  const rule = RULES.find((r) => r.id === "DATA-TENANT");
+  assert.ok(rule);
+  const migration = "CREATE TABLE dish (id uuid, restaurant_id uuid NOT NULL);\n";
+  const unnamed = tempRepo("tenant-unnamed", { "migrations/001.sql": migration });
+  assert.equal(rule.check(buildContext(unnamed)).status, "n/a", "an unnamed tenant is not seen");
+  const named = tempRepo("tenant-named", {
+    "migrations/001.sql": migration,
+    "abatty.config.json": JSON.stringify({ tenantKeys: ["restaurant_id"] }),
+  });
+  const v = rule.check(buildContext(named));
+  assert.equal(v.status, "partial");
+  assert.match(v.evidence, /tenant column, no RLS/);
+});

@@ -4,8 +4,10 @@
  */
 export function validateProbe(p: any, builtin: Set<string>): string[];
 /**
- * The probes of a repository: the built-in set less `exclude` (or only `include`), plus the
- * repository's own from `abatty.probes.mjs`, validated.
+ * The probes of a repository: the built-in set less `exclude` (or only `include`), the opt-in
+ * ones it names in `enable`, plus the repository's own from `abatty.probes.mjs`, validated. An
+ * opt-in probe that is not enabled does not reserve its name, so a repository that wrote its own
+ * probe of that name keeps it until it enables the package's.
  * @param {string} repoDir @param {RatchetConfig} config
  * @returns {Promise<{ probes: Probe[], problems: string[] }>}
  */
@@ -99,6 +101,7 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   version?: number,
  *   approximates?: string,
  *   emptyScanOk?: boolean,
+ *   optIn?: boolean,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
  *   source?: string,
@@ -122,7 +125,16 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   changelog: string,
  *   changelogRequiredFor: string[],
  *   coupled: unknown[],
+ *   enable: string[],
+ *   boundedBy?: string[],
+ *   secretFields?: string[],
+ *   moneyFields?: string[],
+ *   pageGuards?: { pages: string, guard: string }[],
+ *   shapeList?: string,
  * }} RatchetConfig
+ *   `enable`: the opt-in probes this repository runs. A probe marked `optIn` reads one stack's
+ *   conventions; switched on for every repository, an update would turn each one red on a
+ *   metric it never asked for. The keys after it configure those probes.
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
  * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped"} VerdictStatus
  * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
@@ -172,6 +184,7 @@ export type Probe = {
     version?: number;
     approximates?: string;
     emptyScanOk?: boolean;
+    optIn?: boolean;
     scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult;
     controls: Control[];
     source?: string;
@@ -181,6 +194,11 @@ export type KindBudget = {
     kind: string;
     max: number;
 };
+/**
+ * `enable`: the opt-in probes this repository runs. A probe marked `optIn` reads one stack's
+ * conventions; switched on for every repository, an update would turn each one red on a
+ * metric it never asked for. The keys after it configure those probes.
+ */
 export type RatchetConfig = {
     local: string;
     include: string[];
@@ -199,6 +217,15 @@ export type RatchetConfig = {
     changelog: string;
     changelogRequiredFor: string[];
     coupled: unknown[];
+    enable: string[];
+    boundedBy?: string[];
+    secretFields?: string[];
+    moneyFields?: string[];
+    pageGuards?: {
+        pages: string;
+        guard: string;
+    }[];
+    shapeList?: string;
 };
 export type Measurement = {
     metric: string;

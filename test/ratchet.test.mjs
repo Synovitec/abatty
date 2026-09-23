@@ -614,3 +614,29 @@ test("the front matter reads the same with CRLF as with LF: the last key is not 
     related: ["./x.md"],
   });
 });
+
+test("an opt-in probe runs only where enabled, and until then its name is the repository's to use", async () => {
+  const own = `export const probes = [
+  { metric: "valid.wholeEnv", kind: "ratchet", standard: [], title: "mine", why: "a repository's own reading, written before the package had one",
+    scan: () => ({ scanned: 1, findings: [] }), controls: [{ name: "a", expect: 1 }, { name: "b", expect: 0 }] },
+];
+`;
+  const dir = tempRepo("ratchet-optin", { "package.json": PKG, "abatty.probes.mjs": own });
+  const off = await loadProbes(dir, DEFAULT_CONFIG);
+  assert.equal(
+    off.probes.filter((p) => p.metric === "api.rowReturn").length,
+    0,
+    "not enabled, not run",
+  );
+  assert.equal(off.probes.find((p) => p.metric === "valid.wholeEnv")?.source, "abatty.probes.mjs");
+  assert.deepEqual(off.problems, []);
+
+  const on = await loadProbes(dir, {
+    ...DEFAULT_CONFIG,
+    enable: ["valid.wholeEnv", "api.rowReturn", "no.suchProbe"],
+  });
+  assert.equal(on.probes.find((p) => p.metric === "valid.wholeEnv")?.source, "abatty");
+  assert.ok(on.probes.some((p) => p.metric === "api.rowReturn"));
+  assert.match(on.problems.join("\n"), /valid\.wholeEnv: a built-in metric name/);
+  assert.match(on.problems.join("\n"), /no\.suchProbe is not an opt-in probe/);
+});

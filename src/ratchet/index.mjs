@@ -21,6 +21,9 @@ import { probes as docsProbes } from "./probes/docs.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
 import { probes as startupProbes } from "./probes/startup.mjs";
+import { probes as boundaryProbes } from "./probes/boundary.mjs";
+import { probes as apiProbes } from "./probes/api.mjs";
+import { probes as shapeProbes } from "./probes/shape.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
@@ -48,6 +51,7 @@ import { probeVersion } from "./baseline.mjs";
  *   version?: number,
  *   approximates?: string,
  *   emptyScanOk?: boolean,
+ *   optIn?: boolean,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
  *   source?: string,
@@ -71,7 +75,16 @@ import { probeVersion } from "./baseline.mjs";
  *   changelog: string,
  *   changelogRequiredFor: string[],
  *   coupled: unknown[],
+ *   enable: string[],
+ *   boundedBy?: string[],
+ *   secretFields?: string[],
+ *   moneyFields?: string[],
+ *   pageGuards?: { pages: string, guard: string }[],
+ *   shapeList?: string,
  * }} RatchetConfig
+ *   `enable`: the opt-in probes this repository runs. A probe marked `optIn` reads one stack's
+ *   conventions; switched on for every repository, an update would turn each one red on a
+ *   metric it never asked for. The keys after it configure those probes.
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
  * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped"} VerdictStatus
  * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
@@ -86,6 +99,9 @@ export const BUILTIN_PROBES = [
   ...docsProbes,
   ...changeProbes,
   ...startupProbes,
+  ...boundaryProbes,
+  ...apiProbes,
+  ...shapeProbes,
 ].map((p) => ({ ...p, source: "abatty" }));
 
 /**
@@ -120,22 +136,31 @@ export function validateProbe(p, builtin) {
 }
 
 /**
- * The probes of a repository: the built-in set less `exclude` (or only `include`), plus the
- * repository's own from `abatty.probes.mjs`, validated.
+ * The probes of a repository: the built-in set less `exclude` (or only `include`), the opt-in
+ * ones it names in `enable`, plus the repository's own from `abatty.probes.mjs`, validated. An
+ * opt-in probe that is not enabled does not reserve its name, so a repository that wrote its own
+ * probe of that name keeps it until it enables the package's.
  * @param {string} repoDir @param {RatchetConfig} config
  * @returns {Promise<{ probes: Probe[], problems: string[] }>}
  */
 export async function loadProbes(repoDir, config) {
   /** @type {string[]} */
   const problems = [];
+  const enabled = Array.isArray(config.enable) ? config.enable : [];
   let probes = BUILTIN_PROBES.filter(
     (p) =>
+      (!p.optIn || enabled.includes(p.metric)) &&
       (!config.include.length || config.include.includes(p.metric)) &&
       !config.exclude.includes(p.metric),
   );
+  for (const m of enabled)
+    if (!BUILTIN_PROBES.some((p) => p.metric === m && p.optIn))
+      problems.push(`ratchet.enable: ${m} is not an opt-in probe of this version`);
   const local = resolve(repoDir, config.local);
   if (existsSync(local)) {
-    const builtin = new Set(BUILTIN_PROBES.map((p) => p.metric));
+    const builtin = new Set(
+      BUILTIN_PROBES.filter((p) => !p.optIn || enabled.includes(p.metric)).map((p) => p.metric),
+    );
     try {
       const mod = await import(pathToFileURL(local).href + `?t=${Date.now()}`);
       const list = Array.isArray(mod.probes)

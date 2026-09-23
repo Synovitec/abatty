@@ -206,6 +206,57 @@
             "type": "string"
           }
         },
+        "enable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions)."
+        },
+        "boundedBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "api.unboundedList: the helpers that bound a list, beside a take."
+        },
+        "secretFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "api.rowReturn: words a column a select must never carry contains (default password, secret, token, otp, hash)."
+        },
+        "moneyFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "api.floatMoney: the field names that hold money (default price, amount, cost, fee, subtotal, balance)."
+        },
+        "pageGuards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pages", "guard"],
+            "properties": {
+              "pages": {
+                "type": "string",
+                "description": "A regex over the page paths this guard protects."
+              },
+              "guard": {
+                "type": "string",
+                "description": "The function a protected page must await first."
+              }
+            }
+          },
+          "description": "auth.unguardedPage: which pages must await which guard first."
+        },
+        "shapeList": {
+          "type": "string",
+          "description": "fn.shapeExemptions: a JSON file whose `files` array lists the files the shape rules are still off for."
+        },
         "hard": {
           "type": "array",
           "items": {
@@ -326,6 +377,13 @@
           "description": "A disclosure line every unattended commit carries; empty for none."
         }
       }
+    },
+    "tenantKeys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The column names that scope a row to a tenant here, beside tenant_id, store_id, company_id and organisation_id (DATA-TENANT)."
     },
     "secrets": {
       "type": "object",

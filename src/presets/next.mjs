@@ -40,6 +40,17 @@ export const next = {
       "prod.dont.touch",
     ],
     lintExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs"],
+    // The opt-in probes a new repository on this stack starts with (ratchet.enable).
+    ratchet: {
+      enable: [
+        "valid.unparsedBoundary",
+        "valid.wholeEnv",
+        "api.unboundedList",
+        "api.rowReturn",
+        "api.floatMoney",
+        "fn.shapeExemptions",
+      ],
+    },
   },
   scripts: {
     typecheck: "tsc --noEmit",

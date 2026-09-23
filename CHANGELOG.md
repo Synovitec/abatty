@@ -7,6 +7,27 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Eight opt-in probes, and `ratchet.enable` to switch them on.** They grew out of one
+  outside repository's own probes, written during its trial, and are generalised here: what
+  was particular to that product is now configuration. `valid.unparsedBoundary` counts route
+  handlers, server actions and credentials callbacks that read input no schema parses.
+  `valid.wholeEnv` counts the environment object taken whole outside the env module.
+  `auth.unguardedPage` counts protected pages that do not await their guard first
+  (`pageGuards`). `api.unboundedList` counts list reads in a route handler without a bound
+  (`boundedBy`). `api.rowReturn` counts server actions that return the ORM's row, or a select
+  with a secret column (`secretFields`). `api.floatMoney` counts money made a number on the wire
+  or stored in a Float column (`moneyFields`). `cache.serverCacheUse` counts server-side caches,
+  for a repository that decided to have none. `fn.shapeExemptions` counts shape rules switched
+  off inline, in the eslint, oxlint, biome, ruff and pylint spellings, or by a list
+  (`shapeList`). They are opt-in because each reads one stack's conventions: on by default,
+  every adopter would have gone red after an update on a metric it never asked for. `init`
+  enables the ones that suit the preset, so a new Next.js repository starts with the boundary
+  and API probes. An opt-in probe that is not enabled does not reserve its name, so a repository
+  that wrote its own version keeps it until it switches to the package's. `abatty ratchet
+  --controls` proves every shipped probe, enabled or not.
+- **DATA-TENANT reads the tenant column a repository names.** `tenantKeys` in the config adds
+  to `tenant_id`, `store_id`, `company_id` and `organisation_id`, so a product whose tenant is
+  a restaurant or a workspace is no longer read as single-tenant.
 - **The score reads presence against truth.** A rule that finds a lint script counted as
   present whether or not the linter was installed, or whether the step had ever gone red. The
   gap analysis now checks each present check that a gate step backs (format, lint, typecheck,

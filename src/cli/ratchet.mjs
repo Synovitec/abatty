@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
 import { changedPaths, pushRange } from "../core/range.mjs";
 import {
+  BUILTIN_PROBES,
   compare,
   failed,
   loadProbes,
@@ -41,7 +42,12 @@ export async function ratchetCommand(command, c) {
       }
       if (flag("--controls")) {
         let bad = 0;
-        for (const p of probes) {
+        // The opt-in probes prove themselves too: a probe the package ships is a probe it vouches
+        // for, enabled here or not.
+        const idle = BUILTIN_PROBES.filter(
+          (b) => b.optIn && !probes.some((p) => p.metric === b.metric),
+        ).map((b) => ({ ...b, source: "abatty, opt-in, not enabled here" }));
+        for (const p of [...probes, ...idle]) {
           const results = runControls(p);
           const failing = results.filter((r) => !r.ok);
           bad += failing.length;
