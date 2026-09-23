@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-23
+
 ### Added
 
 - **`test.coverageExclusions`, an opt-in probe that counts what a coverage floor stopped
