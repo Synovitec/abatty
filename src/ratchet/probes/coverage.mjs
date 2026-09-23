@@ -43,17 +43,19 @@ function arrays(text, key) {
 function listed(c, f) {
   const text = c.read(f);
   if (JS_CONFIG.test(f)) {
-    // Inside the coverage block only: vitest's own `test.exclude` names test files, not code.
+    // Inside a coverage block only: vitest's own `test.exclude` names test files, not code. Every
+    // block, since a workspace config carries one per project.
     const code = codeOnly(text, { strings: "keep" });
-    const start = code.search(/\bcoverage\s*:\s*\{/);
-    const end = start < 0 ? -1 : closeOf(code, code.indexOf("{", start), "{}");
-    const inBlock =
-      end < 0
+    const inBlock = [...code.matchAll(/\bcoverage\s*:\s*\{/g)].flatMap((b) => {
+      const start = b.index ?? 0;
+      const end = closeOf(code, code.indexOf("{", start), "{}");
+      return end < 0
         ? []
         : arrays(code.slice(start, end), /\bexclude\s*:\s*\[/).map((a) => ({
             ...a,
             index: a.index + start,
           }));
+    });
     return [...inBlock, ...arrays(code, /\bcoveragePathIgnorePatterns\s*:\s*\[/)].map((a) => ({
       line: lineAt(text, a.index),
       count: a.count,
@@ -65,15 +67,17 @@ function listed(c, f) {
       count: a.count,
     }));
   if (PY_CONFIG.test(f)) {
-    // `omit =` and the indented lines under it, in an ini or a toml coverage section.
-    const m = /^\s*omit\s*=\s*(\[[^\]]*\]|.*(?:\n[ \t]+\S.*)*)/m.exec(text);
+    // Every `omit =` and the indented lines under it, in an ini or a toml coverage section.
     const own = /\.coveragerc$/.test(f);
-    if (!m || (!own && !/coverage/.test(text.slice(0, m.index)))) return [];
-    const entries = (m[1] || "")
-      .replace(/[[\]"',]/g, " ")
-      .split(/\s+/)
-      .filter(Boolean);
-    return [{ line: lineAt(text, m.index), count: entries.length }];
+    return [...text.matchAll(/^\s*omit\s*=\s*(\[[^\]]*\]|.*(?:\n[ \t]+\S.*)*)/gm)]
+      .filter((m) => own || /coverage/.test(text.slice(0, m.index)))
+      .map((m) => ({
+        line: lineAt(text, m.index ?? 0),
+        count: (m[1] || "")
+          .replace(/[[\]"',]/g, " ")
+          .split(/\s+/)
+          .filter(Boolean).length,
+      }));
   }
   return [];
 }
@@ -122,10 +126,14 @@ export const probes = [
             "export default { test: { exclude: ['e2e/**'], coverage: { thresholds: { lines: 80 }, exclude: ['src/legacy/**', 'src/split-half.ts'] } } };\n",
           "apps/api/jest.config.js":
             "module.exports = { coveragePathIgnorePatterns: ['/generated/'] };\n",
+          // one block per project, and one omit per section: every one is read
+          "packages/ui/vitest.config.mjs":
+            "export default { projects: [{ test: { coverage: { exclude: ['a/**'] } } }, { test: { coverage: { exclude: ['b/**'] } } }] };\n",
+          "tools/setup.cfg": "[coverage:run]\nomit = a/*\n[coverage:report]\nomit = b/*\n",
           ".coveragerc": "[run]\nomit =\n    app/migrations/*\n    app/settings.py\n",
           "src/a.ts": "/* v8 ignore next */\nexport const a = 1;\n",
         },
-        expect: 6,
+        expect: 10,
       },
       {
         name: "a test exclude outside the coverage block, and coverage with nothing excluded",
