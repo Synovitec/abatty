@@ -1,6 +1,6 @@
 ---
 title: "The secret scan, measured"
-description: "The secret scan run against a published corpus of 41 cases - 18 documented credential shapes and 23 look-alikes that are not secrets - with the precision and recall it scores, the six shapes it was found to miss, and what the corpus is not. Reproducible with abatty secrets --benchmark."
+description: "The secret scan run against a published corpus of 45 cases - 20 documented credential shapes and 25 look-alikes that are not secrets - with the precision and recall it scores, the six shapes it was found to miss, and what the corpus is not. Reproducible with abatty secrets --benchmark."
 category: reference
 status: living
 audience: ["developer", "architect", "reviewer"]
@@ -8,7 +8,7 @@ tags: ["secrets", "benchmark", "measurement", "security"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md"]
 source_truth: ["../src/core/secret-corpus.mjs", "../src/core/secrets.mjs"]
 scope: synovitec
-last_verified: "2026-09-19"
+last_verified: "2026-09-23"
 ---
 
 # The secret scan, measured
@@ -25,9 +25,9 @@ abatty secrets --benchmark --json   # the same, for a pipeline
 
 |                                  |                                                  |
 | -------------------------------- | ------------------------------------------------ |
-| Cases                            | 41                                               |
-| Documented credential shapes     | 18                                               |
-| Look-alikes that are not secrets | 23                                               |
+| Cases                            | 45                                               |
+| Documented credential shapes     | 20                                               |
+| Look-alikes that are not secrets | 25                                               |
 | **Precision**                    | **100%** of what it reported was really a secret |
 | **Recall**                       | **100%** of the secrets in the corpus were found |
 
@@ -59,6 +59,17 @@ throwaway credential every pipeline in the world writes, and flagging it is how 
 reader to scroll past it - so that the day a real one appears, they scroll past that too. A
 password equal to its own user name, or one of the well-known service defaults, is not a finding.
 
+The first adopter's repository then reported twenty-six findings, and none was a secret. Two
+shapes caused them, and both are now cases, which each carry the path of the file they sit in:
+
+- **A variable read in source code** (`accessToken: settings.token`). In code a literal is
+  quoted, so the unquoted shape, the one a `.env` file needs, is not read in a source file.
+- **A readable sample in a fixture, a test or a fake** (`mp_access_xyz789`). There a match on a
+  secret-like name is skipped only when the value reads as written by a person: a lowercase
+  word in it and low entropy, both. Entropy alone was the first reading, and a review found it
+  let every hex key through, since sixteen symbols never reach four bits a character; the hex
+  key in a test is now a case. A vendor's own key format is still reported wherever it appears, fixtures included.
+
 ## What this is not
 
 **It is not a third-party benchmark.** The corpus is this repository's own, assembled from the
@@ -77,6 +88,6 @@ What it is instead: reproducible. The corpus is a file in the package
 who disagrees with a case can read it and argue with it. Running the benchmark against a published
 corpus remains open, and this page will say so until it is done.
 
-**A number on 41 cases is a number on 41 cases.** It says the scan handles the shapes people
+**A number on 45 cases is a number on 45 cases.** It says the scan handles the shapes people
 document and the look-alikes people trip over. It does not say what the scan does on a million
 lines of somebody else's repository, and nothing here should be read as if it did.

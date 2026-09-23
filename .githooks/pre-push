@@ -1,3 +1,4 @@
 #!/bin/sh
 # The package's own gate before a push: format, typecheck, tests, no trace of the tools in the files.
-npm run -s gate
+# --refs: the gate judges the refs git hands on stdin, not whatever is checked out.
+npm run -s gate -- --refs

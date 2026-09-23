@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tempRepo } from "./helpers.mjs";
-import { packageManager } from "../src/core/package-manager.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { cli, tempRepo } from "./helpers.mjs";
+import { commandFor, managerFor, packageManager } from "../src/core/package-manager.mjs";
 
 const PKG = JSON.stringify({ name: "p", private: true });
 
@@ -51,4 +53,45 @@ test("yarn 1 and yarn berry are told apart by the lockfile, each with the audit 
   assert.deepEqual(berry?.install, ["yarn", "install", "--immutable"]);
   assert.equal(berry?.audit?.("high").byJson, undefined, "berry's code honours --severity");
   assert.match(berry?.auditCommand || "", /^yarn npm audit/);
+});
+
+test("an npm command is written in the repository's own manager, and npm's are left as they are", () => {
+  const bun = managerFor(tempRepo("pm-bun-cmd", { "package.json": PKG, "bun.lock": "{}\n" }));
+  assert.equal(bun.id, "bun");
+  assert.equal(commandFor("npm run gate:fast", bun), "bun run --silent gate:fast");
+  assert.equal(commandFor("npm test", bun), "bun run --silent test");
+  assert.equal(commandFor("npx eslint --max-warnings=0", bun), "bunx eslint --max-warnings=0");
+  assert.equal(commandFor("make lint", bun), "make lint", "not an npm command: untouched");
+  const npm = managerFor(tempRepo("pm-none-cmd", { "package.json": PKG }));
+  assert.equal(npm.id, "npm", "nothing committed names one: npm");
+  assert.equal(commandFor("npm run gate:fast", npm), "npm run gate:fast");
+});
+
+test("init writes a bun repository's hooks and commands in bun's words", () => {
+  const dir = tempRepo("pm-bun-init", {
+    "package.json": JSON.stringify({
+      name: "b",
+      packageManager: "bun@1.2.0",
+      dependencies: { next: "15.0.0" },
+    }),
+    "bun.lock": "{}\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const hooks = ["pre-commit", "pre-push", "commit-msg"].map((h) =>
+    readFileSync(join(dir, ".githooks", h), "utf8"),
+  );
+  assert.ok(
+    hooks.every(
+      (h) =>
+        !/\bnpx\b|\bnpm run\b/.test(
+          h
+            .split("\n")
+            .filter((l) => !l.startsWith("#"))
+            .join("\n"),
+        ),
+    ),
+  );
+  assert.match(hooks[1] || "", /^bun run --silent gate --refs$/m);
+  const cfg = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
+  assert.equal(cfg.commands.gate, "bun run --silent gate:fast");
 });

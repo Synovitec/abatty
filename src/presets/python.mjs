@@ -6,6 +6,7 @@
  * requirements.txt, .py sources), never from npm dependencies. NOT PROVEN by a repository yet;
  * `init` says so, and the first Python repository names what is wrong.
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const python = {
@@ -37,14 +38,16 @@ export const python = {
     ],
     lintExtensions: [".py"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
-    ratchet: { enable: ["fn.shapeExemptions", "change.refactorTests", "code.clones"] },
+    ratchet: {
+      enable: [...COMMON_PROBES],
+    },
   },
   scripts: {
     standards: "abatty ratchet",
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: [],
   gate: {
@@ -86,7 +89,7 @@ export const python = {
     suites: [
       {
         name: "database suite (DATA.4, TEST.2)",
-        paths: /^(migrations\/|alembic\/|src\/db\/|tests\/(integration|db)\/)/,
+        paths: /(^|\/)(migrations\/|alembic\/|src\/db\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

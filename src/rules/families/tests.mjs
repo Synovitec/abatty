@@ -51,13 +51,29 @@ export const rules = [
       // The rule states the practice - a runner and tests - and the platform's own runner is one:
       // `node --test` ships with Node and carries no dependency and no config file to look for.
       const platform = Boolean(c.script(/\bnode\b[^&|]*--test|(^|\W)node:test(\W|$)/));
-      const runner = c.has("vitest")
-        ? "vitest"
-        : c.has("jest")
-          ? "jest"
-          : platform
-            ? "node --test"
-            : "";
+      // The script that runs the tests names the runner before an installed package does: a
+      // monorepo whose tests run on `bun test` read as jest, because one app depended on it.
+      const byScript = (/** @type {string} */ s) =>
+        /\bvitest\b/.test(s)
+          ? "vitest"
+          : /\bbun test\b/.test(s)
+            ? "bun test"
+            : /\bjest\b/.test(s)
+              ? "jest"
+              : /\bnode\b[^&|]*--test/.test(s)
+                ? "node --test"
+                : "";
+      const runner =
+        byScript(String(c.scripts.test || "")) ||
+        (c.has("vitest")
+          ? "vitest"
+          : c.script(/\bbun test\b/)
+            ? "bun test"
+            : c.has("jest")
+              ? "jest"
+              : platform
+                ? "node --test"
+                : "");
       const js = runner && testFiles.length > 0 ? "present" : runner ? "partial" : "missing";
       return {
         status:

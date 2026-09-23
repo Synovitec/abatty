@@ -167,7 +167,7 @@ test("the CLI and the hook: abatty secrets --staged is what init's pre-commit ho
 });
 
 test("the secret scan is measured against the published corpus, and the numbers are a floor", () => {
-  const r = scoreCorpus((text) => scanText("corpus", text));
+  const r = scoreCorpus((text, path) => scanText(path, text));
 
   // A corpus that only contains what the scanner already catches measures nothing, so the shape
   // of the corpus is checked before its score: look-alikes outnumber secrets, and every case

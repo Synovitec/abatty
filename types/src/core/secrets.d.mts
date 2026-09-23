@@ -1,4 +1,11 @@
-/** Scan one text. @param {string} path @param {string} text */
+/**
+ * Scan one text. Two readings are narrowed by where the text lives, because an adopter's scan
+ * reported twenty-six findings and none was a secret. In source code the unquoted shape is not
+ * read: a literal there is quoted, so `token: config.apiToken` is a variable read and never a
+ * leak. In a fixture, a test or a fake, a match on a secret-like NAME counts only when its value
+ * looks generated; a provider's own key format is reported wherever it appears.
+ * @param {string} path @param {string} text
+ */
 export function scanText(path: string, text: string): SecretFinding[];
 /** The allow-list of paths: `secrets.allow` in the config. @param {string} repoDir */
 export function secretsAllow(repoDir: string): any;

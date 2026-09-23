@@ -119,7 +119,24 @@ export const rules = [
     check: (c) => {
       const wrapper = c.exists(".claude/bin/git") || c.exists(".claude/bin/git.cmd");
       const logic = c.exists(".claude/bin/shim.mjs");
-      if (wrapper && logic) return { status: "present", evidence: "the git shim is installed" };
+      // Installed is not reachable: a `git` in a folder no PATH names refuses nothing, and an
+      // adopter's shim sat inert for a week while this rule counted it. The night's runner puts
+      // it first; a terminal reaches it through an .envrc that does the same.
+      const envrc = /\.claude\/bin/.test(c.read(".envrc"));
+      // The runner's own folder, not the config: every initialised repository has phases in its
+      // config, so reading them credited a shim no night had ever run with.
+      const night = c.exists(".claude/night");
+      if (wrapper && logic)
+        return envrc || night
+          ? {
+              status: "present",
+              evidence: `the git shim is installed and on PATH for ${[night ? "the night's runs" : "", envrc ? "a terminal (.envrc)" : ""].filter(Boolean).join(" and ")}`,
+            }
+          : {
+              status: "partial",
+              evidence:
+                "the git shim is installed, but nothing puts .claude/bin on PATH: no night and no .envrc",
+            };
       if (wrapper || logic)
         return {
           status: "partial",

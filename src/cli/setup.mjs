@@ -8,6 +8,7 @@ import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
 import { readAdoption } from "../core/repo.mjs";
+import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 
 /**
@@ -42,8 +43,13 @@ export async function initCommand(cx, preset) {
     );
   out(t.heading("By hand, in this order"));
   let n = 1;
-  if (r.missingDeps.length) out(`  ${n++}. npm i -D ${r.missingDeps.join(" ")}\n`);
-  out(`  ${n++}. npm run hooks:install\n`);
+  // In the manager the repository committed: a bun-only repository was told to run npm.
+  const pm = managerFor(dir);
+  const addDev = { npm: "npm i -D", pnpm: "pnpm add -D", yarn: "yarn add -D", bun: "bun add -d" }[
+    pm.id
+  ];
+  if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  out(`  ${n++}. ${pm.run("hooks:install").join(" ")}\n`);
   // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
   // documents repository was being told to fill a dependency-cruiser config it has no reason to
   // own and no copy of, which is the first thing its reader would go looking for and not find.
@@ -55,9 +61,9 @@ export async function initCommand(cx, preset) {
   );
   if (graph)
     out(
-      `  ${n++}. On an existing repository: npx depcruise src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
+      `  ${n++}. On an existing repository: ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
     );
-  out(`  ${n++}. abatty doctor · abatty measure · npm run gate\n\n`);
+  out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
   return;
 }
 

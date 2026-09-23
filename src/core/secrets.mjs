@@ -65,15 +65,63 @@ const THROWAWAY = /^(?:postgres|mysql|mariadb|mongo|redis|root|admin|guest|test|
 const EXPRESSION =
   /^(?:process\.env|import\.meta|os\.environ|System\.getenv|Deno\.env|config\.|env\.|secrets\.|vars\.)/i;
 
-/** Scan one text. @param {string} path @param {string} text */
+/** A source file of a programming language: a literal there is quoted, so an unquoted value is a name. */
+const CODE_FILE = /\.(?:[cm]?[jt]sx?|py|go|rb|java|kt|cs|php|rs|swift|scala|dart)$/i;
+/** A fixture, a test or a fake: where a sample credential is the point, not a leak. */
+const SAMPLE_FILE =
+  /(^|\/)(?:fixtures?|__fixtures__|__mocks__|tests?|__tests__|e2e|spec)\/|\.(?:test|spec)\.[^/]+$|(^|\/)[^/]*(?:fixture|fake|mock|stub)[^/]*$/i;
+/** The two shapes that read a name, not a format: the ones a readable sample value trips. */
+const GENERIC = new Set([
+  "a long literal assigned to a secret-like name",
+  "a long value assigned to a secret-like name",
+]);
+
+/**
+ * Bits per character of a value: a readable sample (`mp_access_xyz789`) sits well below a
+ * generated secret, whose characters are close to uniform.
+ * @param {string} v
+ */
+function entropy(v) {
+  /** @type {Record<string, number>} */
+  const n = {};
+  for (const c of v) n[c] = (n[c] || 0) + 1;
+  return Object.values(n).reduce((h, k) => h - (k / v.length) * Math.log2(k / v.length), 0);
+}
+
+/** A lowercase word standing between separators, or a word a sample is named with. */
+const WORDS =
+  /(?:^|[_\-.])[a-z]{4,}(?=[_\-.]|$)|test|fake|dummy|example|sample|mock|demo|changeme|placeholder/;
+
+/**
+ * A value a person wrote rather than a generator: a word in it and low entropy, both. Entropy
+ * alone let every hex key through, since sixteen symbols never reach four bits a character, so a
+ * real key pasted into a test to make it pass read as a sample. A hex or base64 key carries no
+ * lowercase word between separators.
+ * @param {string} v
+ */
+function readable(v) {
+  return WORDS.test(v) && entropy(v) < 4;
+}
+
+/**
+ * Scan one text. Two readings are narrowed by where the text lives, because an adopter's scan
+ * reported twenty-six findings and none was a secret. In source code the unquoted shape is not
+ * read: a literal there is quoted, so `token: config.apiToken` is a variable read and never a
+ * leak. In a fixture, a test or a fake, a match on a secret-like NAME counts only when its value
+ * looks generated; a provider's own key format is reported wherever it appears.
+ * @param {string} path @param {string} text
+ */
 export function scanText(path, text) {
   /** @type {SecretFinding[]} */
   const out = [];
   const lines = text.split(/\r?\n/);
+  const code = CODE_FILE.test(path);
+  const sample = SAMPLE_FILE.test(path);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] || "";
     if (line.includes(ALLOW_MARK)) continue;
     for (const [kind, re] of SHAPES) {
+      if (code && kind === "a long value assigned to a secret-like name") continue;
       const m = line.match(re);
       if (!m) continue;
       // The connection-string shape captures the user and the password; everything else captures
@@ -83,6 +131,7 @@ export function scanText(path, text) {
       if (isUrl && (value === m[1] || THROWAWAY.test(value))) continue;
       if (PLACEHOLDER_WHOLE.test(value) || PLACEHOLDER_START.test(value)) continue;
       if (EXPRESSION.test(value)) continue;
+      if (sample && GENERIC.has(kind) && readable(value)) continue;
       out.push({ path, line: i + 1, kind, sample: value.slice(0, 6) + "…" + value.slice(-3) });
       break;
     }

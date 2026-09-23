@@ -5,6 +5,124 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-23
+
+### Added
+
+- **`test.coverageExclusions`, an opt-in probe that counts what a coverage floor stopped
+  watching.** Splitting a file and then excluding the untested half keeps a coverage total green
+  over code no test reaches; an adopter watched it happen in a week. The probe counts the entries
+  of the coverage exclude lists (vitest, jest, nyc, c8, coverage.py) and each inline ignore
+  comment, so they may only shrink. `init` enables it with the other opt-in probes on every
+  preset but docs.
+
+### Fixed
+
+- **`init --force` never writes over the repository's own context file.** On a repository
+  that wrote its own CLAUDE.md, `--force` turned it into an import of an AGENTS.md that pointed
+  back at it, and the context was gone. The repository's file and an AGENTS.md it already has are
+  kept; the import line init writes itself is still refreshed.
+- **The gate no longer builds for a comment, or over a running dev server.** A pushed file whose
+  diff is only comments or blank lines selects no suite, so rewording a comment in a page no
+  longer runs the build and the browser suite. While `next dev` is live on the checkout (the
+  pid in `.next/dev/lock` is alive), the build suite is deferred to CI with the pid and port
+  named, because a production build over a running dev server emptied an adopter's
+  node_modules three times in a day. A lock left by a crash defers nothing.
+- **The hooks fall back to the repository's own package manager.** When the config names no
+  gate or lint command, the Stop hook, the lint-on-edit hook and the session brief used npm everywhere, so a
+  bun-only repository's gate ran through a manager it did not have. They now read the lockfile
+  (bun, pnpm, yarn, else npm), and a command the config names still wins. The defaults for
+  `commands` also apply again: a config naming one command lost the fallback for the other.
+- **A monorepo's pipeline is credited for its workspaces' scripts.** A step that runs
+  `bun run typecheck` in `apps/web`, or `pnpm --filter web run lint`, was reported as naming a
+  script the package does not have, because only the root's `package.json` was read and a flag
+  before `run` hid the name. INST-CI and INST-CI-STEPS now read every workspace's scripts.
+- **A `source_truth` entry with a star inside a file name is no longer read as dangling.**
+  `src/core/secret*.mjs` was cut at the star into `src/core/secret`, a path that never exists;
+  the probe now keeps the folder that holds the pattern.
+- **Twelve rules stop misreading a repository that is not shaped like this one.** An adopter's
+  bun monorepo reported findings that were not true. Now: bun's lockfile counts
+  (SEC-LOCKFILE). A GitHub-only repository is no longer told its pipeline is a stray beside
+  a Woodpecker it does not have (INST-DEAD-CI). A test named `rls`, `isolation` or `tenant`
+  proves isolation wherever it sits (DATA-TENANT). The runner is read from the `test` script
+  before an installed package (TEST-UNIT). A logger module is found at any depth
+  (OBS-REDACTION, OBS-CONSOLE). The health endpoint named is the shortest path (OBS-HEALTH).
+  Angle brackets inside code are not read as template blanks (DOC-CONTEXT). Every wired hook
+  event is listed (HARNESS-HOOKS). `.abatty/` must be ignored as well as the night's folder
+  (HARNESS-GITIGNORE). The git shim counts only where the night or an `.envrc` puts it on PATH
+  (SEC-AGENT-SHIM). Commits that carry the authorship trailer by policy read as a practised
+  policy rather than n/a (FLOW-TRAILER). The em dash rule stays a must, and a repository whose
+  typography uses the dash, as French does, says `style.emDash: "allowed"` in its config
+  (FLOW-EMDASH).
+- **The secret scan stops reporting variable reads and fixture samples.** On an adopter's repository
+  it reported twenty-six findings and none was a secret, which trains people to add allow
+  comments until the real one is waved through too. In source code the unquoted shape is no
+  longer read: a literal there is quoted, so `accessToken: settings.token` is a variable read,
+  the correct pattern. In a fixture, a test or a fake, a match on a secret-like name counts only
+  only when its value reads as generated, so a readable sample like `mp_access_xyz789` is left
+  alone. Readable means a lowercase word and low entropy, both: entropy alone would have let
+  every hex key through. A provider's own key format is still reported wherever it appears. The corpus
+  gained four cases, a hex key in a test among them, each case can now name the file it sits in, and the scan still
+  scores 100% precision and recall.
+
+- **The pre-push gate judges the push, not whatever is checked out.** git hands a pre-push hook
+  the refs being pushed; the hook `init` writes ignored them. So a push deleting three branches
+  ran the whole gate, build and browser suite included, on the branch the developer happened to
+  be on, and pushing another branch was judged by the checkout's tree. An adopter's sessions
+  began deleting branches through the forge's API to get round it. The hook now passes the refs
+  to `abatty gate --refs`, which reads each line:
+  - a deletion runs no gate, and says so;
+  - the commit checked out is judged over the range the push adds, and when several refs name
+    it, over the range the furthest-behind of them adds;
+  - a tag is judged as the commit it names, since a tag push is what starts a release;
+  - a push of any other commit is refused, loudly, since the tree here is not the one being
+    pushed.
+  With nothing on stdin (the hook run by hand), the gate reads the push itself, as before. This
+  repository's own pre-push hook passes the refs too.
+
+- **A monorepo is read as one.** The database suite's paths matched only at the root, so a
+  migration under `packages/db/migrations/` never selected it, and in the adopter that reported
+  it that was the suite that mattered most. It now matches the folder at any depth, never a name
+  that merely contains the word. `init` points the import graph at the folders a repository's
+  sources are in (`src`, or `apps packages` and the like) rather than a `src/` it does not have.
+  Where the repository already has its own `CLAUDE.md`, `init` writes `AGENTS.md` as a pointer
+  to it. It used to write an unfilled template there, which read as a second context file.
+
+- **The files abatty writes pass the repository's format check as they are.** `baseline`,
+  `update`, `init` and the night runner wrote JSON with every array item on its own line, where
+  the formatter puts a short array on one line, so a repository that checks formatting went red
+  the next time abatty wrote the baseline. An adopter had to put it in its format-ignore file.
+  JSON is now written in the formatter's shape, at the print width the repository's formatter
+  config sets (80 when it sets none). A test compares the output with the formatter's own, on
+  sample values and on this repository's baseline, config and lock.
+
+- **The harness self-test passes on a repository that allows direct pushes to its base.** Ten
+  guard cases assumed a PR-only base and read the repository's own config, so a repository with
+  `directPushToBase: true` failed its self-test on its own, legitimate policy. The cases now run
+  against the repository's config with that one key set as they assume, and two new cases prove
+  the other setting: allowed by day, still refused at night. The Stop hook's timeout check also
+  reads a hook written as one `command` line (`cd` into the project folder `&& node ...`), which
+  it failed before, and not only the `command` plus `args` form.
+
+- **A night session is judged on the files it changed, not on its neighbours'.** The Stop hook
+  refused to end a session while anything in the worktree was uncommitted, and told the agent to
+  commit it or restore it. In a worktree several sessions share, that was an instruction to take
+  or delete another session's work. The SessionStart hook now records what was already
+  uncommitted (each file with a hash of its content). The Stop hook judges only what is new or
+  changed since, and names the others as left alone.
+
+- **`init` speaks the repository's package manager.** The three git hooks, the commands it writes
+  into the config and its "by hand" steps said `npx` and `npm run` whatever the repository
+  used; a bun-only repository that forbids npm had to rewrite all of them before it could trust
+  them. They now use the manager the repository committed (bun's `bunx`/`bun run`, pnpm's,
+  yarn's), and npm where nothing names one.
+- **`init` stages nothing.** It staged the hooks it wrote, to carry their executable bit into
+  the first commit from a filesystem without modes, and in a repository several sessions share,
+  the next commit of any of them swept those files in. The new `abatty hooks`, which the
+  presets' `hooks:install` now runs, sets `core.hooksPath` and the executable bit on every
+  machine that installs the hooks, so a hook committed without the bit still runs. Where the bit
+  cannot be read from disk, `init` says how to commit the file with it.
+
 ## [0.5.0] - 2026-09-23
 
 ### Added

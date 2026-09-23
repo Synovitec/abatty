@@ -26,7 +26,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { checkDirection, formatDirection } from "./check-direction.mjs";
 import { join } from "node:path";
-import { NIGHT, NIGHT_DIR, appendLog, counter, coupledOffenders, currentBranch, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, tail, writeReceipt } from "./lib.mjs";
+import { NIGHT, NIGHT_DIR, appendLog, counter, coupledOffenders, currentBranch, defaultCommands, git, loadConfig, loadTrustedConfig, parseJsonFile, readEvent, snapshotFile, tail, treeSnapshot, writeReceipt } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 
@@ -80,7 +80,7 @@ pass("branch");
 // 2. The gate. The command string comes from the committed adoption.json (base copy at night), not
 // from the model or a request, and it needs a shell on Windows (npm is a .cmd shim) - which is why
 // this is execSync with shell: true rather than execFile.
-const gateCmd = config.commands?.gate || "npm run gate:fast";
+const gateCmd = config.commands?.gate || defaultCommands().gate;
 if (source === "tree") process.stderr.write(`[stop-gate] adoption.json is not on ${base}; using the working-tree copy\n`);
 try {
   execSync(gateCmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", timeout: 25 * 60 * 1000, maxBuffer: 64 * 1024 * 1024, shell: true });
@@ -102,14 +102,18 @@ if (!direction.ok) {
   pass("direction", direction.recorded.length ? `${direction.recorded.length} loosening(s) recorded by decision` : undefined);
 }
 
-// 4. A clean tree: every finished step is a commit.
-const dirty = git("status", "--porcelain")
-  .split("\n")
-  .filter((l) => l.trim() && !l.includes(".claude/night/"));
+// 4. A clean tree: every finished step is a commit. Only this session's changes are judged: a
+// file that was already uncommitted when it started, unchanged since, belongs to somebody else
+// (another session in the same worktree), and telling the agent to commit or restore it was
+// telling it to take or destroy work that is not its own.
+const started = existsSync(snapshotFile(event.session_id)) ? parseJsonFile(snapshotFile(event.session_id)) : {};
+const now = treeSnapshot();
+const theirs = Object.keys(now).filter((p) => started[p] !== undefined && started[p] === now[p]);
+const dirty = Object.keys(now).filter((p) => !p.startsWith(".claude/night/") && !theirs.includes(p));
 if (dirty.length > 0) {
-  block("tree", `Uncommitted changes:\n${dirty.slice(0, 40).join("\n")}\n\nCommit them (Conventional Commit, one behaviour per commit, a line under [Unreleased] in ${config.files?.changelog || "CHANGELOG.md"}), or restore them if they are not a finished step.`);
+  block("tree", `Uncommitted changes this session made:\n${dirty.slice(0, 40).join("\n")}\n\nCommit them (Conventional Commit, one behaviour per commit, a line under [Unreleased] in ${config.files?.changelog || "CHANGELOG.md"}), or restore them if they are not a finished step.${theirs.length ? ` ${theirs.length} file(s) uncommitted before this session started are left alone: they are not yours to commit or restore.` : ""}`);
 }
-pass("tree");
+pass("tree", theirs.length ? `${theirs.length} file(s) from before this session left alone` : undefined);
 
 // 5. The changelog, per commit over the branch range: every source-touching commit is followed or
 // accompanied by a changelog touch. A single line added at the start of the branch used to cover

@@ -10,7 +10,9 @@ import { prerequisites } from "../core/prereqs.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
 import { ciFromEnv } from "../core/env.mjs";
-import { readAdoption } from "../core/repo.mjs";
+import { git, readAdoption } from "../core/repo.mjs";
+import { pushLines, pushPlan, refRange } from "../core/push-refs.mjs";
+import { readFileSync } from "node:fs";
 import * as t from "../ui/term.mjs";
 
 /**
@@ -20,13 +22,21 @@ export async function gateCommand(cx, preset) {
   const { dir, opt, flag, out, err, VERSION } = cx;
   if (flag("--preflight")) process.exit(preflightScreen(cx, preset));
   const base = opt("--base") || readAdoption(dir)?.baseBranch || "main";
+  // --refs: the pre-push hook hands the lines git gave it, and the gate judges the push they
+  // describe rather than whatever is checked out (src/core/push-refs.mjs).
+  let range = opt("--range");
+  if (flag("--refs")) {
+    const pushed = refsVerdict(cx, base);
+    if (typeof pushed === "number") process.exit(pushed);
+    range = pushed || range;
+  }
   const t0 = Date.now();
   const r = runGate({
     repoDir: dir,
     preset,
     workspaces: detectWorkspaces(dir, readAdoption(dir)),
     fast: flag("--fast"),
-    range: opt("--range"),
+    range,
     base,
     // The pipelines set CI; a gate run there without --range cannot read the push from git.
     ci: ciFromEnv(),
@@ -73,6 +83,44 @@ export async function gateCommand(cx, preset) {
     );
   out("\n");
   process.exit(r.errored ? EXIT.error : r.ok ? EXIT.clean : EXIT.findings);
+}
+
+/**
+ * The push the hook describes on stdin, read before the gate runs: an exit code when there is
+ * nothing to run (only deletions and tags) or a ref the checkout cannot judge, else the range the
+ * judged ref adds ("" to let the gate find it).
+ * @param {import("./ratchet.mjs").CliContext} cx @param {string} base @returns {number | string}
+ */
+function refsVerdict(cx, base) {
+  let text = "";
+  try {
+    // A terminal is somebody typing, not git handing lines: reading it would wait for ever.
+    if (!process.stdin.isTTY) text = readFileSync(0, "utf8");
+  } catch {
+    /* no stdin: nothing was handed, the gate reads the push itself */
+  }
+  const lines = pushLines(text);
+  // Nothing handed (the hook run by hand): the gate reads the push itself, as it always has.
+  if (!lines.length) return "";
+  const head = git(cx.dir, "rev-parse", "HEAD");
+  const plan = pushPlan(lines, head, (sha) => git(cx.dir, "rev-parse", `${sha}^{commit}`));
+  for (const s of plan.skipped) cx.out(`${t.glyph.skip} ${t.gray(s)}\n`);
+  if (plan.refused.length) {
+    for (const s of plan.refused) cx.out(`${t.glyph.fail} ${t.red(s)}\n`);
+    return EXIT.findings;
+  }
+  if (!plan.judge.length) {
+    cx.out(`${t.glyph.ok} ${t.green("nothing pushed that the gate judges")}\n`);
+    return EXIT.clean;
+  }
+  // Every judged ref names HEAD, and together they add what lies past the oldest of their bases:
+  // judging the first alone let a second ref, further behind on its remote, carry commits unseen.
+  const froms = plan.judge.map(
+    (l) => refRange(l, git(cx.dir, "merge-base", base, head)).split("..")[0] || "",
+  );
+  if (froms.some((f) => !f)) return "";
+  const from = froms.length === 1 ? froms[0] : git(cx.dir, "merge-base", "--octopus", ...froms);
+  return from ? `${from}..${head}` : "";
 }
 
 /**

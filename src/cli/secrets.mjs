@@ -16,7 +16,7 @@ import * as t from "../ui/term.mjs";
  */
 function benchmark(c) {
   const { flag, out, VERSION } = c;
-  const r = scoreCorpus((text) => scanText("corpus", text));
+  const r = scoreCorpus((text, path) => scanText(path, text));
   if (flag("--json")) {
     out(
       JSON.stringify(

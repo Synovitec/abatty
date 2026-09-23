@@ -68,7 +68,7 @@ import graph, dead code, tests, the ratchet with the changelog over the pushed r
 scan, the dependency audit.
 
 Heavy suites are selected by path, so a change that touches no database code does not wait for the
-database suite. A step whose script the repository does not have yet is reported as skipped rather
+database suite, and a push that only changes comments builds nothing. A step whose script the repository does not have yet is reported as skipped rather
 than passed, and the verdict leads with how many steps did not run. Steps the preset requires
 cannot be skipped: without them the gate reports that it could not run.
 
@@ -227,18 +227,19 @@ Some built-in probes are **opt-in**, because each reads one stack's conventions 
 noise, or a surprise red after an update, anywhere else. A repository switches them on in
 `ratchet.enable`, and `init` enables the ones that suit the preset:
 
-| Probe                    | Counts                                                                                             | Configured by  |
-| ------------------------ | -------------------------------------------------------------------------------------------------- | -------------- |
-| `valid.unparsedBoundary` | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
-| `valid.wholeEnv`         | The environment object taken whole outside the env module                                          |                |
-| `auth.unguardedPage`     | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
-| `api.unboundedList`      | List reads in a route handler without a bound                                                      | `boundedBy`    |
-| `api.rowReturn`          | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
-| `api.floatMoney`         | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
-| `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                           |                |
-| `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
-| `change.refactorTests`   | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
-| `code.clones`            | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
+| Probe                     | Counts                                                                                             | Configured by  |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
+| `valid.unparsedBoundary`  | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
+| `valid.wholeEnv`          | The environment object taken whole outside the env module                                          |                |
+| `auth.unguardedPage`      | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
+| `api.unboundedList`       | List reads in a route handler without a bound                                                      | `boundedBy`    |
+| `api.rowReturn`           | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
+| `api.floatMoney`          | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
+| `cache.serverCacheUse`    | Server-side caches of a read, for a repository that decided to have none                           |                |
+| `fn.shapeExemptions`      | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
+| `change.refactorTests`    | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
+| `code.clones`             | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
+| `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

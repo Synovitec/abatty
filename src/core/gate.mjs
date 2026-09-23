@@ -23,6 +23,7 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
 import { suiteDatabase } from "./hermetic.mjs";
 import { builtinStep } from "./builtins.mjs";
+import { commentOnly, liveDevServer } from "./suite-select.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -75,6 +76,20 @@ export function runGate(o) {
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
       : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
+  // A pushed file whose diff is only comments changes no behaviour and selects no suite; one
+  // with uncommitted edits as well is read whole, so it still selects.
+  const quiet = blind
+    ? new Set()
+    : commentOnly(
+        repoDir,
+        range,
+        changed.filter((f) => !pending.includes(f)),
+      );
+  if (quiet.size)
+    log(
+      `· ${quiet.size} file(s) changed only in comments select no suite: ${[...quiet].slice(0, 5).join(", ")}`,
+    );
+  const suiteSelection = selection.filter((f) => !quiet.has(f));
   // Said before the first step rather than found after the slowest one; said, not refused.
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
@@ -175,7 +190,7 @@ export function runGate(o) {
   const suites = (p, under) => {
     for (const suite of p.gate.suites) {
       const name = prefix + suite.name;
-      const byPath = selection.some(
+      const byPath = suiteSelection.some(
         (f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)),
       );
       const ws = under.replace(/\/$/, "");
@@ -199,8 +214,12 @@ export function runGate(o) {
       const db = suite.docker
         ? suiteDatabase([repoDir, join(repoDir, under)], { ci: o.ci === true, db: o.db })
         : { ok: /** @type {const} */ (true), env: {} };
-      const why =
-        suite.docker && !dockerUp()
+      // Not in CI: a lock restored from a cache can name a pid the runner reused, and there a
+      // deferral means the suite never runs.
+      const dev = o.ci ? null : liveDevServer(join(repoDir, under), suite.devLocks);
+      const why = dev
+        ? `a dev server is running on this checkout (pid ${dev.pid}${dev.port ? `, port ${dev.port}` : ""}, ${dev.lock}), and a build now would overwrite what it serves`
+        : suite.docker && !dockerUp()
           ? "the Docker daemon is not running"
           : db.ok
             ? ""

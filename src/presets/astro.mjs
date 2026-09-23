@@ -5,6 +5,7 @@
  * yet - a preset is real when a repository has run it, so `init` says so; the fixture in the
  * tests proves the package does not break on the shape, not the stack.
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const astro = {
@@ -34,7 +35,7 @@ export const astro = {
     lintExtensions: [".ts", ".tsx", ".js", ".mjs", ".astro"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
     ratchet: {
-      enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests", "code.clones"],
+      enable: ["valid.wholeEnv", ...COMMON_PROBES],
     },
   },
   scripts: {
@@ -48,7 +49,7 @@ export const astro = {
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript", "@astrojs/check"],
   gate: {

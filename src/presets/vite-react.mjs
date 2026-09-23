@@ -5,6 +5,7 @@
  * the harness. The graph and dead-code gates are not wired there yet (ADOPTION_STATUS names
  * the shortest path), so `proven` names the date of what is.
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const viteReact = {
@@ -42,7 +43,7 @@ export const viteReact = {
     lintExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
     ratchet: {
-      enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests", "code.clones"],
+      enable: ["valid.wholeEnv", ...COMMON_PROBES],
     },
   },
   scripts: {
@@ -56,7 +57,7 @@ export const viteReact = {
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
   gate: {
@@ -105,7 +106,7 @@ export const viteReact = {
     suites: [
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
-        paths: /^(migrations\/|server\/(models|migrations|db)\/|tests\/(integration|db)\/)/,
+        paths: /(^|\/)(migrations\/|server\/(models|migrations|db)\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

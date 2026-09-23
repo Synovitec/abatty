@@ -211,7 +211,7 @@
           "items": {
             "type": "string"
           },
-          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions)."
+          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions)."
         },
         "boundedBy": {
           "type": "array",
@@ -384,6 +384,19 @@
         "type": "string"
       },
       "description": "The column names that scope a row to a tenant here, beside tenant_id, store_id, company_id and organisation_id (DATA-TENANT)."
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^\\$": {}
+      },
+      "properties": {
+        "emDash": {
+          "enum": ["refused", "allowed"],
+          "description": "Whether this repository's typography uses the em dash; allowed makes FLOW-EMDASH n/a (French sets it as punctuation)."
+        }
+      }
     },
     "secrets": {
       "type": "object",

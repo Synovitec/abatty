@@ -10,7 +10,9 @@
  *   want of a script read "gate green" and exit 0 (an outside trial's finding). What is required
  *   is the preset's word: the tests and the ratchet everywhere code is, the typecheck where the
  *   preset is TypeScript-native; a linter or a graph is a dependency decision the repository makes.
- * @typedef {{ name: string, paths: RegExp, docker?: boolean, steps: GateStep[] }} GateSuite
+ * @typedef {{ name: string, paths: RegExp, docker?: boolean, devLocks?: string[], steps: GateStep[] }} GateSuite
+ *   `devLocks` are the lock files a framework's dev server holds; while one is live the suite is
+ *   deferred to CI rather than built over it.
  * @typedef {{ file: string, needs: string[] }} PresetRule a rule file that applies only where the
  *   repository depends on one of `needs`. A bare string always applies.
  * @typedef {{

@@ -8,7 +8,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { git, parseJson, readAdoption, readJsonFile } from "../core/repo.mjs";
+import {
+  formatJson,
+  git,
+  parseJson,
+  printWidth,
+  readAdoption,
+  readJsonFile,
+} from "../core/repo.mjs";
 import { CONTROLS_FILE } from "../core/step-controls.mjs";
 import { buildContext } from "../rules/context.mjs";
 import { describeTrust, scanTrust } from "./trust.mjs";
@@ -27,10 +34,10 @@ export const HARNESS_FILES = [
   ".claude/skills/adopt-standards/SKILL.md",
 ];
 
-/** @param {string} p @param {unknown} v JSON without a BOM, LF, a trailing newline: the way the hooks read it back. */
+/** @param {string} p @param {unknown} v JSON without a BOM, LF, a trailing newline, in the formatter's shape: the way the hooks read it back and the format check leaves it. */
 export function writeJson(p, v) {
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(v, null, 2) + "\n");
+  writeFileSync(p, formatJson(v, printWidth(dirname(p))));
 }
 /** @param {string} p @returns {any} */
 export function readJson(p) {

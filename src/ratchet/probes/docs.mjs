@@ -16,14 +16,16 @@ const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
 
 /**
- * The tree prefix of a source_truth entry: everything before the first glob character, without
- * a trailing slash; an entry starting with `./` or `../` is read from the document's folder,
- * any other from the root. Null when the entry leaves the repository.
+ * The tree prefix of a source_truth entry: the folders before the segment that holds the first
+ * glob character, without a trailing slash; an entry starting with `./` or `../` is read from the
+ * document's folder, any other from the root. Null when the entry leaves the repository. The
+ * whole segment goes, not the text after the character: `src/core/secret*.mjs` cut at the star
+ * left `src/core/secret`, a path that never exists, and a live entry read as dangling.
  * @param {string} entry @param {string} doc the document's path
  */
 function prefixOf(entry, doc) {
   const i = entry.search(/[*?{[]/);
-  const raw = (i < 0 ? entry : entry.slice(0, i)).replace(/\/+$/, "");
+  const raw = (i < 0 ? entry : entry.slice(0, entry.lastIndexOf("/", i) + 1)).replace(/\/+$/, "");
   const p = /^\.\.?\//.test(raw) ? posix.normalize(posix.join(dirname(doc), raw)) : raw;
   return p.startsWith("../") || p === ".." ? null : p;
 }
@@ -291,6 +293,19 @@ export const probes = [
         name: "an entry naming a folder that exists",
         files: { "docs/a.md": FM('source_truth:\n  - "src/**"\n'), "src/x.ts": "export {};\n" },
         expect: 0,
+      },
+      {
+        name: "a star inside a file name keeps the folder that holds it",
+        files: {
+          "docs/a.md": FM('source_truth:\n  - "src/core/secret*.mjs"\n'),
+          "src/core/secrets.mjs": "export {};\n",
+        },
+        expect: 0,
+      },
+      {
+        name: "a star inside a file name in a folder that is gone",
+        files: { "docs/a.md": FM('source_truth:\n  - "src/gone/secret*.mjs"\n') },
+        expect: 1,
       },
       {
         name: "an entry relative to the document's folder resolves from there",

@@ -111,14 +111,20 @@ test("init merges the config at every depth: a repository that set one key of a 
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")), cfg);
 });
 
-test("the git hooks init writes are executable, in the filesystem and in the index", () => {
+test("the git hooks init writes are executable where they are installed, and nothing is staged for another session to sweep in", () => {
   // git skips a hook that is not executable and says so only as a hint, so a pre-push hook
   // written 644 means the gate never runs on a push and a red tree reads as a green one. This
-  // repository pushed past its own red gate for days that way.
+  // repository pushed past its own red gate for days that way. init once staged the hooks to
+  // carry the bit, and in a repository several sessions share the next commit of any of them
+  // swept the staged files in: `abatty hooks`, which hooks:install runs, sets the bit instead.
   const dir = tempRepo("init-hook-mode", { "package.json": NEXT_PKG });
   const r = cli(["init", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
-  git(dir, "add", "-A");
+  assert.equal(git(dir, "diff", "--cached", "--name-only"), "", "init stages nothing");
+  const installed = cli(["hooks", dir], dir);
+  assert.equal(installed.code, 0, installed.out);
+  assert.equal(git(dir, "config", "core.hooksPath"), ".githooks");
+  git(dir, "add", "--chmod=+x", "--", ".githooks");
   assert.match(
     readFileSync(join(dir, ".githooks/commit-msg"), "utf8"),
     /abatty scrub --message "\$1" && npx abatty changelog --message "\$1"/,
@@ -224,4 +230,52 @@ test("the context file is not the template: init fills the name, and DOC-CONTEXT
   );
   const after = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
   assert.equal(after?.status, "present", after?.evidence);
+});
+
+test("a monorepo gets a graph over the folders its sources are in, and keeps its own context file as the one source", () => {
+  const dir = tempRepo("init-monorepo", {
+    "package.json": JSON.stringify({
+      name: "mono",
+      workspaces: ["apps/*", "packages/*"],
+      dependencies: { next: "15.0.0" },
+    }),
+    "apps/web/package.json": JSON.stringify({ name: "web", dependencies: { next: "15.0.0" } }),
+    "packages/db/package.json": JSON.stringify({ name: "db" }),
+    "CLAUDE.md": "# mono\n\nOur own context, written before abatty came.\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+  assert.match(scripts.graph, /^depcruise apps packages /, "no src here: the workspace folders");
+  assert.equal(
+    readFileSync(join(dir, "CLAUDE.md"), "utf8"),
+    "# mono\n\nOur own context, written before abatty came.\n",
+  );
+  const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+  assert.match(agents, /context is `CLAUDE.md`/, "a pointer, not an unfilled template");
+  assert.doesNotMatch(agents, /<[a-z ]+>/, "no placeholder left to read as the real context");
+  // --force rewrites the harness, never the repository's own context
+  cli(["init", dir, "--stack", "next", "--force"], dir);
+  assert.equal(
+    readFileSync(join(dir, "CLAUDE.md"), "utf8"),
+    "# mono\n\nOur own context, written before abatty came.\n",
+    "the context survives --force",
+  );
+  assert.equal(readFileSync(join(dir, "AGENTS.md"), "utf8"), agents);
+});
+
+test("init --force on its own install keeps the template as the context and the import beside it", () => {
+  const dir = tempRepo("init-force-own", { "package.json": JSON.stringify({ name: "p" }) });
+  cli(["init", dir, "--stack", "node"], dir);
+  cli(["init", dir, "--stack", "node", "--force"], dir);
+  assert.equal(readFileSync(join(dir, "CLAUDE.md"), "utf8"), "@AGENTS.md\n");
+  assert.doesNotMatch(readFileSync(join(dir, "AGENTS.md"), "utf8"), /context is `CLAUDE.md`/);
+});
+
+test("the database suite is selected by a migration in a workspace, not only at the root", async () => {
+  const { presetById } = await import("../src/presets/index.mjs");
+  const db = presetById("next")?.gate.suites[0]?.paths;
+  assert.ok(db);
+  assert.ok(db.test("packages/db/migrations/0001_init.sql"));
+  assert.ok(db.test("migrations/0001_init.sql"));
+  assert.ok(!db.test("docs/migrations-guide.md"), "a folder merely named like one is not");
 });

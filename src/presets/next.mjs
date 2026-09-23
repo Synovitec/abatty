@@ -3,6 +3,7 @@
  * under src/, Drizzle or Prisma for the schema, Vitest, Playwright + axe, Woodpecker CI.
  * A preset says what a stack's repository looks like; the standard says what must hold.
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const next = {
@@ -48,9 +49,7 @@ export const next = {
         "api.unboundedList",
         "api.rowReturn",
         "api.floatMoney",
-        "fn.shapeExemptions",
-        "change.refactorTests",
-        "code.clones",
+        ...COMMON_PROBES,
       ],
     },
   },
@@ -65,7 +64,7 @@ export const next = {
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
   gate: {
@@ -119,7 +118,7 @@ export const next = {
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
         paths:
-          /^(drizzle\/|prisma\/|migrations\/|src\/db\/|src\/server\/|tests\/(rls|integration|db)\/)/,
+          /(^|\/)(drizzle\/|prisma\/|migrations\/|src\/db\/|src\/server\/|tests\/(rls|integration|db)\/)/,
         docker: true,
         steps: [
           {
@@ -134,6 +133,9 @@ export const next = {
         name: "build + browser suite + axe (TEST.3, A11Y.1)",
         paths: /^(src\/app\/|src\/components\/|src\/i18n\/|app\/|components\/|e2e\/)/,
         docker: true,
+        // `next dev` writes its pid here; a production build over a live dev server emptied an
+        // adopter's node_modules on Windows, three times in a day.
+        devLocks: [".next/dev/lock"],
         steps: [
           { label: "build (the browser suite serves the production output)", script: "build" },
           { label: "E2E + axe", script: "e2e", alternatives: ["e2e:client", "test:e2e"] },

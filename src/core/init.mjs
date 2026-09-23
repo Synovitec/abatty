@@ -29,6 +29,7 @@ import {
   writeJsonFile,
 } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
+import { commandFor, managerFor } from "./package-manager.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
@@ -78,25 +79,26 @@ const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(order
  * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
  * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
  * the file may not be tracked yet.
- * @param {string} target
+ *
+ * Returns true when git will commit the bit on its own, false when the file is untracked on a
+ * filesystem without modes (Windows, core.filemode false): there `git add` does not read the bit
+ * from disk and the hook would be committed 644 and skipped on every other machine. The file is
+ * NOT staged here to fix that, as it once was: in a repository several sessions share, the next
+ * commit of any of them swept the staged hooks in. The caller says how to commit it instead.
+ * @param {string} target @returns {boolean}
  */
 export function makeExecutable(target) {
   try {
     chmodSync(target, 0o755);
   } catch {
-    /* a filesystem without modes; the index below is what git reads */
+    /* a filesystem without modes; the index is what git reads */
   }
-  const rel = relative(dirname(target), target);
-  const r = spawnSync("git", ["update-index", "--chmod=+x", "--", rel], {
-    cwd: dirname(target),
-    stdio: "ignore",
-  });
-  // Not tracked yet: there is no index entry to carry the bit. On a filesystem without modes
-  // (Windows, core.filemode false) `git add` will not read it from disk either, so the hook
-  // would be committed 644 and skipped on every other machine, which is a gate that never
-  // runs. The entry is staged with the bit here, because the index is the only record there is.
-  if (r.status !== 0)
-    spawnSync("git", ["add", "--chmod=+x", "--", rel], { cwd: dirname(target), stdio: "ignore" });
+  const cwd = dirname(target);
+  const rel = relative(cwd, target);
+  const r = spawnSync("git", ["update-index", "--chmod=+x", "--", rel], { cwd, stdio: "ignore" });
+  if (r.status === 0) return true;
+  const modes = spawnSync("git", ["config", "core.fileMode"], { cwd, encoding: "utf8" });
+  return String(modes.stdout).trim() !== "false";
 }
 
 /** @param {string} dir @param {string} [base] @param {string[]} [acc] */
@@ -138,12 +140,17 @@ export function initRepo(o) {
       events.push({ file: rel, action: "kept" });
       return false;
     }
+    let bit = true;
     if (!dryRun) {
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, content);
-      if (executable) makeExecutable(target);
+      if (executable) bit = makeExecutable(target);
     }
-    events.push({ file: rel, action: exists ? "overwritten" : merge ? "merged" : "written" });
+    events.push({
+      file: rel,
+      action: exists ? "overwritten" : merge ? "merged" : "written",
+      ...(!bit && { detail: `commit it with git add --chmod=+x ${rel}, or it runs nowhere else` }),
+    });
     return true;
   };
   const tpl = (/** @type {string} */ rel) => readFileSync(join(TEMPLATES, rel), "utf8");
@@ -190,6 +197,7 @@ export function initRepo(o) {
   //    paths; a repository that still keeps it at the older place (.claude/adoption.json) has that
   //    file merged key by key (its own values win) until `abatty config --migrate` moves it. It is
   //    the file the hooks trust, so an existing value is never replaced.
+  const pm = managerFor(repoDir);
   const base = JSON.parse(tpl("harness/adoption.json"));
   delete base.$comment;
   const legacy = readJsonFile(repoDir, LEGACY_CONFIG);
@@ -205,6 +213,10 @@ export function initRepo(o) {
     abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
   };
+  // The commands the hooks and the night run, in the manager's own words (the presets write npm's).
+  if (defaults.commands && typeof defaults.commands === "object")
+    for (const [k, v] of Object.entries(defaults.commands))
+      if (typeof v === "string") defaults.commands[k] = commandFor(v, pm);
   // The preset's opt-in probes are a new repository's start. A repository that already has a
   // config and never listed them is on its own floors, and switching four to eight probes on at
   // once would turn it red on metrics it never asked for: they wait for it to enable them.
@@ -224,15 +236,30 @@ export function initRepo(o) {
     put(".dependency-cruiser.cjs", tpl("tooling/.dependency-cruiser.cjs"));
   if (preset.tooling.knip) put("knip.jsonc", tpl("tooling/knip.jsonc"));
 
-  // 4. The pre-push hook that calls the gate, and the scripts.
+  // The graph's roots are the folders the sources are in: `src` where there is one, the monorepo's
+  // workspace folders or the framework's own folders where there is not. A monorepo was given
+  // `depcruise src` over a folder it does not have.
+  const roots = ["src"].filter((d) => existsSync(join(repoDir, d))).length
+    ? "src"
+    : ["app", "lib", "server", "apps", "packages", "services"]
+        .filter((d) => existsSync(join(repoDir, d)))
+        .join(" ") || ".";
+  const rooted = (/** @type {string} */ v) => v.replace(/\bdepcruise src\b/, `depcruise ${roots}`);
+
+  // 4. The pre-push hook that calls the gate, and the scripts. The hooks speak the manager the
+  //    repository committed: a bun-only repository was given npx and npm run in all three.
+  const abatty = pm.exec("abatty").join(" ");
+  const installed = `Installed by \`${pm.run("hooks:install").join(" ")}\`.`;
   put(
     ".githooks/pre-commit",
-    "#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. Installed by `npm run hooks:install`.\nnpx abatty secrets --staged\n",
+    `#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. ${installed}\n${abatty} secrets --staged\n`,
     { merge: false, executable: true },
   );
   put(
     ".githooks/pre-push",
-    "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`. Installed by `npm run hooks:install`.\nnpm run -s gate\n",
+    // --refs: git hands the pushed refs on stdin, and the gate judges that push rather than
+    // whatever happens to be checked out (a branch deletion ran the whole gate before).
+    `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${pm.run("gate", ["--refs"]).join(" ")}\n`,
     { merge: false, executable: true },
   );
   // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook
@@ -241,7 +268,7 @@ export function initRepo(o) {
   // the commit exists rather than a push later.
   put(
     ".githooks/commit-msg",
-    '#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; `no-changelog: <reason>` in the message excuses it).\nnpx abatty scrub --message "$1" && npx abatty changelog --message "$1"\n',
+    `#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; \`no-changelog: <reason>\` in the message excuses it).\n${abatty} scrub --message "$1" && ${abatty} changelog --message "$1"\n`,
     { merge: false, executable: true },
   );
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
@@ -251,7 +278,7 @@ export function initRepo(o) {
       writeJsonFile(repoDir, "package.json", {
         name: basename(repoDir),
         private: true,
-        scripts: { ...preset.scripts },
+        scripts: Object.fromEntries(Object.entries(preset.scripts).map(([k, v]) => [k, rooted(v)])),
       });
     events.push({ file: "package.json", action: "written" });
   }
@@ -261,7 +288,7 @@ export function initRepo(o) {
     let added = 0;
     for (const [k, v] of Object.entries(preset.scripts))
       if (!(k in scripts) || force) {
-        scripts[k] = v;
+        scripts[k] = rooted(v);
         added++;
       }
     if (added) {
@@ -317,8 +344,22 @@ export function initRepo(o) {
     "<project name>",
     String(readPackage(repoDir).name || basename(repoDir)),
   );
-  put("AGENTS.md", context);
-  put(PRIMARY.contextFile, "@AGENTS.md\n");
+  // A repository that already wrote its context file keeps it as the one source: the template
+  // beside it, unfilled, was a second context that read as the real one to every other agent.
+  // The interoperable file then points at the existing one instead of competing with it.
+  // The import line init writes is not the repository's own context, and a file the repository
+  // wrote is never written over, not even under --force: `init --force` once turned CLAUDE.md
+  // into an import of an AGENTS.md that pointed back at it, and the context was gone.
+  const primary = join(repoDir, PRIMARY.contextFile);
+  const own = existsSync(primary) && readFileSync(primary, "utf8").trim() !== "@AGENTS.md";
+  if (!own) {
+    put("AGENTS.md", context);
+    put(PRIMARY.contextFile, "@AGENTS.md\n");
+  } else if (!existsSync(join(repoDir, "AGENTS.md")))
+    put(
+      "AGENTS.md",
+      `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`,
+    );
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
       for (const r of rules)

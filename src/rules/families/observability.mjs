@@ -31,8 +31,14 @@ const TRACKERS = [
 
 /** The text of a repository's server-side sources, joined once. @param {import("../context.mjs").RepoContext} c */
 const serverText = (c) =>
+  // At any depth, and the logger's own module wherever it lives: a monorepo's
+  // `apps/web/lib/observability/logger.ts` configured the redaction the rule said was missing.
   c
-    .files(/^(src\/)?(app\/api|api|server|routes|workers?|jobs)\/.*\.(ts|tsx|js|jsx|mjs|cjs)$/)
+    .files(
+      /(^|\/)((app\/api|api|server|routes|workers?|jobs|observability|logging)\/.*|[^/]*logger[^/]*)\.(ts|tsx|js|jsx|mjs|cjs)$/,
+    )
+    // A test or a mock that mentions `redact` or `/health` configures nothing that runs.
+    .filter((f) => !/(^|\/)(__mocks__|mocks?|__tests__|tests?)\/|\.(test|spec)\.[^/]+$/.test(f))
     .map((f) => c.read(f))
     .join("\n");
 
@@ -164,9 +170,11 @@ export const rules = [
     why: "Without one, the only signal that a service is alive is that it has not yet failed visibly, and a dead background worker looks exactly like an idle one.",
     next: "Add a health or readiness endpoint, and make the SIGTERM handler fail it first",
     check: (c) => {
-      const route = c.firstFile(
-        /(^|\/)(health|healthz|ready|readyz|livez|liveness|readiness)(\.|\/)/i,
-      );
+      // The shortest path is the endpoint itself: the first in file order named
+      // `/api/health/email` where `/api/health` was the one a load balancer reads.
+      const route = c
+        .files(/(^|\/)(health|healthz|ready|readyz|livez|liveness|readiness)(\.|\/)/i)
+        .sort((a, b) => a.length - b.length)[0];
       const inText = /["'`]\/(healthz?|ready(z)?|livez|liveness|readiness)\b/.test(serverText(c));
       return {
         status: route || inText ? "present" : "missing",

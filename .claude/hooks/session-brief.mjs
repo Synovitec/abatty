@@ -2,14 +2,33 @@
 // oriented. Daytime: the gate commands. Unattended run: the run parameters, the phase, the
 // state so far and the decisions already taken, so nothing is re-decided or re-done.
 
-import { existsSync, readFileSync } from "node:fs";
-import { NIGHT, currentBranch, loadConfig, parseJsonFile } from "./lib.mjs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { NIGHT, currentBranch, defaultCommands, loadConfig, parseJsonFile, readEvent, snapshotFile, treeSnapshot } from "./lib.mjs";
 
 const config = loadConfig();
 const lines = [];
 
+// What was already uncommitted when this session started, so the Stop hook judges only what the
+// session itself changed: in a worktree other sessions share, their files are not this one's to
+// commit or delete. The first start of a session is kept; a resumed session starts again from it.
+if (NIGHT) {
+  const file = snapshotFile(readEvent().session_id);
+  if (!existsSync(file)) {
+    try {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify(treeSnapshot(), null, 2) + "\n");
+    } catch {
+      /* a snapshot that cannot be written means the Stop hook judges the whole tree, as before */
+    }
+  }
+}
+
 lines.push(`[brief] branch: ${currentBranch() || "unknown"}`);
-lines.push(`[brief] gate: ${config.commands?.gate || "npm run gate:fast"} · full: ${config.commands?.gateFull || "npm run gate"} · ratchet: ${config.commands?.standards || "npm run standards"}`);
+// The config's commands, with the repository's own manager as the fallback (lib.mjs), so the
+// brief names the command the Stop hook runs.
+const cmd = { ...defaultCommands(), ...config.commands };
+lines.push(`[brief] gate: ${cmd.gate} · full: ${cmd.gateFull} · ratchet: ${cmd.standards}`);
 
 if (NIGHT) {
   lines.push(`[brief] UNATTENDED RUN. Nobody will answer a question. Take the default from CLAUDE.md §9 and record it in ${config.files?.decisions || "docs/ADOPTION_DECISIONS.md"}.`);

@@ -5,6 +5,7 @@
  * a lock that recorded the wrong ancestor, a self-test that failed a repository for opting into
  * the scrub, a rule that read one test runner, a guard that read flags out of a heredoc).
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const node = {
@@ -47,7 +48,7 @@ export const node = {
     lintExtensions: [".ts", ".js", ".mjs"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
     ratchet: {
-      enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests", "code.clones"],
+      enable: ["valid.wholeEnv", ...COMMON_PROBES],
     },
   },
   scripts: {
@@ -61,7 +62,7 @@ export const node = {
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
   gate: {
@@ -111,7 +112,7 @@ export const node = {
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
         paths:
-          /^(migrations\/|prisma\/|drizzle\/|src\/db\/|server\/db\/|tests\/(integration|db)\/)/,
+          /(^|\/)(migrations\/|prisma\/|drizzle\/|src\/db\/|server\/db\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

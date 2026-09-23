@@ -4,6 +4,22 @@ export function parseJson(text: string): any;
 export function readJsonFile(dir: string, rel: string): any;
 /** Writes JSON without a BOM, LF, trailing newline - the way the hooks read it back. @param {string} dir @param {string} rel @param {unknown} value */
 export function writeJsonFile(dir: string, rel: string, value: unknown): void;
+/**
+ * The print width the formatter uses for a file under `dir`: `printWidth` in the nearest
+ * .prettierrc or package.json up the tree, as the formatter looks it up; 80, its own default,
+ * otherwise. A config written as code is not read, and 80 holds for it.
+ * @param {string} dir
+ */
+export function printWidth(dir: string): any;
+/**
+ * JSON as the formatter a repository runs would write it, so a file this package writes does not
+ * fail that repository's format check the next time it is written: an adopter had to put the
+ * baseline in .prettierignore. Objects are expanded (the formatter keeps an expanded object as
+ * it is); an array of plain values goes on one line when the line fits the width, one value per
+ * line otherwise, which is what the formatter does and what JSON.stringify never does.
+ * @param {unknown} value @param {number} [width]
+ */
+export function formatJson(value: unknown, width?: number): string;
 /** Run git in a directory; "" when it fails - a command must never crash on git. @param {string} dir @param {string[]} args */
 export function git(dir: string, ...args: string[]): string;
 /**
