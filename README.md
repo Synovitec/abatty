@@ -232,6 +232,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `cache.serverCacheUse`   | Server-side caches of a read, for a repository that decided to have none                           |                |
 | `fn.shapeExemptions`     | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
 | `change.refactorTests`   | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
+| `code.clones`            | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

@@ -565,3 +565,29 @@ test("DATA-TENANT reads a tenant column this repository names in tenantKeys, and
   assert.equal(v.status, "partial");
   assert.match(v.evidence, /tenant column, no RLS/);
 });
+
+test("CODE-DUP reads the practice, a clone count with a floor, whichever detector counts it", () => {
+  const rule = RULES.find((r) => r.id === "CODE-DUP");
+  assert.ok(rule);
+  const base = { "package.json": PKG_DUP, "src/a.ts": "export const a = 1;\n" };
+  const floored = tempRepo("dup-floored", {
+    ...base,
+    "scripts/ci/standards-baseline.json": JSON.stringify({ metrics: { "code.clones": 3 } }),
+  });
+  assert.equal(rule.check(buildContext(floored)).status, "present");
+  const own = tempRepo("dup-own", {
+    ...base,
+    "scripts/ci/standards-baseline.json": JSON.stringify({ metrics: { "dup.clones": 1 } }),
+  });
+  assert.equal(rule.check(buildContext(own)).status, "present", "a repository's own detector");
+  const enabled = tempRepo("dup-enabled", {
+    ...base,
+    "abatty.config.json": JSON.stringify({ ratchet: { enable: ["code.clones"] } }),
+  });
+  const e = rule.check(buildContext(enabled));
+  assert.equal(e.status, "partial");
+  assert.match(e.evidence, /no floor yet/);
+  assert.equal(rule.check(buildContext(tempRepo("dup-none", base))).status, "missing");
+});
+
+const PKG_DUP = JSON.stringify({ name: "dup", version: "1.0.0" });

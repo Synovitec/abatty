@@ -41,7 +41,9 @@ export const viteReact = {
     ],
     lintExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
-    ratchet: { enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests"] },
+    ratchet: {
+      enable: ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests", "code.clones"],
+    },
   },
   scripts: {
     typecheck: "tsc --noEmit",

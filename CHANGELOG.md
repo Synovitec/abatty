@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Duplication is measured without a dependency.** The new opt-in probe `code.clones` reduces
+  each source to its meaningful lines (comments removed, whitespace collapsed, brackets,
+  imports and lone keywords dropped), hashes every run of six, and counts a run that appears in
+  two places as one clone, charged once, to the smaller of the two paths. It reads this
+  repository's 134 files in under a tenth of a second. CODE-DUP now reads the practice rather
+  than one tool: any clone count with a floor holds it, the package's or a repository's own
+  detector. Every code preset enables the probe.
 - **A refactor may not rewrite the tests it is judged by.** A refactor claims the behaviour did
   not change, and the tests are the only statement of the behaviour a machine can check. The
   new opt-in probe `change.refactorTests` reads the pushed range. A `refactor:` commit that

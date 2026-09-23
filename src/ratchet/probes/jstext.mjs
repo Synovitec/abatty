@@ -45,10 +45,11 @@ function literalEnd(text, i) {
 }
 
 /**
- * The text with the inside of every string and template literal blanked, and every comment too
- * unless `comments` is "keep"; lengths and newlines kept, so a line number still points home. A
- * name inside a message or a test fixture is not code, and a directive is a comment.
- * @param {string} text @param {{ comments?: "keep" | "blank" }} [o]
+ * The text with the inside of every string and template literal blanked unless `strings` is
+ * "keep", and every comment too unless `comments` is "keep"; lengths and newlines kept, so a line
+ * number still points home. A name inside a message or a test fixture is not code, a directive is
+ * a comment, and a clone is judged with its literals.
+ * @param {string} text @param {{ comments?: "keep" | "blank", strings?: "keep" | "blank" }} [o]
  */
 export function codeOnly(text, o = {}) {
   /** @type {string[]} */
@@ -86,6 +87,7 @@ export function codeOnly(text, o = {}) {
     const stop = end < 0 ? text.length : end;
     const piece = text.slice(i, stop);
     if (comment) out.push(o.comments === "keep" ? piece : blank(piece));
+    else if (o.strings === "keep") out.push(piece);
     else out.push(ch + blank(piece.slice(1, -1)) + (piece.length > 1 ? piece.slice(-1) : ""));
     i = stop;
   }

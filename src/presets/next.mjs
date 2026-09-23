@@ -50,6 +50,7 @@ export const next = {
         "api.floatMoney",
         "fn.shapeExemptions",
         "change.refactorTests",
+        "code.clones",
       ],
     },
   },
