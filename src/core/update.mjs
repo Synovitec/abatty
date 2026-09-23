@@ -40,7 +40,7 @@ export const LOCK = ".claude/harness.lock.json";
 export const BASE_DIR = ".abatty/harness";
 
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string> }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string>, offered?: Record<string, string> }} Lock
  *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
  *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
@@ -98,6 +98,8 @@ export function readLock(repoDir) {
 export function writeLock(repoDir, preset, version = packageVersion()) {
   /** @type {Record<string, string>} */
   const files = {};
+  /** @type {Record<string, string>} the template offered for a file the repository kept its own of */
+  const offered = {};
   const previous = readLock(repoDir);
   for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {
     const text = readFileSync(join(TEMPLATES, tpl), "utf8");
@@ -105,7 +107,13 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     const installed = existsSync(target) && hashOf(readFileSync(target, "utf8")) === hashOf(text);
     if (!installed) {
       const carried = previous?.files?.[rel];
-      if (!carried) continue;
+      // A file the repository kept its own of has no ancestor, but the template it was offered
+      // is known, by hash, in this committed lock: the next update tells an unchanged template
+      // from a changed one on any clone, rather than asking for a merge base no clone has.
+      if (!carried) {
+        if (existsSync(target)) offered[rel] = hashOf(text);
+        continue;
+      }
       files[rel] = carried;
       // The base is looked up under the lock's version, so the copy this file was installed from
       // moves with the entry that names it.
@@ -122,7 +130,7 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     mkdirSync(dirname(base), { recursive: true });
     writeFileSync(base, text);
   }
-  const offered = new Set([
+  const scriptsOffered = new Set([
     ...offeredScripts(previous, preset),
     ...Object.keys(preset?.scripts || {}),
   ]);
@@ -140,7 +148,8 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
     abatty: version,
     installedAt: localToday(),
     files,
-    scripts: [...offered].sort(),
+    offered,
+    scripts: [...scriptsOffered].sort(),
     hooks,
   };
   writeJsonFile(repoDir, LOCK, lock);
@@ -275,6 +284,15 @@ export function updateRepo(o) {
         file: rel,
         action: "kept",
         detail: "your edit; the package did not change this file",
+      });
+      continue;
+    }
+    // A file the repository kept its own of, offered this very template before: nothing new.
+    if (!hBase && lock?.offered?.[rel] === hTheirs) {
+      events.push({
+        file: rel,
+        action: "kept",
+        detail: "yours; the package's version is the one offered before, unchanged",
       });
       continue;
     }

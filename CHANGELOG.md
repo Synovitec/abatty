@@ -37,6 +37,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`update` no longer reports a conflict on a file whose template did not change.** A file `init`
+  kept (the repository's own `.claude/settings.json`) has no ancestor, so every upgrade asked for
+  a merge base that lives under the gitignored `.abatty/` and so is on no other clone, and wrote
+  an `.abatty-new` conflict beside a file whose template was byte for byte the same. The lock,
+  which is committed, now records the template each kept file was offered, by hash; when the
+  package offers the same one again, the file is kept without a word. A changed template is still
+  put beside yours.
 - **`update` refreshes the git hooks, and `doctor` reads them.** Only `init` wrote
   `.githooks/pre-push`, `pre-commit` and `commit-msg`, so an adopter who upgraded with `update`
   kept a pre-push hook from before `--refs` (the gate judging the checkout rather than the push)

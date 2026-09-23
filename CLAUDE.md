@@ -70,7 +70,7 @@ under `src/` imports from it; it is read as a file.
 - **`templates/harness/hooks/` is the source; `.claude/hooks/` is an install.** Edit the
   template, then `abatty update`. Editing the installed copy makes it drift and `doctor` says so.
 - **The harness lock records what is installed here**, not what the package ships. A file `init`
-  kept has no ancestor, so `update` writes the package's version beside it rather than over it.
+  kept has no ancestor, so `update` puts a changed template beside it rather than over it.
 - **A rule states the practice; the profile names the tool.** A check that hard-codes one tool is
   a bug: `node --test` is a unit runner exactly as vitest is.
 - **The guard reads flags from argv, not from a heredoc body.** A rule or a README may write the

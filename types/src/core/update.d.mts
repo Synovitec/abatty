@@ -1,5 +1,5 @@
 /**
- * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string> }} Lock
+ * @typedef {{ abatty: string, installedAt: string, files: Record<string, string>, scripts?: string[], hooks?: Record<string, string>, offered?: Record<string, string> }} Lock
  *   `scripts`: the package scripts offered to this repository so far. Absent in a lock written
  *   before 0.4.1; `init` wrote every preset script then, so the preset's names stand in for it.
  * @typedef {"in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten"} UpdateAction
@@ -36,6 +36,7 @@ export function writeLock(repoDir: string, preset: import("../presets/index.mjs"
     abatty: string;
     installedAt: string;
     files: Record<string, string>;
+    offered: Record<string, string>;
     scripts: string[];
     hooks: Record<string, string>;
 };
@@ -82,6 +83,7 @@ export type Lock = {
     files: Record<string, string>;
     scripts?: string[];
     hooks?: Record<string, string>;
+    offered?: Record<string, string>;
 };
 export type UpdateAction = "in step" | "updated" | "added" | "kept" | "merged" | "conflict" | "overwritten";
 export type UpdateEvent = {

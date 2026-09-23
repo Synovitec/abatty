@@ -251,8 +251,17 @@ test("the lock records the copy that is installed, so a file init kept still tak
   assert.ok(lock);
   assert.notEqual(lock.files[HOOK], hashOf(NEW), "the lock does not claim the package's version");
   assert.equal(lock.files[HOOK], undefined, "a file never installed here has no ancestor");
-  // With no ancestor to merge from, update writes the package's version beside it and touches
-  // nothing: the repository's file is never silently replaced, and never silently frozen either.
+  // Offered the very template it was offered at init, update keeps the file and says so: a
+  // conflict there, on every upgrade, was a merge asked for with nothing to merge.
+  assert.equal(lock.offered?.[HOOK], hashOf(NEW), "the template it was offered is recorded");
+  const same = updateRepo({ repoDir: dir, preset });
+  assert.equal(same.events.find((e) => e.file === HOOK)?.action, "kept");
+  // Offered a template that changed since, it writes the package's version beside it and
+  // touches nothing: never silently replaced, and never silently frozen either.
+  writeFileSync(
+    join(dir, LOCK),
+    JSON.stringify({ ...lock, offered: { ...lock.offered, [HOOK]: "0".repeat(64) } }),
+  );
   const r = updateRepo({ repoDir: dir, preset });
   const ev = r.events.find((e) => e.file === HOOK);
   assert.equal(ev?.action, "conflict", JSON.stringify(r.events.slice(0, 5)));
