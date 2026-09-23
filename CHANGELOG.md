@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`doctor` and `update` name a stale patch of abatty.** An adopter patched 0.4.0 in
+  `node_modules` to get past a defect 0.5.0 fixed; on the upgrade such a patch fails to apply, or
+  applies to code it was never written for. A patch of an abatty version other than the one
+  running, declared in `patchedDependencies` (bun, npm), `pnpm.patchedDependencies` or as a file
+  under `patches/`, is now named with where it is declared.
+
 ### Fixed
 
 - **A monorepo's gate steps are proven where they look.** `doctor --controls` planted every
