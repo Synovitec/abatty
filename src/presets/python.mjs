@@ -86,7 +86,7 @@ export const python = {
     suites: [
       {
         name: "database suite (DATA.4, TEST.2)",
-        paths: /^(migrations\/|alembic\/|src\/db\/|tests\/(integration|db)\/)/,
+        paths: /(^|\/)(migrations\/|alembic\/|src\/db\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

@@ -236,6 +236,16 @@ export function initRepo(o) {
     put(".dependency-cruiser.cjs", tpl("tooling/.dependency-cruiser.cjs"));
   if (preset.tooling.knip) put("knip.jsonc", tpl("tooling/knip.jsonc"));
 
+  // The graph's roots are the folders the sources are in: `src` where there is one, the monorepo's
+  // workspace folders or the framework's own folders where there is not. A monorepo was given
+  // `depcruise src` over a folder it does not have.
+  const roots = ["src"].filter((d) => existsSync(join(repoDir, d))).length
+    ? "src"
+    : ["app", "lib", "server", "apps", "packages", "services"]
+        .filter((d) => existsSync(join(repoDir, d)))
+        .join(" ") || ".";
+  const rooted = (/** @type {string} */ v) => v.replace(/\bdepcruise src\b/, `depcruise ${roots}`);
+
   // 4. The pre-push hook that calls the gate, and the scripts. The hooks speak the manager the
   //    repository committed: a bun-only repository was given npx and npm run in all three.
   const abatty = pm.exec("abatty").join(" ");
@@ -266,7 +276,7 @@ export function initRepo(o) {
       writeJsonFile(repoDir, "package.json", {
         name: basename(repoDir),
         private: true,
-        scripts: { ...preset.scripts },
+        scripts: Object.fromEntries(Object.entries(preset.scripts).map(([k, v]) => [k, rooted(v)])),
       });
     events.push({ file: "package.json", action: "written" });
   }
@@ -276,7 +286,7 @@ export function initRepo(o) {
     let added = 0;
     for (const [k, v] of Object.entries(preset.scripts))
       if (!(k in scripts) || force) {
-        scripts[k] = v;
+        scripts[k] = rooted(v);
         added++;
       }
     if (added) {
@@ -332,7 +342,16 @@ export function initRepo(o) {
     "<project name>",
     String(readPackage(repoDir).name || basename(repoDir)),
   );
-  put("AGENTS.md", context);
+  // A repository that already wrote its context file keeps it as the one source: the template
+  // beside it, unfilled, was a second context that read as the real one to every other agent.
+  // The interoperable file then points at the existing one instead of competing with it.
+  const own = existsSync(join(repoDir, PRIMARY.contextFile));
+  put(
+    "AGENTS.md",
+    own
+      ? `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`
+      : context,
+  );
   put(PRIMARY.contextFile, "@AGENTS.md\n");
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")

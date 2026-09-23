@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A monorepo is read as one.** The database suite's paths matched only at the root, so a
+  migration under `packages/db/migrations/` never selected it, and in the adopter that reported
+  it that was the suite that mattered most. It now matches the folder at any depth, never a name
+  that merely contains the word. `init` points the import graph at the folders a repository's
+  sources are in (`src`, or `apps packages` and the like) rather than a `src/` it does not have.
+  Where the repository already has its own `CLAUDE.md`, `init` writes `AGENTS.md` as a pointer
+  to it. It used to write an unfilled template there, which read as a second context file.
+
 - **The files abatty writes pass the repository's format check as they are.** `baseline`,
   `update`, `init` and the night runner wrote JSON with every array item on its own line, where
   the formatter puts a short array on one line, so a repository that checks formatting went red

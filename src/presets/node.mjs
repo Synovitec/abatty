@@ -111,7 +111,7 @@ export const node = {
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
         paths:
-          /^(migrations\/|prisma\/|drizzle\/|src\/db\/|server\/db\/|tests\/(integration|db)\/)/,
+          /(^|\/)(migrations\/|prisma\/|drizzle\/|src\/db\/|server\/db\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

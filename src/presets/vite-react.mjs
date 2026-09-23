@@ -105,7 +105,7 @@ export const viteReact = {
     suites: [
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
-        paths: /^(migrations\/|server\/(models|migrations|db)\/|tests\/(integration|db)\/)/,
+        paths: /(^|\/)(migrations\/|server\/(models|migrations|db)\/|tests\/(integration|db)\/)/,
         docker: true,
         steps: [
           {

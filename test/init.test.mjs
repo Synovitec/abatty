@@ -231,3 +231,35 @@ test("the context file is not the template: init fills the name, and DOC-CONTEXT
   const after = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
   assert.equal(after?.status, "present", after?.evidence);
 });
+
+test("a monorepo gets a graph over the folders its sources are in, and keeps its own context file as the one source", () => {
+  const dir = tempRepo("init-monorepo", {
+    "package.json": JSON.stringify({
+      name: "mono",
+      workspaces: ["apps/*", "packages/*"],
+      dependencies: { next: "15.0.0" },
+    }),
+    "apps/web/package.json": JSON.stringify({ name: "web", dependencies: { next: "15.0.0" } }),
+    "packages/db/package.json": JSON.stringify({ name: "db" }),
+    "CLAUDE.md": "# mono\n\nOur own context, written before abatty came.\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+  assert.match(scripts.graph, /^depcruise apps packages /, "no src here: the workspace folders");
+  assert.equal(
+    readFileSync(join(dir, "CLAUDE.md"), "utf8"),
+    "# mono\n\nOur own context, written before abatty came.\n",
+  );
+  const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+  assert.match(agents, /context is `CLAUDE\.md`/, "a pointer, not an unfilled template");
+  assert.doesNotMatch(agents, /<[a-z ]+>/, "no placeholder left to read as the real context");
+});
+
+test("the database suite is selected by a migration in a workspace, not only at the root", async () => {
+  const { presetById } = await import("../src/presets/index.mjs");
+  const db = presetById("next")?.gate.suites[0]?.paths;
+  assert.ok(db);
+  assert.ok(db.test("packages/db/migrations/0001_init.sql"));
+  assert.ok(db.test("migrations/0001_init.sql"));
+  assert.ok(!db.test("docs/migrations-guide.md"), "a folder merely named like one is not");
+});

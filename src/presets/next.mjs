@@ -119,7 +119,7 @@ export const next = {
       {
         name: "database suite + coverage (DATA.4, TEST.4)",
         paths:
-          /^(drizzle\/|prisma\/|migrations\/|src\/db\/|src\/server\/|tests\/(rls|integration|db)\/)/,
+          /(^|\/)(drizzle\/|prisma\/|migrations\/|src\/db\/|src\/server\/|tests\/(rls|integration|db)\/)/,
         docker: true,
         steps: [
           {
