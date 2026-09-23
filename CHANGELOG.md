@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`docs.behindCode` judges a change on the day it lands, not the day after.** It exempted a
+  cited file moved today, so a change merged green and the base branch went red at midnight
+  with nothing committed, charged to whoever pushed next on work that did not cause it. An
+  outside repository lost a push to it, and so would this one have: the 0.5.0 branch changed
+  sources that five documents cite, and none had been re-read. A doc verified the same day still
+  holds. The five documents here were re-read and corrected where they were behind: duplication
+  is measured by `code.clones` without a dependency, the same-day rule is gone from DOC.5, and
+  the standard says a suite never runs against the developer's database.
+
 - **The gate no longer runs a database or browser suite against the developer's own database.**
   On a laptop, a suite inherited `DATABASE_URL` from the shell or from `.env`, which is the
   database the developer works against, sometimes production's. An outside trial's pre-push gate

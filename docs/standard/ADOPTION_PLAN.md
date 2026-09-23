@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-22"
+last_verified: "2026-09-23"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -75,8 +75,8 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
    5b. **The import graph and dead code, from `templates/tooling/`:** `.dependency-cruiser.cjs`
    with one rule per arrow of the boundary map (CODE.5) and `knip.jsonc` (CODE.6), both in the
    gate from day 0 with nothing to baseline; `scripts/codemods/` exists the first time a change
-   touches more than ten files (CODE.11); `jscpd` as `dup.*` in the ratchet when the first
-   duplicate shape appears (CODE.12).
+   touches more than ten files (CODE.11); `code.clones` in `ratchet.enable` (no dependency),
+   or a detector read as `dup.*`, when the first duplicate shape appears (CODE.12).
 6. **The ratchet script** (`scripts/ci/check-standards.*`), copied from the reference
    implementation named in `ADOPTION_STATUS.md` and stripped of its stack-specific checks,
    with its control-case test file. The package (`abatty`, item 0) does not

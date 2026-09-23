@@ -17,7 +17,7 @@ related:
     "../README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-22"
+last_verified: "2026-09-23"
 source_truth:
   - "./research/*.md"
   - "./guides/*.md"
@@ -157,7 +157,9 @@ locally". Reference: the `scripts/ci/gate.mjs` named in `ADOPTION_STATUS.md`.
 - **Deferral is loud, never silent.** When Docker or the browsers are absent the gate prints
   `DEFERRED to CI: <suite>` with the reason. `--fast` is the deliberate way to defer and says
   so. Running everything on every push costs ten minutes and teaches `--no-verify`; running
-  nothing heavy locally is how `main` sat red on `integration` for a day.
+  nothing heavy locally is how `main` sat red on `integration` for a day. A suite that needs a
+  database runs against one the run owns (`TEST_DATABASE_URL`, or CI's own service) and is
+  deferred, loudly, when the only database it can see is the developer's.
 - **After a rebase or an amend, `@{u}..HEAD` lies.** Judge the push on the whole branch when
   the upstream is no longer an ancestor of HEAD.
 
@@ -380,8 +382,9 @@ name` restates the signature and is the first thing to rot. The block names the 
   the reviewer reads the transform and samples its output instead of every edit, and a night
   can do it without the budget of three hundred hand edits. Three hundred edits by hand to the
   same shape is the finding. Template: `templates/tooling/codemods/rename-import.cjs`.
-- **CODE.12 (SHOULD) - Duplication is measured.** `jscpd` over the source root, its report
-  read by the ratchet as `dup.clones` and `dup.clonedLines`, held per file like every ratchet.
+- **CODE.12 (SHOULD) - Duplication is measured.** A clone count over the source root, held by
+  the ratchet per file like every ratchet: the package's `code.clones` needs no dependency, and
+  a repository's own detector read as `dup.clones` and `dup.clonedLines` holds it as well.
   Two copies of a shape are the deletion test failing in advance (CODE.5); the number says
   where. A repository that does not measure it records "not measured" with the reason.
 
@@ -753,8 +756,10 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   counted.
 - **DOC.5 (MUST) - Freshness is measured against the DIFF, never the calendar.** A doc is
   behind when a file it cites, or a `source_truth` entry, was committed after its
-  `last_verified` (a same-day change is exempt, which is CHANGE.1 working; a frozen doc is
-  exempt, it is supposed to age; an uncommitted edit counts as today). A dangling
+  `last_verified` (a frozen doc is exempt, it is supposed to age; an uncommitted edit counts as
+  today). A same-day change is not exempt: the day a cited file moves is the day its author is
+  there to re-read the doc, and an exemption let the change merge green and the base branch go
+  red at midnight, charged to whoever pushed next. A dangling
   `source_truth` entry is a hard failure, not a warning: it is the doc's update trigger
   switched off. **Bumping a date without re-reading the doc against the code is the lie the
   metric exists to prevent** - if you cannot verify it, leave it stale.
