@@ -13,6 +13,9 @@ under Unreleased in the same commit.
   (the tests, the ratchet, the typecheck on a TypeScript preset) still comes back. A lock
   written before this lists nothing, and reads as though every preset script had been offered,
   since `init` wrote them all. This repository declined `lint`, and every update added it back.
+- **The best-practices digest was re-read** against the standard's guard paragraph that changed
+  on 2026-09-22. The digest only says that enforcement is a hook, which is still true, so it
+  is dated today. It had turned `docs.behindCode` red on main overnight with nothing pushed.
 
 ## [0.4.0] - 2026-09-22
 
