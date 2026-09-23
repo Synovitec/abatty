@@ -111,14 +111,20 @@ test("init merges the config at every depth: a repository that set one key of a 
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")), cfg);
 });
 
-test("the git hooks init writes are executable, in the filesystem and in the index", () => {
+test("the git hooks init writes are executable where they are installed, and nothing is staged for another session to sweep in", () => {
   // git skips a hook that is not executable and says so only as a hint, so a pre-push hook
   // written 644 means the gate never runs on a push and a red tree reads as a green one. This
-  // repository pushed past its own red gate for days that way.
+  // repository pushed past its own red gate for days that way. init once staged the hooks to
+  // carry the bit, and in a repository several sessions share the next commit of any of them
+  // swept the staged files in: `abatty hooks`, which hooks:install runs, sets the bit instead.
   const dir = tempRepo("init-hook-mode", { "package.json": NEXT_PKG });
   const r = cli(["init", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
-  git(dir, "add", "-A");
+  assert.equal(git(dir, "diff", "--cached", "--name-only"), "", "init stages nothing");
+  const installed = cli(["hooks", dir], dir);
+  assert.equal(installed.code, 0, installed.out);
+  assert.equal(git(dir, "config", "core.hooksPath"), ".githooks");
+  git(dir, "add", "--chmod=+x", "--", ".githooks");
   assert.match(
     readFileSync(join(dir, ".githooks/commit-msg"), "utf8"),
     /abatty scrub --message "\$1" && npx abatty changelog --message "\$1"/,

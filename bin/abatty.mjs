@@ -28,6 +28,7 @@
  *   abatty explain <ID> [dir]                                          one rule, its reason, its finding here
  *   abatty ratchet [dir] [--range <r>|auto] [--json] [--controls]      the ratchet against the baseline
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
+ *   abatty hooks [dir]                                                 git reads .githooks, and the hooks are executable here (what hooks:install runs)
  *   abatty raises [dir] [--base <ref>] [--require-review <pr>] [--json]  the floors loosened against the base, and the review that can land them
  *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]
  *   abatty profiles [dir] [--json]                                    the profiles this repository follows: rules, phases, presets as one package
@@ -72,6 +73,7 @@ const KNOWN = [
   "ratchet",
   "baseline",
   "raises",
+  "hooks",
   "night",
   "presets",
   "profiles",
@@ -311,6 +313,10 @@ switch (command) {
     const { ratchetCommand } = await import("../src/cli/ratchet.mjs");
     await ratchetCommand(command, { dir, opt, flag, out, err, VERSION });
     break;
+  }
+  case "hooks": {
+    const { hooksCommand } = await import("../src/cli/hooks.mjs");
+    process.exit(hooksCommand(ctx));
   }
   case "raises": {
     const { raisesCommand } = await import("../src/cli/raises.mjs");

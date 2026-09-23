@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`init` speaks the repository's package manager.** The three git hooks, the commands it writes
+  into the config and its "by hand" steps said `npx` and `npm run` whatever the repository
+  used; a bun-only repository that forbids npm had to rewrite all of them before it could trust
+  them. They now use the manager the repository committed (bun's `bunx`/`bun run`, pnpm's,
+  yarn's), and npm where nothing names one.
+- **`init` stages nothing.** It staged the hooks it wrote, to carry their executable bit into
+  the first commit from a filesystem without modes, and in a repository several sessions share,
+  the next commit of any of them swept those files in. The new `abatty hooks`, which the
+  presets' `hooks:install` now runs, sets `core.hooksPath` and the executable bit on every
+  machine that installs the hooks, so a hook committed without the bit still runs. Where the bit
+  cannot be read from disk, `init` says how to commit the file with it.
+
 ## [0.5.0] - 2026-09-23
 
 ### Added

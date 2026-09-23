@@ -56,7 +56,7 @@ export const viteReact = {
     "standards:baseline": "abatty baseline",
     gate: "abatty gate",
     "gate:fast": "abatty gate --fast",
-    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:install": "abatty hooks",
   },
   devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
   gate: {

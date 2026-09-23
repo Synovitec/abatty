@@ -1,0 +1,40 @@
+/**
+ * The `hooks` command, which `hooks:install` runs on every clone: git reads the hooks from
+ * `.githooks`, and each of them, with the shim's wrappers, is executable on this machine. The bit
+ * was once staged by `init` so a hook committed from Windows would not arrive 644 elsewhere, and
+ * in a repository several sessions share, the next commit of any of them swept those staged files
+ * in. Setting the bit where the hooks are installed holds on every machine without staging
+ * anything: a clone that has not run this has no hooks path either.
+ */
+import { chmodSync, existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { SHIM_DIR, SHIM_FILES } from "../core/shim.mjs";
+import { EXIT } from "./exit.mjs";
+import * as t from "../ui/term.mjs";
+
+/** @param {import("./ratchet.mjs").CliContext} cx @returns {number} */
+export function hooksCommand(cx) {
+  const { dir, out, err } = cx;
+  const set = spawnSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: dir });
+  if (set.status !== 0) {
+    err(`${t.glyph.fail} not a git repository here: git config core.hooksPath could not be set\n`);
+    return EXIT.error;
+  }
+  const hooks = existsSync(join(dir, ".githooks"))
+    ? readdirSync(join(dir, ".githooks")).map((f) => join(".githooks", f))
+    : [];
+  const shims = SHIM_FILES.filter((f) => f !== "shim.mjs").map((f) => join(SHIM_DIR, f));
+  const files = [...hooks, ...shims].filter((f) => existsSync(join(dir, f)));
+  for (const f of files) {
+    try {
+      chmodSync(join(dir, f), 0o755);
+    } catch {
+      /* a filesystem without modes: git on it runs a hook without the bit */
+    }
+  }
+  out(
+    `${t.glyph.ok} hooks installed: core.hooksPath=.githooks · ${files.length} file(s) executable\n`,
+  );
+  return EXIT.clean;
+}

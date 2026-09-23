@@ -125,3 +125,28 @@ const MANAGERS = {
           auditCommand: "yarn audit --groups dependencies --level high || [ $? -lt 8 ]",
         },
 };
+
+/**
+ * The manager a repository's own files should speak: the one it committed, npm when nothing it
+ * committed names one. A hook that says `npx` in a repository that forbids npm is a hook the
+ * repository has to rewrite before it can trust it.
+ * @param {string} repoDir @returns {PackageManager}
+ */
+export function managerFor(repoDir) {
+  const pm = packageManager(repoDir);
+  return pm || { ...MANAGERS.npm(repoDir), id: "npm", lockfile: "package-lock.json" };
+}
+
+/**
+ * A command written for npm (`npm run x`, `npm test`, `npx tool ...`) in another manager's words;
+ * anything else unchanged.
+ * @param {string} text @param {PackageManager} pm
+ */
+export function commandFor(text, pm) {
+  if (pm.id === "npm") return text;
+  const run = text.match(/^npm run(?: -s)? (\S+)(.*)$/) || text.match(/^npm (test)(.*)$/);
+  if (run) return pm.run(String(run[1])).join(" ") + String(run[2] || "");
+  const exec = text.match(/^npx (\S+)(.*)$/);
+  if (exec) return pm.exec(String(exec[1])).join(" ") + String(exec[2] || "");
+  return text;
+}
