@@ -162,7 +162,10 @@ export function runGate(o) {
     }
     log(`\n▶ ${prefix}${s.label}`);
     const t0 = Date.now();
-    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], suiteEnv));
+    // Every step is told the range the gate judges (ABATTY_RANGE), so a check of the changed
+    // lines measures the push rather than guessing a base of its own.
+    const env = { ...suiteEnv, ABATTY_RANGE: range };
+    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
     const ms = Date.now() - t0;
     if (res.errored) {
       events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });

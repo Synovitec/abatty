@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The gate runs the coverage of the changed lines, so a green local gate is CI's green too.** An
+  adopter's push passed the full local gate and went red in CI on two untested branches, because
+  that check (TEST.4) was a separate CI step the gate never ran, and the session had already
+  reported the push green. Every code preset now carries a gate step that runs a
+  `coverage:changed` or `test:changed` script, told the range the gate judges in `ABATTY_RANGE`,
+  and reports the step as not run when the repository has neither. `doctor --controls` proves it
+  with a new source file carrying a branch no test covers.
 - **Changelog fragments, so parallel branches stop colliding on the changelog.** With the entry
   written as a line under `## [Unreleased]`, every pair of parallel branches edits the same hunk:
   an adopter merging eight pull requests in a day resolved four conflicts, all in the changelog,

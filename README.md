@@ -64,8 +64,9 @@ npx abatty                   # where the repository stands
 
 One definition drives the local command, the git hook and CI, so they cannot disagree about which
 steps exist. Steps run in a fixed order and stop at the first failure: format, lint, typecheck,
-import graph, dead code, tests, the ratchet with the changelog over the pushed range, the secret
-scan, the dependency audit.
+import graph, dead code, tests, the coverage of the changed lines (a `coverage:changed` or
+`test:changed` script, told the range in `ABATTY_RANGE`), the ratchet with the changelog over the
+pushed range, the secret scan, the dependency audit.
 
 Heavy suites are selected by path, so a change that touches no database code does not wait for the
 database suite, and a push that only changes comments builds nothing. A step whose script the repository does not have yet is reported as skipped rather

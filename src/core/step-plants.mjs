@@ -167,6 +167,17 @@ export const STEP_CONTROLS = {
         ? file(`${plantRoot(dir)}/${MARK}.py`, "def abatty_unused():\n    return 1\n")
         : file(`${plantRoot(dir)}/${MARK}.ts`, "export const abattyUnused = 1;\n"),
   },
+  "coverage:changed": {
+    // A new source file no test reaches, with a branch in it: every line of it is a changed line,
+    // and none is covered. The plant is marked as about to be committed, so a check of the
+    // changed lines sees it; a check that stays green on it is not checking the change.
+    means: "a new source file with a branch no test covers",
+    files: ({ dir }) =>
+      file(
+        `${plantRoot(dir)}/${MARK}${checkedExt(tsHome(dir))}`,
+        "export function abattyUncovered(flag) {\n  if (flag) return 1;\n  return 2;\n}\n",
+      ),
+  },
   standards: {
     means: "a file over the 800-line cap",
     files: ({ pack, dir }) =>

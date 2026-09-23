@@ -481,7 +481,7 @@ test("a step the preset requires cannot be skipped for want of a script: the gat
   assert.equal(some.code, 0, some.out);
   assert.match(
     some.out,
-    /gate green with 4 of 9 step\(s\) not run \(format, lint, import graph, dead code: no script or config\)/,
+    /gate green with 5 of 10 step\(s\) not run \(format, lint, import graph, dead code, coverage of the changed lines: no script or config\)/,
   );
 
   // Every step present: the plain verdict, so the warning above is not noise on a full gate.
@@ -498,6 +498,7 @@ test("a step the preset requires cannot be skipped for want of a script: the gat
             graph: "node -e 0",
             dead: "node -e 0",
             test: "node -e 0",
+            "coverage:changed": "node -e 0",
             standards: "node -e 0 --",
           },
           dependencies: { next: "15.0.0" },

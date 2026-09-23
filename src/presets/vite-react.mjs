@@ -6,6 +6,7 @@
  * the shortest path), so `proven` names the date of what is.
  */
 import { COMMON_PROBES } from "./probes.mjs";
+import { CHANGED_COVERAGE } from "./steps.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const viteReact = {
@@ -93,6 +94,7 @@ export const viteReact = {
         requires: ["knip.jsonc", "knip.json", "knip.ts"],
       },
       { label: "unit tests (TEST.1)", script: "test", required: true },
+      CHANGED_COVERAGE,
       {
         label: "abatty ratchet + changelog range (CHANGE.2)",
         script: "standards",
