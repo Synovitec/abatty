@@ -44,7 +44,7 @@ jobs:
       # whose findings a reviewer needs on the diff. Uploaded once per commit, from the newest Node.
       - name: findings as SARIF
         if: always() && matrix.node == '22'
-        run: npx abatty ratchet --range auto --sarif > abatty.sarif || true
+        run: node bin/abatty.mjs ratchet --range auto --sarif > abatty.sarif || true
       - name: upload the findings
         if: always() && matrix.node == '22'
         uses: github/codeql-action/upload-sarif@v3

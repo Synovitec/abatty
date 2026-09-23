@@ -125,6 +125,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The package's entry point is executable in git.** `bin/abatty.mjs` was committed 644; the
+  published tarball never showed it, because the registry sets the bit, but this repository's
+  own pipeline ran `npx abatty` against the checkout and got "permission denied", which left its
+  findings upload empty. The file carries the bit now, and the pipeline calls it through node.
 - **`docs.behindCode` judges a change on the day it lands, not the day after.** It exempted a
   cited file moved today, so a change merged green and the base branch went red at midnight
   with nothing committed, charged to whoever pushed next on work that did not cause it. An
