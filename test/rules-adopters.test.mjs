@@ -222,3 +222,26 @@ test("SEC-AGENT-SHIM does not read the config's phases as a night that ran", () 
   });
   assert.equal(v.status, "partial");
 });
+
+test("a pipeline running a file is not naming a script, turbo hands the runner to the workspaces, and the health route beats a helper", () => {
+  assert.deepEqual(
+    phantomScripts(
+      "bun run scripts/check-bundle-size.ts\nbun run tools/x.mjs --strict\nbun run nowhere",
+      {},
+    ),
+    ["nowhere"],
+  );
+  const turbo = judge("TEST-UNIT", {
+    "package.json": JSON.stringify({ scripts: { test: "turbo run test" } }),
+    "apps/web/package.json": JSON.stringify({ scripts: { test: "bun test" } }),
+    "apps/mobile/package.json": JSON.stringify({ devDependencies: { jest: "1" } }),
+    "apps/web/src/a.test.ts": "test('a', () => {});\n",
+    "apps/web/src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(turbo.evidence, /^bun test,/);
+  const health = judge("OBS-HEALTH", {
+    "apps/web/lib/api/health.ts": "export const ping = () => 1;\n",
+    "apps/web/app/api/health/route.ts": "export const GET = () => 1;\n",
+  });
+  assert.equal(health.evidence, "apps/web/app/api/health/route.ts");
+});

@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Three rules read a bun monorepo right after 0.5.1's verification on it.** A pipeline step
+  that runs a file (`bun run scripts/check.ts`) is no longer reported as naming a script called
+  `scripts` (INST-CI). A root `test` script that hands the run to the workspaces (`turbo run
+  test`) now reads the runner from the workspaces' own test scripts before an installed package
+  (TEST-UNIT). The health endpoint named is a route file before a shorter helper path, and never
+  a test or a mock (OBS-HEALTH).
 - **The ratchet reads what git tracks.** An adopter's docs tooling wrote a dated report under
   `docs/` on every run, never committed and never ignored, and the ratchet counted each one as a
   document without front matter: every push regressed a floor with no human change, until the

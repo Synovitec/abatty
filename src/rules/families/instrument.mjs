@@ -18,15 +18,20 @@
 export function phantomScripts(ciText, scripts) {
   const named = new Set();
   const re =
-    /\b(?:npm|pnpm|bun)\s+(?:-{1,2}[\w-]+(?:[= ](?!run\b)[^\s-]\S*)?\s+)*run\s+(?:-s\s+|--silent\s+)?([\w:.-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:.-]+)/g;
+    /\b(?:npm|pnpm|bun)\s+(?:-{1,2}[\w-]+(?:[= ](?!run\b)[^\s-]\S*)?\s+)*run\s+(?:-s\s+|--silent\s+)?([\w:./-]+)|\byarn\s+(?:run\s+)?(?:-s\s+)?([\w:./-]+)/g;
   const code = String(ciText)
     .split(/\r?\n/)
     .filter((line) => !/^\s*#/.test(line))
     .join("\n");
   for (const m of code.matchAll(re)) {
     const name = m[1] || m[2] || "";
-    // `yarn install`, `yarn npm audit`: yarn's own verbs are not scripts.
-    if (name && !/^(install|add|npm|exec|dlx|audit|cache|config|--\S*)$/.test(name))
+    // `yarn install`, `yarn npm audit`: yarn's own verbs are not scripts. `bun run
+    // scripts/check.ts` runs a file: a path or a source extension is never a script's name.
+    if (
+      name &&
+      !/^(install|add|npm|exec|dlx|audit|cache|config|--\S*)$/.test(name) &&
+      !/\/|\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/.test(name)
+    )
       named.add(name);
   }
   return [...named].filter((n) => typeof scripts[n] !== "string");

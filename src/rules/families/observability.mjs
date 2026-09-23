@@ -172,9 +172,15 @@ export const rules = [
     check: (c) => {
       // The shortest path is the endpoint itself: the first in file order named
       // `/api/health/email` where `/api/health` was the one a load balancer reads.
+      // A route file before anything else, then the shortest path: `lib/api/health.ts` is a
+      // helper the endpoint calls, and it was named over `app/api/health/route.ts` for being
+      // shorter. Tests and mocks are never the endpoint.
+      const isRoute = (/** @type {string} */ f) =>
+        /(^|\/)(app\/.*\/route|pages\/api\/.*|routes?\/.*)\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f);
       const route = c
         .files(/(^|\/)(health|healthz|ready|readyz|livez|liveness|readiness)(\.|\/)/i)
-        .sort((a, b) => a.length - b.length)[0];
+        .filter((f) => !/(^|\/)(__mocks__|mocks?|__tests__|tests?)\/|\.(test|spec)\./.test(f))
+        .sort((a, b) => Number(isRoute(b)) - Number(isRoute(a)) || a.length - b.length)[0];
       const inText = /["'`]\/(healthz?|ready(z)?|livez|liveness|readiness)\b/.test(serverText(c));
       return {
         status: route || inText ? "present" : "missing",
