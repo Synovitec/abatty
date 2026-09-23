@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { launch, notInstalled, quoteForCmd, runCommand } from "../src/core/spawn.mjs";
-import { scriptProgram } from "../src/core/which.mjs";
+import { scriptProgram, toolFound } from "../src/core/which.mjs";
 
 // The launcher fix is proved on the platform it is for and on the platforms it must leave alone:
 // a launch decision is a pure function of the name and the platform, so both sides are asserted
@@ -96,4 +96,22 @@ test("cmd.exe's exit 1 is read again: a script whose program is found nowhere co
   assert.deepEqual(notInstalled({ code: 2 }, dir, "lint", "win32", env), { code: 2 });
   assert.equal(scriptProgram("NODE_ENV=test FOO=1 vitest run"), "vitest");
   assert.equal(scriptProgram('"C:/x y/tool" a'), null);
+});
+
+test("a tool in a virtualenv at the root is found whether or not the shell activated it", () => {
+  const dir = mkdtempSync(join(tmpdir(), "abatty-venv-"));
+  const env = { PATH: "", PATHEXT: ".EXE" };
+  assert.equal(toolFound(dir, "abatty-ruff-__", env), false);
+  mkdirSync(join(dir, ".venv", process.platform === "win32" ? "Scripts" : "bin"), {
+    recursive: true,
+  });
+  writeFileSync(
+    join(
+      dir,
+      ".venv",
+      process.platform === "win32" ? "Scripts/abatty-ruff-__.exe" : "bin/abatty-ruff-__",
+    ),
+    "",
+  );
+  assert.equal(toolFound(dir, "abatty-ruff-__", env), true);
 });

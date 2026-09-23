@@ -21,9 +21,12 @@ export type DayRow = {
     now: string;
     change: "better" | "worse" | "same" | "new";
 };
+/**
+ * `same`: a move between statuses worth the same (present, waived and n/a), said neutrally.
+ */
 export type Moved = {
     id: string;
     from: string;
     to: string;
-    better: boolean;
+    change: "better" | "worse" | "same";
 };

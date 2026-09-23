@@ -24,6 +24,14 @@ export function pathFromEnv() {
   return process.env.PATH || "";
 }
 
+/**
+ * What a shell reads to find a program: the search path (Windows spells it `Path` as often as
+ * `PATH`) and the executable extensions. The two variables, not the whole environment.
+ */
+export function searchFromEnv() {
+  return { PATH: process.env.PATH ?? process.env.Path ?? "", PATHEXT: process.env.PATHEXT ?? "" };
+}
+
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";

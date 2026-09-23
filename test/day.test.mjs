@@ -55,12 +55,13 @@ test("a check that moved is named, the ones that got worse first, so a flat scor
     findings: [
       { id: "A", status: "partial" },
       { id: "B", status: "present" },
-      { id: "C", status: "present" },
+      { id: "C", status: "waived" },
     ],
   });
   assert.deepEqual(movedFindings(now, before), [
-    { id: "A", from: "present", to: "partial", better: false },
-    { id: "B", from: "missing", to: "present", better: true },
+    { id: "A", from: "present", to: "partial", change: "worse" },
+    { id: "C", from: "present", to: "waived", change: "same" },
+    { id: "B", from: "missing", to: "present", change: "better" },
   ]);
 });
 

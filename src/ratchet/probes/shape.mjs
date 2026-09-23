@@ -6,7 +6,7 @@
  * preset enables it for a new repository. Moved from the outside trial's own probe, which counted
  * the list alone, widened to the inline form and to every linter a pack names.
  */
-import { codeOnly, lineAt } from "./jstext.mjs";
+import { codeOnly, lineAt } from "./lex.mjs";
 
 /** @typedef {import("../index.mjs").Probe} Probe */
 

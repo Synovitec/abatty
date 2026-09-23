@@ -10,7 +10,8 @@
 /**
  * @typedef {import("./report.mjs").Report} Report
  * @typedef {{ label: string, before: string, now: string, change: "better" | "worse" | "same" | "new" }} DayRow
- * @typedef {{ id: string, from: string, to: string, better: boolean }} Moved
+ * @typedef {{ id: string, from: string, to: string, change: "better" | "worse" | "same" }} Moved
+ *   `same`: a move between statuses worth the same (present, waived and n/a), said neutrally.
  */
 
 /** How good a status is, for telling a move up from a move down. */
@@ -21,6 +22,9 @@ const RANK = /** @type {Record<string, number>} */ ({
   waived: 2,
   "n/a": 2,
 });
+
+/** Worse first, then the neutral moves, then the better ones. */
+const ORDER = { worse: 0, same: 1, better: 2 };
 
 /** @param {Report} r @param {string} status */
 const count = (r, status) => r.findings.filter((f) => f.status === status).length;
@@ -70,9 +74,12 @@ export function movedFindings(now, before) {
     .filter((f) => was.has(f.id) && was.get(f.id) !== f.status)
     .map((f) => {
       const from = String(was.get(f.id));
-      return { id: f.id, from, to: f.status, better: (RANK[f.status] ?? 0) > (RANK[from] ?? 0) };
+      const d = (RANK[f.status] ?? 0) - (RANK[from] ?? 0);
+      /** @type {Moved["change"]} */
+      const change = d > 0 ? "better" : d < 0 ? "worse" : "same";
+      return { id: f.id, from, to: f.status, change };
     })
-    .sort((a, b) => Number(a.better) - Number(b.better) || a.id.localeCompare(b.id));
+    .sort((a, b) => ORDER[a.change] - ORDER[b.change] || a.id.localeCompare(b.id));
 }
 
 /**

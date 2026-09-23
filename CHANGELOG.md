@@ -121,6 +121,19 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Re-running `init` on an adopted repository no longer switches probes on.** A config that
+  already exists and never listed `ratchet.enable` keeps an empty list. A preset's opt-in
+  probes are for a new repository; switching four to eight of them on at once would turn an
+  adopted one red on metrics it never asked for.
+- **Five smaller corrections from the review.**
+  - `update`, reading a lock from before the list of offered scripts, now says that it infers
+    a script was removed, rather than asserting it.
+  - A tool in a Python virtualenv at the root (`.venv`, `venv`) is found whether or not the
+    shell activated it, so the preflight and the truth reading no longer depend on the shell.
+  - `doctor` counts the paths the hooks protect by default when the config names none.
+  - The day's table prints a move between statuses of equal worth (present to waived) as
+    neutral, not as worse.
+  - The probes' text reader has one definition of where a string ends, where it had two.
 - **Three probes stop counting correct code.** All were found by review before release.
   - `api.floatMoney` no longer counts integer minor units (`parseInt(`, `z.number().int()`),
     which is the exact form its own reason recommends.

@@ -23,6 +23,9 @@ import { scriptProgram, toolFound } from "./which.mjs";
  *   `warn`: the reason the effective mode is not the one the reader would assume.
  */
 
+/** What the hooks protect when the config names nothing: templates/harness/hooks/lib.mjs, `withDefaults`. */
+const HOOK_DEFAULT_PROTECTED = ["migrations/", "drizzle/", ".env"];
+
 /** The settings files whose hooks run here, project first: the ones a session merges. */
 const SETTINGS = [".claude/settings.json", ".claude/settings.local.json"];
 
@@ -119,7 +122,7 @@ export function hookModes(repoDir, o = {}) {
     {
       hook: "protect",
       day: "nothing (the permission flow decides)",
-      night: `denies a write under .claude/, to a protected path (${(cfg.protectedPaths || []).length}) or outside the tree; ${servers ? `${servers} MCP server(s) allowed` : "every MCP tool denied"}`,
+      night: `denies a write under .claude/, to a protected path (${(Array.isArray(cfg.protectedPaths) ? cfg.protectedPaths : HOOK_DEFAULT_PROTECTED).length}) or outside the tree; ${servers ? `${servers} MCP server(s) allowed` : "every MCP tool denied"}`,
     },
     {
       hook: "lint-on-edit",

@@ -60,10 +60,11 @@ export async function reportCommand(cx) {
         { align: ["l", "r", "r", "l"] },
       ) + "\n",
     );
-    for (const m of movedFindings(r, before))
-      out(
-        `  ${m.better ? t.glyph.ok : t.glyph.fail} ${m.id} ${t.gray(`${m.from} → `)}${m.better ? t.green(m.to) : t.red(m.to)}\n`,
-      );
+    for (const m of movedFindings(r, before)) {
+      const glyph = { better: t.glyph.ok, worse: t.glyph.fail, same: t.glyph.skip }[m.change];
+      const to = { better: t.green(m.to), worse: t.red(m.to), same: m.to }[m.change];
+      out(`  ${glyph} ${m.id} ${t.gray(`${m.from} → `)}${to}\n`);
+    }
     out("\n");
     // Said every time there is one: the owner is a string the raiser typed. The approval that is
     // not is the forge's, read by `abatty raises --require-review` in the pipeline, which this

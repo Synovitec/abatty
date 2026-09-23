@@ -9,6 +9,7 @@
 import { existsSync } from "node:fs";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { readPackage } from "./repo.mjs";
+import { searchFromEnv } from "./env.mjs";
 
 /** The shells' own commands (cmd.exe's, and the POSIX ones a script starts with): never on PATH, always there. */
 const BUILTINS = new Set(
@@ -33,10 +34,12 @@ export function scriptProgram(text) {
  * Is `name` a program the shell would find from `dir`: a builtin, a `node_modules/.bin` entry in
  * the directory or any parent (where npm puts a workspace's tools), or a file on PATH with one of
  * PATHEXT's extensions. Under Plug'n'Play there is no `.bin` to read and the package manager
- * resolves the tool itself, so a tree with a `.pnp.cjs` answers yes rather than guess.
+ * resolves the tool itself, so a tree with a `.pnp.cjs` answers yes rather than guess. A Python
+ * virtualenv at the root (`.venv`, `venv`) is read too, activated or not: a measurement must not
+ * depend on which shell ran it.
  * @param {string} dir @param {string} name @param {NodeJS.ProcessEnv} [env]
  */
-export function toolFound(dir, name, env = process.env) {
+export function toolFound(dir, name, env = searchFromEnv()) {
   if (BUILTINS.has(name.toLowerCase())) return true;
   const exts = [
     "",
@@ -50,6 +53,8 @@ export function toolFound(dir, name, env = process.env) {
     bins.push(join(d, "node_modules", ".bin"));
     if (dirname(d) === d) break;
   }
+  for (const venv of [".venv", "venv"])
+    for (const sub of ["bin", "Scripts"]) bins.push(join(resolve(dir), venv, sub));
   const path = String(env.PATH ?? env.Path ?? "")
     .split(delimiter)
     .filter(Boolean);
@@ -62,7 +67,7 @@ export function toolFound(dir, name, env = process.env) {
  * @param {string} repoDir @param {string} script @param {NodeJS.ProcessEnv} [env]
  * @returns {string | null}
  */
-export function missingTool(repoDir, script, env = process.env) {
+export function missingTool(repoDir, script, env = searchFromEnv()) {
   const text = readPackage(repoDir).scripts?.[script];
   const program = typeof text === "string" ? scriptProgram(text) : null;
   return program && !toolFound(repoDir, program, env) ? program : null;

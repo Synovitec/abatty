@@ -11,6 +11,14 @@ export function tokenFromEnv(): string;
 export function dashboardFromEnv(): string;
 /** The executable search path, or "": what a run's subprocesses will find, shim included. */
 export function pathFromEnv(): string;
+/**
+ * What a shell reads to find a program: the search path (Windows spells it `Path` as often as
+ * `PATH`) and the executable extensions. The two variables, not the whole environment.
+ */
+export function searchFromEnv(): {
+    PATH: string;
+    PATHEXT: string;
+};
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;
 /** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */

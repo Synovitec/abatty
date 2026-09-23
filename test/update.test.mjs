@@ -277,3 +277,21 @@ test("a file the package really installed keeps its ancestor across a re-run of 
     "and its copy is still on the machine to merge from",
   );
 });
+
+test("init enables the preset's opt-in probes in a new config, never in one a repository already had", () => {
+  const fresh = tempRepo("init-enable-new", { "package.json": NEXT_PKG });
+  cli(["init", fresh, "--stack", "next"], fresh);
+  const was = JSON.parse(readFileSync(join(fresh, "abatty.config.json"), "utf8"));
+  assert.ok(was.ratchet.enable.includes("valid.unparsedBoundary"));
+  const adopted = tempRepo("init-enable-old", {
+    "package.json": NEXT_PKG,
+    "abatty.config.json": JSON.stringify({ stack: "next", ratchet: { exclude: [] } }),
+  });
+  cli(["init", adopted, "--stack", "next"], adopted);
+  const kept = JSON.parse(readFileSync(join(adopted, "abatty.config.json"), "utf8"));
+  assert.deepEqual(
+    kept.ratchet.enable,
+    [],
+    "on its own floors: switching probes on is its decision",
+  );
+});

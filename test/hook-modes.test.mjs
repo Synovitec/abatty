@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { hookModes } from "../src/core/hook-modes.mjs";
@@ -81,4 +81,19 @@ test("lint on edit with a linter this machine cannot find is named; one in node_
     (m) => m.hook === "lint-on-edit",
   );
   assert.equal(found?.warn, undefined);
+});
+
+test("with no protected paths in the config, doctor counts the ones the hooks protect by default", () => {
+  const lib = readFileSync(new URL("../templates/harness/hooks/lib.mjs", import.meta.url), "utf8");
+  const defaults = (lib.match(/protectedPaths: \[([^\]]*)\]/)?.[1] || "")
+    .split(",")
+    .filter((s) => s.trim());
+  assert.ok(defaults.length > 0, "the hooks carry a default list");
+  const settings = { hooks: { ...WIRED.hooks, ...hook("protect", "PreToolUse", "Edit") } };
+  const { dir, home } = repo({ ".claude/settings.json": settings, "abatty.config.json": {} });
+  const protect = hookModes(dir, { home }).find((m) => m.hook === "protect");
+  assert.ok(
+    (protect?.night || "").includes(`protected path (${defaults.length})`),
+    protect?.night,
+  );
 });

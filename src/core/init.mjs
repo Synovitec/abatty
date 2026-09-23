@@ -205,6 +205,11 @@ export function initRepo(o) {
     abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
   };
+  // The preset's opt-in probes are a new repository's start. A repository that already has a
+  // config and never listed them is on its own floors, and switching four to eight probes on at
+  // once would turn it red on metrics it never asked for: they wait for it to enable them.
+  if (existing && !force && !Array.isArray(existing?.ratchet?.enable) && defaults.ratchet)
+    defaults.ratchet = { ...defaults.ratchet, enable: [] };
   const merged = mergeConfig(defaults, existing || {});
   if (!existing || force) {
     if (!dryRun) writeJsonFile(repoDir, configRel, { ...merged, stack: preset.id });

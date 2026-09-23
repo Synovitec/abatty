@@ -316,7 +316,13 @@ export function updateRepo(o) {
     const added = missing.filter(([k]) => required.has(k) || !offered.has(k));
     const declined = missing.filter(([k]) => !required.has(k) && offered.has(k)).map(([k]) => k);
     for (const [k, v] of added) scripts[k] = v;
-    const kept = declined.length ? `left out, as removed here: ${declined.join(", ")}` : "";
+    // A lock from before the list is read as "all offered", which is an inference: said as one,
+    // so a script the preset gained since is not reported as a removal nobody made.
+    const kept = !declined.length
+      ? ""
+      : lock?.scripts
+        ? `left out, as removed here: ${declined.join(", ")}`
+        : `left out, read as removed here (this lock predates the list of scripts offered; add one by hand if it is new to you): ${declined.join(", ")}`;
     if (added.length) {
       if (!dryRun) writeJsonFile(repoDir, "package.json", { ...pkg, scripts });
       events.push({

@@ -8,7 +8,7 @@
  * one clone, charged once, to the lexicographically smaller of its two places, so a rename does
  * not move the debt. Opt-in (`ratchet.enable`); every code preset enables it.
  */
-import { codeOnly } from "./jstext.mjs";
+import { codeOnly } from "./lex.mjs";
 import { matchesAny, regexes } from "./lib.mjs";
 
 /** @typedef {import("../index.mjs").Probe} Probe */

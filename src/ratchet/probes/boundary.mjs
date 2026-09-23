@@ -6,22 +6,20 @@
  * each found real defects, with what was particular to that product made configuration.
  */
 import {
-  closeOf,
-  codeOnly,
+  ROUTE_FILE,
+  USE_SERVER,
   exportedFunctions,
   functionAt,
-  lineAt,
   parsedArguments,
   unparsedParams,
 } from "./jstext.mjs";
+import { closeOf, codeOnly, lineAt } from "./lex.mjs";
 import { matchesAny, regexes } from "./lib.mjs";
 
 /** @typedef {import("../index.mjs").Probe} Probe */
 
 /** What a route handler reads from the request: the body, the query, the path. */
 const READS_INPUT = /\.(json|formData|text)\(\)|searchParams|\bparams\b/;
-const ROUTE_FILE = /(^|\/)app\/api\/.*route\.[jt]sx?$/;
-const USE_SERVER = /^\s*(['"])use server\1/m;
 const HTTP_METHOD = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/;
 /** A credentials callback as it is defined: `authorize(...) {`, or `authorize: (async) (...)`/`function (`. */
 const AUTHORIZE_METHOD = /(?:^|[\s{,])(?:async\s+)?authorize\s*\(/gm;

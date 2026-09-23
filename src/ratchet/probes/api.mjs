@@ -5,12 +5,11 @@
  * (`ratchet.boundedBy`), the columns a select must never carry (`ratchet.secretFields`), the
  * fields that hold money (`ratchet.moneyFields`).
  */
-import { callArguments, lineAt, stripComments } from "./jstext.mjs";
+import { ROUTE_FILE, USE_SERVER, callArguments } from "./jstext.mjs";
+import { codeOnly, lineAt } from "./lex.mjs";
 
 /** @typedef {import("../index.mjs").Probe} Probe */
 
-const ROUTE_FILE = /(^|\/)app\/api\/.*route\.[jt]sx?$/;
-const USE_SERVER = /^\s*(['"])use server\1/m;
 const FIND_MANY = /\.findMany\s*\(/g;
 const WRITE = String.raw`\b(?:prisma|db|tx)\.\w+\.(?:create|update|delete|upsert|updateMany|deleteMany)\s*\(`;
 const ROW_RETURN = new RegExp(String.raw`\breturn\s+(?:await\s+)?` + WRITE, "g");
@@ -193,7 +192,7 @@ export const probes = [
         ...c.files(/\.prisma$/).map((x) => /** @type {const} */ ([x, column])),
       ]) {
         scanned++;
-        const text = stripComments(c.read(f));
+        const text = codeOnly(c.read(f), { strings: "keep" });
         for (const m of text.matchAll(re))
           findings.push({
             path: f,
