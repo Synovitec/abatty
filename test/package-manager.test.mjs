@@ -91,7 +91,7 @@ test("init writes a bun repository's hooks and commands in bun's words", () => {
         ),
     ),
   );
-  assert.match(hooks[1] || "", /^bun run --silent gate$/m);
+  assert.match(hooks[1] || "", /^bun run --silent gate --refs$/m);
   const cfg = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
   assert.equal(cfg.commands.gate, "bun run --silent gate:fast");
 });
