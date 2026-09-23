@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A night session is judged on the files it changed, not on its neighbours'.** The Stop hook
+  refused to end a session while anything in the worktree was uncommitted, and told the agent to
+  commit it or restore it. In a worktree several sessions share, that was an instruction to take
+  or delete another session's work. The SessionStart hook now records what was already
+  uncommitted (each file with a hash of its content). The Stop hook judges only what is new or
+  changed since, and names the others as left alone.
+
 - **`init` speaks the repository's package manager.** The three git hooks, the commands it writes
   into the config and its "by hand" steps said `npx` and `npm run` whatever the repository
   used; a bun-only repository that forbids npm had to rewrite all of them before it could trust

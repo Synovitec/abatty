@@ -467,6 +467,22 @@ try {
   const freshReceipt = join(nightDir, `stop-gate-${freshSid}.json`);
   check("stop-gate · an allowed stop leaves a receipt with every check ok", existsSync(freshReceipt) && readJson(freshReceipt).decision === "allow" && readJson(freshReceipt).checks.every((c) => c.ok), existsSync(freshReceipt) ? oneLine(readFileSync(freshReceipt, "utf8")) : "no receipt");
 
+  // Several sessions share one worktree: a file another session left uncommitted before this one
+  // started, untouched since, is not this session's to commit or restore. One it wrote still is.
+  write(repo, "notes-of-another-session.md", "theirs\n");
+  const shareSid = "selftest-share-" + Date.now();
+  const shareCfg = cfgIn("share", { startedAt: "2026-01-01T00:00:00Z", phases: [{ id: 0, status: "done", updatedAt: "2026-01-01T01:00:00Z" }] });
+  const shareEnv = { ...night, ADOPTION_BRANCH: "", ADOPTION_PHASE: "0", ADOPTION_CONFIG: shareCfg };
+  hook("session-brief.mjs", { session_id: shareSid }, shareEnv, repo);
+  const shared = hook("stop-gate.mjs", { session_id: shareSid }, shareEnv, repo);
+  check("stop-gate · a file uncommitted before the session started is left alone", shared.code === 0, `exit ${shared.code} ${oneLine(shared.stderr)}`);
+  write(repo, "mine.md", "mine\n");
+  const mine = hook("stop-gate.mjs", { session_id: shareSid }, shareEnv, repo);
+  const named = mine.stderr.split("\n\n")[0] || "";
+  check("stop-gate · a file the session wrote blocks, and only it is named", mine.code === 2 && /mine\.md/.test(named) && !/notes-of-another-session/.test(named), `exit ${mine.code} ${oneLine(mine.stderr)}`);
+  rmSync(join(repo, "notes-of-another-session.md"));
+  rmSync(join(repo, "mine.md"));
+
   // ---- 3b. the stop-gate trusts the base branch's adoption.json, not the tree's ---------------
   // The worker points commands.gate at a command that fails in the TREE copy; the base copy says
   // green. What must decide is the base: the block names the edited harness, never a red gate.

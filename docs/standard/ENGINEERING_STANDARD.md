@@ -197,7 +197,8 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
   `PreToolUse` guard on `Edit|Write` (at night denies a write under `.claude/`, to an applied
   migration, to an env file, outside the tree), a `Stop` gate that refuses to end an
   unattended session while the gate is red, something was loosened against the base branch,
-  the tree is dirty, the newest source commit has no changelog entry or the state file is
+  the session left the tree dirty (another session's files are not its own), the newest source
+  commit has no changelog entry or the state file is
   stale (exit 2, reason on stderr; the agent itself force-ends after 8 consecutive blocks,
   so the hook's own cap stays below that), a `SessionStart` brief, and an optional
   lint-on-edit. Hooks are Node scripts in exec form; a Bash rule text-match is not a security

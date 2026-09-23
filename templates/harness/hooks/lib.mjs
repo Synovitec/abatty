@@ -3,6 +3,7 @@
 // stdout is read as a decision when it is JSON, stderr is the reason the model sees on exit 2.
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -157,6 +158,43 @@ export function counter(name, sessionId) {
     },
   };
 }
+
+/**
+ * The uncommitted files as they are now, each with a hash of its content ("gone" when deleted):
+ * what a session found when it started. Several sessions share one worktree, and a night that
+ * judges the whole tree at its stop would be told to commit or delete files another session
+ * owns; with this taken at the start it judges only what it changed itself.
+ * @returns {Record<string, string>}
+ */
+export function treeSnapshot() {
+  const snap = {};
+  // Not through git(): it trims, and the first line's leading status column is part of the format.
+  let status = "";
+  try {
+    status = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      maxBuffer: 32 * 1024 * 1024,
+    });
+  } catch {
+    return snap;
+  }
+  for (const line of status.split("\n")) {
+    if (!line.trim()) continue;
+    const path = line.slice(3).replace(/^.* -> /, "").replace(/^"|"$/g, "");
+    let hash = "gone";
+    try {
+      hash = createHash("sha1").update(readFileSync(path)).digest("hex");
+    } catch {
+      /* deleted, or a folder: "gone" is the fact to compare */
+    }
+    snap[path] = hash;
+  }
+  return snap;
+}
+
+/** Where a session's starting snapshot is kept. @param {string | undefined} sessionId */
+export const snapshotFile = (sessionId) => join(NIGHT_DIR, `start-tree-${sessionId || "no-session"}.json`);
 
 /**
  * What a hook decided, written where the runner and the morning can read it: .claude/night/<name>.json.

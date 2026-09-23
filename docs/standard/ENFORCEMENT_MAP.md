@@ -39,7 +39,7 @@ The night run adds four controls that sit above every rule: the **guard hook** (
 dangerous commands before they run), the **git shim** on `PATH` (refuses the same force push and
 hook bypass in every other shell, because a guard that lives in one tool's hook is a property of
 that tool rather than of the repository), the **stop-gate hook** (the session cannot end while
-the gate is red, the tree is dirty, the changelog is untouched or the state file is stale), and
+the gate is red, the session left the tree dirty, the changelog is untouched or the state file is stale), and
 **CI on the pushed branch** (re-runs every gate independently of the model). A rule enforced
 by the gate is therefore enforced three times: at the stop, at the push, and in CI.
 

@@ -85,7 +85,7 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
    is the interim. On day 0 the HARD set is every metric. Write the baseline: it is
    all zeros, and that is the point.
 7. **The gate script and the hook.** `scripts/ci/gate.mjs`, `.githooks/pre-push` calling it,
-   `hooks:install` script setting `core.hooksPath`. Path-aware selection configured for the
+   `hooks:install` script setting `core.hooksPath` and the hooks' executable bit (`abatty hooks`). Path-aware selection configured for the
    heavy suites this stack will have.
 8. **Pre-commit hook** for the three things worth catching before a commit: a `console.log`
    added, a secret staged, a locale file touched without its siblings. Secret scanning shares
