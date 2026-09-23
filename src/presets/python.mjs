@@ -6,6 +6,7 @@
  * requirements.txt, .py sources), never from npm dependencies. NOT PROVEN by a repository yet;
  * `init` says so, and the first Python repository names what is wrong.
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const python = {
@@ -38,12 +39,7 @@ export const python = {
     lintExtensions: [".py"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
     ratchet: {
-      enable: [
-        "fn.shapeExemptions",
-        "change.refactorTests",
-        "code.clones",
-        "test.coverageExclusions",
-      ],
+      enable: [...COMMON_PROBES],
     },
   },
   scripts: {

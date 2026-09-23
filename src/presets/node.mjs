@@ -5,6 +5,7 @@
  * a lock that recorded the wrong ancestor, a self-test that failed a repository for opting into
  * the scrub, a rule that read one test runner, a guard that read flags out of a heredoc).
  */
+import { COMMON_PROBES } from "./probes.mjs";
 
 /** @type {import("./index.mjs").Preset} */
 export const node = {
@@ -47,13 +48,7 @@ export const node = {
     lintExtensions: [".ts", ".js", ".mjs"],
     // The opt-in probes a new repository on this stack starts with (ratchet.enable).
     ratchet: {
-      enable: [
-        "valid.wholeEnv",
-        "fn.shapeExemptions",
-        "change.refactorTests",
-        "code.clones",
-        "test.coverageExclusions",
-      ],
+      enable: ["valid.wholeEnv", ...COMMON_PROBES],
     },
   },
   scripts: {
