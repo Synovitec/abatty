@@ -37,6 +37,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Every gate step runs with the run's own database, not only the suites.** With
+  `TEST_DATABASE_URL` set, only the database and browser suites were pointed at it; an adopter who
+  unset their own `DATABASE_URL`, as the deferral message implied, then saw the dead-code step go
+  red for nothing, because its tool loads the ORM's config and that reads `DATABASE_URL`. Every
+  step now gets `TEST_DATABASE_URL` as `DATABASE_URL` when one is named, and the deferral message
+  says to keep `DATABASE_URL` for the tools that read it.
 - **`update` no longer reports a conflict on a file whose template did not change.** A file `init`
   kept (the repository's own `.claude/settings.json`) has no ancestor, so every upgrade asked for
   a merge base that lives under the gitignored `.abatty/` and so is on no other clone, and wrote

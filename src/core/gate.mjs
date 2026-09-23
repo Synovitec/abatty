@@ -21,7 +21,7 @@ import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
 import { pendingPaths, pushRangeInfo } from "./range.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
-import { suiteDatabase } from "./hermetic.mjs";
+import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
 import { builtinStep } from "./builtins.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 
@@ -164,7 +164,7 @@ export function runGate(o) {
     const t0 = Date.now();
     // Every step is told the range the gate judges (ABATTY_RANGE), so a check of the changed
     // lines measures the push rather than guessing a base of its own.
-    const env = { ...suiteEnv, ABATTY_RANGE: range };
+    const env = { ...stepDatabase(o.db), ...suiteEnv, ABATTY_RANGE: range };
     const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
     const ms = Date.now() - t0;
     if (res.errored) {
