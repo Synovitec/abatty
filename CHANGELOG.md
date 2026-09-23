@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Changelog fragments, so parallel branches stop colliding on the changelog.** With the entry
+  written as a line under `## [Unreleased]`, every pair of parallel branches edits the same hunk:
+  an adopter merging eight pull requests in a day resolved four conflicts, all in the changelog,
+  none in code. Set `files.changelogFragments` to a folder and a change may instead add its own
+  `<slug>.<section>.md` there; the commit hook, the gate's changelog range and the Stop hook all
+  accept it as the entry. `abatty changelog --release <version>` folds `[Unreleased]` and every
+  fragment into the dated section, grouped by section, and removes the fragments. Off by default:
+  the line under `[Unreleased]` works as before.
 - **`doctor` and `update` name a stale patch of abatty.** An adopter patched 0.4.0 in
   `node_modules` to get past a defect 0.5.0 fixed; on the upgrade such a patch fails to apply, or
   applies to code it was never written for. A patch of an abatty version other than the one

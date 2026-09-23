@@ -125,14 +125,19 @@ export function stagedVerdict(staged, pairs, message = "") {
 export const REASON = /^\s*no-changelog:\s*\S/im;
 
 /**
- * The changelog rule as a pair: the source prefixes, then the changelog.
- * @param {{ changelog: string, changelogRequiredFor: string[] }} c @returns {Pair[]}
+ * The changelog rule as a pair: the source prefixes, then the changelog, or a fragment in the
+ * folder a repository keeps them in (src/core/fragments.mjs), which is the same rule without the
+ * shared hunk every parallel branch edits.
+ * @param {{ changelog: string, changelogRequiredFor: string[], changelogFragments?: string }} c @returns {Pair[]}
  */
 export function changelogPairs(c) {
   return [
     {
       when: c.changelogRequiredFor,
-      then: [c.changelog],
+      then: [
+        c.changelog,
+        ...(c.changelogFragments ? [`${c.changelogFragments.replace(/\/+$/, "")}/`] : []),
+      ],
       why: "a change is written in the changelog of the same push",
       excuse: REASON,
     },

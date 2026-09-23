@@ -76,6 +76,7 @@ import { probeVersion } from "./baseline.mjs";
  *   envModule: string,
  *   citationsExempt: string[],
  *   changelog: string,
+ *   changelogFragments: string,
  *   changelogRequiredFor: string[],
  *   coupled: unknown[],
  *   enable: string[],

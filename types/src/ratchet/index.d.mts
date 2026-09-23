@@ -123,6 +123,7 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   envModule: string,
  *   citationsExempt: string[],
  *   changelog: string,
+ *   changelogFragments: string,
  *   changelogRequiredFor: string[],
  *   coupled: unknown[],
  *   enable: string[],
@@ -215,6 +216,7 @@ export type RatchetConfig = {
     envModule: string;
     citationsExempt: string[];
     changelog: string;
+    changelogFragments: string;
     changelogRequiredFor: string[];
     coupled: unknown[];
     enable: string[];

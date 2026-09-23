@@ -10,7 +10,7 @@
     ".claude/hooks/self-test.mjs": "b398181487438dcd8986cb6bf5a96b8051f6b72ccccfaffbc8fd1b1a49254016",
     ".claude/hooks/session-brief.mjs": "902ec654f198c5d3c2b8c4c90f34c5d36e09eea379a83593575e26f04b1d5808",
     ".claude/hooks/shell.mjs": "9d70cea004db2b7e19cf00bbd56014086c6ce3a9f3ce037bca86dc30fac82cc8",
-    ".claude/hooks/stop-gate.mjs": "dbdf3ea11ec12cda703541afdf2459d881171ca615e9c5bb2a2a9ea9d8b5e845",
+    ".claude/hooks/stop-gate.mjs": "26eb1f3bd60678119fa7098cf3d7ec895f1c399363e931e4d0c85f67604b9af9",
     ".claude/hooks/vocabulary.mjs": "cb3f80737b8124562321c816fc6679db84b241a901def3b346b7abd713d01b3d",
     ".claude/skills/adopt-standards/SKILL.md": "edba13f3d2ef03766626bd49c3e46a6521d041d78d4aaf59a6fcf14cfcaea019",
     ".claude/agents/standards-reviewer.md": "fbd61a3e5baadca110547a06dd2e8ac4048ba92089d7a2519592792531475266",

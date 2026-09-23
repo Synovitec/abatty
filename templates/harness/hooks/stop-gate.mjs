@@ -122,11 +122,14 @@ pass("tree", theirs.length ? `${theirs.length} file(s) from before this session 
 const mergeBase = git("merge-base", base, "HEAD") || git("merge-base", `origin/${base}`, "HEAD");
 if (mergeBase) {
   const changelog = config.files?.changelog || "CHANGELOG.md";
+  // A fragment in the repository's fragments folder is the same entry without the shared hunk
+  // every parallel branch edits (files.changelogFragments).
+  const fragments = String(config.files?.changelogFragments || "").replace(/\/+$/, "");
   const required = config.changelogRequiredFor || [];
   const offenders = [];
   for (const sha of git("log", "--format=%H", "--no-merges", `${mergeBase}..HEAD`).split("\n").filter(Boolean)) {
     const files = git("diff-tree", "--no-commit-id", "--name-only", "-r", sha).split("\n").filter(Boolean);
-    if (files.includes(changelog)) break;
+    if (files.includes(changelog) || (fragments && files.some((f) => f.startsWith(`${fragments}/`)))) break;
     if (required.some((p) => files.some((f) => f.startsWith(p)))) offenders.push(sha);
   }
   if (offenders.length) {
