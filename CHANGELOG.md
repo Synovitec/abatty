@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The gate no longer builds for a comment, or over a running dev server.** A pushed file whose
+  diff is only comments or blank lines selects no suite, so rewording a comment in a page no
+  longer runs the build and the browser suite. While `next dev` is live on the checkout (the
+  pid in `.next/dev/lock` is alive), the build suite is deferred to CI with the pid and port
+  named, because a production build over a running dev server emptied an adopter's
+  node_modules three times in a day. A lock left by a crash defers nothing.
 - **The hooks fall back to the repository's own package manager.** When the config names no
   gate or lint command, the Stop hook and the lint-on-edit hook used npm everywhere, so a
   bun-only repository's gate ran through a manager it did not have. They now read the lockfile

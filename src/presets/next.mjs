@@ -134,6 +134,9 @@ export const next = {
         name: "build + browser suite + axe (TEST.3, A11Y.1)",
         paths: /^(src\/app\/|src\/components\/|src\/i18n\/|app\/|components\/|e2e\/)/,
         docker: true,
+        // `next dev` writes its pid here; a production build over a live dev server emptied an
+        // adopter's node_modules on Windows, three times in a day.
+        devLocks: [".next/dev/lock"],
         steps: [
           { label: "build (the browser suite serves the production output)", script: "build" },
           { label: "E2E + axe", script: "e2e", alternatives: ["e2e:client", "test:e2e"] },

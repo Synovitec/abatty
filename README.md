@@ -68,7 +68,7 @@ import graph, dead code, tests, the ratchet with the changelog over the pushed r
 scan, the dependency audit.
 
 Heavy suites are selected by path, so a change that touches no database code does not wait for the
-database suite. A step whose script the repository does not have yet is reported as skipped rather
+database suite, and a push that only changes comments builds nothing. A step whose script the repository does not have yet is reported as skipped rather
 than passed, and the verdict leads with how many steps did not run. Steps the preset requires
 cannot be skipped: without them the gate reports that it could not run.
 

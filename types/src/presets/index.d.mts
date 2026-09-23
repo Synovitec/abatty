@@ -45,20 +45,19 @@ export type GateStep = {
     required?: boolean;
 };
 /**
- * The stack presets. A preset is proven by a repository (the standard's rule for a reference
- * implementation); one that no repository has run is marked `proven: false` and `init` says so.
- * A monorepo composes them: workspaces.mjs detects one preset per workspace folder, gated in
- * its own folder, the repository-level steps once.
+ * `devLocks` are the lock files a framework's dev server holds; while one is live the suite is
+ * deferred to CI rather than built over it.
  */
 export type GateSuite = {
     name: string;
     paths: RegExp;
     docker?: boolean;
+    devLocks?: string[];
     steps: GateStep[];
 };
 /**
  * a rule file that applies only where the
- *  repository depends on one of `needs`. A bare string always applies.
+ *   repository depends on one of `needs`. A bare string always applies.
  */
 export type PresetRule = {
     file: string;

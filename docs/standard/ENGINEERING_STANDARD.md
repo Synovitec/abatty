@@ -153,13 +153,16 @@ locally". Reference: the `scripts/ci/gate.mjs` named in `ADOPTION_STATUS.md`.
 - **Path-aware heavy suites:** the database or ingestion suite and the coverage gate only when
   the schema, the data layer or its tests moved; the browser suite with axe only when the UI
   moved. Selection reads the push AND the working tree, because the suites test the tree.
-  The changelog check reads the push alone, because it is a rule about commits.
+  The changelog check reads the push alone, because it is a rule about commits. A pushed file
+  whose diff is only comments selects no suite: rewording a comment is not a reason to build.
 - **Deferral is loud, never silent.** When Docker or the browsers are absent the gate prints
   `DEFERRED to CI: <suite>` with the reason. `--fast` is the deliberate way to defer and says
   so. Running everything on every push costs ten minutes and teaches `--no-verify`; running
   nothing heavy locally is how `main` sat red on `integration` for a day. A suite that needs a
   database runs against one the run owns (`TEST_DATABASE_URL`, or CI's own service) and is
-  deferred, loudly, when the only database it can see is the developer's.
+  deferred, loudly, when the only database it can see is the developer's. A suite that builds is
+  deferred the same way while the framework's dev server is live on the checkout, read from
+  the pid in its lock: a build over a running dev server corrupts what it serves.
 - **After a rebase or an amend, `@{u}..HEAD` lies.** Judge the push on the whole branch when
   the upstream is no longer an ancestor of HEAD.
 
