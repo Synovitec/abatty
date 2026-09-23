@@ -248,6 +248,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `change.refactorTests`    | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
 | `code.clones`             | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
 | `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
+| `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

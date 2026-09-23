@@ -25,6 +25,7 @@ import { probes as boundaryProbes } from "./probes/boundary.mjs";
 import { probes as apiProbes } from "./probes/api.mjs";
 import { probes as shapeProbes } from "./probes/shape.mjs";
 import { probes as coverageProbes } from "./probes/coverage.mjs";
+import { probes as nonNullProbes } from "./probes/nonnull.mjs";
 import { probes as refactorProbes } from "./probes/refactor.mjs";
 import { probes as cloneProbes } from "./probes/clones.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
@@ -109,6 +110,7 @@ export const BUILTIN_PROBES = [
   ...refactorProbes,
   ...cloneProbes,
   ...coverageProbes,
+  ...nonNullProbes,
 ].map((p) => ({ ...p, source: "abatty" }));
 
 /**

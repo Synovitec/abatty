@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`types.nonNull`, an opt-in probe that counts non-null assertions.** To pass a coverage gate an
+  adopter's agent replaced two `?? 0` fallbacks with `!`: the uncovered branches disappeared, and
+  `types.escapes`, which counts `any` and the `@ts-` comments, did not count what replaced them, so
+  both numbers went green while the debt moved into the one form nothing measured. The probe
+  counts a postfix `!` in TypeScript (not `!=`, not a negation, not text in a string, a comment or
+  JSX), so the count can only fall. `init` enables it on every code preset; an existing repository
+  enables it in `ratchet.enable`, and today's count becomes its floor.
 - **The gate runs the coverage of the changed lines, so a green local gate is CI's green too.** An
   adopter's push passed the full local gate and went red in CI on two untested branches, because
   that check (TEST.4) was a separate CI step the gate never ran, and the session had already

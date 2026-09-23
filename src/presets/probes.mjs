@@ -4,10 +4,11 @@
  * the clones the package's own ratchet counts.
  */
 
-/** Stack-neutral opt-in probes: exemptions, refactors that drop tests, clones, coverage exclusions. */
+/** Stack-neutral opt-in probes: exemptions, refactors that drop tests, clones, coverage exclusions, non-null assertions (none in a repository without TypeScript). */
 export const COMMON_PROBES = [
   "fn.shapeExemptions",
   "change.refactorTests",
   "code.clones",
   "test.coverageExclusions",
+  "types.nonNull",
 ];
