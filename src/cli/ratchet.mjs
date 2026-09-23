@@ -131,12 +131,17 @@ export async function ratchetCommand(command, c) {
         const { splitByRange } = await import("../ratchet/index.mjs");
         const split = splitByRange(verdicts, changedPaths(dir, range));
         if (split.introduced.length || split.standing.length) {
+          // A cross is for what fails the run: a finding in a touched file whose metric held its
+          // floor is debt the file already carried. Both marked alike, an adopter's session read a
+          // push that went through as refused and had to ask the remote.
+          const failing = new Set(verdicts.filter((v) => failed([v])).map((v) => v.metric));
+          const holding = split.introduced.filter(({ metric }) => !failing.has(metric)).length;
           out(
-            `\n  ${t.bold("in this change")} ${t.gray(`${split.introduced.length} finding(s)`)}${t.gray(` · standing ${split.standing.length}`)}\n`,
+            `\n  ${t.bold("in the files this change touched")} ${t.gray(`${split.introduced.length} finding(s)${holding ? `, ${holding} within the floor (not failing)` : ""} · standing elsewhere ${split.standing.length}`)}\n`,
           );
           for (const { metric, finding } of split.introduced.slice(0, 20))
             out(
-              `    ${t.glyph.fail} ${t.gray(metric.padEnd(24))} ${finding.path}${finding.line ? t.gray(":" + finding.line) : ""}${finding.detail ? t.gray(" · " + finding.detail) : ""}\n`,
+              `    ${failing.has(metric) ? t.glyph.fail : t.glyph.skip} ${t.gray(metric.padEnd(24))} ${finding.path}${finding.line ? t.gray(":" + finding.line) : ""}${finding.detail ? t.gray(" · " + finding.detail) : ""}\n`,
             );
           if (!split.introduced.length)
             out(`    ${t.gray("nothing this change touched; every finding is standing debt")}\n`);

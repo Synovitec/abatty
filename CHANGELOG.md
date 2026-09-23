@@ -37,6 +37,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A red cross means the run failed.** The ratchet listed every finding in a file the push
+  touched with ✗, the debt the file already carried within its floor included, and an adopter's
+  session read a push that had gone through as refused and had to ask the remote. A finding whose
+  metric holds its floor is now listed with a neutral mark, the heading says how many of them are
+  within the floor and not failing, and ✗ stays for a metric that fails.
 - **Every gate step runs with the run's own database, not only the suites.** With
   `TEST_DATABASE_URL` set, only the database and browser suites were pointed at it; an adopter who
   unset their own `DATABASE_URL`, as the deferral message implied, then saw the dead-code step go
