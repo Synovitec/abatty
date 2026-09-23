@@ -1,4 +1,4 @@
-/** @param {string} p @param {unknown} v JSON without a BOM, LF, a trailing newline: the way the hooks read it back. */
+/** @param {string} p @param {unknown} v JSON without a BOM, LF, a trailing newline, in the formatter's shape: the way the hooks read it back and the format check leaves it. */
 export function writeJson(p: string, v: unknown): void;
 /** @param {string} p @returns {any} */
 export function readJson(p: string): any;

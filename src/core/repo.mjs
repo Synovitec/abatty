@@ -21,7 +21,68 @@ export function readJsonFile(dir, rel) {
 export function writeJsonFile(dir, rel, value) {
   const p = join(dir, rel);
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(value, null, 2) + "\n");
+  writeFileSync(p, formatJson(value, printWidth(dir)));
+}
+
+/**
+ * The print width the formatter uses for a file under `dir`: `printWidth` in the nearest
+ * .prettierrc or package.json up the tree, as the formatter looks it up; 80, its own default,
+ * otherwise. A config written as code is not read, and 80 holds for it.
+ * @param {string} dir
+ */
+export function printWidth(dir) {
+  for (let d = resolve(dir); ; d = dirname(d)) {
+    for (const f of [".prettierrc", ".prettierrc.json"]) {
+      if (!existsSync(join(d, f))) continue;
+      try {
+        const w = JSON.parse(readFileSync(join(d, f), "utf8")).printWidth;
+        return typeof w === "number" ? w : 80;
+      } catch {
+        return 80;
+      }
+    }
+    const pkg = readJsonFile(d, "package.json");
+    if (pkg?.prettier)
+      return typeof pkg.prettier.printWidth === "number" ? pkg.prettier.printWidth : 80;
+    if (dirname(d) === d) return 80;
+  }
+}
+
+/**
+ * JSON as the formatter a repository runs would write it, so a file this package writes does not
+ * fail that repository's format check the next time it is written: an adopter had to put the
+ * baseline in .prettierignore. Objects are expanded (the formatter keeps an expanded object as
+ * it is); an array of plain values goes on one line when the line fits the width, one value per
+ * line otherwise, which is what the formatter does and what JSON.stringify never does.
+ * @param {unknown} value @param {number} [width]
+ */
+export function formatJson(value, width = 80) {
+  /** @param {unknown} v @param {string} indent @param {number} used columns before the value @returns {string} */
+  const fmt = (v, indent, used) => {
+    if (Array.isArray(v)) {
+      if (!v.length) return "[]";
+      if (v.every((x) => x === null || typeof x !== "object")) {
+        const inline = `[${v.map((x) => JSON.stringify(x)).join(", ")}]`;
+        // the comma after the value counts toward the line, as the formatter measures it
+        if (used + inline.length + 1 <= width) return inline;
+      }
+      const inner = indent + "  ";
+      return `[\n${v.map((x) => inner + fmt(x, inner, inner.length)).join(",\n")}\n${indent}]`;
+    }
+    if (v && typeof v === "object") {
+      const entries = Object.entries(v).filter(([, x]) => x !== undefined);
+      if (!entries.length) return "{}";
+      const inner = indent + "  ";
+      return `{\n${entries
+        .map(([k, x]) => {
+          const head = `${inner}${JSON.stringify(k)}: `;
+          return head + fmt(x, inner, head.length);
+        })
+        .join(",\n")}\n${indent}}`;
+    }
+    return JSON.stringify(v);
+  };
+  return fmt(value, "", 0) + "\n";
 }
 
 /** Run git in a directory; "" when it fails - a command must never crash on git. @param {string} dir @param {string[]} args */

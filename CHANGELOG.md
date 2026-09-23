@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The files abatty writes pass the repository's format check as they are.** `baseline`,
+  `update`, `init` and the night runner wrote JSON with every array item on its own line, where
+  the formatter puts a short array on one line, so a repository that checks formatting went red
+  the next time abatty wrote the baseline. An adopter had to put it in its format-ignore file.
+  JSON is now written in the formatter's shape, at the print width the repository's formatter
+  config sets (80 when it sets none). A test compares the output with the formatter's own, on
+  sample values and on this repository's baseline, config and lock.
+
 - **The harness self-test passes on a repository that allows direct pushes to its base.** Ten
   guard cases assumed a PR-only base and read the repository's own config, so a repository with
   `directPushToBase: true` failed its self-test on its own, legitimate policy. The cases now run

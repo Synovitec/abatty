@@ -45,20 +45,20 @@
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 135,
+    "code.clones": 138,
     "context.overCap": 1,
     "docs.behindCode": 7,
-    "docs.citations": 72,
+    "docs.citations": 73,
     "docs.danglingSource": 14,
     "docs.frontMatter": 33,
     "docs.indexDrift": 32,
-    "size.excessCode": 135,
-    "size.overBudget": 135,
-    "size.overRaw": 153,
-    "types.escapes": 135,
-    "valid.rawEnv": 134,
-    "valid.utcDay": 135,
-    "valid.wholeEnv": 134
+    "size.excessCode": 138,
+    "size.overBudget": 138,
+    "size.overRaw": 156,
+    "types.escapes": 138,
+    "valid.rawEnv": 137,
+    "valid.utcDay": 138,
+    "valid.wholeEnv": 137
   },
   "debt": {
     "code.clones": {
