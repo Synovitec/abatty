@@ -257,7 +257,9 @@ export function initRepo(o) {
   );
   put(
     ".githooks/pre-push",
-    `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${pm.run("gate").join(" ")}\n`,
+    // --refs: git hands the pushed refs on stdin, and the gate judges that push rather than
+    // whatever happens to be checked out (a branch deletion ran the whole gate before).
+    `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${pm.run("gate", ["--refs"]).join(" ")}\n`,
     { merge: false, executable: true },
   );
   // The scrub refuses a message that names a tool; a repository that did not opt in gets a hook

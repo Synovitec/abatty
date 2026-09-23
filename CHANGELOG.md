@@ -7,6 +7,19 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The pre-push gate judges the push, not whatever is checked out.** git hands a pre-push hook
+  the refs being pushed; the hook `init` writes ignored them. So a push deleting three branches
+  ran the whole gate, build and browser suite included, on the branch the developer happened to
+  be on, and pushing another branch was judged by the checkout's tree. An adopter's sessions
+  began deleting branches through the forge's API to get round it. The hook now passes the refs
+  to `abatty gate --refs`, which reads each line:
+  - a deletion or a tag runs no gate, and says so;
+  - the commit checked out is judged over the range the push adds;
+  - a push of any other commit is refused, loudly, since the tree here is not the one being
+    pushed.
+  With nothing on stdin (the hook run by hand), the gate reads the push itself, as before. This
+  repository's own pre-push hook passes the refs too.
+
 - **A monorepo is read as one.** The database suite's paths matched only at the root, so a
   migration under `packages/db/migrations/` never selected it, and in the adopter that reported
   it that was the suite that mattered most. It now matches the folder at any depth, never a name
