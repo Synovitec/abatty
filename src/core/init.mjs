@@ -347,14 +347,20 @@ export function initRepo(o) {
   // A repository that already wrote its context file keeps it as the one source: the template
   // beside it, unfilled, was a second context that read as the real one to every other agent.
   // The interoperable file then points at the existing one instead of competing with it.
-  const own = existsSync(join(repoDir, PRIMARY.contextFile));
-  put(
-    "AGENTS.md",
-    own
-      ? `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`
-      : context,
-  );
-  put(PRIMARY.contextFile, "@AGENTS.md\n");
+  // The import line init writes is not the repository's own context, and a file the repository
+  // wrote is never written over, not even under --force: `init --force` once turned CLAUDE.md
+  // into an import of an AGENTS.md that pointed back at it, and the context was gone.
+  const primary = join(repoDir, PRIMARY.contextFile);
+  const own = existsSync(primary) && readFileSync(primary, "utf8").trim() !== "@AGENTS.md";
+  if (!own) {
+    put("AGENTS.md", context);
+    put(PRIMARY.contextFile, "@AGENTS.md\n");
+  } else if (!existsSync(join(repoDir, "AGENTS.md")))
+    put(
+      "AGENTS.md",
+      `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`,
+    );
+  else events.push({ file: PRIMARY.contextFile, action: "kept" });
   for (const a of others)
     if (a.rulesDir && a.rulesFormat === "mdc")
       for (const r of rules)

@@ -16,6 +16,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`init --force` never writes over the repository's own context file.** On a repository
+  that wrote its own CLAUDE.md, `--force` turned it into an import of an AGENTS.md that pointed
+  back at it, and the context was gone. The repository's file and an AGENTS.md it already has are
+  kept; the import line init writes itself is still refreshed.
 - **The gate no longer builds for a comment, or over a running dev server.** A pushed file whose
   diff is only comments or blank lines selects no suite, so rewording a comment in a page no
   longer runs the build and the browser suite. While `next dev` is live on the checkout (the
