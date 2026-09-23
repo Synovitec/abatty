@@ -44,9 +44,12 @@ for (const probe of BUILTIN_PROBES) {
   });
 }
 
+/** The probes a repository with the default config runs: the opt-in ones only where enabled. */
+const DEFAULT_PROBES = BUILTIN_PROBES.filter((p) => !p.optIn);
+
 /** Measure a repository with the default config and no range. @param {string} dir @param {import("../src/ratchet/index.mjs").Baseline | null} baseline */
 function measure(dir, baseline, config = DEFAULT_CONFIG) {
-  return measureAll(BUILTIN_PROBES, buildContext(dir), { config, range: "" }, baseline);
+  return measureAll(DEFAULT_PROBES, buildContext(dir), { config, range: "" }, baseline);
 }
 
 test("the three-step control: a clean tree holds; a violation fails; raising the total to match still fails and names the file", () => {
