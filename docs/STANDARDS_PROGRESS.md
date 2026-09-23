@@ -325,3 +325,10 @@ the preset tables repeat each other's blocks, the installed graph config repeats
 and the probes repeat their own scaffolding. `change.refactorTests` reads 0 and is hard. No
 existing floor moved; the baseline's readability score falls from 92 to 91, because the clone
 count now counts against navigability.
+
+### 2026-09-23 - valid.wholeEnv 8 → 6, the branch's own two takes removed
+
+Review pointed out that two of the eight takes the new floor recorded were this same change's own
+code: `process.env` as a default parameter in `src/core/which.mjs`. They now read the search path
+through `searchFromEnv()` in the env module, the one place the package reads its environment, and
+the floor is locked at 6. The readability score in the baseline returns from 91 to 93.

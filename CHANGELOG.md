@@ -47,6 +47,8 @@ under Unreleased in the same commit.
   and API probes. An opt-in probe that is not enabled does not reserve its name, so a repository
   that wrote its own version keeps it until it switches to the package's. `abatty ratchet
   --controls` proves every shipped probe, enabled or not.
+- **`valid.wholeEnv` here falls from 8 to 6.** Two of the eight were this change's own default
+  parameters; they read the search path through the env module now, and the floor is locked.
 - **This repository measures its duplication: `code.clones` reads 27 and is a new floor.** The
   preset tables repeat each other's blocks, the installed graph config repeats its template, and
   the probes repeat their own scaffolding. CODE-DUP leaves the list of open gaps in the context
