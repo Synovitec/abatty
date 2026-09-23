@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A monorepo's gate steps are proven where they look.** `doctor --controls` planted every
+  violation in a root `src/`, which no workspace of a monorepo scans, so its lint, typecheck and
+  test steps stayed green on the plant and `measure` dropped three findings to partial, on steps
+  the adopter had watched fail by hand. The plants now go in `src/` where there is one, and
+  otherwise in the source folder of the first workspace, in the language its own tsconfig checks.
+  The controls run also records the abatty version that planted it, and `measure` no longer reads
+  a run from an older minor version as proof either way: its steps read unproven until the
+  controls run again. A planted file is marked as about to be committed while its step runs, so
+  the ratchet, which reads the tracked tree, sees it.
 - **`measure --out` writes the measurement there, and only there.** With `--json` or `--sarif`
   the output went to the screen and no file was written, and every run replaced the
   repository's latest report under `.abatty/reports/`, which the dashboard and the MCP server

@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempRepo } from "./helpers.mjs";
 import { applyTruth } from "../src/core/truth.mjs";
+import { CONTROLS_VERSION } from "../src/core/step-controls.mjs";
 import { cacheKey } from "../src/core/cache.mjs";
 import { presetById } from "../src/presets/index.mjs";
 
@@ -48,6 +49,7 @@ const IDS = ["CODE-LINTER", "TYPES-SCRIPT", "CODE-DEADCODE", "TEST-UNIT", "DOC-C
 
 test("a present check whose step cannot run, or stayed green on its plant, drops to partial and says why", () => {
   const dir = fixture("truth", {
+    abatty: CONTROLS_VERSION,
     steps: [
       { label: "typecheck (CODE.3)", outcome: "red" },
       { label: "dead code (CODE.6)", outcome: "green" },
@@ -63,6 +65,17 @@ test("a present check whose step cannot run, or stayed green on its plant, drops
   assert.equal(by["TEST-UNIT"]?.status, "present");
   assert.equal(by["DOC-CONTEXT"]?.status, "present", "a rule no gate step backs is not judged");
   assert.deepEqual(truth, { proven: 1, contradicted: 2, unproven: 1 });
+});
+
+test("a controls run an older version planted is not read: its steps are unproven, not contradicted", () => {
+  const steps = [{ label: "dead code (CODE.6)", outcome: "green" }];
+  for (const stale of [{ steps }, { abatty: "0.4.0", steps }]) {
+    const dir = fixture("truth-stale", stale);
+    const { findings, truth } = applyTruth(IDS.map(present), dir, node);
+    const by = Object.fromEntries(findings.map((f) => [f.id, f]));
+    assert.equal(by["CODE-DEADCODE"]?.status, "present", JSON.stringify(stale));
+    assert.equal(truth.proven, 0);
+  }
 });
 
 test("without a preset nothing is judged, and the findings come back as they went in", () => {

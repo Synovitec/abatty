@@ -51,6 +51,7 @@ export function doctor(o: {
     };
     controls: {
         at: string;
+        abatty: string;
         steps: StepOutcome[];
         absent: string[];
     } | null;

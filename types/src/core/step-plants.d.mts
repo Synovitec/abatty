@@ -1,3 +1,11 @@
+/**
+ * The folder a planted source file goes in: `src` where the repository has one; in a monorepo
+ * without it, the source folder of the first workspace that has one; else the framework's own.
+ * A monorepo whose steps scan `apps/web/lib` read every control planted in a root `src/` as a
+ * step that stayed green, and three steps that had been watched failing by hand read as absent.
+ * @param {string} dir
+ */
+export function plantRoot(dir: string): string;
 export const MARK: "abatty-control.__";
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS: Record<string, StepControl>;

@@ -16,16 +16,26 @@
  * (`abatty-control.__.*`); a tree that already carries one is refused, and every file is
  * removed again whatever the step did.
  */
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { dockerRunning, launch } from "./spawn.mjs";
-import { readPackage, writeJsonFile } from "./repo.mjs";
+import { git, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 
 export { STEP_CONTROLS } from "./step-plants.mjs";
 export const CONTROLS_FILE = ".abatty/controls.json";
+
+/**
+ * The version of abatty that planted the controls, recorded with them: where a step is planted
+ * changes between versions, and a proof taken with an older planting is not evidence about the
+ * steps today. A monorepo read three of its steps as absent for a week on controls an older
+ * version had planted in a folder none of its workspaces scans.
+ */
+export const CONTROLS_VERSION = String(
+  JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version,
+);
 
 /**
  * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
@@ -52,7 +62,7 @@ function childEnv() {
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
- * @returns {{ at: string, steps: StepOutcome[], absent: string[] }}
+ * @returns {{ at: string, abatty: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o) {
   const { repoDir, preset } = o;
@@ -144,8 +154,13 @@ export function runStepControls(o) {
         mkdirSync(dirname(join(repoDir, rel)), { recursive: true });
         writeFileSync(join(repoDir, rel), text);
       }
+      // Marked as about to be committed, which is what a violation that reaches a push is: the
+      // ratchet reads the tracked tree, and an untracked plant was invisible to it. The mark
+      // (an empty index entry) is taken out again below, with the file.
+      git(repoDir, "add", "--intent-to-add", "--", ...Object.keys(files));
       code = exec();
     } finally {
+      git(repoDir, "rm", "--cached", "--quiet", "--ignore-unmatch", "--", ...Object.keys(files));
       for (const rel of Object.keys(files)) rmSync(join(repoDir, rel), { force: true });
       for (const d of made.reverse())
         if (existsSync(d) && !readdirSync(d).length) rmSync(d, { recursive: true });
@@ -211,6 +226,7 @@ export function runStepControls(o) {
   }
   const result = {
     at: new Date().toISOString(),
+    abatty: CONTROLS_VERSION,
     steps,
     absent: steps.filter((x) => x.outcome === "green").map((x) => x.label),
   };
