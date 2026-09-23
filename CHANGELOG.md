@@ -38,6 +38,13 @@ under Unreleased in the same commit.
   berry's code honours `--severity`, and its line-per-advisory report is read for the
   allowances. Until now a yarn repository's audit was deferred to CI, where yarn 1's raw
   command would have failed on moderate advisories below the floor.
+- **CI watches the audit of npm, pnpm and yarn on a real install, on Linux and on Windows.** A
+  new `managers` job runs `scripts/ci/manager-smoke.mjs` once per manager and operating system.
+  Each run installs a repository with that manager, checks that it is detected, audits a clean
+  install (it must pass) and then an install with a known high advisory (it must fail). The
+  suite reads each manager's report from a recording; this job checks the recording against the
+  tool as it ships today. npm and pnpm were run both ways on Windows before the job was
+  committed.
 - **DATA-TENANT reads the tenant column a repository names.** `tenantKeys` in the config adds
   to `tenant_id`, `store_id`, `company_id` and `organisation_id`, so a product whose tenant is
   a restaurant or a workspace is no longer read as single-tenant.

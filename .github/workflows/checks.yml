@@ -107,3 +107,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run -s gate
+
+  # The audit on a real install, per package manager and per operating system, in both directions:
+  # a clean install audits clean and a known high advisory fails. The suite reads each manager's
+  # report from a recording; this job checks the recording against the tool as it ships today.
+  # yarn 1 comes with the runner images; pnpm is set up here.
+  managers:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        pm: [npm, pnpm, yarn]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        if: matrix.pm == 'pnpm'
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: the audit of ${{ matrix.pm }}, clean and with a known advisory
+        run: node scripts/ci/manager-smoke.mjs ${{ matrix.pm }}
