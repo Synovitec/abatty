@@ -54,6 +54,17 @@ detail and of a verdict's message, the files under `.abatty/`, and anything not 
 `src/`. Scripts that parse the terminal break without notice; the `--json` output is the one to
 read.
 
+## The contract, as data
+
+The surfaces above are held as one file, `test/contract/surface.json`: the commands, the exit
+codes, the config's keys, every probe with its kind and definition version, every rule with its
+level and enforcement, the shapes of the JSON report, the ratchet's JSON and SARIF, and the steps
+and actions of the pipeline `abatty ci` writes. A test fails when any of them changes, so a change
+is made on purpose: rewrite the snapshot (`UPDATE_CONTRACT=1 node --test
+test/contract-surface.test.mjs`), name the change under Upgrading in the changelog, and ship it in
+a minor. When the snapshot goes a stretch of releases without changing, the contract is ready to be
+promised as 1.0.
+
 ## Where the version lives
 
 `package.json` holds the package's version. `abatty` in an adopter's `abatty.config.json` is the

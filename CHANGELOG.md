@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The contract is a file.** Everything an adopter's run or script depends on is now one
+  committed snapshot, `test/contract/surface.json`:
+  - the commands and the exit codes;
+  - the config's keys;
+  - each probe with its kind and definition version, and each rule with its level;
+  - the shapes of the JSON report, the ratchet's JSON and SARIF;
+  - the pipeline `abatty ci` writes.
+
+  A test fails when any of them changes, so every such change is deliberate and reviewed as one
+  diff. `docs/VERSIONING.md` says how to make one, and that a snapshot which stops changing is
+  what makes 1.0 promisable.
+
 ## [0.6.1] - 2026-09-24
 
 ### Upgrading

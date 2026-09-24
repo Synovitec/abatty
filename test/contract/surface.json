@@ -1,0 +1,433 @@
+{
+  "commands": [
+    "--help",
+    "-h",
+    "agents",
+    "attest",
+    "baseline",
+    "changelog",
+    "check",
+    "ci",
+    "config",
+    "dashboard",
+    "doctor",
+    "evidence",
+    "explain",
+    "fix",
+    "gate",
+    "help",
+    "hooks",
+    "init",
+    "mcp",
+    "measure",
+    "mutate",
+    "night",
+    "night-report",
+    "portal",
+    "presets",
+    "profiles",
+    "publish",
+    "raises",
+    "ratchet",
+    "report",
+    "rules",
+    "scrub",
+    "secrets",
+    "serve",
+    "status",
+    "update",
+    "validate",
+    "version"
+  ],
+  "exitCodes": {
+    "clean": 0,
+    "input": 2,
+    "findings": 3,
+    "error": 4,
+    "interrupted": 130
+  },
+  "config": {
+    "abatty": "string",
+    "allowance": {
+      "type": "object",
+      "keys": [
+        "sessions",
+        "tokens",
+        "usd"
+      ]
+    },
+    "baseBranch": "string",
+    "branchPrefix": "string",
+    "changelogRequiredFor": "array",
+    "ci": {
+      "type": "object",
+      "keys": [
+        "providers"
+      ]
+    },
+    "commands": {
+      "type": "object",
+      "keys": [
+        "gate",
+        "gateFull",
+        "lintFile",
+        "standards",
+        "test",
+        "typecheck"
+      ]
+    },
+    "coupled": "array",
+    "directPushToBase": "boolean",
+    "files": {
+      "type": "object",
+      "keys": [
+        "baseline",
+        "changelog",
+        "changelogFragments",
+        "decisions",
+        "progress",
+        "state",
+        "version"
+      ]
+    },
+    "lintExtensions": "array",
+    "lintOnEdit": "boolean",
+    "maxDiffLines": "integer",
+    "maxSessionsPerPhase": "integer",
+    "maxStopBlocks": "integer",
+    "mcpServers": "array",
+    "mutation": {
+      "type": "object",
+      "keys": [
+        "command",
+        "max",
+        "timeoutSeconds"
+      ]
+    },
+    "phases": "array",
+    "plan": "string",
+    "preflight": {
+      "type": "object",
+      "keys": [
+        "trust",
+        "trustAllow"
+      ]
+    },
+    "profiles": "array",
+    "protectedPaths": "array",
+    "provenance": {
+      "type": "object",
+      "keys": [
+        "trailer"
+      ]
+    },
+    "ratchet": {
+      "type": "object",
+      "keys": [
+        "barrelMax",
+        "boundedBy",
+        "cap",
+        "changelog",
+        "changelogFragments",
+        "changelogRequiredFor",
+        "citationsExempt",
+        "contextMax",
+        "defaultMax",
+        "enable",
+        "envModule",
+        "exclude",
+        "exempt",
+        "hard",
+        "include",
+        "kinds",
+        "local",
+        "moneyFields",
+        "mustScan",
+        "pageGuards",
+        "ratchet",
+        "secretFields",
+        "shapeList"
+      ]
+    },
+    "rules": {
+      "type": "object",
+      "keys": [
+        "local",
+        "waived"
+      ]
+    },
+    "sandbox": {
+      "type": "object",
+      "keys": [
+        "command",
+        "driver",
+        "env",
+        "home",
+        "image",
+        "mode",
+        "readOnly",
+        "writable"
+      ]
+    },
+    "scrub": {
+      "type": "object",
+      "keys": [
+        "allow",
+        "enabled",
+        "map"
+      ]
+    },
+    "secrets": {
+      "type": "object",
+      "keys": [
+        "allow"
+      ]
+    },
+    "security": {
+      "type": "object",
+      "keys": [
+        "audit"
+      ]
+    },
+    "sourceGlobs": "array",
+    "stack": "string",
+    "stage": "string",
+    "standard": "string",
+    "style": {
+      "type": "object",
+      "keys": [
+        "emDash"
+      ]
+    },
+    "suiteEnv": "object",
+    "tenantKeys": "array",
+    "workspaces": "object"
+  },
+  "probes": {
+    "api.floatMoney": "ratchet opt-in v1",
+    "api.rowReturn": "ratchet opt-in v1",
+    "api.unboundedList": "ratchet opt-in v1",
+    "auth.unguardedPage": "ratchet opt-in v1",
+    "cache.serverCacheUse": "ratchet opt-in v1",
+    "change.changelogMissing": "hard v1",
+    "change.coupledMissing": "hard v1",
+    "change.refactorTests": "hard opt-in v1",
+    "change.testTamper": "ratchet probation v1",
+    "code.barrels": "ratchet v1",
+    "code.clones": "ratchet opt-in v1",
+    "code.undocumentedExports": "ratchet opt-in probation v1",
+    "context.overCap": "ratchet v1",
+    "context.unsourcedGrowth": "hard v1",
+    "docs.behindCode": "ratchet v4",
+    "docs.citations": "ratchet v1",
+    "docs.danglingRefs": "ratchet probation v1",
+    "docs.danglingSource": "hard v1",
+    "docs.frontMatter": "ratchet v1",
+    "docs.frontMatterSyntax": "ratchet probation v1",
+    "docs.indexDrift": "ratchet v1",
+    "docs.supersededChain": "ratchet opt-in probation v1",
+    "fn.shapeExemptions": "ratchet opt-in v1",
+    "obs.catchOnlyLogs": "ratchet opt-in probation v1",
+    "sec.weakRandom": "ratchet opt-in probation v1",
+    "size.excessCode": "ratchet v1",
+    "size.overBudget": "ratchet v1",
+    "size.overRaw": "hard v1",
+    "startup.eagerModules": "ratchet v1",
+    "test.coverageExclusions": "ratchet opt-in v1",
+    "test.unvisitedRoutes": "ratchet opt-in probation v1",
+    "types.escapes": "ratchet v1",
+    "types.nonNull": "ratchet opt-in v1",
+    "valid.rawEnv": "ratchet v1",
+    "valid.sqlCurrentDate": "ratchet opt-in probation v1",
+    "valid.unparsedBoundary": "ratchet opt-in v1",
+    "valid.utcDay": "hard v1",
+    "valid.wholeEnv": "ratchet opt-in v1"
+  },
+  "rules": {
+    "A11Y-CONTRAST": "should hard",
+    "A11Y-LINT": "must hard",
+    "CODE-ARCH-GRAPH": "must hard",
+    "CODE-ARCH-IMPORTS": "must hard",
+    "CODE-BARRELS": "must ratchet",
+    "CODE-DEADCODE": "must hard",
+    "CODE-DUP": "should ratchet",
+    "CODE-FORMAT": "must hard",
+    "CODE-JSDOC": "must hard",
+    "CODE-LINTER": "must hard",
+    "CODE-MAXWARN": "must hard",
+    "CODE-SHAPE": "must hard",
+    "CODE-SIZE-300": "should ratchet",
+    "CODE-SIZE-800": "must hard",
+    "DATA-BACKUP": "must review",
+    "DATA-MIGRATIONS": "must hard",
+    "DATA-TENANT": "must hard",
+    "DOC-ADR": "must prose",
+    "DOC-AGENTS-MD": "should prose",
+    "DOC-CHANGELOG": "must hard",
+    "DOC-CONTEXT": "must prose",
+    "DOC-CONTEXT-SECTIONS": "must prose",
+    "DOC-CONVENTIONS": "should prose",
+    "DOC-FRESHNESS": "must ratchet",
+    "DOC-FRONTMATTER": "must hard",
+    "DOC-INDEX": "must hard",
+    "DOC-PROGRESS": "must review",
+    "DOC-RULES": "should prose",
+    "FLOW-CHANGELOG-GATE": "must hard",
+    "FLOW-COMMITS": "must review",
+    "FLOW-EMDASH": "must hard",
+    "FLOW-TRAILER": "must hard",
+    "FLOW-VERSION": "should prose",
+    "HARNESS-ADOPTION": "must hard",
+    "HARNESS-GITIGNORE": "must hard",
+    "HARNESS-HOOKS": "must hard",
+    "HARNESS-SKILL": "must review",
+    "I18N-CATALOGUE": "should prose",
+    "I18N-LINT": "must hard",
+    "I18N-PARITY": "must hard",
+    "INST-CI": "must hard",
+    "INST-CI-STEPS": "must hard",
+    "INST-CONTROLS": "must hard",
+    "INST-DEAD-CI": "should prose",
+    "INST-DEBT": "must hard",
+    "INST-GATE": "must hard",
+    "INST-PRECOMMIT": "must hard",
+    "INST-RATCHET": "must hard",
+    "OBS-CONSOLE": "must hard",
+    "OBS-HEALTH": "must review",
+    "OBS-REDACTION": "must review",
+    "OBS-SIGTERM": "must review",
+    "OBS-STRUCTURED": "must prose",
+    "OBS-TRACKER": "should prose",
+    "PWA-CONTRACT": "must hard",
+    "SEC-AGENT-BYPASS": "should review",
+    "SEC-AGENT-MCP": "must review",
+    "SEC-AGENT-PERMISSIONS": "must hard",
+    "SEC-AGENT-SANDBOX": "must review",
+    "SEC-AGENT-SHIM": "should review",
+    "SEC-AGENT-TRUST": "must review",
+    "SEC-AUDIT": "must hard",
+    "SEC-DISCLOSURE": "should prose",
+    "SEC-ENVFILES": "must hard",
+    "SEC-LOCKFILE": "must hard",
+    "SEC-SECRETS": "must hard",
+    "TEST-COVERAGE": "must hard",
+    "TEST-E2E": "must hard",
+    "TEST-E2E-CONFIG": "should review",
+    "TEST-E2E-ERRORS": "must hard",
+    "TEST-INTEGRATION": "must hard",
+    "TEST-MUTATION": "should hard",
+    "TEST-UNIT": "must hard",
+    "TYPES-CHECKJS": "must ratchet",
+    "TYPES-ESCAPES": "must ratchet",
+    "TYPES-SCRIPT": "must hard",
+    "TYPES-STRICT": "must hard",
+    "VALID-ENV": "must ratchet",
+    "VALID-LOCAL-DAY": "must hard",
+    "VALID-ZOD": "must hard"
+  },
+  "report": {
+    "abatty": "string",
+    "applicable": "number",
+    "at": "string",
+    "branch": "string",
+    "bypass": "object",
+    "commit": "string",
+    "date": "string",
+    "enforced": "object",
+    "families": "array",
+    "findings": "array",
+    "floors": "object",
+    "harness": "object",
+    "name": "string",
+    "night": "object",
+    "phase": "object",
+    "plan": "array",
+    "problems": "array",
+    "profiles": "array",
+    "repo": "string",
+    "score": "number",
+    "scrub": "object",
+    "stage": "string",
+    "stageFrom": "string",
+    "truth": "object",
+    "version": "number",
+    "waived": "number",
+    "waivers": "object",
+    "workspaces": "array"
+  },
+  "ratchetJson": {
+    "top": {
+      "axes": "object",
+      "baseline": "object",
+      "range": "string",
+      "repo": "string",
+      "score": "number",
+      "verdicts": "array"
+    },
+    "verdict": {
+      "findings": "array",
+      "floor": "object",
+      "kind": "string",
+      "messages": "array",
+      "metric": "string",
+      "scanned": "number",
+      "status": "string",
+      "value": "number"
+    }
+  },
+  "sarif": {
+    "top": {
+      "$schema": "string",
+      "runs": "array",
+      "version": "string"
+    },
+    "run": {
+      "results": "array",
+      "tool": "object"
+    },
+    "driver": {
+      "informationUri": "string",
+      "name": "string",
+      "rules": "array",
+      "version": "string"
+    }
+  },
+  "generatedPipeline": {
+    "steps": [
+      "format",
+      "lint (CODE.4)",
+      "typecheck (CODE.3)",
+      "import graph (CODE.5)",
+      "dead code (CODE.6)",
+      "unit tests (TEST.1)",
+      "coverage of the changed lines (TEST.4)",
+      "abatty ratchet + changelog range (CHANGE.2)",
+      "secret scan (SEC.1)",
+      "audit (SEC.1)",
+      "no trace of the tools (scrub)",
+      "publish the report to the dashboard",
+      "the bypass rate of this push",
+      "findings as SARIF",
+      "upload the findings",
+      "the conformance statement",
+      "sign it with this run's identity",
+      "a loosened floor needs a second person's approval",
+      "\"integration suite against a real Postgres · database suite + coverage (DATA.4, TEST.4)\"",
+      "\"coverage gate (TEST.4) · database suite + coverage (DATA.4, TEST.4)\"",
+      "\"build (the browser suite serves the production output) · build + browser suite + axe (TEST.3, A11Y.1)\"",
+      "\"E2E + axe · build + browser suite + axe (TEST.3, A11Y.1)\""
+    ],
+    "uses": [
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52",
+      "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+    ]
+  }
+}
