@@ -23,6 +23,7 @@ import { probes as successionProbes } from "./probes/succession.mjs";
 import { probes as frontMatterProbes } from "./probes/frontmatter.mjs";
 import { probes as catchLogProbes } from "./probes/catchlog.mjs";
 import { probes as weakRandomProbes } from "./probes/weakrandom.mjs";
+import { probes as jsdocProbes } from "./probes/jsdoc.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
 import { probes as startupProbes } from "./probes/startup.mjs";
@@ -124,6 +125,7 @@ export const BUILTIN_PROBES = [
   ...sqlDateProbes,
   ...catchLogProbes,
   ...weakRandomProbes,
+  ...jsdocProbes,
 ].map((p) => ({ ...p, source: "abatty" }));
 
 /**

@@ -71,7 +71,9 @@ export function updateRepo(o: {
     to: string;
     conflicts: number;
 };
+/** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
 export const LOCK: ".claude/harness.lock.json";
+/** Where `update` keeps the copy each file was installed from, the base of its three-way merge. */
 export const BASE_DIR: ".abatty/harness";
 /**
  * `scripts`: the package scripts offered to this repository so far. Absent in a lock written

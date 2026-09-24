@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`code.undocumentedExports`, CODE-JSDOC without a dependency.** The rule was held only by a
+  linter plugin, so a repository that would not add one, this package included, could not hold
+  it. The new opt-in probe, on probation, counts exported functions, constants, classes, types,
+  interfaces and enums with no `/** */` block directly above them (a `@typedef` block does not
+  count), and CODE-JSDOC now reads a floor for it as present. It checks presence only: whether a
+  block says why is a reviewer's reading. Its first reading here found 30 undocumented exports;
+  each now says why it exists, and the metric holds at zero.
 - **`docs/VERSIONING.md` says what a version promises at 0.x.** SemVer promises nothing below 1.0,
   and a tool that runs in an adopter's hooks needs to say in advance what an update can do: a
   minor is anything that can turn a green run red or change what a machine reads (a probe that

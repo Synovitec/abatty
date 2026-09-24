@@ -7,6 +7,7 @@
  */
 
 /** @typedef {"design" | "build" | "run"} Stage */
+/** The stages a repository can be at, earliest first: a rule applies from the stage it names onwards. */
 export const STAGES = ["design", "build", "run"];
 
 /**

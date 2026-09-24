@@ -16,5 +16,7 @@ export function readCache(repoDir: string, key: string | null): any;
  * @param {string} repoDir @param {string | null} key @param {unknown} value @param {number} [keep]
  */
 export function writeCache(repoDir: string, key: string | null, value: unknown, keep?: number): void;
+/** The package's own folder in a repository: gitignored, so nothing in it is ever an input a rule may depend on. */
 export const CACHE_ROOT: ".abatty";
+/** Where measurements are cached, keyed by the content of everything a rule could read and never by a time, so a cache can never turn a finding into a pass. */
 export const CACHE_DIR: string;

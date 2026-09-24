@@ -75,14 +75,14 @@ vulnerability disclosure policy. There is now, and `SEC-DISCLOSURE` is a rule.
 
 ## What it cannot hold, and why
 
-Four rules of its own catalog are missing here, and they are open rather than waived. A fifth,
-`CODE-DUP`, was on this list until 2026-09-23: the package's own `code.clones` reading holds it
-without a dependency.
+Five rules of its own catalog are missing here, and they are open rather than waived. Two more
+left this list once the package learned to hold them without a dependency: `CODE-DUP` on
+2026-09-23 (`code.clones`) and `CODE-JSDOC` on 2026-09-24 (`code.undocumentedExports`, at zero
+after the 30 undocumented exports its first reading found here were documented).
 
 | Rule                                        | Why not                                                                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CODE-LINTER`, `CODE-MAXWARN`, `CODE-SHAPE` | This package has not adopted eslint. The gate reports the absent `lint` step as **skipped** rather than passing it, and the gap analysis names it |
-| `CODE-JSDOC`                                | Wants `eslint-plugin-jsdoc`                                                                                                                       |
 | `TEST-COVERAGE`                             | Wants a coverage runner with thresholds                                                                                                           |
 | `TEST-MUTATION`                             | Wants StrykerJS                                                                                                                                   |
 

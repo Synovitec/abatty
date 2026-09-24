@@ -25,6 +25,7 @@ import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 
 export { STEP_CONTROLS } from "./step-plants.mjs";
+/** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
 export const CONTROLS_FILE = ".abatty/controls.json";
 
 /**

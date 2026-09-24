@@ -9,7 +9,9 @@
  * @typedef {import("./index.mjs").KindBudget} KindBudget
  */
 
+/** Where the committed floor lives when the config names no other path. */
 export const BASELINE_DEFAULT = "scripts/ci/standards-baseline.json";
+/** The sentence written into every baseline, so whoever opens the file by hand reads how a number may move before editing one. */
 export const BASELINE_NOTE =
   "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.";
 
@@ -39,16 +41,16 @@ export const DEFAULT_KINDS = [
 ];
 
 /**
- * Paths exempt from the per-kind budget and the shape rules (still under the 800 cap): generated
- * code, migrations, seeders, vendored UI, config files, constant tables, and the CLI scripts,
- * hooks and tests where a sequential procedure is the point. Regex sources on the relative path.
- */
-/**
  * A test folder at any depth, as a regex source. One definition: the exempt list below and the
  * probes of what ships (probes/lib.mjs) both read it, and two copies were one edit from drifting.
  */
 export const TEST_FOLDERS = "(^|/)(tests?|__tests__|e2e)/";
 
+/**
+ * Paths exempt from the per-kind budget and the shape rules (still under the 800 cap): generated
+ * code, migrations, seeders, vendored UI, config files, constant tables, and the CLI scripts,
+ * hooks and tests where a sequential procedure is the point. Regex sources on the relative path.
+ */
 export const DEFAULT_EXEMPT = [
   "(^|/)(generated|__generated__|vendor|vendored)/",
   "(^|/)(migrations|seeders|seeds)/",

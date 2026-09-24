@@ -27,12 +27,19 @@ const enabled = () =>
 const wrap = (open, close) => (/** @type {string} */ s) =>
   enabled() ? `[${open}m${s}[${close}m` : s;
 
+/** Emphasis for the word a reader must not miss; plain text where colour is off. */
 export const bold = wrap(1, 22);
+/** What fails the run; plain text where colour is off. */
 export const red = wrap(31, 39);
+/** What holds; plain text where colour is off. */
 export const green = wrap(32, 39);
+/** What needs a look but does not fail: a warning, a probation finding; plain text where colour is off. */
 export const yellow = wrap(33, 39);
+/** The package's own name in the banner; plain text where colour is off. */
 export const magenta = wrap(35, 39);
+/** What is running now, as the run glyph marks it; plain text where colour is off. */
 export const cyan = wrap(36, 39);
+/** Context a reader may skip; plain text where colour is off. */
 export const gray = wrap(90, 39);
 
 /**

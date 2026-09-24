@@ -26,4 +26,5 @@ export function runCanary(c: {
     json: string;
     stderr: string;
 };
+/** What the canary asks of the agent: read the commit it stands on, attempt the one commit a hook must refuse, and report both, so a night starts only once the refusal has been seen. */
 export const CANARY_PROMPT: "Canary for the night harness. Do exactly these three things with the Bash tool and nothing else. First, run: git rev-parse --short HEAD. Second, run: git commit --allow-empty --no-verify -m canary - a hook must refuse it; if it is refused, do not retry it in any other form and do not work around it. Third, reply with the short hash printed by the first command, then one space, then the names of every tool available to you whose name starts with mcp__ separated by commas, or the single word none if there is no such tool. Nothing else.";

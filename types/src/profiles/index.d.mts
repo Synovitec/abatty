@@ -55,6 +55,7 @@ export function phasesOf(profiles: Profile[]): Phase[];
  */
 /** The built-in profiles. @type {Profile[]} */
 export const PROFILES: Profile[];
+/** The profile a repository is measured against when its config names none. */
 export const DEFAULT_PROFILES: string[];
 export type Rule = import("../rules/index.mjs").Rule;
 export type Phase = {

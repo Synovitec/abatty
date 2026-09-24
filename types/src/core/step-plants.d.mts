@@ -6,6 +6,7 @@
  * @param {string} dir
  */
 export function plantRoot(dir: string): string;
+/** The prefix of every file a control plants, so a planted file is never mistaken for the repository's own and is always removed. */
 export const MARK: "abatty-control.__";
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS: Record<string, StepControl>;

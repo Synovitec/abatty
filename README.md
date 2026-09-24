@@ -246,24 +246,25 @@ Some built-in probes are **opt-in**, because each reads one stack's conventions 
 noise, or a surprise red after an update, anywhere else. A repository switches them on in
 `ratchet.enable`, and `init` enables the ones that suit the preset:
 
-| Probe                     | Counts                                                                                             | Configured by  |
-| ------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
-| `valid.unparsedBoundary`  | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
-| `valid.wholeEnv`          | The environment object taken whole outside the env module                                          |                |
-| `auth.unguardedPage`      | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
-| `api.unboundedList`       | List reads in a route handler without a bound                                                      | `boundedBy`    |
-| `api.rowReturn`           | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
-| `api.floatMoney`          | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
-| `cache.serverCacheUse`    | Server-side caches of a read, for a repository that decided to have none                           |                |
-| `fn.shapeExemptions`      | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
-| `change.refactorTests`    | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
-| `code.clones`             | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
-| `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
-| `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
-| `valid.sqlCurrentDate`    | Calendar days SQL takes in the session's time zone (`CURRENT_DATE`, `now()::date`), unconverted    |                |
-| `docs.supersededChain`    | Readings of a chained dated series, or archived documents, that name no successor that exists      |                |
-| `obs.catchOnlyLogs`       | Caught errors, `catch` blocks or `.catch()` handlers, whose only act is a `console.*` line         |                |
-| `sec.weakRandom`          | `Math.random` where the names around it say a password, a token, a secret or a one-time code       |                |
+| Probe                      | Counts                                                                                             | Configured by  |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
+| `valid.unparsedBoundary`   | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
+| `valid.wholeEnv`           | The environment object taken whole outside the env module                                          |                |
+| `auth.unguardedPage`       | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
+| `api.unboundedList`        | List reads in a route handler without a bound                                                      | `boundedBy`    |
+| `api.rowReturn`            | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
+| `api.floatMoney`           | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |
+| `cache.serverCacheUse`     | Server-side caches of a read, for a repository that decided to have none                           |                |
+| `fn.shapeExemptions`       | Shape rules switched off inline, in any linter's spelling, or by a list                            | `shapeList`    |
+| `change.refactorTests`     | Refactors in the push that removed a test case, or edited a test without a `tests-changed:` reason |                |
+| `code.clones`              | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
+| `test.coverageExclusions`  | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
+| `types.nonNull`            | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
+| `valid.sqlCurrentDate`     | Calendar days SQL takes in the session's time zone (`CURRENT_DATE`, `now()::date`), unconverted    |                |
+| `docs.supersededChain`     | Readings of a chained dated series, or archived documents, that name no successor that exists      |                |
+| `obs.catchOnlyLogs`        | Caught errors, `catch` blocks or `.catch()` handlers, whose only act is a `console.*` line         |                |
+| `sec.weakRandom`           | `Math.random` where the names around it say a password, a token, a secret or a one-time code       |                |
+| `code.undocumentedExports` | Exported declarations with no doc comment above them (presence only, not whether it says why)      |                |
 
 A new or heuristic probe ships **on probation**: it is measured and its findings are listed under
 a yellow `PROBATION`, and a verdict that would fail says which one it would have been, but the run

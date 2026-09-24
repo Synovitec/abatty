@@ -60,7 +60,9 @@ export function prepareSandbox(config: any, c: {
  * @typedef {{ mode: "auto" | "required" | "off", driver: string, command: string, image: string, readOnly: string[], writable: string[], env: string[], home: string }} SandboxConfig
  * @typedef {{ driver: string, sandbox: Sandbox | null, note: string, refuse: string }} Prepared
  */
+/** How hard a night insists on the boundary: take one when it exists, refuse to run without one, or run without and say so. */
 export const MODES: string[];
+/** The boundaries the runner knows how to build and prove: bubblewrap, a Seatbelt profile, a container. */
 export const DRIVERS: string[];
 export type Sandbox = import("./sandbox-drivers.mjs").Sandbox;
 export type Plan = import("./sandbox-drivers.mjs").Plan;

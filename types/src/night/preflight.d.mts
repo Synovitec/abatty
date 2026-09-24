@@ -28,6 +28,7 @@ export function preflight(o: NightOptions, c: {
     maxCost: number;
     refuse: (why: string, code?: number) => NightResult;
 }): Preflight | NightResult;
+/** The files a night refuses to start without: the harness the worker is constrained by, committed on the base before any night runs. */
 export const HARNESS_FILES: string[];
 export type NightOptions = import("./runner.mjs").NightOptions;
 export type NightResult = import("./runner.mjs").NightResult;

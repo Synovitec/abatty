@@ -31,6 +31,7 @@ import {
 import { pushRange } from "../core/range.mjs";
 import { readJsonFile } from "../core/repo.mjs";
 
+/** The protocol version this server speaks, answered at initialisation so a client can refuse a mismatch. */
 export const PROTOCOL_VERSION = "2025-06-18";
 const BIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "bin", "abatty.mjs");
 

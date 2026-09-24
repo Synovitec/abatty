@@ -15,6 +15,7 @@ export function createHandler(repoDir: string): (m: Message) => Promise<Message 
  * stderr. @param {string} repoDir
  */
 export function serve(repoDir: string): void;
+/** The protocol version this server speaks, answered at initialisation so a client can refuse a mismatch. */
 export const PROTOCOL_VERSION: "2025-06-18";
 export type Tool = {
     name: string;

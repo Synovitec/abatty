@@ -26,6 +26,7 @@ export function runStepControls(o: {
     absent: string[];
 };
 export { STEP_CONTROLS } from "./step-plants.mjs";
+/** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
 export const CONTROLS_FILE: ".abatty/controls.json";
 /**
  * The version of abatty that planted the controls, recorded with them: where a step is planted

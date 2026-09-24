@@ -23,7 +23,9 @@ export function migrateConfig(repoDir: string, o?: {
     moved: boolean;
     reason: string;
 };
+/** The `$schema` a written config names, so an editor validates it without the package installed. */
 export const SCHEMA_URL: "https://abatty.io/schema/abatty.config.json";
+/** The schema the package ships, the one `abatty config` validates against: the same file the URL serves. */
 export const SCHEMA_PATH: string;
 import { CONFIG_FILE } from "./repo.mjs";
 import { LEGACY_CONFIG } from "./repo.mjs";

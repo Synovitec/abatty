@@ -10,7 +10,9 @@
  */
 import { createHash } from "node:crypto";
 
+/** The schema a SARIF log names, so a forge and a validator read it as the version it is. */
 export const SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json";
+/** The one SARIF version emitted: the one code-scanning services accept. */
 export const SARIF_VERSION = "2.1.0";
 
 /**

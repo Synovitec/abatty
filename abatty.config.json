@@ -95,7 +95,8 @@
       "code.clones",
       "docs.supersededChain",
       "obs.catchOnlyLogs",
-      "sec.weakRandom"
+      "sec.weakRandom",
+      "code.undocumentedExports"
     ],
     "hard": [],
     "ratchet": [],

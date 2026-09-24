@@ -25,6 +25,7 @@ import { prepareSandbox } from "./sandbox.mjs";
 import { capsOf, describeCaps, nothingSpent, spentOf } from "./allowance.mjs";
 import { localToday } from "../core/today.mjs";
 
+/** The files a night refuses to start without: the harness the worker is constrained by, committed on the base before any night runs. */
 export const HARNESS_FILES = [
   ".claude/settings.json",
   ".claude/hooks/stop-gate.mjs",
