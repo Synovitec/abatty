@@ -144,6 +144,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **A floor a change lowered is written for it.** A floor left above today's count fails the run,
+  and locking it took a separate `abatty baseline`, which made leaving findings in easier than
+  removing them. When every failure of a run is such a floor, a run outside CI now writes the
+  lowered floors itself and says to commit the baseline with the change; the run still fails
+  until it is committed, since a hook cannot add a commit to the push it judges. CI never writes,
+  and a run with anything else failing writes nothing.
 - **The context-file template asks for what helps an agent, and a wrapped placeholder is still
   named.** Studies of context files found descriptive overviews the one kind of content that does
   not help, workflow hints the one that measurably shortens a run, and security and performance

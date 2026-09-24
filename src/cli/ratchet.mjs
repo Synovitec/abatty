@@ -6,11 +6,13 @@ import { EXIT } from "./exit.mjs";
 import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
 import { changedPaths, pushRange } from "../core/range.mjs";
+import { ciFromEnv } from "../core/env.mjs";
 import {
   BUILTIN_PROBES,
   compare,
   failed,
   loadProbes,
+  lockEarned,
   measureAll,
   ratchetSetup,
   readBaseline,
@@ -156,6 +158,22 @@ export async function ratchetCommand(command, c) {
         }
       }
       const red = failed(verdicts);
+      // A floor the change earned is written for it, never in CI, which judges what was pushed.
+      if (red && !ciFromEnv()) {
+        const { locked } = lockEarned({
+          repoDir: dir,
+          rel: baselineRel,
+          verdicts,
+          measurements,
+          config,
+          previous: baseline,
+          today: ctx.today,
+        });
+        if (locked.length)
+          out(
+            `\n  ${t.glyph.ok} ${t.green(`floor(s) locked where this change left them: ${locked.join(", ")}`)}\n      ${t.yellow(`${baselineRel} now says so; commit it with the change, then push again`)}\n`,
+          );
+      }
       out(
         `\n  ${t.gray("readability")} ${t.bold(String(score))}${t.gray("/100")} ${t.gray(
           Object.entries(axes)

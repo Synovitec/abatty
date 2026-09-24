@@ -273,4 +273,4 @@ export type Baseline = {
     entries?: Record<string, BaselineEntry>;
     [k: string]: unknown;
 };
-export { readBaseline, writeBaseline } from "./baseline.mjs";
+export { lockEarned, readBaseline, writeBaseline } from "./baseline.mjs";

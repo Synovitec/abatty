@@ -12,7 +12,7 @@
  */
 import { readJsonFile, writeJsonFile } from "../core/repo.mjs";
 import { BASELINE_NOTE } from "./config.mjs";
-import { scoreOf } from "./index.mjs";
+import { failed, scoreOf } from "./index.mjs";
 import { baselineCommit, carryRenames, renamesSince } from "./renames.mjs";
 
 /**
@@ -184,4 +184,22 @@ function fileRises(before, now) {
     .map(([file, n]) => /** @type {[string, number, number]} */ ([file, n, before?.[file] ?? 0]))
     .filter(([, n, b]) => n > b)
     .sort(([a], [b]) => a.localeCompare(b));
+}
+
+/**
+ * The floors a change earned, written for it. When every verdict that fails the run is a floor
+ * left above today's count (`improved`), the numbers only fell, so writing today's baseline can
+ * only lower a floor: nothing is raised, nothing needs a reason. Lowering by hand made "leave the
+ * findings in" simpler than "remove them", which is the friction adopters of every ratchet name.
+ * The file is written, not committed: a hook cannot add a commit to the push it judges, so the
+ * run still fails, with one thing left to do. Anything else failing, and nothing is written.
+ * @param {{ repoDir: string, rel: string, verdicts: import("./index.mjs").Verdict[], measurements: Measurement[], config: RatchetConfig, previous: Baseline | null, today: string }} o
+ * @returns {{ locked: string[] }}
+ */
+export function lockEarned(o) {
+  const failing = o.verdicts.filter((v) => failed([v]));
+  if (!failing.length || !o.previous || failing.some((v) => v.status !== "improved"))
+    return { locked: [] };
+  const r = writeBaseline({ ...o });
+  return { locked: r.ok ? failing.map((v) => `${v.metric} ${v.floor} → ${v.value}`) : [] };
 }

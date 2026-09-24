@@ -117,6 +117,12 @@ baseline was committed keeps its floor at the new path, so a `git mv` moves no d
 scans zero files where the baseline saw some fails the run, so a moved directory never reports
 green forever.
 
+A floor left above today's count fails the run too, since it is slack the gate would keep
+accepting. When that is the only failure, a run outside CI writes the lowered floor itself and
+asks for the baseline to be committed with the change: lowering a floor takes no command and no
+reason, and leaving findings in is no longer the easier path. CI never writes; it judges what was
+pushed.
+
 The owner is a name the raiser typed, and an agent can type one as easily as a person can. So a
 raise lands only through a pull request approved at its head by somebody other than its author.
 `abatty raises --require-review <number>` reads that review in the pipeline that `abatty ci`

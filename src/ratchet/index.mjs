@@ -40,7 +40,7 @@ import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
 // the dead-code gate names once it runs (CODE.6). `config.mjs` remains their home.
 export { DEFAULT_CONFIG } from "./config.mjs";
-export { readBaseline, writeBaseline } from "./baseline.mjs";
+export { lockEarned, readBaseline, writeBaseline } from "./baseline.mjs";
 import { probeVersion } from "./baseline.mjs";
 
 /**
@@ -396,7 +396,7 @@ function judgeOne(m, baseline, config) {
   // the change that earned it, which is also the only moment anyone knows why it moved.
   if (m.value < floor)
     return v("improved", [
-      `${floor} → ${m.value}: the floor is ${floor - m.value} above the current value, so the gate is still accepting ${floor - m.value} finding(s) that no longer exist. Lock it in this change with \`abatty baseline\`.`,
+      `${floor} → ${m.value}: the floor is ${floor - m.value} above the current value, so the gate is still accepting ${floor - m.value} finding(s) that no longer exist. Lock it in this change: a run outside CI writes the lowered floor when nothing else fails, and \`abatty baseline\` does the same by hand; commit the baseline with the change.`,
     ]);
   return v("ok", []);
 }
