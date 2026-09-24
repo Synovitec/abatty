@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { git, tempRepo } from "./helpers.mjs";
-import { checkDirection } from "../templates/harness/hooks/check-direction.mjs";
+// Loaded by URL: the hooks are an install's code, not typechecked with this package's sources.
+const HOOK = new URL("../templates/harness/hooks/check-direction.mjs", import.meta.url).href;
+/** @type {(o: { base: string, config: unknown, cwd: string }) => { blocking: { file: string, detail: string }[] }} */
+const checkDirection = (await import(HOOK)).checkDirection;
 
 // An adopter enabled a probe in the root config and was told it had loosened something "under
 // .claude/", with a command to restore the looser file. By day a tightening is not a loosening;

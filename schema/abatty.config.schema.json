@@ -509,6 +509,13 @@
       "minimum": 1,
       "description": "The changed lines past which a night branch stays local instead of being pushed: what one review reads. Default 2000."
     },
+    "suiteEnv": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Non-secret environment values the gate's suites run with, as a pipeline's workflow gives them (an auth URL, a placeholder secret the test server needs). Never a real secret: this file is committed."
+    },
     "phases": {
       "type": "array",
       "items": {

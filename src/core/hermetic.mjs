@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { databaseFromEnv } from "./env.mjs";
 
 /** The dotenv files a framework loads for a development run or a build, in the order it reads them. */
-const DOTENV = [
+export const DOTENV = [
   ".env",
   ".env.local",
   ".env.development",

@@ -50,6 +50,8 @@ export function childEnv(extra: Record<string, string>): NodeJS.ProcessEnv | und
  * @returns {NodeJS.ProcessEnv}
  */
 export function testRunEnv(): NodeJS.ProcessEnv;
+/** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
+export function envNames(): string[];
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;
 /** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */

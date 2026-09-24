@@ -22,6 +22,7 @@ import { narrowerThanBranch, pendingPaths, pushRangeInfo } from "./range.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
+import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
 import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
@@ -240,7 +241,16 @@ export function runGate(o) {
         log(`\n· DEFERRED to CI: ${name}\n  reason: ${why}.`);
         continue;
       }
-      suiteEnv = db.ok ? db.env : {};
+      // The config's non-secret values for the suites, under the database the run owns.
+      const declared = suiteEnvOf(repoDir);
+      suiteEnv = { ...declared, ...(db.ok ? db.env : {}) };
+      const gaps = suite.docker
+        ? suiteEnvGaps([repoDir, join(repoDir, under)], { ci: o.ci === true, declared })
+        : [];
+      if (gaps.length)
+        log(
+          `\n! ${name}: the example env file names ${gaps.join(", ")}, set nowhere this run can see (this shell, a dotenv file, the config's suiteEnv). A server that needs one fails every test that reaches it; give non-secret values under suiteEnv, as CI's workflow does.`,
+        );
       for (const s of suite.steps)
         if (!step({ ...s, label: `${s.label} · ${suite.name}` })) return false;
       suiteEnv = {};

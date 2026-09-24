@@ -85,6 +85,9 @@ A suite that needs a database never runs against one the run did not create. Wit
 pointed at it; in CI the pipeline's
 own service is trusted. An ambient `DATABASE_URL`, from the shell or declared in a `.env` file
 (read for the name only), defers the suite to CI and says how to give it a database of its own.
+The rest of what the server under test needs is named before the suite starts: a variable the
+example env file declares that neither the shell, a dotenv file nor the config supplies is listed,
+and `suiteEnv` in the config gives the suites non-secret values, as a pipeline's workflow does.
 
 Exit codes are a contract:
 

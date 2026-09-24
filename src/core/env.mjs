@@ -76,6 +76,11 @@ export function testRunEnv() {
   return env;
 }
 
+/** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
+export function envNames() {
+  return Object.keys(process.env);
+}
+
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";

@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A suite's missing environment is named before it runs, and the config can supply it.** An
+  adopter's browser suite failed 96 journeys in a fresh checkout, every one "Not authenticated".
+  The server under test had no auth secret: CI sets placeholders in its workflow, and the laptop
+  had them only in a `.env` the checkout lacked, so the failure read as broken journeys.
+  - Before a suite that needs a database starts, the gate lists the variables the example env
+    file declares that neither the shell, a dotenv file nor the config supplies. It reads names
+    only, never values.
+  - `suiteEnv` in the config (a new key) gives the suites non-secret values, the way a workflow
+    does. The run's own database still wins over it.
 - **`test.unvisitedRoutes`, opt-in and on probation: the pages no browser test opens.** An adopter
   had every metric green, with library coverage near ninety-nine, while two forms on one screen
   saved nothing in production. Nothing measured which pages the browser suite drives.
