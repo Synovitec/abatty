@@ -127,7 +127,7 @@ export const rules = [
     phase: "2",
     ...SOURCES,
     why: "A threshold on the tree total is the wrong question asked loudly: a whole new untested file passes while the total holds, and a refactor that deletes well-tested code fails for improving the codebase. What a reviewer wants to know is whether THIS change is tested, which is the coverage of the lines it touched. The total is still worth a floor, so coverage cannot drift down unnoticed; it is a floor, not the gate.",
-    next: "Gate on the coverage of the changed lines (a patch status, a diff-coverage step, or the runner's changed-files mode), keep a threshold on the total as a floor, and keep the report when the suite is red, which is when it is read",
+    next: "Gate on the coverage of the changed lines (a patch status, a diff-coverage step, the runner's changed-files mode, or a coverage:changed script the gate runs, which Node's own --experimental-test-coverage can feed with no dependency), keep a threshold on the total as a floor, and keep the report when the suite is red, which is when it is read",
     check: (c) => {
       const text = toolText(c, COVERAGE_FILES);
       if (!/coverage|nyc|c8|codecov|cobertura|lcov/i.test(text))
@@ -138,10 +138,13 @@ export const rules = [
         );
       // The delta gate, in whichever shape the ecosystem spells it: a patch status, a diff
       // coverage tool, or a runner told to look only at what changed.
+      // The gate's own step counts too: a `coverage:changed` or `test:changed` script is what the
+      // gate runs on the pushed range, and a repository that followed the package's convention
+      // was told it had no gate on the change.
       const delta =
         /diff[-_]?cover|patch:|patch_?status|--changed\b|changedSince|--since\b|--diff\b|compare[-_]?branch|newCodePeriod|new_code/i.test(
           text,
-        );
+        ) || Boolean(c.script(/^(coverage|test):changed$/));
       // Most runners write the report before they set the exit code, so it survives a red suite
       // by default. Vitest discards it unless told otherwise, so the flag is asked for THERE and
       // nowhere else: a rule that demanded it of every ecosystem would be asking for a vitest

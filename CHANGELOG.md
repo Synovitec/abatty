@@ -67,6 +67,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **TEST-COVERAGE credits the gate's own `coverage:changed` step.** The rule looked for a gate on
+  the changed lines in a coverage tool's spelling only, so a repository that wrote the
+  `coverage:changed` script the gate itself runs was told it had no gate on the change. Its next
+  step now also names the dependency-free route: a `coverage:changed` script fed by Node's own
+  `--experimental-test-coverage`. This repository runs one: `npm test` measures coverage as it
+  runs (about five per cent of its time), and the step judges the lines the push changed at 80%,
+  counting a new file no test loads and nothing imports as untested.
 - **A front-matter list the formatter wrapped is read.** Prettier wraps a `[...]` list that passes
   its print width onto the line below the key, and the docs probes read that as an empty list: a
   wrapped `source_truth` switched `docs.behindCode` and `docs.danglingSource` off for its document

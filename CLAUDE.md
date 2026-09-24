@@ -36,6 +36,7 @@ npm run gate               # `abatty gate`: format, lint, typecheck, graph, dead
 npm run gate:fast          # the same without the heavy suites; this package has none
 npm test                   # node --test over test/*.test.mjs (expanded by scripts/test.mjs, so Node 20 runs it too)   npm run typecheck   # tsc --noEmit
 npm run standards          # the ratchet alone over the pushed range
+npm run coverage:changed   # the changed lines against the coverage the last npm test measured (Node's own)
 npm run standards:baseline # today's numbers as the floor; zeros promoted to hard
 npm run types              # the .d.ts emit; types/ is committed and equal to a fresh emit
 npm run format             # prettier --write .                   npm run hooks:install
@@ -161,7 +162,8 @@ when two readings of the request lead to materially different work.
 - The `lint` step is skipped here: this repository has no `lint` script, because it has not
   adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
   gap analysis names it, so it is visible rather than silently green.
-- TEST-COVERAGE and TEST-MUTATION are missing here: each seemed to want a dependency
-  (coverage thresholds, StrykerJS) and §1.1 says a dependency is a decision, not a default. They
-  are open, not waived. CODE-DUP is held by `code.clones` and CODE-JSDOC by
-  `code.undocumentedExports` at zero, neither with a dependency.
+- TEST-MUTATION is missing here and TEST-COVERAGE is partial: the changed lines are gated with
+  Node's own coverage (`coverage:changed`, 80%), and no floor holds the total yet. Mutation seemed
+  to want StrykerJS, and §1.1 says a dependency is a decision, not a default. Both are open.
+  CODE-DUP is held by `code.clones` and CODE-JSDOC by `code.undocumentedExports` at zero, neither
+  with a dependency.

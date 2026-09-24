@@ -327,3 +327,20 @@ test("a placeholder that wraps onto a second line is still a placeholder", () =>
   );
   assert.deepEqual(templatePlaceholders("Returns <span>\nand <b>.\n"), []);
 });
+
+test("TEST-COVERAGE credits the gate's own coverage:changed step as a gate on the change", () => {
+  const withStep = judge("TEST-COVERAGE", {
+    "package.json": JSON.stringify({
+      scripts: { "coverage:changed": "node scripts/coverage-changed.mjs" },
+    }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(withStep.evidence, /a gate on the change/);
+  const without = judge("TEST-COVERAGE", {
+    "package.json": JSON.stringify({
+      scripts: { coverage: "node --test --experimental-test-coverage" },
+    }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(without.evidence, /no gate on the changed lines/);
+});
