@@ -12,11 +12,32 @@
 const TEST_FILE =
   /(^|\/)(tests?|__tests__|e2e|spec)\/|\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)test_[^/]*\.py$|_test\.(py|go)$/;
 const SNAPSHOT = /(^|\/)__snapshots__\/|\.snap$/;
-/** A test case, as `change.refactorTests` counts one. */
-const CASE = /(?<![.\w$])(?:test|it)(?:\.(?:only|each|concurrent))?\s*\(|^\s*def test_|^func Test/;
-/** A case or a suite set aside, or every other case set aside by `only`. */
+/**
+ * A test case, as `change.refactorTests` counts one, and a subtest of the platform's runner
+ * (`t.test(`), which that lookbehind would otherwise read as a method call.
+ */
+const CASE =
+  /(?<![.\w$])(?:test|it)(?:\.(?:only|each|concurrent))?\s*\(|\bt\.test\s*\(|^\s*def test_|^func Test/;
+/**
+ * A case or a suite set aside, or every other case set aside by `only`, in each runner's
+ * spelling: the method forms, the x/f prefixes, pytest's marks, Go's `t.Skip`, and the platform
+ * runner's options (`test("a", { skip: true }, fn)`) and context (`t.skip()`, `t.todo()`).
+ */
 const PARKED =
-  /(?<![.\w$])(?:it|test|describe|suite)\.(?:skip|only|todo)\s*\(|(?<![.\w$])[xf](?:it|describe|test)\s*\(|@pytest\.mark\.(?:skip|xfail)|\bt\.Skip(?:Now)?\(/;
+  /(?<![.\w$])(?:it|test|describe|suite)\.(?:skip|only|todo)\s*\(|(?<![.\w$])[xf](?:it|describe|test)\s*\(|(?<![.\w$])(?:test|it|describe|suite)\s*\([^)]*\{[^}]*\b(?:skip|todo|only)\s*:\s*(?!false\b)|\bt\.(?:skip|todo)\s*\(|@pytest\.mark\.(?:skip|xfail)|\bt\.Skip(?:Now)?\(/;
+/** Prose, where naming a suppression is writing about it. */
+const PROSE = /\.(md|mdx|markdown|txt|rst|adoc)$|(^|\/)CHANGELOG[^/]*$/i;
+/**
+ * A line with its string and pattern literals blanked, so a rule's advice or a check that names a
+ * suppression is not one. A pattern literal is a slash after an operator or an opening bracket.
+ */
+const bare = (/** @type {string} */ l) =>
+  l
+    .replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '""')
+    .replace(
+      /(^\s*|[=(,:[!&|?{;]\s*)\/(?![*/])(?:[^/\\\n[]|\\.|\[(?:[^\]\\]|\\.)*\])+\/[a-z]*/g,
+      "$1/x/",
+    );
 // Built from words, so this file does not carry, and count as, what it looks for.
 const SILENCE = new RegExp(
   [
@@ -33,7 +54,7 @@ const SILENCE = new RegExp(
 );
 /** A coverage or quality threshold and its number, as the configs spell one. */
 const THRESHOLD =
-  /\b(threshold|lines|branches|functions|statements|fail_under|fail-under|minimum_coverage|coverage_threshold|check-coverage)\b["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)/i;
+  /(?<![\w-])(threshold|lines|branches|functions|statements|fail_under|fail-under|minimum_coverage|coverage_threshold|check-coverage)\b["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)/i;
 const REASON = /^tests-changed:\s*\S/m;
 
 /**
@@ -45,10 +66,20 @@ function waysOut(subject, body, diff) {
   /** @type {Map<string, { cases: number, parked: number, silenced: number, snapshot: boolean, lowered: string[], removed: Map<string, number> }>} */
   const files = new Map();
   let file = "";
+  // A header is only read as one between `diff --git` and the first hunk: under -U0 a removed
+  // content line that starts with `-- ` (an SQL comment) would otherwise be taken for a path.
+  let header = false;
   for (const l of diff.split("\n")) {
-    if (l.startsWith("+++ ") || l.startsWith("--- ")) {
-      const p = l.slice(4).replace(/^[ab]\//, "");
-      if (p !== "/dev/null") file = p;
+    if (l.startsWith("diff --git ")) header = true;
+    if (l.startsWith("@@")) header = false;
+    if (header) {
+      if (l.startsWith("+++ ") || l.startsWith("--- ")) {
+        const p = l
+          .slice(4)
+          .replace(/^"(.*)"$/, "$1")
+          .replace(/^[ab]\//, "");
+        if (p !== "/dev/null") file = p;
+      }
       continue;
     }
     if (!file || !/^[+-]/.test(l)) continue;
@@ -65,7 +96,7 @@ function waysOut(subject, body, diff) {
     const text = l.slice(1);
     if (TEST_FILE.test(file) && CASE.test(text) && !PARKED.test(text)) f.cases += sign;
     if (TEST_FILE.test(file) && PARKED.test(text)) f.parked += sign;
-    if (SILENCE.test(text)) f.silenced += sign;
+    if (!PROSE.test(file) && SILENCE.test(bare(text))) f.silenced += sign;
     if (SNAPSHOT.test(file)) f.snapshot = true;
     const t = THRESHOLD.exec(text);
     if (t && !TEST_FILE.test(file)) {
@@ -107,7 +138,16 @@ export function tamperIn(git, range) {
     waysOut(
       git("log", "-1", "--format=%s", sha),
       git("log", "-1", "--format=%b", sha),
-      git("show", "--format=", "-U0", "--no-color", "--no-ext-diff", sha),
+      git(
+        "-c",
+        "core.quotePath=false",
+        "show",
+        "--format=",
+        "-U0",
+        "--no-color",
+        "--no-ext-diff",
+        sha,
+      ),
     ),
   );
   return { scanned: shas.length, findings };
@@ -123,62 +163,70 @@ export const probes = [
     title: "Commits in the pushed range that weakened the tests or the checks they are judged by",
     why: "A change that makes the tests pass by changing the tests has made the claim easier, not the code better: a case removed, skipped or focused, a snapshot rewritten, a checker silenced, a threshold lowered. Each can be right, and each is the first thing to read in a review, above all in a change nobody watched being made. Say why on a `tests-changed:` line, or put the test back.",
     approximates:
-      "stands in for reading every test edit for intent, which no text reading can do: per commit in the range, the net test cases a test file lost, the skip and only markers it gained, the suppression comments any file gained, the snapshots rewritten without a reason, and a coverage or quality threshold whose number fell. A case rewritten to assert something weaker, with the count unchanged, is not seen.",
+      "stands in for reading every test edit for intent, which no text reading can do: per commit in the range, the test cases lost across the commit's test files (net, so cases moved from one file to another cancel, and so do cases removed in one file while as many are added in another), the skip, todo and only markers a test file gained, the suppression comments a code file gained outside its strings, the snapshots rewritten without a reason, and a coverage or quality threshold whose number fell. A case rewritten to assert something weaker, with the count unchanged, is not seen; a shallow clone is not judged.",
     emptyScanOk: true,
     scan: (c, o) => {
       if (!o.range)
         return { scanned: 0, findings: [], skipped: "no range (a rule about a push, not a tree)" };
+      // A shallow checkout cannot list the range, and an empty list read green on the run that
+      // judges the push.
+      if (c.git("rev-parse", "--is-shallow-repository") === "true")
+        return {
+          scanned: 0,
+          findings: [],
+          skipped: "a shallow clone: the range's commits are not here",
+        };
       return tamperIn((...a) => c.git(...a), o.range);
     },
+    // One control per way out, each expecting exactly one finding: a detector that broke cannot
+    // hide behind another that double-counted.
     controls: [
-      {
-        name: "a case removed, one skipped, a checker silenced, a snapshot and a threshold moved",
+      ...[
+        ["a case removed", { "test/a.test.ts": "test('one', () => {});\n" }],
+        [
+          "a case skipped",
+          { "test/a.test.ts": "test.skip('one', () => {});\ntest('two', () => {});\n" },
+        ],
+        [
+          "a case skipped by the platform runner's options",
+          { "test/a.test.ts": "test('one', { skip: true }, () => {});\ntest('two', () => {});\n" },
+        ],
+        ["a subtest removed", { "test/b.test.mjs": "test('b', async (t) => {\n});\n" }],
+        [
+          "a checker silenced",
+          { "src/a.ts": `// ${["@ts", "ignore"].join("-")}\nexport const a = 2;\n` },
+        ],
+        ["a snapshot rewritten", { "test/__snapshots__/a.test.ts.snap": "exports[`a`] = `2`;\n" }],
+        [
+          "a threshold lowered",
+          {
+            "vitest.config.ts":
+              "export default { test: { coverage: { thresholds: { lines: 60 } } } };\n",
+          },
+        ],
+      ].map(([name, files]) => ({
+        name: /** @type {string} */ (name),
         files: {
           "src/a.ts": "export const a = 1;\n",
           "test/a.test.ts": "test('one', () => {});\ntest('two', () => {});\n",
+          "test/b.test.mjs": "test('b', async (t) => {\n  await t.test('inner', () => {});\n});\n",
           "test/__snapshots__/a.test.ts.snap": "exports[`a`] = `1`;\n",
           "vitest.config.ts":
             "export default { test: { coverage: { thresholds: { lines: 80 } } } };\n",
         },
-        commits: [
-          {
-            files: {
-              "src/a.ts": "export const a = 2;\n",
-              "test/a.test.ts": "test('one', () => {});\n",
-            },
-            message: "feat: a is two",
-          },
-          {
-            files: { "test/a.test.ts": "test.skip('one', () => {});\n" },
-            message: "fix: a",
-          },
-          {
-            files: { "src/a.ts": `// ${["@ts", "ignore"].join("-")}\nexport const a = 2;\n` },
-            message: "fix: types",
-          },
-          {
-            files: { "test/__snapshots__/a.test.ts.snap": "exports[`a`] = `2`;\n" },
-            message: "test: update",
-          },
-          {
-            files: {
-              "vitest.config.ts":
-                "export default { test: { coverage: { thresholds: { lines: 60 } } } };\n",
-            },
-            message: "chore: config",
-          },
-        ],
-        range: "HEAD~5..HEAD",
-        expect: 5,
-      },
+        commits: [{ files: /** @type {Record<string, string>} */ (files), message: "fix: a" }],
+        range: "HEAD~1..HEAD",
+        expect: 1,
+      })),
       {
-        name: "a case added, a reasoned snapshot, a threshold raised and a suppression removed are not counted",
+        name: "a case added, a moved case, a reasoned snapshot, a raised threshold, a tighter size budget, and a suppression named in prose or in a string",
         files: {
           "src/a.ts": `// ${["eslint", "disable"].join("-")}-next-line\nexport const a = 1;\n`,
           "test/a.test.ts": "test('one', () => { assert.ok(/x/.test(s)) });\n",
           "test/__snapshots__/a.test.ts.snap": "exports[`a`] = `1`;\n",
           "vitest.config.ts":
             "export default { test: { coverage: { thresholds: { lines: 60 } } } };\n",
+          ".config.yml": "max-lines: 300\n",
         },
         commits: [
           {
@@ -194,6 +242,7 @@ export const probes = [
             files: {
               "vitest.config.ts":
                 "export default { test: { coverage: { thresholds: { lines: 85 } } } };\n",
+              ".config.yml": "max-lines: 250\n",
               "src/a.ts": "export const a = 1;\n",
             },
             message: "chore: raise the floor",
@@ -206,8 +255,15 @@ export const probes = [
             },
             message: "test: split a",
           },
+          {
+            files: {
+              "CHANGELOG.md": `- the rule now names // ${["@ts", "ignore"].join("-")} comments\n`,
+              "src/rule.ts": `export const advice = "remove the ${["@ts", "ignore"].join("-")} comment";\n`,
+            },
+            message: "docs: advice",
+          },
         ],
-        range: "HEAD~4..HEAD",
+        range: "HEAD~5..HEAD",
         expect: 0,
       },
     ],

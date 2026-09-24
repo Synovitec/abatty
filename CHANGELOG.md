@@ -59,11 +59,16 @@ under Unreleased in the same commit.
   agent that cannot make a test pass has cheaper ways out than the fix, and most measured
   cheating was done to the tests. `change.refactorTests` reads refactors only. This probe reads
   every commit in the push and names each way out:
-  - a test case removed (one moved to another file in the same commit is not);
-  - a case skipped or focused;
+  - a test case or subtest removed (counted over the commit, so one moved to another file is
+    not);
+  - a case skipped, focused or marked todo, in each runner's spelling, the platform runner's
+    `{ skip: true }` included;
   - a snapshot rewritten with no `tests-changed:` line;
-  - a checker suppression added;
-  - a coverage or quality threshold lowered.
+  - a checker suppression added in code, outside strings and patterns (prose that names one is
+    not counted);
+  - a coverage or quality threshold lowered (a size budget like `max-lines` is not one).
+
+  A shallow clone is not judged. Over this repository's 280 commits it names two, both real.
 
   `abatty night-report` lists the same for every commit of a night, under "Tests and checks the
   night changed", and proposes a lesson when there is any. Probation means shown, never failing.
