@@ -118,6 +118,15 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The package's own release path holds no secret, and its checks say when they break.** With no
+  runtime dependency, a compromised release is the one way this package could hurt an adopter,
+  since it runs inside their hooks. Publishing moves to trusted publishing: the registry names
+  this repository's release workflow as the one publisher and refuses tokens, and the stored
+  `NPM_TOKEN` is gone. Every action in the workflows is pinned to a commit, a Scorecard workflow
+  measures the repository weekly, and a test refuses an unpinned action, a stored publish token,
+  a runtime dependency or an install script. The SARIF and conformance steps no longer end in
+  `|| true`: findings (exit 3) still produce their file, and a crash now fails the step.
+  SECURITY.md describes the publish path.
 - **The size rules say where a generated file goes.** An adopter took a generated OpenAPI client
   off its size count by moving it under `src/generated/`, which the budgets exempt, and nothing had
   told them that was the answer rather than a split. CODE-SIZE-800 and CODE-SIZE-300 now say so in
