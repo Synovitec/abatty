@@ -9,14 +9,20 @@ import { relative } from "node:path";
 
 /** @param {AsyncIterable<{ type: string, data: any }>} source */
 export default async function* coverageLines(source) {
-  /** @type {Record<string, { covered: number[], uncovered: number[] }>} */
+  /** @type {Record<string, { covered: number[], uncovered: number[], noLines?: boolean }>} */
   const files = {};
   for await (const event of source) {
     if (event.type !== "test:coverage") continue;
     for (const f of event.data?.summary?.files || []) {
       const path = relative(process.cwd(), String(f.path)).split("\\").join("/");
+      // A runtime whose coverage carries no per-line data is said, not read as all covered: an
+      // entry with empty lists counted no runnable line, and the changed-line check passed.
+      if (!Array.isArray(f.lines)) {
+        files[path] = { covered: [], uncovered: [], noLines: true };
+        continue;
+      }
       /** @type {{ line: number, count: number }[]} */
-      const lines = Array.isArray(f.lines) ? f.lines : [];
+      const lines = f.lines;
       files[path] = {
         covered: lines.filter((l) => l.count > 0).map((l) => l.line),
         uncovered: lines.filter((l) => l.count === 0).map((l) => l.line),

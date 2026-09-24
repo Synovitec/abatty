@@ -10,6 +10,7 @@
 //   node scripts/coverage-changed.mjs [range]      exit 0 held, 3 below the floor, 4 no data
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { posix } from "node:path";
 
 const THRESHOLD = 0.8;
 const DATA = ".abatty/coverage/lines.json";
@@ -39,7 +40,7 @@ if (!existsSync(DATA)) {
   console.error(`coverage of the changed lines: no ${DATA}; run npm test first`);
   process.exit(4);
 }
-/** @type {{ files: Record<string, { covered: number[], uncovered: number[] }> }} */
+/** @type {{ files: Record<string, { covered: number[], uncovered: number[], noLines?: boolean }> }} */
 const data = JSON.parse(readFileSync(DATA, "utf8"));
 
 /** The lines each source file gained in the range, from git's own diff. */
@@ -53,9 +54,13 @@ function changedLines() {
   /** @type {Map<string, number[]>} */
   const out = new Map();
   let file = "";
+  // A header only between `diff --git` and the first hunk: a removed `-- ` line is content.
+  let header = false;
   for (const line of r.stdout.split("\n")) {
-    if (line.startsWith("+++ ")) file = line.replace(/^\+\+\+ (b\/)?/, "");
+    if (line.startsWith("diff --git ")) header = true;
+    if (header && line.startsWith("+++ ")) file = line.replace(/^\+\+\+ (b\/)?/, "");
     const hunk = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/.exec(line);
+    if (hunk) header = false;
     if (!hunk || !SOURCES.test(file)) continue;
     const start = Number(hunk[1]);
     const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
@@ -80,11 +85,27 @@ const unmeasured = [];
 function imported(file) {
   const name = file.split("/").pop() || file;
   const r = git("grep", "-l", "-F", `/${name}"`, "--", "src", "bin");
-  return r.stdout.split("\n").some((f) => f && f !== file);
+  // The specifier resolved from the importing file, not the name matched anywhere: a new
+  // untested `index.mjs` read as imported because some other `index.mjs` was.
+  return r.stdout
+    .split("\n")
+    .filter((f) => f && f !== file)
+    .some((f) =>
+      [...readFileSync(f, "utf8").matchAll(/["'](\.{1,2}\/[^"']+)["']/g)].some(
+        (m) => posix.normalize(posix.join(posix.dirname(f), String(m[1]))) === file,
+      ),
+    );
 }
 
 for (const [file, lines] of changedLines()) {
   const cov = data.files[file];
+  // A runtime that measured the file but gave no per-line data cannot judge it: fail, and say so.
+  if (cov?.noLines) {
+    console.error(
+      `coverage of the changed lines: ${file} was measured with no per-line data (this Node's coverage lacks it); nothing can be judged`,
+    );
+    process.exit(4);
+  }
   if (!cov && imported(file)) {
     unmeasured.push(file);
     continue;

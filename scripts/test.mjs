@@ -27,10 +27,12 @@ const files = args.filter((a) => !a.startsWith("--"));
 // measured by the run that already happens, at about five per cent of its time, rather than by a
 // second run of a suite that takes minutes. The usual report still goes to the terminal.
 mkdirSync(".abatty/coverage", { recursive: true });
+// A caller that names its own reporter keeps it, and gets the coverage file beside it: forcing
+// spec as well gave three reporters and two destinations, which node refuses to start with.
+const ownReporter = flags.some((f) => f.startsWith("--test-reporter"));
 const coverage = [
   "--experimental-test-coverage",
-  "--test-reporter=spec",
-  "--test-reporter-destination=stdout",
+  ...(ownReporter ? [] : ["--test-reporter=spec", "--test-reporter-destination=stdout"]),
   "--test-reporter=./scripts/coverage-reporter.mjs",
   "--test-reporter-destination=.abatty/coverage/lines.json",
 ];
