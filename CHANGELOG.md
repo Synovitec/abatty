@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`obs.catchOnlyLogs` and `sec.weakRandom`, two opt-in probes for bugs no metric counted.**
+  Documentation written by an adopter's sessions found a "cryptographic" temporary password drawn
+  from `Math.random` and forms whose failed save was caught, written to the console and dropped,
+  so the user saw a saved form. `obs.catchOnlyLogs` counts a `catch` block or a `.catch()`
+  handler whose every statement is a `console.*` call; `sec.weakRandom` counts a `Math.random`
+  call when a name on its line, or the function around it, says password, token, secret, salt,
+  nonce, credential, API key or a one-time code, so an id or a shuffle is left alone. Both read
+  JavaScript and TypeScript outside test folders at any depth, and `init` enables them on every
+  preset. SEC.1 and OBS.1 in the standard say what each one holds.
 - **`measure` names each new reading in the one before it, and `docs.supersededChain` counts a
   broken chain.** `abatty measure` wrote `GAP_ANALYSIS_<date>.md` on every run and left the
   previous reading naming nothing, so an adopter's older reading was quoted as the current score

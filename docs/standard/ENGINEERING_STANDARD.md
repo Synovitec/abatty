@@ -523,7 +523,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   `npm ci` / `--frozen-lockfile` everywhere, regenerated on Linux, reviewed like code. Updates
   arrive by Renovate on a cadence: a security fix without a major bump auto-merges after a
   green day, everything else batched weekly and reviewed. Fixtures are synthetic; diagnostic
-  output masks names; `.env*` never enters a Docker build context.
+  output masks names; `.env*` never enters a Docker build context. A password, a token or a
+  one-time code is drawn from the platform's cryptographic generator, never from `Math.random`.
 - **SEC.2 (MUST) - An audit trail is append-only**, enforced by the database role, and an
   actor is recorded as exactly one of a person or an integration.
 - **SEC.3 (MUST) - A tenant-supplied URL is hostile.** Resolve DNS, refuse private, loopback,
@@ -572,7 +573,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   is in flight, then exits - never `process.exit(0)` on the signal, never ignoring it. Every
   job type has a fallback path or its absence is documented in the operations runbook. The
   error tracker is configured from the environment, not from the database, because it has to
-  work when the database is the broken thing.
+  work when the database is the broken thing. A caught error is handled, rethrown or reported
+  through that logger; a catch whose only act is a console line is a failure nobody sees.
 - **FLOW.1 (MUST) - Conventional Commits, no em-dash anywhere** (code, copy, i18n, commit
   messages; the house separator is `·` or a hyphen), **no `authorship` trailer.** The
   message says why, for the reader, not what the diff shows.

@@ -23,5 +23,16 @@ export function budgetOf(path: string, config: import("../index.mjs").RatchetCon
  * @returns {Record<string, string | string[]> | null}
  */
 export function frontMatter(text: string): Record<string, string | string[]> | null;
+/**
+ * The JavaScript and TypeScript sources a probe of what ships reads: outside the exempt list and
+ * outside test folders at any depth, where a monorepo keeps them (`apps/<app>/tests/`). A test's
+ * setup that logs and carries on, or a fixture's random password, is not what a user meets.
+ * @param {import("../../rules/context.mjs").RepoContext} c @param {{ config: { exempt: string[] } }} o
+ */
+export function shippedScripts(c: import("../../rules/context.mjs").RepoContext, o: {
+    config: {
+        exempt: string[];
+    };
+}): string[];
 /** Lines of a text, CRLF or LF. @param {string} text */
 export function lines(text: string): string[];

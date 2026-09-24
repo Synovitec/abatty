@@ -256,6 +256,8 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
 | `valid.sqlCurrentDate`    | Calendar days SQL takes in the session's time zone (`CURRENT_DATE`, `now()::date`), unconverted    |                |
 | `docs.supersededChain`    | Readings of a chained dated series, or archived documents, that name no successor that exists      |                |
+| `obs.catchOnlyLogs`       | Caught errors, `catch` blocks or `.catch()` handlers, whose only act is a `console.*` line         |                |
+| `sec.weakRandom`          | `Math.random` where the names around it say a password, a token, a secret or a one-time code       |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

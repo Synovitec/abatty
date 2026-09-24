@@ -70,6 +70,22 @@ function unquote(s) {
   return s.replace(/^["']|["']$/g, "");
 }
 
+/** A test folder at any depth: the default exempt list skips a root `tests/` only. */
+const TEST_DIR = /(^|\/)(tests?|__tests__|e2e)\//;
+
+/**
+ * The JavaScript and TypeScript sources a probe of what ships reads: outside the exempt list and
+ * outside test folders at any depth, where a monorepo keeps them (`apps/<app>/tests/`). A test's
+ * setup that logs and carries on, or a fixture's random password, is not what a user meets.
+ * @param {import("../../rules/context.mjs").RepoContext} c @param {{ config: { exempt: string[] } }} o
+ */
+export function shippedScripts(c, o) {
+  const exempt = regexes(o.config.exempt);
+  return c.sourceFiles.filter(
+    (f) => /\.[cm]?[jt]sx?$/.test(f) && !TEST_DIR.test(f) && !matchesAny(f, exempt),
+  );
+}
+
 /** Lines of a text, CRLF or LF. @param {string} text */
 export function lines(text) {
   return text.split(/\r?\n/);

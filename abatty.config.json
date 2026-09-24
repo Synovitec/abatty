@@ -93,7 +93,9 @@
       "fn.shapeExemptions",
       "change.refactorTests",
       "code.clones",
-      "docs.supersededChain"
+      "docs.supersededChain",
+      "obs.catchOnlyLogs",
+      "sec.weakRandom"
     ],
     "hard": [],
     "ratchet": [],
