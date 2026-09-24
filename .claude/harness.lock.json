@@ -1,15 +1,15 @@
 {
   "abatty": "0.5.1",
-  "installedAt": "2026-09-23",
+  "installedAt": "2026-09-24",
   "files": {
     ".claude/hooks/check-direction.mjs": "32b328881f2f272c089dafc5d90694ad215c736ee9337afa4b5aa5d15000b458",
-    ".claude/hooks/guard.mjs": "03ef1607faa2e3f9c627b58c58e1eede2456b1ff7b9d09021033e4553d94591d",
+    ".claude/hooks/guard.mjs": "abf4e4c76a88becb67998fd74c2aca8d79ad122b4f1043072ef7a713f64cbe66",
     ".claude/hooks/lib.mjs": "7304a50169d66d407735803c411a012972bbe6303e3001d2be5e81aa93f2aa3b",
     ".claude/hooks/lint-on-edit.mjs": "8ceaa8e15dd800811368857fac9f59535823919cfae63f2c19c00968ca213af3",
     ".claude/hooks/protect.mjs": "f67bd4343eaaa51adf9d175883cf5abc1a51ed842e7bc21fd96576f8cf482e0b",
     ".claude/hooks/self-test.mjs": "b398181487438dcd8986cb6bf5a96b8051f6b72ccccfaffbc8fd1b1a49254016",
     ".claude/hooks/session-brief.mjs": "902ec654f198c5d3c2b8c4c90f34c5d36e09eea379a83593575e26f04b1d5808",
-    ".claude/hooks/shell.mjs": "9d70cea004db2b7e19cf00bbd56014086c6ce3a9f3ce037bca86dc30fac82cc8",
+    ".claude/hooks/shell.mjs": "e9edf9201d3f6c1993ee12afef6a8d198a0a4fbd0c207b65c92f6fdb90b6ab05",
     ".claude/hooks/stop-gate.mjs": "26eb1f3bd60678119fa7098cf3d7ec895f1c399363e931e4d0c85f67604b9af9",
     ".claude/hooks/vocabulary.mjs": "cb3f80737b8124562321c816fc6679db84b241a901def3b346b7abd713d01b3d",
     ".claude/skills/adopt-standards/SKILL.md": "edba13f3d2ef03766626bd49c3e46a6521d041d78d4aaf59a6fcf14cfcaea019",
@@ -23,6 +23,7 @@
     ".claude/rules/testing.md": "7490d620208222b0f0b416b7db6179ff8f1c24877c07c79a59b6669de414f0dc",
     ".claude/rules/size-limits.md": "21def85fa82a7d3841b6dba7f5c91efb0ed5280515981ef45cf2f34ee668abc5"
   },
+  "offered": {},
   "scripts": [
     "dead",
     "format:check",
@@ -35,5 +36,8 @@
     "standards",
     "standards:baseline",
     "typecheck"
-  ]
+  ],
+  "hooks": {
+    ".githooks/pre-push": "c64cbfd394acf95cfeaedd9d73b3a57ec164a31df39a46c848f9a6a5f0e1f1b2"
+  }
 }

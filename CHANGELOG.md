@@ -37,6 +37,17 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The guard reads every destination of a push, and more of the shapes a push hides in.** A
+  review of this release found the worktree fix had narrowed the night's rule: a push naming
+  several refspecs was judged by the last, so `git push origin main adopt/x` passed a night that
+  0.5.1 refused. Every refspec is now a destination, and `--all` or `--mirror` writes the base. Also
+  closed: a push behind git's own options (`--attr-source`, `--namespace`, `--config-env`) or inside
+  a wrapper (`sh -c "git -C . push ..."`); a `cd` inside a group, a condition, `env -C` or a wrapper,
+  which now makes the folder unknown rather than guessed; a destination the shell computes
+  (`$(...)`). Two false refusals the first cut introduced are gone: an ordinary command that only
+  quotes the words "git push" after a `cd`, and a PowerShell path, whose backslashes were read as
+  escapes. Where the repository takes direct pushes to its base, a push to an unknown branch is no
+  longer refused by day.
 - **A red cross means the run failed.** The ratchet listed every finding in a file the push
   touched with ✗, the debt the file already carried within its floor included, and an adopter's
   session read a push that had gone through as refused and had to ask the remote. A finding whose
