@@ -15,9 +15,14 @@ const JS_CONFIG = /(^|\/)(vitest(\.\w+)?|vite|jest)\.config\.[cm]?[jt]s$/;
 const JSON_CONFIG = /(^|\/)(\.nycrc(\.json)?|\.c8rc(\.json)?)$/;
 /** The Python coverage configs. */
 const PY_CONFIG = /(^|\/)(\.coveragerc|setup\.cfg|pyproject\.toml)$/;
-/** A comment that takes the next lines out of the count, in each tool's spelling. */
+/**
+ * A comment that takes the next lines out of the count, in each tool's spelling. Node's own
+ * runner has one too (`node:coverage ignore next`, and `disable` up to its `enable`, which closes
+ * the region and is not a second exclusion): read through istanbul's spelling alone, a
+ * `node --test` suite could exclude code no count saw.
+ */
 const INLINE =
-  /\/\*\s*(?:istanbul|c8|v8)\s+ignore\b[^*]*\*\/|\/\/\s*(?:istanbul|c8|v8)\s+ignore\b[^\n]*|#\s*pragma:\s*no\s*cover\b/g;
+  /\/\*\s*(?:istanbul|c8|v8)\s+ignore\b[^*]*\*\/|\/\/\s*(?:istanbul|c8|v8)\s+ignore\b[^\n]*|\/\*\s*node:coverage\s+(?:ignore\s+next|disable)\b[^*]*\*\/|\/\/\s*node:coverage\s+(?:ignore\s+next|disable)\b[^\n]*|#\s*pragma:\s*no\s*cover\b/g;
 
 /**
  * The entries of the array a key opens (strings and regular expressions), wherever the key appears.
@@ -92,7 +97,7 @@ export const probes = [
     title: "Code taken out of the coverage count, by list or inline",
     why: "A coverage floor holds only over the code it counts. Every exclusion is code the floor stopped watching, and splitting a file then excluding the untested half keeps the number green while nothing tests it. The exclusions may exist; they may only shrink.",
     approximates:
-      "stands in for the coverage tool's own resolution of its config: a text reading of the entries of a coverage exclude list (vitest or vite `coverage.exclude`, jest `coveragePathIgnorePatterns`, nyc or c8 `exclude`, coverage.py `omit`) plus each inline ignore comment (istanbul, c8, v8, `pragma: no cover`); a glob counts as one entry whatever it matches",
+      "stands in for the coverage tool's own resolution of its config: a text reading of the entries of a coverage exclude list (vitest or vite `coverage.exclude`, jest `coveragePathIgnorePatterns`, nyc or c8 `exclude`, coverage.py `omit`) plus each inline ignore comment (istanbul, c8, v8, Node's `node:coverage ignore next` and `disable`, `pragma: no cover`); a glob counts as one entry whatever it matches",
     emptyScanOk: true,
     scan: (c) => {
       const findings = [];
@@ -132,8 +137,10 @@ export const probes = [
           "tools/setup.cfg": "[coverage:run]\nomit = a/*\n[coverage:report]\nomit = b/*\n",
           ".coveragerc": "[run]\nomit =\n    app/migrations/*\n    app/settings.py\n",
           "src/a.ts": "/* v8 ignore next */\nexport const a = 1;\n",
+          "src/b.mjs":
+            "/* node:coverage disable */\nexport const b = 1;\n/* node:coverage enable */\n// node:coverage ignore next 2\nexport const c = 2;\n",
         },
-        expect: 10,
+        expect: 12,
       },
       {
         name: "a test exclude outside the coverage block, and coverage with nothing excluded",
@@ -141,6 +148,7 @@ export const probes = [
           "vitest.config.ts":
             "export default { test: { exclude: ['e2e/**'], coverage: { thresholds: { lines: 80 } } } };\n",
           "src/a.ts": "export const note = '/* istanbul ignore next */ quoted in a message';\n",
+          "src/b.mjs": "/* node:coverage enable */\nexport const b = '// node:coverage disable';\n",
         },
         expect: 0,
       },

@@ -48,6 +48,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`test.coverageExclusions` reads Node's own ignore comments.** The probe knew istanbul, c8 and
+  v8 spellings only, so a `node --test` suite could take code out of its coverage with
+  `/* node:coverage ignore next */` or a `disable` region and no count saw it: a practice read
+  through one tool's spelling. `node:coverage ignore next` and `node:coverage disable` now count,
+  and `enable`, which only closes a region, does not.
 - **A file over its floor lists every finding it carries, and the two ways out.** The ratchet
   printed at most twelve lines, so a file that worsened by one showed a few of its findings and
   read as "these are the ones you introduced", which a count cannot know. Each file over its
