@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-23",
+  "measuredAt": "2026-09-24",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
   "score": 93,
   "hard": [
@@ -25,7 +25,7 @@
     "change.coupledMissing": 0,
     "change.refactorTests": 0,
     "code.barrels": 0,
-    "code.clones": 27,
+    "code.clones": 26,
     "context.overCap": 0,
     "context.unsourcedGrowth": 0,
     "docs.behindCode": 0,
@@ -45,20 +45,20 @@
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 138,
+    "code.clones": 147,
     "context.overCap": 1,
     "docs.behindCode": 7,
     "docs.citations": 73,
     "docs.danglingSource": 14,
     "docs.frontMatter": 33,
     "docs.indexDrift": 32,
-    "size.excessCode": 138,
-    "size.overBudget": 138,
-    "size.overRaw": 156,
-    "types.escapes": 138,
-    "valid.rawEnv": 137,
-    "valid.utcDay": 138,
-    "valid.wholeEnv": 137
+    "size.excessCode": 147,
+    "size.overBudget": 147,
+    "size.overRaw": 165,
+    "types.escapes": 147,
+    "valid.rawEnv": 146,
+    "valid.utcDay": 147,
+    "valid.wholeEnv": 146
   },
   "debt": {
     "code.clones": {
@@ -69,7 +69,6 @@
       "src/cli/measure.mjs": 1,
       "src/cli/ratchet.mjs": 1,
       "src/core/gate.mjs": 1,
-      "src/core/init.mjs": 1,
       "src/core/scrub.mjs": 2,
       "src/night/preflight.mjs": 1,
       "src/presets/astro.mjs": 4,
