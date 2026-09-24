@@ -60,3 +60,24 @@ test("a CRLF document is read like an LF one", () => {
     ["`title` twice"].map((fault) => ({ line: 3, fault })),
   );
 });
+
+test("a value continued on indented lines, and keys YAML reads as keys, are not faults", () => {
+  for (const block of [
+    "tags: [a,\n  b]",
+    'description: "a long line\n  that goes on"',
+    "meta: {a: 1,\n  b: 2}",
+    "og:image: /cover.png",
+    "2fa: required",
+    '"quoted key": value',
+  ])
+    assert.deepEqual(faults(block), [], block);
+});
+
+test("a list that opens and never closes is a fault on the line that opened it", () => {
+  assert.deepEqual(faults("tags: [a,\n  b\nstatus: living"), [
+    "2 `tags`: a list that does not close",
+  ]);
+  assert.deepEqual(faults('title: "open\nstatus: living'), [
+    "2 `title`: a quote that does not close",
+  ]);
+});

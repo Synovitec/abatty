@@ -7,7 +7,13 @@
  * them: a reader accepts it, and hundreds of adopters' documents write one on purpose.
  */
 
-const KEY = /^([A-Za-z_][\w-]*):(?:\s+(.*)|\s*)$/;
+/**
+ * A `key: value` line, the key read up to the first `: ` as YAML reads it: quoted keys, keys
+ * starting with a digit (`2fa`) and keys holding a colon (`og:image`) are keys. The first reading
+ * took a word only and called each of them a line that is not `key: value`.
+ */
+const KEY =
+  /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^\s#"'[\]{},&*!|>%@`-][^\s]*?|-[^\s]+?):(?:\s+(.*)|\s*)$/;
 // Characters YAML reserves at the start of a plain scalar.
 const RESERVED = /^[@`%]/;
 const QUOTED_DOUBLE = /^"(?:[^"\\]|\\.)*"(?:\s+#.*)?$/;
@@ -30,6 +36,15 @@ export function frontMatterFaults(text) {
   const seen = new Set();
   // The value of the key above: a scalar cannot own an indented key, an empty one can.
   let scalar = false;
+  // A list, map or double-quoted value that opened without closing continues on the indented
+  // lines below (`tags: [a,` then `  b]`), which a YAML reader joins; it is judged once closed.
+  /** @type {{ key: string, text: string, line: number } | null} */
+  let open = null;
+  const close = () => {
+    if (open && valueFault(open.text))
+      faults.push({ line: open.line, fault: `\`${open.key}\`: ${valueFault(open.text)}` });
+    open = null;
+  };
   for (let i = 1; i < body.length; i++) {
     const line = String(body[i]);
     const at = i + 1;
@@ -37,6 +52,12 @@ export function frontMatterFaults(text) {
     if (!line.trim() || /^\s*#/.test(line)) continue;
     const indent = /^[ \t]*/.exec(line)?.[0] || "";
     if (indent.includes("\t")) fault("a tab in the indentation");
+    if (open && indent) {
+      open.text += " " + line.trim();
+      if (!valueFault(open.text)) open = null;
+      continue;
+    }
+    close();
     if (indent) {
       if (scalar && KEY.test(line.trim())) fault(`\`${line.trim()}\` indented under a scalar`);
       continue;
@@ -50,15 +71,18 @@ export function frontMatterFaults(text) {
       fault(`\`${line}\` is not a \`key: value\` line`);
       continue;
     }
-    const key = String(kv[1]);
+    const key = String(kv[1]).replace(/^(["'])(.*)\1$/, "$2");
     if (seen.has(key)) fault(`\`${key}\` twice`);
     seen.add(key);
     const value = (kv[2] || "").trim();
     // A block scalar (`|`, `>`) owns the indented lines below it, colons and all.
     scalar = value !== "" && !/^[#|>]/.test(value);
     const problem = valueFault(value);
-    if (problem) fault(`\`${key}\`: ${problem}`);
+    if (problem && /^["[{]/.test(value) && !problem.startsWith("`"))
+      open = { key, text: value, line: at };
+    else if (problem) fault(`\`${key}\`: ${problem}`);
   }
+  close();
   return faults;
 }
 
@@ -90,7 +114,7 @@ export const probes = [
     title: "Documents whose front matter a YAML reader refuses",
     why: "A block a YAML reader refuses is no front matter to a site generator or a content schema, even when a hand reading finds its keys: the document drops out of every list built from it. Fix the line named: a key written once, at the left margin, a quote closed, a value with a `: ` in it quoted.",
     approximates:
-      "stands in for a YAML parser, which would be a dependency: a hand reading of the faults a reader refuses or reads as another structure (a duplicate key, a key or a list item indented under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an unquoted value, a reserved first character), checked against a parser on 642 real documents; an unquoted date is not counted, since a reader accepts it",
+      "stands in for a YAML parser, which would be a dependency: a hand reading of the faults a reader refuses or reads as another structure (a duplicate key, a key or a list item indented under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an unquoted value, a reserved first character), each shape a case in test/frontmatter.test.mjs whose verdict a YAML parser gave; an unquoted date is not counted, since a reader accepts it",
     axis: "docs-freshness",
     lossAt: 30,
     scan: (c) => {

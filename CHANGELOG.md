@@ -21,8 +21,10 @@ under Unreleased in the same commit.
   rejects. The new metric counts a document with a duplicate key, a key or a list item indented
   under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an
   unquoted value, or a reserved first character, each on its line. No dependency: the reading was
-  checked against a YAML parser on 642 real documents and agrees on every one. An unquoted date is
-  not counted, since a reader accepts it. `docs.frontMatter` keeps its definition.
+  checked against a YAML parser, and every shape it refuses or accepts is a test case whose verdict
+  the parser gave; a list or a quote continued on indented lines, and keys like `og:image`, are
+  read as YAML reads them. An unquoted date is not counted, since a reader accepts it.
+  `docs.frontMatter` keeps its definition.
 - **`obs.catchOnlyLogs` and `sec.weakRandom`, two opt-in probes for bugs no metric counted.**
   Documentation written by an adopter's sessions found a "cryptographic" temporary password drawn
   from `Math.random` and forms whose failed save was caught, written to the console and dropped,
