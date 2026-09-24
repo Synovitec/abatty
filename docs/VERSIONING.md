@@ -36,8 +36,8 @@ number, the patch is not.**
 One breaking axis per minor. Several at once is how a tool's biggest upgrade becomes the one
 nobody takes: an adopter who reads one sentence of the notes should learn everything that changed
 for them. The migration ships in the same release as the change, never after it: `abatty update`
-for the harness, the "redefined" verdict and `abatty baseline` for a probe, the changelog for the
-rest, and a migration is tested like any other code.
+for the harness and for a redefined probe (whose floor it rewrites under the new definition,
+touching no other), the changelog for the rest, and a migration is tested like any other code.
 
 ## A patch (0.x.y → 0.x.y+1) cannot turn a green run red
 

@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **`abatty update` migrates a redefined check's floor itself.** When a check's definition
+  changed, its floor read as "redefined" until every adopter ran `abatty baseline` by hand, and
+  each release's notes had to ask for it. `update` now rewrites exactly those floors under the new
+  definition and names each one: a redefinition is not a raise. It touches no other floor. A HARD
+  metric that now counts above zero is named and left for a person. `--dry-run` writes nothing.
 - **A minor release goes out as a candidate first.** A version with a `-` (like `0.7.0-rc.1`) is
   published under the `next` tag, never `latest`, so adopters can replay it with `abatty@next`
   before anyone upgrades. A miss they find costs another candidate, not a patch release.

@@ -103,6 +103,15 @@ export async function updateCommand(cx, preset) {
       `  ${t.glyph.warn} ${t.yellow(stalePatchNote(p, VERSION).says)}${t.gray(` · ${stalePatchNote(p, VERSION).fix}`)}
 `,
     );
+  // The floors a new probe definition made incomparable, rewritten under it: the step the
+  // release notes used to ask for by hand.
+  const { migrateRedefined } = await import("../ratchet/migrate.mjs");
+  for (const m of await migrateRedefined(dir, { dryRun: flag("--dry-run") }))
+    out(
+      m.written
+        ? `  ${t.glyph.ok} ${t.gray("migrated".padEnd(11))} ${m.metric}  ${t.gray(`· floor rewritten under definition ${m.version}: ${m.was} → ${m.now} (a redefinition, not a raise)`)}\n`
+        : `  ${t.glyph.warn} ${t.gray("redefined".padEnd(11))} ${m.metric}  ${t.gray(`· ${m.now} under definition ${m.version}: ${m.why}`)}\n`,
+    );
   const changed = r.events.filter((e) => e.action !== "in step" && e.action !== "kept").length;
   out(
     `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
