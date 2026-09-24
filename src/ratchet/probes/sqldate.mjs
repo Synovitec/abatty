@@ -50,11 +50,17 @@ export const probes = [
       const findings = [];
       for (const f of files) {
         const raw = c.read(f);
-        const text = f.endsWith(".sql")
+        const sql = f.endsWith(".sql");
+        const text = sql
           ? raw.replace(/--[^\n]*/g, (m) => " ".repeat(m.length))
           : codeOnly(raw, { strings: "keep" });
+        // In a script, only inside a string or template, where the SQL is: the same text with the
+        // strings blanked shows which characters were a string's. `export const CURRENT_DATE =
+        // new Date()` is a name, and was counted.
+        const bare = sql ? text : codeOnly(raw);
         for (const m of text.matchAll(SESSION_DAY)) {
           const at = m.index ?? 0;
+          if (!sql && bare[at] !== " ") continue;
           findings.push({ path: f, line: lineAt(text, at), detail: `the session's day: ${m[0]}` });
         }
       }
@@ -72,7 +78,7 @@ export const probes = [
       {
         name: "a day taken in a named zone, a comment, and a JavaScript name are not counted",
         files: {
-          "src/shifts.ts": `// ${DAY} would be the session's day\nconst ${DAY}_label = 1;\nexport const q = "select (now() at time zone 'Europe/Brussels')::date";\n`,
+          "src/shifts.ts": `// ${DAY} would be the session's day\nconst ${DAY}_label = 1;\nexport const ${DAY.toUpperCase()} = new Date();\nexport const q = "select (now() at time zone 'Europe/Brussels')::date";\n`,
           "db/queries/zoned.sql": `-- not ${DAY}\nselect (now() AT TIME ZONE 'Europe/Brussels')::date;\n`,
         },
         expect: 0,
