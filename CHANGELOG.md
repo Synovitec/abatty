@@ -17,6 +17,15 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`docs.frontMatter` counts front matter a YAML reader refuses.** The probes read front matter by
+  hand, and that reading forgave what a site generator or a content schema does not: an adopter's
+  documents passed every docs probe with a block a YAML parser rejects. A document now also counts
+  for a duplicate key, a key indented under a scalar, a list item under a scalar, a tab in the
+  indentation, a quote, list or map left open, a `: ` inside an unquoted value, or a reserved
+  first character, each reported on its line. Still no dependency: the reading was checked
+  against a YAML parser on 642 real documents and agrees on every one. An unquoted date is not
+  counted: a reader accepts it. The metric's definition moved to 2, so the ratchet reads it
+  as redefined until `abatty baseline` records today's number.
 - **A file's floor that rises is refused and recorded, even when the metric's total fell.** An
   adopter's baseline write took `size.excessCode` from 30109 to 30072 while ten files' floors rose,
   and the tool's record said nothing: a fall anywhere could hide a rise anywhere else, although the
