@@ -7,7 +7,7 @@ audience: ["architect", "developer", "agent", "reviewer"]
 tags: ["lessons", "defects", "guards", "standards"]
 related: ["./ENGINEERING_STANDARD.md", "./ENFORCEMENT_MAP.md"]
 scope: synovitec
-last_verified: "2026-09-14"
+last_verified: "2026-09-24"
 ---
 
 # Lessons catalogue
@@ -26,6 +26,16 @@ repository named.
 - An `ignores` glob reads a Next.js segment `[companyId]` as a character class. Escape it and
   pin three controls: on for a clean file, off for the bracketed path, on for a clean sibling.
   (dms)
+- A probe reads the tree it ships in, so its own pattern, prose and control fixtures are findings
+  against itself: 4 of 7 type escapes and 3 of 7 raw environment reads were the probes' own text,
+  and an opt-in probe nobody enabled counted eight of its own lines unseen. Assemble the spellings
+  from parts, and run every shipped probe, enabled or not, over the package's own tree. (abatty)
+- A guard written against a setting refused the command that installs it: refusing every write of
+  `core.hooksPath` refused `git config core.hooksPath .githooks`, which the package's own install
+  runs. Judge the value a write sets, not that a write happened. (abatty)
+- A formatter wraps a long `[...]` list onto the line below its key, and a front-matter reader
+  that took the key's line alone read it as empty: `source_truth` gone, the freshness check off
+  for that document, without a word. Read what the formatter writes. (abatty)
 - A placeholder guard `\bNN\b` never matched `00NN_name`; a `\b` at a path boundary matched a
   path's own suffix. Boundaries are `(?<![\w/])`, tested against a foreign path and a web
   path. (dms)

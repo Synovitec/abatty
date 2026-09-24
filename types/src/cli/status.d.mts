@@ -4,6 +4,21 @@
  */
 export function statusCommand(c: import("./ratchet.mjs").CliContext, preset: import("../presets/index.mjs").Preset | null): Promise<void>;
 /**
+ * The per-family table the status screen and `measure` both print: one table, so the two screens
+ * cannot drift into counting the families differently. `measure` adds the not-applicable column.
+ * @param {{ name: string, present: number, partial: number, missing: number, na: number }[]} families
+ * @param {{ na?: boolean }} [o]
+ */
+export function familyTable(families: {
+    name: string;
+    present: number;
+    partial: number;
+    missing: number;
+    na: number;
+}[], o?: {
+    na?: boolean;
+}): string;
+/**
  * The enforced share for a screen: how much of what the repository has is held by a machine.
  * @param {import("../core/gap-analysis.mjs").Enforced | undefined} e
  */

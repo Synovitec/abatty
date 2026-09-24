@@ -107,6 +107,28 @@ export function runGate(o) {
       (s) => typeof s === "string" && typeof pkgScripts[s] === "string",
     ) || null;
 
+  /**
+   * The outcome of a step that ran, recorded and logged, and whether the gate goes on. One
+   * place for both kinds of step, so "could not run" and "failed" cannot drift apart in wording.
+   * @param {string} label @param {{ errored?: boolean, detail?: string, code?: number | null }} res
+   * @param {number} ms @param {string} what the command, as the reader would type it
+   */
+  const settle = (label, res, ms, what) => {
+    if (res.errored) {
+      events.push({ label, outcome: "errored", ms, detail: res.detail });
+      log(
+        `\n✗ ${label} could not run: ${what} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+      );
+      return false;
+    }
+    if (res.code !== 0) {
+      events.push({ label, outcome: "failed", ms });
+      log(`\n✗ ${label} failed (exit ${res.code}). The gate stops here.`);
+      return false;
+    }
+    events.push({ label, outcome: "ok", ms });
+    return true;
+  };
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
     if (s.builtin) return builtinStep(s, { repoDir, log, events, audit: o.audit });
@@ -138,21 +160,7 @@ export function runGate(o) {
       log(`\n▶ ${prefix}${s.label}`);
       const t0 = Date.now();
       const res = asResult(runCommand(cwd, s.command));
-      const ms = Date.now() - t0;
-      if (res.errored) {
-        events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
-        log(
-          `\n✗ ${prefix}${s.label} could not run: ${s.command.join(" ")} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
-        );
-        return false;
-      }
-      if (res.code !== 0) {
-        events.push({ label: prefix + s.label, outcome: "failed", ms });
-        log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
-        return false;
-      }
-      events.push({ label: prefix + s.label, outcome: "ok", ms });
-      return true;
+      return settle(prefix + s.label, res, Date.now() - t0, s.command.join(" "));
     }
     if (s.rangeArg && prefix) return true; // the ratchet runs once, at the root
     const script = resolveScript(s);
@@ -175,21 +183,7 @@ export function runGate(o) {
     // trust is not handed on: told an empty one, a coverage script passed green over nothing.
     const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
     const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
-    const ms = Date.now() - t0;
-    if (res.errored) {
-      events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
-      log(
-        `\n✗ ${prefix}${s.label} could not run: npm run ${script} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
-      );
-      return false;
-    }
-    if (res.code !== 0) {
-      events.push({ label: prefix + s.label, outcome: "failed", ms });
-      log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
-      return false;
-    }
-    events.push({ label: prefix + s.label, outcome: "ok", ms });
-    return true;
+    return settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
   };
 
   // Which inputs changed is half the question; which workspaces can observe them is the other,

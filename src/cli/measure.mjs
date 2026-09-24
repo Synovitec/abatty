@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { buildReport } from "../core/report.mjs";
 import { renderMarkdown, truthLine } from "../core/gap-analysis.mjs";
 import { linkPreviousReadings } from "../core/readings.mjs";
-import { enforcedLine, nextSteps, phaseLine } from "./status.mjs";
+import { enforcedLine, familyTable, nextSteps, phaseLine } from "./status.mjs";
 import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
 
@@ -64,22 +64,7 @@ export async function measureCommand(cx) {
   const truth = truthLine(r).replace(/\*\*|`/g, "");
   if (truth) out(`  ${t.gray(truth)}\n`);
   out("\n");
-  out(
-    t.table(
-      [
-        ["family", "", "present", "partial", "missing", "n/a"],
-        ...r.families.map((f) => [
-          f.name,
-          t.stacked(f.present, f.partial, f.missing, 16),
-          String(f.present),
-          String(f.partial),
-          String(f.missing),
-          String(f.na),
-        ]),
-      ],
-      { align: ["l", "l", "r", "r", "r", "r"] },
-    ) + "\n",
-  );
+  out(familyTable(r.families, { na: true }) + "\n");
   out(
     `\n  ${t.gray(`${nextSteps(r, 999).length} next step(s) · report: `)}${rel}${t.gray(" · JSON: .abatty/reports/" + r.date + ".json")}\n\n`,
   );
