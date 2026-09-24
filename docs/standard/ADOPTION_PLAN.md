@@ -271,6 +271,18 @@ when the code has stopped moving. Docs and JSDoc are independent and run alongsi
   `PARALLEL_REFACTOR_PROTOCOL.md` of the repository named in `ADOPTION_STATUS.md`; its finding
   that the agent count is not the binding constraint (the integrator is) transfers, and
   `isolation: worktree` on the subagent is the enforced form of a disjoint territory.
+- **Independent branches, not stacked pull requests**, where the base requires a branch to be
+  up to date before it merges. Each merge below a stack forces a rebase of every branch above it,
+  each rebase reruns the gate and needs a force push the guard refuses; an adopter spent a day on
+  that. Branch each step from the base, and let the one that depends on another wait for it.
+- **A repository-wide format change moves every text-based reading.** Formatting the whole tree
+  shifts the line a clone, a citation or a finding sits on, and wraps lists a reader then has to
+  follow. Land it alone, in its own commit, with the ratchet re-read and the floor recorded in
+  that commit, so the next real change is not charged for it.
+- **The burn-down cycle is: fix, watch the number fall, lock it.** A number that fell reads as a
+  floor left unlocked until `abatty baseline` records it, in the same commit as the fix, which is
+  the only moment anyone knows why it moved. A number that must rise is a decision with a reason
+  and an owner, recorded where the floor is, and never taken at night.
 
 ### B.4 What not to do, learned
 

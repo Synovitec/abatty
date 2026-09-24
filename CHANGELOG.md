@@ -130,6 +130,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The standard says what the size budgets are not, and the plan carries three adopters' lessons.**
+  CODE.1 now says its budgets are readability budgets and a floor that may only fall, not a defect
+  predictor: no study validates the exact numbers. The adoption plan adds independent branches
+  over stacked pull requests where the base requires an up-to-date branch, landing a repository-
+  wide format change alone with its floor recorded, and the burn-down cycle (fix, watch the
+  number fall, lock it in the same commit).
 - **The package's own release path holds no secret, and its checks say when they break.** With no
   runtime dependency, a compromised release is the one way this package could hurt an adopter,
   since it runs inside their hooks. Publishing moves to trusted publishing: the registry names

@@ -259,7 +259,12 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
   for anything.** Budgets are in code lines (blank and comment lines excluded), with a
   raw-line budget at 1.5x so a file is not charged for the JSDoc CODE.7 requires. **About
   300 lines is the real threshold**: beyond it an agent stops reading the whole file
-  reliably and works from fragments; at 500 a file has more than one responsibility.
+  reliably and works from fragments; at 500 a file has more than one responsibility. These
+  are readability budgets and a floor that may only fall, not a defect predictor: no study
+  validates the exact numbers, and the structural metrics' defect signal travels largely
+  through size. Sell them as "an agent and a reviewer can hold this file", never as "this
+  file has fewer bugs", and do not drive one to zero by splitting along syntax rather than
+  meaning (CODE.5).
 
   | Kind                                                       | Target  | Hard max              |
   | ---------------------------------------------------------- | ------- | --------------------- |
