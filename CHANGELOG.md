@@ -25,6 +25,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **The road to 1.0 is a written decision** (`docs/decisions/0002-the-road-to-1-0.md`):
+  - a weekly release candidate that the adopting repositories replay;
+  - a scope freeze on new surfaces until 1.0;
+  - a 1.0 that covers the `node` and `next` presets, with `astro`, `python` and `docs`
+    experimental;
+  - the evidence that decides when the promise is made: the contract unchanged across two
+    minors, two clean replays, and every check out of probation or declared optional.
 - **A red test step says whose failure it is.** An adopter's pushes were refused four times in a
   day, none caused by the pushed change. A test that failed on timing read exactly like one the
   push broke, and telling them apart meant reading the whole log.
