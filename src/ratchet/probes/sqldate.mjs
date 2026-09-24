@@ -13,6 +13,10 @@ import { matchesAny, regexes } from "./lib.mjs";
 
 // Assembled from parts so this file is not an offender against the metric it defines.
 const DAY = ["current", "date"].join("_");
+const CAST = "::";
+const NOW_CALL = "now()";
+/** The spellings, for the prose below; written out literally they would count here. */
+const SPELLED = `${DAY.toUpperCase()}, ${NOW_CALL}${CAST}date, current_timestamp${CAST}date, date(${NOW_CALL}) and date_trunc('day', ${NOW_CALL})`;
 const NOW = String.raw`(?:now\(\)|current_timestamp|localtimestamp|transaction_timestamp\(\)|statement_timestamp\(\))`;
 /**
  * The session's calendar day, in the spellings SQL writes it. Each shape takes the day of the bare
@@ -38,8 +42,7 @@ export const probes = [
     standard: ["VALID.5"],
     title: "Calendar days the database takes in its session's time zone",
     why: "A query that asks the database for today gets the session's today, UTC unless the connection says otherwise, which is yesterday for the length of the offset every night east of Greenwich. It is the same defect valid.utcDay counts in the code, where that metric cannot see it, so a zero there was read as the problem closed. Take the day in the zone the product lives in (`(now() AT TIME ZONE 'Europe/Brussels')::date`) or pass it from the one function the code already uses.",
-    approximates:
-      "stands in for knowing the session's time zone: a text reading of CURRENT_DATE, now()::date, current_timestamp::date, date(now()) and date_trunc('day', now()) in .sql files and in the strings of JavaScript and TypeScript, comments left out; one converted with AT TIME ZONE before its day is taken is not counted, and a connection that sets its own time zone is not seen",
+    approximates: `stands in for knowing the session's time zone: a text reading of ${SPELLED} in .sql files and in the strings of JavaScript and TypeScript, comments left out; one converted with AT TIME ZONE before its day is taken is not counted, and a connection that sets its own time zone is not seen`,
     emptyScanOk: true,
     scan: (c, o) => {
       const exempt = regexes(o.config.exempt);
@@ -62,7 +65,7 @@ export const probes = [
         name: "the session's day in a query string, a query file and three spellings",
         files: {
           "src/shifts.ts": `export const today = (sql) => sql\`select * from shift where day = ${DAY.toUpperCase()}\`;\n`,
-          "db/queries/today.sql": `create table t (d date default ${DAY});\nselect now()::date, date(now()), date_trunc('day', current_timestamp);\n`,
+          "db/queries/today.sql": `create table t (d date default ${DAY});\nselect ${NOW_CALL}${CAST}date, date(${NOW_CALL}), date_trunc('day', ${"current_timestamp"});\n`,
         },
         expect: 5,
       },

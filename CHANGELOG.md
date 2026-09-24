@@ -48,6 +48,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **No probe counts its own source, and every shipped probe is held to it.** A probe reads the
+  tree it ships in, so its pattern, its prose and its control fixtures were findings against
+  itself: `sec.weakRandom` failed this repository's ratchet on its own controls, and
+  `valid.sqlCurrentDate`, opt-in and not enabled here, counted eight lines of its own file unseen.
+  Older probes did the same: 4 of this repository's 7 type escapes and 3 of its 7 raw environment
+  reads were the probes' own text, so its numbers overstated its debt. The spellings are now
+  assembled from parts, and a test runs every built-in probe, enabled or not, over this tree,
+  untracked files included, and fails on any finding in the file that defines it.
 - **`test.coverageExclusions` reads Node's own ignore comments.** The probe knew istanbul, c8 and
   v8 spellings only, so a `node --test` suite could take code out of its coverage with
   `/* node:coverage ignore next */` or a `disable` region and no count saw it: a practice read

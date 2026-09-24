@@ -1,7 +1,7 @@
 {
   "measuredAt": "2026-09-24",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
-  "score": 93,
+  "score": 94,
   "hard": [
     "change.changelogMissing",
     "change.coupledMissing",
@@ -46,8 +46,8 @@
     "size.overBudget": 0,
     "size.overRaw": 0,
     "startup.eagerModules": 3,
-    "types.escapes": 7,
-    "valid.rawEnv": 7,
+    "types.escapes": 3,
+    "valid.rawEnv": 4,
     "valid.utcDay": 0,
     "valid.wholeEnv": 6
   },
@@ -94,11 +94,9 @@
       "src/ui/term.mjs": 1
     },
     "types.escapes": {
-      "src/ratchet/probes/code.mjs": 4,
       "src/rules/families/types.mjs": 3
     },
     "valid.rawEnv": {
-      "src/ratchet/probes/code.mjs": 3,
       "src/rules/families/tests.mjs": 1,
       "src/ui/term.mjs": 3
     },
