@@ -129,5 +129,9 @@ test("the diff is measured against the base on origin when there is no local one
   git(dir, "update-ref", "refs/remotes/origin/develop", "main");
   assert.equal(changedLineCount(dir, "develop", "adopt/standards-2026-01-03"), 2);
   assert.equal(changedLineCount(dir, "nowhere", "adopt/standards-2026-01-03"), -1);
-  assert.equal(changedLineCount(dir, "main", "no-such-branch"), -1, "a diff git refuses is not an empty one");
+  assert.equal(
+    changedLineCount(dir, "main", "no-such-branch"),
+    -1,
+    "a diff git refuses is not an empty one",
+  );
 });
