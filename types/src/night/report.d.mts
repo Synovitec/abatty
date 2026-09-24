@@ -40,7 +40,7 @@ export type DenialFact = {
     reason: string;
 };
 export type Lesson = {
-    kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary";
+    kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary" | "tamper";
     title: string;
     lesson: string;
     check: string;
@@ -60,6 +60,7 @@ export type NightReport = {
     phases: any[];
     decisions: Record<string, number>;
     commits: string[];
+    tamper: string[];
     canary: {
         ok: boolean | null;
         findings: string[];

@@ -280,10 +280,12 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 A new or heuristic probe ships **on probation**: it is measured and its findings are listed under
 a yellow `PROBATION`, and a verdict that would fail says which one it would have been, but the run
 stays green. A blocking check lives on its false positives, so a probe leaves probation only once
-a named repository has run it clean, the rule the presets follow. Two run everywhere on
-probation: `docs.frontMatterSyntax`, front matter a YAML reader refuses, and `docs.danglingRefs`,
-a name a document cites in backticks that the code had when the document last changed and has
-nowhere now. The opt-in probes above added in the same release are on probation too.
+a named repository has run it clean, the rule the presets follow. Three run everywhere on
+probation: `docs.frontMatterSyntax`, front matter a YAML reader refuses; `docs.danglingRefs`, a
+name a document cites in backticks that the code had when the document last changed and has
+nowhere now; and `change.testTamper`, a commit in the push that made its tests easier to pass (a
+case removed or skipped, a snapshot rewritten with no `tests-changed:` line, a checker silenced,
+a threshold lowered), which `abatty night-report` also lists for every commit of a night. The opt-in probes above added in the same release are on probation too.
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

@@ -7,6 +7,18 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`change.testTamper`, on probation, flags a commit that made its tests easier to pass.** An
+  agent that cannot make a test pass has cheaper ways out than the fix, and most measured
+  cheating was done to the tests. `change.refactorTests` reads refactors only. This probe reads
+  every commit in the push and names each way out:
+  - a test case removed (one moved to another file in the same commit is not);
+  - a case skipped or focused;
+  - a snapshot rewritten with no `tests-changed:` line;
+  - a checker suppression added;
+  - a coverage or quality threshold lowered.
+
+  `abatty night-report` lists the same for every commit of a night, under "Tests and checks the
+  night changed", and proposes a lesson when there is any. Probation means shown, never failing.
 - **`abatty mutate` asks whether your tests would notice the lines this change wrote.** A green
   suite says the tests passed, not that they hold the new code. For each changed line of shipped
   code, the command makes one small change in the code itself, never in a string or a comment: a

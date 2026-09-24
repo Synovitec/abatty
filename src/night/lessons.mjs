@@ -183,6 +183,18 @@ export function distil(f) {
       count: f.direction.length,
     });
 
+  // The tests the night was judged by, changed by the night.
+  if (f.tamper.length)
+    add({
+      kind: "tamper",
+      title: `${f.tamper.length} change(s) to the tests or checks the night was judged by`,
+      lesson:
+        "the night made its tests easier to pass (a case removed or skipped, a snapshot rewritten, a checker silenced, a threshold lowered); read each before the merge, and put back what was not a deliberate change",
+      check: "change.testTamper over the night branch; a tests-changed: line for a deliberate one",
+      evidence: f.tamper.slice(0, 6),
+      count: f.tamper.length,
+    });
+
   // The canary.
   if (f.canary.ok === false)
     add({

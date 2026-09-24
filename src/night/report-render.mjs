@@ -66,6 +66,12 @@ export function renderNightReport(r) {
       ? r.denials.map((x) => `- ${x.at.slice(11, 19)} ${x.tool}: \`${x.what.slice(0, 120)}\``)
       : ["- no denial"]),
     "",
+    "## Tests and checks the night changed",
+    "",
+    ...(r.tamper.length
+      ? r.tamper.map((x) => `- ${x}`)
+      : ["- none: no case removed or skipped, no snapshot, suppression or threshold moved"]),
+    "",
     "## Phases and decisions",
     "",
     ...(r.phases.length
