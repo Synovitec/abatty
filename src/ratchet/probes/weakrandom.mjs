@@ -12,9 +12,53 @@ import { shippedScripts } from "./lib.mjs";
 const RND = ["Math", "random()"].join(".");
 const RANDOM = /\bMath\.random\s*\(/g;
 const NAME = /[A-Za-z_$][\w$]*/g;
-/** A name that says a secret is being made: a password, a token, a one-time code. */
-const SECRET =
-  /password|passwd|passcode|pwd|secret|token|otp|nonce|salt|credential|api_?key|(?:verification|reset|invite|invitation|auth|confirmation|activation|recovery|onetime|one_time|access|pin)_?code|^pin$/i;
+/** A word that says a secret is being made. */
+const SECRET_WORDS = new Set([
+  "password",
+  "passwd",
+  "passcode",
+  "pwd",
+  "secret",
+  "token",
+  "otp",
+  "nonce",
+  "salt",
+  "credential",
+  "apikey",
+]);
+/** A word that makes the next one a secret: a reset code, an API key, a one-time code. */
+const BEFORE_CODE = new Set([
+  "verification",
+  "reset",
+  "invite",
+  "invitation",
+  "auth",
+  "confirmation",
+  "activation",
+  "recovery",
+  "access",
+  "pin",
+  "time",
+]);
+
+/**
+ * Whether a name says a secret, read by its words and not its letters: `plotPoints` holds "otP"
+ * and no word "otp", and an adopter's shuffle was one rename from being read as a one-time code.
+ * @param {string} name
+ */
+function namesSecret(name) {
+  const words = name
+    .split(/[_$]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/)
+    .map((w) => w.toLowerCase().replace(/s$/, ""))
+    .filter(Boolean);
+  return words.some(
+    (w, i) =>
+      SECRET_WORDS.has(w) ||
+      (w === "key" && words[i - 1] === "api") ||
+      (w === "code" && BEFORE_CODE.has(words[i - 1] || "")) ||
+      (w === "pin" && words.length === 1),
+  );
+}
 /** The nearest declaration above: a named function, a method, or a function bound to a name. */
 const DECLARATION =
   /(?:function\s*\*?\s*([\w$]+)|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s*)?(?:function\b|\([^()]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>)|^\s*(?:async\s+)?([\w$]+)\s*\([^()]*\)\s*\{)/gm;
@@ -65,12 +109,16 @@ export const probes = [
       const files = shippedScripts(c, o);
       const findings = [];
       for (const f of files) {
-        const code = codeOnly(c.read(f), { strings: "keep" });
+        const raw = c.read(f);
+        const code = codeOnly(raw, { strings: "keep" });
+        // The names on the line are read with the strings blanked: `password-input-${…}` is a
+        // DOM id's text, not a name that says what the random value is for.
+        const bare = codeOnly(raw);
         for (const m of code.matchAll(RANDOM)) {
           const at = m.index ?? 0;
-          const line = code.slice(code.lastIndexOf("\n", at) + 1, code.indexOf("\n", at) >>> 0);
+          const line = bare.slice(bare.lastIndexOf("\n", at) + 1, bare.indexOf("\n", at) >>> 0);
           const names = [...(line.match(NAME) || []), enclosingName(code, at)];
-          const secret = names.find((n) => n && n !== "Math" && SECRET.test(n));
+          const secret = names.find((n) => n && n !== "Math" && namesSecret(n));
           if (secret)
             findings.push({
               path: f,
@@ -111,6 +159,14 @@ export const probes = [
             "export const messageId = `${Date.now()}-${" + RND + ".toString(36).slice(2)}`;",
             "export const options = { clientId: `web-${" + RND + ".toString(36).slice(2, 7)}` };",
             "// never " + RND + " for a password",
+            "",
+          ].join("\n"),
+          // A DOM id's text and a name whose letters, not words, spell a secret.
+          "src/form.ts": [
+            "export const inputId = `password-input-${" + RND + ".toString(36).slice(2)}`;",
+            "export function plotPoints(n) {",
+            "  return Array.from({ length: n }, () => " + RND + ");",
+            "}",
             "",
           ].join("\n"),
           "src/__tests__/factory/users.ts":

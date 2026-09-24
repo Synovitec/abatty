@@ -29,7 +29,8 @@ under Unreleased in the same commit.
   so the user saw a saved form. `obs.catchOnlyLogs` counts a `catch` block or a `.catch()`
   handler whose every statement is a `console.*` call; `sec.weakRandom` counts a `Math.random`
   call when a name on its line, or the function around it, says password, token, secret, salt,
-  nonce, credential, API key or a one-time code, so an id or a shuffle is left alone. Both read
+  nonce, credential, API key or a one-time code, read by its words and outside strings, so an id,
+  a shuffle, a DOM id's text or `plotPoints` is left alone. Both read
   JavaScript and TypeScript outside test folders at any depth, and `init` enables them on every
   preset. SEC.1 and OBS.1 in the standard say what each one holds.
 - **`measure` names each new reading in the one before it, and `docs.supersededChain` counts a
