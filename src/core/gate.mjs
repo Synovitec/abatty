@@ -296,11 +296,17 @@ export function runGate(o) {
 }
 
 /**
- * The always-on scripts the preset expects that package.json does not have (for doctor).
+ * The always-on scripts the preset expects that package.json does not have (for doctor). A step
+ * the gate runs under one of its alternative names is present: doctor called `coverage:changed`
+ * absent in a repository whose `test:changed` the gate was running.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
 export function missingGateScripts(repoDir, preset) {
   return preset.gate.always
-    .map((s) => s.script)
-    .filter((s) => typeof s === "string" && !hasScript(repoDir, s));
+    .filter(
+      (s) =>
+        typeof s.script === "string" &&
+        ![s.script, ...(s.alternatives || [])].some((a) => hasScript(repoDir, a)),
+    )
+    .map((s) => String(s.script));
 }

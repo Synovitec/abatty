@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { git, tempRepo } from "./helpers.mjs";
-import { runGate } from "../src/core/gate.mjs";
+import { missingGateScripts, runGate } from "../src/core/gate.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
 import { presetById } from "../src/presets/index.mjs";
 
@@ -103,4 +103,13 @@ test("the controls leave the index as they found it, the intent-to-add marks inc
     .join("\n");
   assert.equal(after, before);
   assert.doesNotMatch(git(dir, "ls-files"), /abatty-control/);
+});
+
+test("doctor does not call the changed-lines step absent when the gate runs it by its other name", () => {
+  const dir = repo("changed-alt-name", { "test:changed": "vitest --changed" });
+  assert.equal(missingGateScripts(dir, node).includes("coverage:changed"), false);
+  assert.equal(
+    missingGateScripts(repo("changed-none", {}), node).includes("coverage:changed"),
+    true,
+  );
 });

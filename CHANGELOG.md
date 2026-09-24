@@ -113,6 +113,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Doctor no longer calls a gate step's script absent when the gate runs it under its other
+  name.** A repository with `test:changed` was told `coverage:changed` was missing, while the gate
+  was running `test:changed` for that very step.
 - **A reformat or a reworded comment no longer makes a document behind.** `docs.behindCode` read
   any commit to a cited file as a move, so a formatting pass or a comment edit flagged every
   document that cited the file, and the only way out was a re-read that found nothing. A commit
