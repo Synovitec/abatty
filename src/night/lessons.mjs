@@ -6,6 +6,52 @@
  */
 
 /**
+ * The decisions that record an incident (the worker hit something the harness should have held)
+ * and what each proposes: a rule, a probe, a context line or a config value. The decisions that
+ * record an ordinary default (a dependency deferred, the gate deferred for the network) are not
+ * incidents and propose nothing.
+ * @type {Record<string, { artifact: string, proposal: string, check: string }>}
+ */
+const INCIDENT = {
+  "behaviour-risk": {
+    artifact: "a test",
+    proposal:
+      "a refactor was undone because no test held the behaviour it would change; the test that would have made it safe is the next thing to write, before the phase runs again",
+    check: "a test on the behaviour named in the entry; change.refactorTests then holds it",
+  },
+  "seam-unclear": {
+    artifact: "a context line",
+    proposal:
+      "the worker could not see what the file is for; one line in the boundary map (context file §3) naming the module's responsibility gives the next session the seam",
+    check: "the boundary map in the context file",
+  },
+  "harness-change": {
+    artifact: "a config value",
+    proposal:
+      "the worker needed the harness or the config to change; apply it by day if it is right, and put the value in the config template so the next repository starts with it",
+    check: "abatty.config.json, and the template init writes",
+  },
+  "sensitive-path": {
+    artifact: "a protected path",
+    proposal:
+      "the worker met something that looked like a secret; if it is one, name it in protectedPaths and the secret scan's patterns, so the guard refuses it rather than the worker's judgement",
+    check: "protectedPaths in the config; the secret scan",
+  },
+  "doc-left-stale": {
+    artifact: "a rule",
+    proposal:
+      "a document was left behind the code it cites because it was too large to re-read in a step; split it by what each part is for, so docs.behindCode points at a part a session can re-read",
+    check: "docs.behindCode on the document named",
+  },
+  "step-restored": {
+    artifact: "a context line",
+    proposal:
+      "a half-done step was found and restored; the step was larger than what a session finishes, and the phase's entry in the plan should split it",
+    check: "the plan's phase entry",
+  },
+};
+
+/**
  * @typedef {import("./report.mjs").NightReport} NightReport
  * @typedef {import("./report.mjs").Lesson} Lesson
  * @typedef {import("./report.mjs").BlockFact} BlockFact
@@ -168,6 +214,22 @@ export function distil(f) {
       check: "the decision table (context file §9); the decisions file is the evidence",
       evidence: [`${n} bullets in the decisions file`],
       count: n,
+    });
+  }
+
+  // Every decision of a failure kind taken tonight, one proposal each: "each line in that file is
+  // based on a bad agent behaviour", so each is a check the harness did not have yet. A recurring
+  // code is proposed above as well; an entry proposes what would have caught this one.
+  for (const e of f.decisionEntries || []) {
+    const turn = INCIDENT[e.code];
+    if (!turn) continue;
+    add({
+      kind: "decision",
+      title: `${e.code} on ${e.date}: propose ${turn.artifact}`,
+      lesson: turn.proposal,
+      check: turn.check,
+      evidence: [e.text.slice(0, 240)],
+      count: 1,
     });
   }
 

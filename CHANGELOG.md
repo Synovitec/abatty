@@ -7,6 +7,19 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Each incident a night records becomes a proposal the morning can act on.** `abatty
+  night-report` used to propose a lesson only when a decision code recurred, and cited a count.
+  Now each of tonight's `ADOPTION_DECISIONS.md` entries of an incident kind proposes what would
+  have caught it, and quotes the entry:
+  - `behaviour-risk` proposes a test;
+  - `seam-unclear` proposes a boundary-map line;
+  - `harness-change` proposes a config value;
+  - `sensitive-path` proposes a protected path;
+  - `doc-left-stale` proposes a split document;
+  - `step-restored` proposes a smaller phase step.
+
+  Ordinary defaults (a dependency deferred, the gate deferred) propose nothing. Earlier nights'
+  entries are left to their own mornings.
 - **By day, the guard asks before a migration and names the database it would reach.** Nothing
   stood between a migration and a shared database by day. An adopter applied an unmerged
   branch's migration to a shared database from a shell whose `DATABASE_URL` nobody had looked

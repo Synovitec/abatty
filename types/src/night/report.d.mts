@@ -39,6 +39,11 @@ export type DenialFact = {
     what: string;
     reason: string;
 };
+export type DecisionEntry = {
+    date: string;
+    code: string;
+    text: string;
+};
 export type Lesson = {
     kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary" | "tamper";
     title: string;
@@ -59,6 +64,7 @@ export type NightReport = {
     direction: string[];
     phases: any[];
     decisions: Record<string, number>;
+    decisionEntries: DecisionEntry[];
     commits: string[];
     tamper: string[];
     canary: {

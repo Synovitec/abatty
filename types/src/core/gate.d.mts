@@ -18,10 +18,12 @@ export function runGate(o: GateOptions): {
     errored: boolean;
 };
 /**
- * The always-on scripts the preset expects that package.json does not have (for doctor).
+ * The always-on scripts the preset expects that package.json does not have (for doctor). A step
+ * the gate runs under one of its alternative names is present: doctor called `coverage:changed`
+ * absent in a repository whose `test:changed` the gate was running.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
-export function missingGateScripts(repoDir: string, preset: import("../presets/index.mjs").Preset): (string | undefined)[];
+export function missingGateScripts(repoDir: string, preset: import("../presets/index.mjs").Preset): string[];
 export type GateOutcome = "ok" | "failed" | "errored" | "skipped" | "deferred";
 export type GateEvent = {
     label: string;
