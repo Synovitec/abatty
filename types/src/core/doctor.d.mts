@@ -42,6 +42,11 @@ export function doctor(o: {
     missing: DriftEvent[];
     differs: DriftEvent[];
     missingScripts: string[];
+    permissions: {
+        removedDenies: string[];
+        addedAllows: string[];
+        readable: string[];
+    };
     installed: string | null;
     pinned: string | null;
     packageVersion: string;

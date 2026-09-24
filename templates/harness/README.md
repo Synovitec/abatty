@@ -48,6 +48,13 @@ the guard holds is the agent's shell on this machine; the policy on the branch i
 branch protection or nobody's, and `abatty doctor` says so on every run rather than letting a
 regex pass for a policy (`abatty ci --ruleset` prints the rules to import).
 
+**The env files stay unreadable by a wildcard, not a list.** `settings.json` denies
+`Read(./.env)` and `Read(./.env.*)`. A deny beats an allow, so an allow for `.env.example`
+cannot punch through; narrowing the wildcard to named files to make room for it leaves
+`.env.staging`, `.env.prod` and every backup readable. Name the example file `env.example` (or
+`example.env`), which the wildcard does not match. `abatty doctor` fails on an env file the
+settings no longer refuse, and names any deny rule dropped or allow rule added.
+
 **A migration by day is asked about.** Before `prisma migrate deploy`, `drizzle-kit push`, a
 `db:migrate` script and their kin, the guard asks, naming the database host the command would
 reach: the `DATABASE_URL` on the command, else the shell's, else `.env.local` or `.env`. It

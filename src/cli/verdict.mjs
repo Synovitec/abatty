@@ -183,6 +183,17 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(" · abatty hooks stages the mode (git update-index --chmod=+x); then commit")}\n`,
     );
+  const perm = r.permissions;
+  if (perm.readable.length)
+    out(
+      `  ${t.glyph.fail} ${t.red(`the agent may read ${perm.readable.join(", ")}: the settings no longer deny them`)}${t.gray(" · deny ./.env and ./.env.*; name the example file env.example so no allow has to punch through")}\n`,
+    );
+  if (perm.removedDenies.length)
+    out(
+      `  ${t.glyph.warn} deny rule(s) the template ships and the settings dropped: ${perm.removedDenies.join(", ")}\n`,
+    );
+  if (perm.addedAllows.length)
+    out(`  ${t.glyph.warn} allow rule(s) the settings added: ${perm.addedAllows.join(", ")}\n`);
   if (r.missingScripts.length)
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,

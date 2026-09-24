@@ -126,6 +126,16 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A narrowed secret-read deny is caught, by what it matches rather than by its words.** An
+  adopter narrowed the template's `Read(./.env.*)` to eight named files so an allow for
+  `.env.example` could work. Every daytime check stayed green while `.env.staging`, `.env.prod`
+  and any backup became readable by the agent.
+  - `SEC-AGENT-PERMISSIONS` now plants those names and asks whether the deny rules refuse each
+    one. It is partial, and names the readable files, when any is not refused.
+  - `abatty doctor` fails on an env file the settings no longer refuse. It names any deny rule
+    the template ships that the settings dropped, and any allow rule they added, instead of
+    reporting generic drift.
+  - The harness README recommends `env.example`, which the wildcard does not match.
 - **Doctor no longer calls a gate step's script absent when the gate runs it under its other
   name.** A repository with `test:changed` was told `coverage:changed` was missing, while the gate
   was running `test:changed` for that very step.

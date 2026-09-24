@@ -17,6 +17,7 @@ import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 import { hookModes } from "./hook-modes.mjs";
 import { gitHooks, hooksNotExecutable } from "./git-hooks.mjs";
 import { managerFor } from "./package-manager.mjs";
+import { loosenedRules, unrefusedSecrets } from "./secret-reads.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -88,6 +89,27 @@ export function drift(repoDir) {
   return [...templates, ...hooks];
 }
 
+/**
+ * What the settings file changed in the permission surface against the template, named: a
+ * settings file that differs was reported as drift, and a secret-read deny narrowed to a list of
+ * files read the same as a reformatted one. An env file the settings no longer refuse fails doctor.
+ * @param {string} repoDir
+ * @returns {{ removedDenies: string[], addedAllows: string[], readable: string[] }}
+ */
+function permissionChanges(repoDir) {
+  const read = (/** @type {string} */ p) => {
+    try {
+      return JSON.parse(readFileSync(p, "utf8"));
+    } catch {
+      return null;
+    }
+  };
+  const installed = read(join(repoDir, ".claude/settings.json"));
+  if (!installed) return { removedDenies: [], addedAllows: [], readable: [] };
+  const shipped = read(join(TEMPLATES, "harness/settings.project.json"));
+  return { ...loosenedRules(shipped, installed), readable: unrefusedSecrets(installed) };
+}
+
 /** @param {string} repoDir @param {string} tpl @param {string} rel @returns {DriftEvent["state"]} */
 function driftState(repoDir, tpl, rel) {
   {
@@ -121,6 +143,7 @@ export function doctor(o) {
   const missing = d.filter((x) => x.state === "missing");
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
+  const permissions = permissionChanges(repoDir);
   const problems = configProblems(repoDir);
   // What each hook does here, day and night; one that does nothing it seems to fails --strict.
   const hooks = hookModes(repoDir);
@@ -131,6 +154,7 @@ export function doctor(o) {
     missing.length === 0 &&
     notExecutable.length === 0 &&
     problems.length === 0 &&
+    permissions.readable.length === 0 &&
     (!controls || controls.absent.length === 0) &&
     (!o.strict || (differs.length === 0 && hooks.every((h) => !h.warn)));
   const lock = readLock(repoDir);
@@ -141,6 +165,7 @@ export function doctor(o) {
     missing,
     differs,
     missingScripts: scripts,
+    permissions,
     installed: lock?.abatty || null,
     pinned:
       typeof readAdoption(repoDir)?.abatty === "string"
