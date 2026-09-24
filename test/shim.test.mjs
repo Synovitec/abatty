@@ -152,6 +152,16 @@ test("the shim refuses pointing the hooks away, by argument or by environment, a
   );
   assert.equal(away(["config", "--get", HOOKS]), null);
   assert.equal(away(["config", HOOKS]), null);
+  // Pointing the key AT the hooks installs them: the exact call `abatty hooks` makes through
+  // this shim, and husky's. Refused, the install command failed as "not a git repository".
+  assert.equal(away(["config", HOOKS, ".githooks"]), null);
+  assert.equal(away(["config", "--local", HOOKS, ".husky/_"]), null);
+  assert.equal(away(["-c", `${HOOKS}=.githooks`, "commit", "-m", "x"]), null);
+  assert.equal(
+    away(["commit"], { GIT_CONFIG_KEY_0: HOOKS, GIT_CONFIG_VALUE_0: ".githooks" }),
+    null,
+  );
+  assert.equal(away(["config", HOOKS, "/tmp/none"]), "hooks-path");
   assert.equal(
     away(["-c", "user.name=A", "commit", "-m", HOOKS]),
     null,

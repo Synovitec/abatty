@@ -54,8 +54,9 @@ const OFF = [
   `git -c ${HP}=/dev/null commit -m x`,
   `git -c ${HP}=/dev/null push origin dev`,
   `git config ${HP} /dev/null`,
-  `git config --local ${HP} .githooks`,
+  `git config --local ${HP} .git/hooks-off`,
   `git config --unset ${HP}`,
+  `sh -c "git config ${HP} /tmp/none"`,
   `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=${HP} GIT_CONFIG_VALUE_0=/dev/null git commit -m x`,
   `export GIT_CONFIG_KEY_0=${HP}`,
   `sh -c "git -c ${HP}=/dev/null commit -m x"`,
@@ -63,6 +64,14 @@ const OFF = [
 const KEPT = [
   `git config --get ${HP}`,
   `git config ${HP}`,
+  // Pointing the key AT the hooks installs them: what `abatty hooks` and husky run, and what the
+  // shipped settings pre-approve. The first rule refused these, and so its own install command.
+  `git config ${HP} .githooks`,
+  `git config --local ${HP} .husky/_`,
+  `git -c ${HP}=.githooks commit -m x`,
+  // Opaque segments the first rule over-read: a read inside a substitution, and bash's own -c.
+  `CURRENT=$(git config ${HP})`,
+  `bash -c "grep ${HP} README.md"`,
   `rg "GIT_CONFIG_KEY_0=${HP}" docs/`,
   `grep -n ${HP} README.md`,
   // An opaque segment that names the key without a way to set it: the guard refused its own

@@ -268,6 +268,7 @@ try {
   cases.push(["core.hooksPath unset for good is refused", bash(`git config --unset ${hooksKey}`), {}, "deny"]);
   cases.push(["core.hooksPath through the environment is refused", bash(`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=${hooksKey} GIT_CONFIG_VALUE_0=/dev/null git commit -m x`), {}, "deny"]);
   cases.push(["reading core.hooksPath is allowed", bash(`git config --get ${hooksKey}`), {}, "none"]);
+  cases.push(["pointing core.hooksPath at the hooks installs them and is allowed", bash(`git config ${hooksKey} .githooks`), {}, "none"]);
   cases.push(["editing a line that names core.hooksPath is not setting it", bash(`sed -i s/a/b/ docs/${hooksKey}.md`), {}, "none"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
   // The short form and its cluster, the same defect the bypass check carried: `-fu` is a force

@@ -52,13 +52,15 @@ under Unreleased in the same commit.
   and the bypass flag in every shell the guard never sees; it now refuses `core.hooksPath` pointed
   elsewhere or unset in the same shells, by argument (`-c`, `--config-env`, a `git config` write)
   or by the environment it is called in, which it reads directly rather than from the command's
-  text. Reading the key, and a message that names it, pass.
+  text. Reading the key, a message that names it, and pointing it at a hooks folder (`.githooks`,
+  `.husky`, `.husky/_`), which is how `abatty hooks` and husky install them, pass.
 - **The guard refuses switching the hooks off by configuration.** Git runs its hooks from
   `core.hooksPath`, so pointing it elsewhere or unsetting it skips the gate exactly as the bypass
   flag does, and an adopter replayed five such spellings against the last release: every one
-  passed, from the base branch too. The guard now refuses `git -c core.hooksPath=…`, a `git config`
-  that sets, unsets, adds or replaces the key, and `GIT_CONFIG_KEY_n` or `GIT_CONFIG_PARAMETERS`
-  naming it; reading the setting, and a search or an edit that only mentions it, stay allowed.
+  passed, from the base branch too. The guard now refuses the key unset, or set by `git -c`,
+  `git config` or a wrapper's text to anything but a hooks folder, and `GIT_CONFIG_KEY_n` or
+  `GIT_CONFIG_PARAMETERS` naming it; reading the setting, pointing it at `.githooks`, `.husky` or
+  `.husky/_` (the install), and a search or an edit that only mentions it stay allowed.
   At night, `.githooks/` and `.husky/` are harness, so a shell delete or edit of a hook is
   refused as a write to `.claude/` is. The self-test proves the new family on every machine.
 - **No probe counts its own source, and every shipped probe is held to it.** A probe reads the

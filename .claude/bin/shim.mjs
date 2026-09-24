@@ -28,6 +28,12 @@ export const SHIM_REFUSALS = {
 };
 
 const HOOKS_KEY = /^core\.hookspath\b/i;
+/**
+ * A folder that holds the hooks. Setting the key to one installs them: `abatty hooks` runs
+ * `git config core.hooksPath .githooks` through this very shim, and a rule that refused every
+ * write refused the command its own message sent people to.
+ */
+const HOOKS_HOME = /^(\.\/)?(\.githooks|\.husky(\/_)?)\/?$/;
 
 /**
  * Whether this call points the hooks away, by its arguments or its environment: `-c` and
@@ -41,7 +47,8 @@ function pointsHooksAway(args, name, rest, env) {
   if (
     global.some(
       (a, i) =>
-        (/^(-c|--config-env)$/.test(global[i - 1] || "") && HOOKS_KEY.test(a)) ||
+        (global[i - 1] === "-c" && HOOKS_KEY.test(a) && !HOOKS_HOME.test(a.slice(a.indexOf("=") + 1))) ||
+        (global[i - 1] === "--config-env" && HOOKS_KEY.test(a)) ||
         /^--config-env=core\.hookspath/i.test(a),
     )
   )
@@ -49,12 +56,17 @@ function pointsHooksAway(args, name, rest, env) {
   if (name === "config") {
     const at = rest.findIndex((a) => HOOKS_KEY.test(a));
     const reads = rest.some((a) => /^(--get(-all|-regexp)?|--list|-l|get|list)$/.test(a));
-    const verb = rest.some((a) => /^(--unset(-all)?|--add|--replace-all|set|unset)$/.test(a));
-    if (at >= 0 && !reads && (verb || rest.length > at + 1)) return true;
+    if (at >= 0 && !reads) {
+      if (rest.some((a) => /^(--unset(-all)?|unset)$/.test(a))) return true;
+      const value = rest[at + 1];
+      if (value !== undefined && !value.startsWith("-") && !HOOKS_HOME.test(value)) return true;
+    }
   }
   return Object.entries(env).some(
     ([k, v]) =>
-      (/^GIT_CONFIG_KEY_\d+$/.test(k) && HOOKS_KEY.test(v || "")) ||
+      (/^GIT_CONFIG_KEY_\d+$/.test(k) &&
+        HOOKS_KEY.test(v || "") &&
+        !HOOKS_HOME.test(env[k.replace("KEY", "VALUE")] || "")) ||
       (k === "GIT_CONFIG_PARAMETERS" && /core\.hookspath/i.test(v || "")),
   );
 }

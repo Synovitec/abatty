@@ -142,9 +142,13 @@ if (bypass || hasFlag(new RegExp(String.raw`--no-verify\b|` + GIT + String.raw`c
 // The same bypass by its effect: git runs the hooks from `core.hooksPath`, so pointing it
 // elsewhere or unsetting it skips every hook exactly as the flag does, once (`git -c`, the
 // GIT_CONFIG_* environment) or for good (`git config`). An adopter replayed five such spellings
-// and all passed, from the base branch too. Reading the setting stays allowed; the hooks are put
-// back with the package's own command, which is not a git write.
+// and all passed, from the base branch too. Reading the setting stays allowed, and so does
+// pointing it AT the hooks: `abatty hooks` sets it to `.githooks`, husky to `.husky/_`, and a
+// first rule that refused every write refused the install command its own message named.
 const HOOKS_PATH = /^core\.hookspath\b/i;
+/** A folder that holds the hooks: setting the key to one installs them rather than skipping them. */
+const HOOKS_HOME = /^(\.\/)?(\.githooks|\.husky(\/_)?)\/?$/;
+const bareWord = (v) => String(v).replace(/^["']|["']$/g, "");
 // The environment spelling, as an assignment and not as text: a search for it stays a search.
 const CONFIG_ENV = /^GIT_CONFIG_(KEY_\d+=["']?core\.hookspath|PARAMETERS=.*core\.hookspath)/i;
 /** The `VAR=value` words that lead a segment: the environment its program runs in. */
@@ -157,27 +161,45 @@ const assignments = (tokens) => {
   return out;
 };
 const configRead = (a) => a.some((x) => /^(--get(-all|-regexp)?|--list|-l|get|list)$/.test(x));
-const configWrite = (a) => {
-  const at = a.findIndex((x) => HOOKS_PATH.test(x));
-  if (at < 0 || configRead(a)) return false;
-  // `git config core.hooksPath` alone reads it; a value after the key, or a verb, writes.
-  return a.length > at + 1 || a.some((x) => /^(--unset(-all)?|--add|--replace-all|set|unset)$/.test(x));
+/**
+ * Whether a list of words points the hooks away: `-c` directly followed by the key with a value
+ * that is not a hooks folder, `--config-env` naming it, or a `config` that unsets the key or sets
+ * it to anything but a hooks folder. The same reading serves a git call the guard understood and
+ * an opaque segment, where it is what keeps `bash -c "grep core.hooksPath …"` (bash's own `-c`)
+ * and `$(git config core.hooksPath)` (a read) from being refused.
+ */
+const pointsAway = (t) => {
+  for (let i = 0; i < t.length; i++) {
+    const x = bareWord(t[i]);
+    const next = bareWord(t[i + 1] || "");
+    if (x === "-c" && HOOKS_PATH.test(next) && !HOOKS_HOME.test(next.slice(next.indexOf("=") + 1))) return true;
+    if (/^--config-env(=core\.hookspath|$)/i.test(x) && (x.includes("=") || HOOKS_PATH.test(next))) return true;
+    if (x !== "config") continue;
+    const rest = t.slice(i + 1).map(bareWord);
+    const at = rest.findIndex((y) => HOOKS_PATH.test(y));
+    if (at < 0 || configRead(rest)) continue;
+    if (rest.some((y) => /^(--unset(-all)?|unset)$/.test(y))) return true;
+    // `git config core.hooksPath` alone reads it; the word after the key is the value it sets.
+    const value = rest[at + 1];
+    if (value !== undefined && !value.startsWith("-") && !HOOKS_HOME.test(value)) return true;
+  }
+  return false;
 };
+// A wrapper's quoted text (`sh -c "git config core.hooksPath /tmp"`) is one word to the segments,
+// so it is read by pattern, anchored on git as the other rules' patterns are, and judged by value.
+const HOME_AHEAD = String.raw`(?:\.\/)?(?:\.githooks|\.husky(?:\/_)?)\/?(?:\s|["']|\)|$)`;
+const HOOKS_TEXT = new RegExp(
+  [
+    String.raw`\bgit\b[^;&|]*\s-c\s+["']?core\.hookspath=(?!${HOME_AHEAD})`,
+    String.raw`\bgit\b[^;&|]*\sconfig\b[^;&|]*\s(?:--unset(?:-all)?|unset)\s+["']?core\.hookspath`,
+    String.raw`\bgit\b[^;&|]*\sconfig\b(?:\s+-[\w-]+)*\s+["']?core\.hookspath["']?\s+(?!-|["']?${HOME_AHEAD})\S`,
+  ].join("|"),
+  "i",
+);
 const hooksOff =
-  invocations("git").some(
-    (a) =>
-      a.some((x, i) => /^(-c|--config-env)$/.test(a[i - 1] || "") && HOOKS_PATH.test(x)) ||
-      a.some((x) => /^--config-env=core\.hookspath/i.test(x)) ||
-      (sub(a) === "config" && configWrite(a.slice(a.indexOf("config") + 1))),
-  ) ||
-  // An opaque segment names the key AND a way to set it, as the force rule asks for `push`: a
-  // `sed` editing a line that mentions the key is not git writing it.
-  maybeGit.some(
-    (t) =>
-      t.some((x) => /core\.hookspath/i.test(x)) &&
-      t.some((x) => /^(config|-c|--config-env(=.*)?)$/.test(x)) &&
-      !configRead(t),
-  ) ||
+  invocations("git").some(pointsAway) ||
+  maybeGit.some(pointsAway) ||
+  hasFlag(HOOKS_TEXT) ||
   segments.some(
     (s) =>
       assignments(s.tokens).some((x) => CONFIG_ENV.test(x)) ||
