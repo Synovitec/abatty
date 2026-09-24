@@ -202,3 +202,39 @@ test("a file moved since the base carries its floor, so the move loosens nothing
   writeFileSync(join(dir, REL), floor("src/b.ts"));
   assert.deepEqual(floorRises(dir, "main").loosened, []);
 });
+
+test("a range that switches direct pushes on cannot approve its own raise with a decision line", () => {
+  const dir = tempRepo("raises-flip", {
+    [REL]: JSON.stringify(BASE),
+    "abatty.config.json": JSON.stringify({ directPushToBase: false }),
+    "docs/ADOPTION_DECISIONS.md": "# Decisions\n",
+  });
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(join(dir, "abatty.config.json"), JSON.stringify({ directPushToBase: true }));
+  writeFileSync(
+    join(dir, REL),
+    JSON.stringify({ ...BASE, metrics: { ...BASE.metrics, "size.overBudget": 4 } }),
+  );
+  writeFileSync(
+    join(dir, "docs/ADOPTION_DECISIONS.md"),
+    "# Decisions\n\n- 2026-09-24 · size.overBudget 3 → 4 · because · owner: A. Person\n",
+  );
+  git(dir, "commit", "-qam", "chore: raise and approve it");
+  assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 3);
+});
+
+test("a file renamed on the base after its floor was written loosens nothing on a later branch", () => {
+  const floor = JSON.stringify({
+    metrics: { "size.overBudget": 1 },
+    hard: [],
+    debt: { "size.overBudget": { "src/a.ts": 1 } },
+  });
+  const dir = tempRepo("raises-base-rename", { [REL]: floor, "src/a.ts": "export const a = 1;\n" });
+  git(dir, "mv", "src/a.ts", "src/b.ts");
+  git(dir, "commit", "-qm", "refactor: move a to b");
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(join(dir, "notes.txt"), "unrelated\n");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-qm", "docs: notes");
+  assert.deepEqual(floorRises(dir, "main").loosened, []);
+});

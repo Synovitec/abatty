@@ -29,6 +29,20 @@ function onBase(repoDir, base, rel) {
 }
 
 /**
+ * Whether the BASE says the repository delivers straight to it. Read from the working tree, a
+ * range could turn it on, write the decision line it then accepts, and raise a floor with no
+ * approval: the machine that raised the floor would be approving the raise.
+ * @param {string} repoDir @param {string} base
+ */
+export function directPushOnBase(repoDir, base) {
+  const config = {
+    ...(onBase(repoDir, base, LEGACY_CONFIG) || {}),
+    ...(onBase(repoDir, base, CONFIG_FILE) || {}),
+  };
+  return config.directPushToBase === true;
+}
+
+/**
  * Every floor the working baseline and config loosened against `base`: a total above the base's,
  * a file's debt above its own floor or a file newly carrying some (debt moved is debt loosened),
  * a metric dropped, a HARD metric demoted, and the config's ways to the same end (see
@@ -37,10 +51,13 @@ function onBase(repoDir, base, rel) {
  */
 export function floorRises(repoDir, base) {
   const rel = baselinePath(readAdoption(repoDir));
-  // Carried along the renames since the base, so a moved file compares with its own floor.
+  // Carried along the renames since the commit that wrote the base's floor, which is where the
+  // working baseline is carried from too (readBaseline). Carried from the base's tip instead, a
+  // file renamed on the base after the floor was written read as a loosening on every branch.
   /** @type {import("../ratchet/index.mjs").Baseline | null} */
   const found = onBase(repoDir, base, rel);
-  const before = found ? carryRenames(found, renamesSince(repoDir, base)) : found;
+  const anchor = git(repoDir, "log", "-1", "--format=%H", base, "--", rel) || base;
+  const before = found ? carryRenames(found, renamesSince(repoDir, anchor)) : found;
   const now = readBaseline(repoDir, rel);
   if (!before?.metrics) return { base, found: false, loosened: [] };
   /** @type {Loosened[]} */

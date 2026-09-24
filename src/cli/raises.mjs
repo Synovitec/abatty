@@ -4,7 +4,7 @@
  * `--require-review <number>`; without a pull request a loosened floor is a finding, because no
  * approval can be read from this machine.
  */
-import { floorRises, recordedDecision, reviewApproval } from "../core/raises.mjs";
+import { directPushOnBase, floorRises, recordedDecision, reviewApproval } from "../core/raises.mjs";
 import { git, readAdoption } from "../core/repo.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
@@ -26,8 +26,10 @@ export function raisesCommand(cx) {
   const r = floorRises(dir, base);
   const approval = r.loosened.length && pr ? reviewApproval(pr) : null;
   // Where the repository delivers straight to its base, there is no pull request to approve a
-  // raise: the decision written in the range is what is read instead, and said to be that.
-  const direct = !pr && readAdoption(dir)?.directPushToBase === true;
+  // raise: the decision written in the range is what is read instead, and said to be that. The
+  // base must say so, and the range may only take it back: a branch that switched it on would
+  // approve its own raise.
+  const direct = !pr && directPushOnBase(dir, base) && readAdoption(dir)?.directPushToBase === true;
   const records = direct
     ? r.loosened.map((l) => ({ metric: l.metric, line: recordedDecision(dir, base, l.metric) }))
     : [];

@@ -1,4 +1,11 @@
 /**
+ * Whether the BASE says the repository delivers straight to it. Read from the working tree, a
+ * range could turn it on, write the decision line it then accepts, and raise a floor with no
+ * approval: the machine that raised the floor would be approving the raise.
+ * @param {string} repoDir @param {string} base
+ */
+export function directPushOnBase(repoDir: string, base: string): boolean;
+/**
  * Every floor the working baseline and config loosened against `base`: a total above the base's,
  * a file's debt above its own floor or a file newly carrying some (debt moved is debt loosened),
  * a metric dropped, a HARD metric demoted, and the config's ways to the same end (see

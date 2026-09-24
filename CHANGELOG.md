@@ -102,7 +102,8 @@ under Unreleased in the same commit.
   down and never recorded as anything. There, `abatty raises` now reads a line the pushed range
   adds to the decisions file naming each loosened metric, and says plainly that this is the
   decision on record, not a second person's approval. A repository that takes pull requests still
-  needs the approval.
+  needs the approval. The base branch's config decides which one applies: a range can switch
+  direct pushes off, never on, so it cannot approve its own raise with a line it wrote.
 - **The gate names an inherited `NODE_ENV`.** An adopter built for production and pushed in the
   same shell: the gate ran under `NODE_ENV=production`, thirteen unit tests went red and the
   database scripts loaded the production env file, and it read as broken infrastructure. A
