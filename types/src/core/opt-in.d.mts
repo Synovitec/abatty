@@ -1,5 +1,5 @@
 /**
- * @typedef {{ metric: string, title: string, reads: number | null, why: string }} OffProbe
+ * @typedef {{ metric: string, title: string, reads: number | null, scanned: number, why: string }} OffProbe
  *   `reads`: the findings it would count here, or null when it cannot read this way (a rule
  *   about a push, read without one) or failed to, with `why` saying which.
  */
@@ -24,5 +24,6 @@ export type OffProbe = {
     metric: string;
     title: string;
     reads: number | null;
+    scanned: number;
     why: string;
 };

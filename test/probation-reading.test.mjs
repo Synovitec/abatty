@@ -19,6 +19,8 @@ test("a check that runs, reads 0 and was never disputed is clean here; a dispute
     metric: "docs.frontMatterSyntax",
     runs: true,
     reads: 0,
+    scanned: 1,
+    why: "",
     disputes: 0,
     clean: true,
   });
@@ -37,4 +39,12 @@ test("a finding keeps a check from reading clean", () => {
   const syntax = probationReadings(dir, {}).find((p) => p.metric === "docs.frontMatterSyntax");
   assert.ok((syntax?.reads || 0) > 0, JSON.stringify(syntax));
   assert.equal(syntax?.clean, false);
+});
+
+test("a check with nothing of its kind to read casts no vote", () => {
+  const dir = tempRepo("probation-empty", { "package.json": JSON.stringify({ name: "p" }) });
+  const syntax = probationReadings(dir, {}).find((p) => p.metric === "docs.frontMatterSyntax");
+  assert.equal(syntax?.reads, 0);
+  assert.equal(syntax?.scanned, 0);
+  assert.equal(syntax?.clean, false, "reading 0 over nothing is not a clean run");
 });

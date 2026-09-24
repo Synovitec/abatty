@@ -12,9 +12,10 @@ import { buildContext } from "../rules/context.mjs";
 import { readingOf } from "./opt-in.mjs";
 
 /**
- * @typedef {{ metric: string, runs: boolean, reads: number | null, disputes: number, clean: boolean }} ProbationReading
- *   `runs`: the repository runs it (not opt-in, or enabled). `clean`: it runs, reads 0 here and
- *   was never disputed here, which is one repository's vote for promotion.
+ * @typedef {{ metric: string, runs: boolean, reads: number | null, scanned: number, why: string, disputes: number, clean: boolean }} ProbationReading
+ *   `runs`: the repository runs it (not opt-in, or enabled). `clean`: it runs, scanned something,
+ *   reads 0 and was never disputed here, which is one repository's vote for promotion; a check
+ *   with nothing of its kind to read (no documents for a documents check) casts none.
  */
 
 /**
@@ -30,8 +31,11 @@ export function probationReadings(repoDir, disputes) {
   const ctx = buildContext(repoDir, { tracked: true });
   return on.map((p) => {
     const runs = !p.optIn || enabled.has(p.metric);
-    const reads = runs ? readingOf(p, ctx, config).reads : null;
+    const r = runs ? readingOf(p, ctx, config) : null;
     const n = Number(disputes[p.metric] || 0);
-    return { metric: p.metric, runs, reads, disputes: n, clean: runs && reads === 0 && n === 0 };
+    const reads = r ? r.reads : null;
+    const scanned = r ? r.scanned : 0;
+    const clean = runs && reads === 0 && scanned > 0 && n === 0;
+    return { metric: p.metric, runs, reads, scanned, why: r?.why || "", disputes: n, clean };
   });
 }

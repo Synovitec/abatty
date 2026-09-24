@@ -85,6 +85,10 @@ export async function reportCommand(cx) {
     // reads 0 and was never disputed. A report from before the reading carries none.
     const clean = (r.probation || []).filter((p) => p.clean).map((p) => p.metric);
     const reading = (r.probation || []).filter((p) => p.runs && !p.clean && p.reads !== null);
+    // A check that runs and could not read (not a push rule read without a range) is said, not dropped.
+    const unread = (r.probation || []).filter(
+      (p) => p.runs && p.reads === null && !/no range/.test(p.why || ""),
+    );
     if (clean.length)
       out(
         `  ${t.glyph.ok} ${t.green("on probation, clean here:")} ${clean.join(", ")} ${t.gray("· one repository's vote to promote each")}\n`,
@@ -92,6 +96,10 @@ export async function reportCommand(cx) {
     if (reading.length)
       out(
         `  ${t.glyph.skip} ${t.gray("on probation, reading here:")} ${reading.map((p) => `${p.metric} ${p.reads ?? "?"}${p.disputes ? ` (${p.disputes} disputed)` : ""}`).join(", ")}\n`,
+      );
+    if (unread.length)
+      out(
+        `  ${t.glyph.warn} ${t.yellow("on probation, could not read here:")} ${unread.map((p) => `${p.metric} (${p.why})`).join(", ")}\n`,
       );
   }
   return;

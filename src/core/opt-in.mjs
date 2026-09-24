@@ -11,7 +11,7 @@ import { readAdoption } from "./repo.mjs";
 import { buildContext } from "../rules/context.mjs";
 
 /**
- * @typedef {{ metric: string, title: string, reads: number | null, why: string }} OffProbe
+ * @typedef {{ metric: string, title: string, reads: number | null, scanned: number, why: string }} OffProbe
  *   `reads`: the findings it would count here, or null when it cannot read this way (a rule
  *   about a push, read without one) or failed to, with `why` saying which.
  */
@@ -41,10 +41,17 @@ export function offProbes(repoDir) {
 export function readingOf(p, ctx, config) {
   try {
     const r = p.scan(ctx, { config, range: "" });
-    if (r.skipped) return { metric: p.metric, title: p.title, reads: null, why: String(r.skipped) };
+    if (r.skipped)
+      return { metric: p.metric, title: p.title, reads: null, scanned: 0, why: String(r.skipped) };
     const reads = r.findings.reduce((n, f) => n + (typeof f.weight === "number" ? f.weight : 1), 0);
-    return { metric: p.metric, title: p.title, reads, why: "" };
+    return { metric: p.metric, title: p.title, reads, scanned: Number(r.scanned) || 0, why: "" };
   } catch (e) {
-    return { metric: p.metric, title: p.title, reads: null, why: `could not read: ${String(e)}` };
+    return {
+      metric: p.metric,
+      title: p.title,
+      reads: null,
+      scanned: 0,
+      why: `could not read: ${String(e)}`,
+    };
   }
 }
