@@ -48,9 +48,55 @@ test("every workflow action is pinned to a commit, and the release stores no tok
   for (const f of readdirSync(dir).filter((x) => /\.ya?ml$/.test(x))) {
     const text = readFileSync(join(dir, f), "utf8");
     assert.deepEqual(unpinned(text), [], f);
-    assert.doesNotMatch(text, /NPM_TOKEN|NODE_AUTH_TOKEN/, `${f} names a stored publish token`);
+    assert.equal(storesToken(text), false, `${f} names a stored publish token`);
   }
   assert.deepEqual(unpinned("steps:\n  - uses: actions/checkout@v4\n  - uses: ./local\n"), [
     "actions/checkout@v4",
   ]);
+  // Every spelling a token takes, caught: the check sees what it guards.
+  for (const spelling of [
+    "env:\n  NPM_CONFIG_TOKEN: ${{ secrets.PUBLISH }}\n",
+    "run: echo //registry.npmjs.org/:_authToken=x > .npmrc\n",
+    "env:\n  NODE_AUTH_TOKEN: x\n",
+  ])
+    assert.equal(storesToken(spelling), true, spelling);
+});
+
+test("the release job that runs the dev dependencies never holds the publishing identity", () => {
+  const text = readFileSync(join(ROOT, ".github/workflows/release.yml"), "utf8");
+  const jobs = Object.fromEntries(
+    text
+      .split(/\n(?= {2}[\w-]+:\n)/)
+      .slice(1)
+      .map((block) => [String(/^ {2}([\w-]+):/.exec(block)?.[1]), block]),
+  );
+  assert.doesNotMatch(String(jobs.gate), /id-token/, "the gate job has no identity");
+  assert.match(String(jobs.gate), /npm run -s gate/);
+  assert.match(String(jobs.publish), /id-token: write/);
+  assert.match(String(jobs.publish), /needs: gate/);
+  assert.match(String(jobs.publish), /npm publish [^\n]*--ignore-scripts/);
+  assert.doesNotMatch(
+    String(jobs.publish),
+    /npm (ci|install)(?! -g npm@)/,
+    "no dependency installed",
+  );
+  assert.doesNotMatch(
+    text.split("jobs:")[0] || "",
+    /id-token/,
+    "no identity for the whole workflow",
+  );
+});
+
+/** A publish credential stored anywhere in a workflow, in any of its spellings. @param {string} text */
+function storesToken(text) {
+  return /NPM_TOKEN|NODE_AUTH_TOKEN|NPM_CONFIG_\w*TOKEN|_authToken/i.test(text);
+}
+
+test("only the job that uploads findings may write them", () => {
+  const text = readFileSync(join(ROOT, ".github/workflows/checks.yml"), "utf8");
+  const [header = "", jobs = ""] = text.split(/\njobs:\n/);
+  assert.doesNotMatch(header, /security-events/, "not granted to the whole workflow");
+  const gate = jobs.split(/\n(?= {2}[\w-]+:\n)/).find((b) => /^\s*gate:/.test(b)) || "";
+  assert.match(gate, /security-events: write/);
+  assert.match(gate, /upload-sarif/);
 });

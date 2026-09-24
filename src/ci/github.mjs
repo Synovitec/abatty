@@ -7,6 +7,21 @@
 import { ciSteps, tooling, y } from "./generate.mjs";
 
 /**
+ * Every action the generated pipeline uses, pinned to the commit its version tag named when this
+ * list was written: a tag can be moved to other code after the fact, and the pipeline that runs
+ * the gate is the last place to take that on trust. The version stays beside it for the reader.
+ */
+export const ACTIONS = {
+  checkout: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
+  setupNode: "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0",
+  setupPnpm: "pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0",
+  setupBun: "oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0",
+  uploadSarif:
+    "github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2",
+  attest: "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc # v2.4.0",
+};
+
+/**
  * @typedef {import("./generate.mjs").CiStep} CiStep
  * @typedef {import("./generate.mjs").CiOptions} CiOptions
  * @typedef {import("../presets/index.mjs").Preset} Preset
@@ -38,12 +53,12 @@ export function renderGithubActions(preset, o = {}) {
   // The runner's toolchain follows the lockfile: pnpm is installed before node so the cache
   // can find it, bun brings its own action, and the install is the manager's frozen one.
   const setup = [
-    `      - uses: actions/checkout@v4`,
+    `      - uses: ${ACTIONS.checkout}`,
     `        with:`,
     `          fetch-depth: 0`,
-    ...(t.id === "pnpm" ? [`      - uses: pnpm/action-setup@v4`] : []),
-    ...(t.id === "bun" ? [`      - uses: oven-sh/setup-bun@v2`] : []),
-    `      - uses: actions/setup-node@v4`,
+    ...(t.id === "pnpm" ? [`      - uses: ${ACTIONS.setupPnpm}`] : []),
+    ...(t.id === "bun" ? [`      - uses: ${ACTIONS.setupBun}`] : []),
+    `      - uses: ${ACTIONS.setupNode}`,
     `        with:`,
     `          node-version: "${node}"`,
     ...(t.id === "bun" ? [] : [`          cache: ${t.id}`]),
@@ -86,10 +101,15 @@ export function renderGithubActions(preset, o = {}) {
     `        run: ${t.exec("abatty")} report --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const b=JSON.parse(s).bypass||{};console.log(\`bypass: \${b.bypassed||0} of \${b.commits||0} commit(s) got past the hook without saying why (\${b.rate||0}%), \${b.reasoned||0} with a reason\`);process.exit(b.bypassed?1:0)})"`,
     `      - name: findings as SARIF`,
     `        if: always()`,
-    `        run: ${t.exec("abatty")} ratchet --range auto --sarif > abatty.sarif || true`,
+    // Exit 3 is "written, with findings"; anything else but 0 is a crash, which a `|| true` read
+    // as a pass, uploading nothing while the step showed green.
+    `        run: |`,
+    `          ${t.exec("abatty")} ratchet --range auto --sarif > abatty.sarif || code=$?`,
+    `          [ "\${code:-0}" -eq 0 ] || [ "\${code:-0}" -eq 3 ]`,
+    `          test -s abatty.sarif`,
     `      - name: upload the findings`,
     `        if: always()`,
-    `        uses: github/codeql-action/upload-sarif@v3`,
+    `        uses: ${ACTIONS.uploadSarif}`,
     `        with:`,
     `          sarif_file: abatty.sarif`,
     `          category: abatty`,
@@ -104,10 +124,14 @@ export function renderGithubActions(preset, o = {}) {
     // it, with the run's identity, for free, in the store every verifier already reads.
     `      - name: the conformance statement`,
     `        if: always()`,
-    `        run: ${t.exec("abatty")} attest --out abatty-conformance.json || true`,
+    // 3 means written, with the statement saying the gate's controls never ran here.
+    `        run: |`,
+    `          ${t.exec("abatty")} attest --out abatty-conformance.json || code=$?`,
+    `          [ "\${code:-0}" -eq 0 ] || [ "\${code:-0}" -eq 3 ]`,
+    `          test -s abatty-conformance.json`,
     `      - name: sign it with this run's identity`,
     `        if: always()`,
-    `        uses: actions/attest@v2`,
+    `        uses: ${ACTIONS.attest}`,
     `        with:`,
     `          subject-path: abatty-conformance.json`,
     `          predicate-type: https://abatty.dev/attestation/conformance/v1`,

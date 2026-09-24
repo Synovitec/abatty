@@ -55,7 +55,9 @@ path is short and has no stored secret in it.
   refuses a tag that is not the version.
 - **Trusted publishing, no token.** The registry names this repository and that workflow as the
   package's one publisher and refuses tokens, so no credential exists to be phished or leaked.
-  The tarball carries provenance: which commit and which workflow run built it.
+  The tarball carries provenance: which commit and which workflow run built it. The job that
+  holds the identity a publish is made with installs nothing and runs no lifecycle script; the
+  gate, and every development dependency it runs, is a job before it with no identity at all.
 - **Every action the workflows use is pinned to a commit**, and a test in the package's own suite
   refuses one that is not, as it refuses a runtime dependency or an install script.
 - **The conformance statement** for the release is signed with the run's identity, not with a key

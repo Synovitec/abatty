@@ -163,7 +163,7 @@ test("the generated pipeline emits SARIF and uploads it, so findings land on the
   const yaml = renderGithubActions(preset, { base: "main" });
   assert.match(yaml, /security-events: write/, "the upload needs the permission");
   assert.match(yaml, /abatty ratchet --range auto --sarif > abatty\.sarif/);
-  assert.match(yaml, /github\/codeql-action\/upload-sarif@v3/);
+  assert.match(yaml, /github\/codeql-action\/upload-sarif@[0-9a-f]{40} # v3\./);
   assert.match(yaml, /sarif_file: abatty\.sarif/);
   // Both steps run even when the gate went red, because that is the run whose findings matter.
   const upload = yaml.slice(
@@ -180,7 +180,11 @@ test("the generated pipeline signs the conformance statement with the run's iden
   assert.match(yaml, /id-token: write/, "the workload identity the signature is made with");
   assert.match(yaml, /attestations: write/, "the write the transparency log needs");
   assert.match(yaml, /npx abatty attest --out abatty-conformance\.json/);
-  assert.match(yaml, /uses: actions\/attest@v2/);
+  assert.match(yaml, /uses: actions\/attest@[0-9a-f]{40} # v2\./);
+  // An adopter's pipeline is pinned as this package's own is, and a crash fails its step.
+  for (const uses of yaml.match(/uses: \S+/g) || [])
+    assert.match(uses, /@[0-9a-f]{40}$/, `${uses} is pinned to a commit`);
+  assert.doesNotMatch(yaml, /\|\| true/, "no step swallows a crash");
   assert.match(yaml, /predicate-type: https:\/\/abatty\.dev\/attestation\/conformance\/v1/);
   // The package prints and never signs: no key, no secret, nothing to leak out of a repository.
   assert.equal(/cosign sign|--key |GPG|gpg --|secrets\.SIGNING/i.test(yaml), false);
@@ -260,7 +264,7 @@ test("the pipeline is the repository's: its package manager's install and audit,
   const w = cli(["ci", pnpm, "--provider", "woodpecker,github"], pnpm);
   assert.equal(w.code, 0, w.out);
   const gh = readFileSync(join(pnpm, ".github/workflows/checks.yml"), "utf8");
-  assert.match(gh, /uses: pnpm\/action-setup@v4/);
+  assert.match(gh, /uses: pnpm\/action-setup@[0-9a-f]{40} # v4\./);
   assert.match(gh, /cache: pnpm/);
   assert.match(gh, /run: pnpm install --frozen-lockfile/);
   assert.match(gh, /run: pnpm audit --audit-level=high --prod/);

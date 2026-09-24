@@ -273,6 +273,16 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The pipeline `abatty ci` generates is pinned and fails on a crash, as this package's own is.**
+  Its SARIF and conformance steps ended in `|| true`, so a crash uploaded nothing while the step
+  showed green, and its actions were pinned by tag. Every action is now pinned to a commit with
+  its version beside it. Those two steps accept exit 0 or 3 (written, with findings) and a
+  non-empty file, and nothing else. `abatty ci --check` names a pipeline generated before this
+  as behind.
+- **The release's publishing identity is held by one job that runs nothing of anybody's.** The
+  gate, and every development dependency it runs, is a job with no identity. The job after it
+  publishes with `--ignore-scripts` and installs nothing, and the signature job after that has
+  only the attestation permissions. Code-scanning write is granted to the one job that uploads.
 - **The harness self-test runs its guard cases a few at a time: doctor takes about a third less
   time.** Its two hundred guard and file-guard cases each start a process, which costs about a
   tenth of a second on Windows. Run one after another they were most of doctor's time (27.6 s
