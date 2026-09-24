@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
-import { night, nightRepo, setGate } from "./night-helpers.mjs";
+import { git } from "./helpers.mjs";
+import { night, nightRepo } from "./night-helpers.mjs";
 import { deadlineOf } from "../src/night/session.mjs";
 import { judgeMcp } from "../src/night/canary.mjs";
 import { localToday } from "../src/core/today.mjs";

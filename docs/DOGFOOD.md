@@ -88,10 +88,11 @@ tests by a word, and it now follows the import graph).
 | `CODE-LINTER`, `CODE-MAXWARN`, `CODE-SHAPE` | This package has not adopted eslint. The gate reports the absent `lint` step as **skipped** rather than passing it, and the gap analysis names it |
 | `TEST-COVERAGE` (partial)                   | The changed lines are gated since 2026-09-24, with Node's own coverage and no dependency (`coverage:changed`, 80%); no floor holds the total yet  |
 
-Every one of them is a dependency, and `CLAUDE.md` §1.1 says the package has no runtime
-dependency and that a dev dependency is a decision rather than a default. So the instrument
-scores itself down for a decision it took deliberately, which is the correct behaviour and is
-worth more than a green screen.
+The three linter rules wait on a dependency, and `CLAUDE.md` §1.1 says the package has no
+runtime dependency and that a dev dependency is a decision rather than a default. So the
+instrument scores itself down for a decision it took deliberately, which is the correct behaviour
+and is worth more than a green screen. `TEST-COVERAGE` is partial for a different reason: the
+floor under the total is work not yet done, not a dependency declined.
 
 `SEC-AGENT-BYPASS` is missing for a different reason: the generated pipeline reports a bypassed
 commit, and this repository's own pipeline is hand-written and does not yet.

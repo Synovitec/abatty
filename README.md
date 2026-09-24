@@ -148,34 +148,34 @@ by mutation.
 
 ## Commands
 
-| Command               | What it does                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| `abatty`              | Where the repository stands: the phase, the score, the trend                                       |
-| `abatty init`         | Install the instrument for the detected or named stack                                             |
-| `abatty gate`         | The gate. `--fast` omits the heavy suites; `--preflight` says what each step needs, runs none      |
-| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases                    |
-| `abatty baseline`     | Record today's numbers as the floor                                                                |
-| `abatty raises`       | The floors loosened against the base, and the review that can land them                            |
-| `abatty mutate`       | One mutant per line the push changed, run against the tests that name its module; survivors listed |
-| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps            |
-| `abatty measure`      | The gap analysis: every check, with next steps by phase; the reading before names this one         |
-| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document        |
-| `abatty explain <ID>` | One rule, its reason, and its finding here                                                         |
-| `abatty check <ID>`   | One rule as an exit code, for a script                                                             |
-| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                     |
-| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it              |
-| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                           |
-| `abatty update`       | Bring the harness to the package's version, keeping your edits                                     |
-| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                           |
-| `abatty presets`      | The stacks, and which repository proved each                                                       |
-| `abatty profiles`     | The standards this repository follows                                                              |
-| `abatty attest`       | The conformance statement, ready to sign                                                           |
-| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                           |
-| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here                     |
-| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                         |
-| `abatty serve`        | Host that dashboard, so CI can post each report to it                                              |
-| `abatty night`        | The unattended run, with its pre-flight and canary session                                         |
-| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests                  |
+| Command               | What it does                                                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `abatty`              | Where the repository stands: the phase, the score, the trend                                              |
+| `abatty init`         | Install the instrument for the detected or named stack                                                    |
+| `abatty gate`         | The gate. `--fast` omits the heavy suites; `--preflight` says what each step needs, runs none             |
+| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases                           |
+| `abatty baseline`     | Record today's numbers as the floor                                                                       |
+| `abatty raises`       | The floors loosened against the base, and the review that can land them                                   |
+| `abatty mutate`       | One mutant per line the push changed, run against the nearest tests on the import graph; survivors listed |
+| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps                   |
+| `abatty measure`      | The gap analysis: every check, with next steps by phase; the reading before names this one                |
+| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document               |
+| `abatty explain <ID>` | One rule, its reason, and its finding here                                                                |
+| `abatty check <ID>`   | One rule as an exit code, for a script                                                                    |
+| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                            |
+| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it                     |
+| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                                  |
+| `abatty update`       | Bring the harness to the package's version, keeping your edits                                            |
+| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                                  |
+| `abatty presets`      | The stacks, and which repository proved each                                                              |
+| `abatty profiles`     | The standards this repository follows                                                                     |
+| `abatty attest`       | The conformance statement, ready to sign                                                                  |
+| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                                  |
+| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here                            |
+| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                                |
+| `abatty serve`        | Host that dashboard, so CI can post each report to it                                                     |
+| `abatty night`        | The unattended run, with its pre-flight and canary session                                                |
+| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests                         |
 
 Every command accepts `--plain` for ASCII markers and no colour, which is what a log parser wants.
 Colour is off automatically outside a terminal and in CI. `measure` and `report` take `--json`.
