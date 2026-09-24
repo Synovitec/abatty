@@ -49,7 +49,10 @@ test("the tarball a third party installs: what the CLI needs and nothing of the 
     /^node_modules\//,
   ])
     assert.ok(!files.some((f) => never.test(f)), `${never} out of the tarball`);
-  assert.ok(files.length < 400, `a tarball of ${files.length} files: check the files field`);
+  // A coarse alarm for a `files` field gone wrong, which adds hundreds (tests, node_modules):
+  // what may be in the tarball is the list above. 0.6.1 carries 400 files, every one a source,
+  // its declaration, a template or a standard's document, so the alarm sits above that.
+  assert.ok(files.length < 500, `a tarball of ${files.length} files: check the files field`);
 
   const project = mkdtempSync(join(tmpdir(), "abatty-consumer-"));
   writeFileSync(
