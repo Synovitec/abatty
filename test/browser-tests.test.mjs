@@ -4,7 +4,9 @@ import { tempRepo } from "./helpers.mjs";
 import { RULES } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { ERROR_FIXTURE } from "../src/rules/families/browser-tests.mjs";
-import { planFix } from "../src/core/fix.mjs";
+import { applyFix, planFix } from "../src/core/fix.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 // An adopter shipped a hydration mismatch through sixty-two green browser tests: the runner
 // passes a page that threw or failed to hydrate unless a test listens.
@@ -57,7 +59,9 @@ test("no listener is missing; a spec that takes test from the runner is partial,
 
 test("abatty fix plans the fixture for phase 3 when the rule is open", () => {
   const dir = tempRepo("e2e-fix", { "package.json": PKG });
-  const finding = /** @type {any} */ ({ id: "TEST-E2E-ERRORS", status: "missing", phase: "3" });
+  const finding = /** @type {import("../src/rules/index.mjs").Finding} */ (
+    /** @type {unknown} */ ({ id: "TEST-E2E-ERRORS", status: "missing", phase: "3" })
+  );
   const [step] = planFix({
     repoDir: dir,
     findings: [finding],
@@ -68,4 +72,30 @@ test("abatty fix plans the fixture for phase 3 when the rule is open", () => {
   assert.equal(step?.path, "e2e/fixtures.ts");
   assert.equal(step?.action, "write");
   assert.equal(step?.text, ERROR_FIXTURE);
+});
+
+test("a partial rule gets no second fixture, and the fixture written gets no docs index row", () => {
+  const dir = tempRepo("e2e-fix-index", {
+    "package.json": PKG,
+    "docs/README.md": "# Docs\n\n| Doc | What |\n| --- | --- |\n| `a.md` | a |\n",
+  });
+  const partial = /** @type {import("../src/rules/index.mjs").Finding} */ (
+    /** @type {unknown} */ ({ id: "TEST-E2E-ERRORS", status: "partial", phase: "3" })
+  );
+  assert.deepEqual(
+    planFix({ repoDir: dir, findings: [partial], phase: "3", name: "b", date: "2026-09-24" }),
+    [],
+  );
+  const missing = /** @type {import("../src/rules/index.mjs").Finding} */ (
+    /** @type {unknown} */ ({ id: "TEST-E2E-ERRORS", status: "missing", phase: "3" })
+  );
+  const steps = planFix({
+    repoDir: dir,
+    findings: [missing],
+    phase: "3",
+    name: "b",
+    date: "2026-09-24",
+  });
+  assert.deepEqual(applyFix(dir, steps), ["e2e/fixtures.ts"]);
+  assert.doesNotMatch(readFileSync(join(dir, "docs/README.md"), "utf8"), /fixtures/);
 });

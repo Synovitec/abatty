@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { ERROR_FIXTURE } from "../rules/families/browser-tests.mjs";
 
 /**
- * @typedef {{ rule: string, path: string, why: string, text: (o: { name: string, date: string }) => string }} Fixer
+ * @typedef {{ rule: string, path: string, why: string, whenMissing?: boolean, text: (o: { name: string, date: string }) => string }} Fixer
  * @typedef {{ rule: string, path: string, why: string, action: "write" | "held", text: string }} FixStep
  */
 
@@ -58,6 +58,7 @@ export const FIXERS = [
   {
     rule: "TEST-E2E-ERRORS",
     path: "e2e/fixtures.ts",
+    whenMissing: true,
     why: "The browser runner passes a page that threw or failed to hydrate unless a test listens; one fixture listens for every spec that imports test from it.",
     text: () => ERROR_FIXTURE,
   },
@@ -74,16 +75,21 @@ const indexRow = (path, what) =>
  * @returns {FixStep[]}
  */
 export function planFix(o) {
-  const open = new Set(
+  /** @type {Map<string, string>} */
+  const open = new Map(
     o.findings
       .filter(
         (f) =>
           (f.status === "missing" || f.status === "partial") &&
           f.phase.split(/\s*\/\s*/).includes(o.phase),
       )
-      .map((f) => f.id),
+      .map((f) => [f.id, f.status]),
   );
-  return FIXERS.filter((f) => open.has(f.rule)).map((f) => ({
+  // A fixer that only writes what is absent waits for "missing": a partial rule may already have
+  // the thing elsewhere, and a second copy nothing imports fixes nothing.
+  const due = (/** @type {Fixer} */ f) =>
+    open.has(f.rule) && (!f.whenMissing || open.get(f.rule) === "missing");
+  return FIXERS.filter(due).map((f) => ({
     rule: f.rule,
     path: f.path,
     why: f.why,
@@ -113,8 +119,9 @@ export function applyFix(repoDir, steps) {
   const index = join(repoDir, "docs", "README.md");
   if (written.length && existsSync(index)) {
     const text = readFileSync(index, "utf8");
+    // Only a document has a row: a fixture written for a browser suite is not one.
     const rows = written
-      .filter((p) => !text.includes(p.replace(/^docs\//, "")))
+      .filter((p) => p.startsWith("docs/") && !text.includes(p.replace(/^docs\//, "")))
       .map((p) => indexRow(p, FIXERS.find((f) => f.path === p)?.why || "written by abatty fix"));
     if (rows.length) {
       const lines = text.split("\n");

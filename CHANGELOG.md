@@ -22,7 +22,8 @@ under Unreleased in the same commit.
   a test listens. An adopter shipped a hydration mismatch through sixty-two green browser tests,
   twice. The new rule wants a listener for `pageerror` and for hydration console errors, and it
   names every spec that takes `test` straight from `@playwright/test` and so skips it. `abatty fix
-  --phase 3 --write` writes the shared fixture (`e2e/fixtures.ts`), which fails the test on either.
+  --phase 3 --write` writes the shared fixture (`e2e/fixtures.ts`), which fails the test on either,
+  when no listener exists anywhere; a fixture is not a document, so it gets no docs index row.
   The catalog now holds 80 rules.
 - **Each incident a night records becomes a proposal the morning can act on.** `abatty
   night-report` used to propose a lesson only when a decision code recurred, and cited a count.
