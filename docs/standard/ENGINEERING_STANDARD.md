@@ -630,8 +630,9 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   mutation.** Every new guard, ratchet and probe: reintroduce the defect, watch it fail,
   restore. Confirm the mutant EXISTS (grep the file) before reading a green as a verdict;
   break both halves of a rule enforced twice; check the assertion can tell the outcomes
-  apart. Where the stack allows it, StrykerJS on changed files per PR with `break` at
-  today's floor (never aspirational) and the full sweep on a schedule.
+  apart. Where the stack allows it, a mutation run on the changed lines per PR (StrykerJS,
+  or `abatty mutate` with no dependency) with `break` at today's floor (never aspirational)
+  and the full sweep on a schedule.
 - **TEST.6 (MUST) - A flaky test is quarantined, owned and dated, never retried away or
   deleted.** A separate non-blocking lane, an owner and a deadline, back into the blocking
   suite only after the root cause is fixed. Leaving it red intermittently is how a team

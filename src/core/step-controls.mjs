@@ -23,6 +23,7 @@ import { dockerRunning, launch } from "./spawn.mjs";
 import { git, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
+import { testRunEnv } from "./env.mjs";
 
 export { STEP_CONTROLS } from "./step-plants.mjs";
 /** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
@@ -63,23 +64,6 @@ export function currentControls(controls) {
  */
 
 /**
- * The environment a planted step runs in: this process's, minus the variables that tell a test
- * runner it is a CHILD of another one.
- *
- * WHY: `node --test` sets NODE_TEST_CONTEXT for the processes it spawns, and a `node --test` that
- * sees it reports its results upward and exits 0 even when a test threw. A control that inherits
- * it therefore watches a failing test and calls the step green, which is the one thing a control
- * must never do. It costs nothing when nobody is above us, and it is exactly the case a control
- * exists to survive.
- */
-function childEnv() {
-  const env = { ...process.env };
-  delete env.NODE_TEST_CONTEXT;
-  delete env.NODE_V8_COVERAGE;
-  return env;
-}
-
-/**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
@@ -95,7 +79,9 @@ export function runStepControls(o) {
       cwd: repoDir,
       encoding: "utf8",
       shell: l.shell,
-      env: childEnv(),
+      // Without what a parent test runner set: a child `node --test` that inherited it reported
+      // upward and exited 0 on a failing test, so a control would call the step green.
+      env: testRunEnv(),
       maxBuffer: 16 * 1024 * 1024,
     });
     // A tool that could not be spawned answers as a POSIX shell would (127), on every platform:

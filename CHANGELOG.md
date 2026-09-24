@@ -7,6 +7,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty mutate` asks whether your tests would notice the lines this change wrote.** A green
+  suite says the tests passed, not that they hold the new code. For each changed line of shipped
+  code, the command makes one small change in the code itself, never in a string or a comment: a
+  comparison flipped, a boundary moved, an `&&` made `||`, a result inverted. It then runs the
+  tests nearest that module on the import graph and puts the file back whatever happened. A
+  mutant no test noticed is reported with its line and what changed. `--strict` makes one fail
+  the run, `--max` bounds the count, and `mutation.command` in the config names the runner. It
+  needs no dependency, and `TEST-MUTATION` credits a script that runs it: it is bounded to the
+  change and ignores strings and comments by construction. Its first run on this repository read
+  three mutants as survived because it had picked tests by a word; a probe is reached through
+  the registry that lists it, so it now follows the imports.
 - **`docs.danglingRefs`, on probation: a name a document cites that the code no longer has.**
   `docs.citations` checks the paths a document cites; a function or a constant named in
   backticks rots as quietly, and a study of popular repositories found such a reference in more

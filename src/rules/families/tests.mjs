@@ -230,8 +230,16 @@ export const rules = [
     phase: "10",
     ...SOURCES,
     why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code. Unbounded, it is also the slowest check anybody has ever switched off: it mutates the whole tree on every run, and it mutates nodes no test could ever observe - a log line, a message string, a piece of code with no behaviour behind it - so it reports survivors nobody can kill and a run nobody waits for.",
-    next: "Bound it twice before you trust it: mutate what the change touched (--since / --incremental / a diff-driven glob) and ignore the nodes a mutant cannot prove anything about (arid nodes, excluded mutators, ignore patterns), with a floor it breaks at",
+    next: "Bound it twice before you trust it: mutate what the change touched (--since / --incremental / a diff-driven glob, or abatty mutate, which needs no dependency) and ignore the nodes a mutant cannot prove anything about (arid nodes, excluded mutators, ignore patterns), with a floor it breaks at",
     check: (c) => {
+      // The package's own run is bounded twice by construction: the lines the push changed, and
+      // code only, never a string or a comment. No dependency.
+      const own = c.script(/\babatty(\.mjs)?\s+mutate\b/);
+      if (own)
+        return {
+          status: "present",
+          evidence: `\`${own[0]}\` runs abatty mutate: bounded to the changed lines, strings and comments never mutated${/--strict/.test(own[1]) ? ", a survivor fails it" : ""}`,
+        };
       const text = toolText(c, MUTATION_FILES);
       const runner =
         c.has("@stryker-mutator/core") ||

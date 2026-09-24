@@ -62,6 +62,20 @@ export function childEnv(extra) {
   return Object.keys(extra).length ? { ...process.env, ...extra } : undefined;
 }
 
+/**
+ * The environment for a test run the package starts itself (a gate step's control, a mutant):
+ * this process's, without what a parent test runner sets. Under `node --test`, a child run that
+ * inherited NODE_TEST_CONTEXT reported to the parent instead of exiting on its own result, and
+ * read every mutant as survived.
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function testRunEnv() {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  delete env.NODE_V8_COVERAGE;
+  return env;
+}
+
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";

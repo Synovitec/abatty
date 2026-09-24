@@ -344,3 +344,19 @@ test("TEST-COVERAGE credits the gate's own coverage:changed step as a gate on th
   });
   assert.match(without.evidence, /no gate on the changed lines/);
 });
+
+test("TEST-MUTATION credits a script that runs abatty mutate, bounded by construction", () => {
+  const v = judge("TEST-MUTATION", {
+    "package.json": JSON.stringify({ scripts: { mutate: "abatty mutate --strict" } }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.equal(v.status, "present");
+  assert.match(v.evidence, /bounded to the changed lines.*a survivor fails it/);
+  assert.equal(
+    judge("TEST-MUTATION", {
+      "package.json": JSON.stringify({ scripts: {} }),
+      "src/a.ts": "export const a = 1;\n",
+    }).status,
+    "missing",
+  );
+});

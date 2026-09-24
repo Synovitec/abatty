@@ -1,7 +1,7 @@
 {
   "measuredAt": "2026-09-24",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
-  "score": 94,
+  "score": 95,
   "hard": [
     "change.changelogMissing",
     "change.coupledMissing",
@@ -47,11 +47,11 @@
     "types.escapes": 1,
     "valid.rawEnv": 3,
     "valid.utcDay": 0,
-    "valid.wholeEnv": 6
+    "valid.wholeEnv": 5
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 158,
+    "code.clones": 160,
     "context.overCap": 1,
     "docs.behindCode": 8,
     "docs.citations": 75,
@@ -59,13 +59,13 @@
     "docs.frontMatter": 34,
     "docs.frontMatterSyntax": 34,
     "docs.indexDrift": 33,
-    "size.excessCode": 158,
-    "size.overBudget": 158,
-    "size.overRaw": 178,
-    "types.escapes": 158,
-    "valid.rawEnv": 157,
-    "valid.utcDay": 158,
-    "valid.wholeEnv": 157
+    "size.excessCode": 160,
+    "size.overBudget": 160,
+    "size.overRaw": 180,
+    "types.escapes": 160,
+    "valid.rawEnv": 159,
+    "valid.utcDay": 160,
+    "valid.wholeEnv": 159
   },
   "debt": {
     "code.clones": {
@@ -94,7 +94,6 @@
       "src/ui/term.mjs": 3
     },
     "valid.wholeEnv": {
-      "src/core/step-controls.mjs": 1,
       "src/mcp/server.mjs": 1,
       "src/night/preflight.mjs": 1,
       "src/night/session.mjs": 1,

@@ -162,8 +162,8 @@ when two readings of the request lead to materially different work.
 - The `lint` step is skipped here: this repository has no `lint` script, because it has not
   adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
   gap analysis names it, so it is visible rather than silently green.
-- TEST-MUTATION is missing here and TEST-COVERAGE is partial: the changed lines are gated with
-  Node's own coverage (`coverage:changed`, 80%), and no floor holds the total yet. Mutation seemed
-  to want StrykerJS, and §1.1 says a dependency is a decision, not a default. Both are open.
-  CODE-DUP is held by `code.clones` and CODE-JSDOC by `code.undocumentedExports` at zero, neither
-  with a dependency.
+- TEST-COVERAGE is partial: the changed lines are gated with Node's own coverage
+  (`coverage:changed`, 80%), and no floor holds the total yet. TEST-MUTATION is held by
+  `npm run mutate` (`abatty mutate`, the changed lines only), run by hand and not by the gate: a
+  mutant runs the nearest tests on the import graph, about a minute each here. CODE-DUP is held
+  by `code.clones` and CODE-JSDOC by `code.undocumentedExports` at zero. None takes a dependency.
