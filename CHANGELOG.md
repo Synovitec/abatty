@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`docs/VERSIONING.md` says what a version promises at 0.x.** SemVer promises nothing below 1.0,
+  and a tool that runs in an adopter's hooks needs to say in advance what an update can do: a
+  minor is anything that can turn a green run red or change what a machine reads (a probe that
+  blocks or counts differently, a default that moves numbers, a hook that refuses more, the
+  config schema, `--json`, `--sarif`, MCP and exit codes); a patch cannot; the terminal's words
+  are not part of the contract. One breaking axis per minor, with its migration in the same
+  release.
 - **A probe can be on probation: counted and shown, never failing a run.** A blocking check lives
   on its false positives, and one wrong red is a reason to reach for the bypass. A new or
   heuristic probe now ships marked `probation`: its findings are listed under a yellow
