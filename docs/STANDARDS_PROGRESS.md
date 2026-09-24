@@ -346,3 +346,15 @@ raises` reads that as a loosening, and it is one by the letter. The reason is th
 exempts tests from the kind budgets and a monorepo's `apps/<app>/tests/` was held to them while
 the same folder at the root was not. No number here moved because of it: this repository keeps its
 tests at the root. The readability score in the baseline moves from 93 to 94.
+
+### 2026-09-24 - The suite: 6 min 30 s to 5 min 16 s, and where the rest goes
+
+Timed per file with a reporter that sums each file's tests: 1,916 s of test time over 85 files,
+and the wall clock was one file, `night-abort.test.mjs`, at 380 s, because the runner runs files at
+once and the tests inside a file one after another, and one test of six abort cases took 262 s
+alone. Split by what each group proves (canary refusals, run aborts, resume, the canary alone) into
+four more files, the wall clock is 5 min 16 s. Less than the arithmetic promised: with more files
+at once every file slowed, the sum rose to 3,324 s, because the night tests spawn processes and
+git by the hundred and the machine saturates. The suite is spawn-bound, not serial, so the next
+cut is fewer spawns (the harness self-test runs one process per guard case), not more files. The
+coverage `npm test` now measures costs about five per cent of the run.

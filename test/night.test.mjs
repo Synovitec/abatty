@@ -60,19 +60,3 @@ test("a stub night: pre-flight green, the canary green, the phase done, the wrap
     "no BOM",
   );
 });
-
-test("canary only: the four checks on the current branch, nothing else", () => {
-  const dir = nightRepo("night-canary");
-  const r = night(dir, { canaryOnly: true });
-  assert.equal(r.ok, true, r.out);
-  assert.match(r.out, /pre-flight done on main/);
-  assert.equal(existsSync(join(dir, "docs/ADOPTION_STATE.json")), false);
-  assert.equal(git(dir, "rev-parse", "--abbrev-ref", "HEAD"), "main");
-});
-
-test("the CLI: abatty night --canary-only with the stub", () => {
-  const dir = nightRepo("night-cli");
-  const r = cli(["night", dir, "--canary-only", "--agent", STUB_AGENT, "--no-push"], dir);
-  assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /pre-flight done/);
-});
