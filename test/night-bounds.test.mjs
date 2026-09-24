@@ -81,3 +81,53 @@ test("a night branch over the diff cap stays local, said", () => {
   assert.equal(r.pushed, false);
   assert.ok(changedLineCount(dir, "main", r.branch) > 1);
 });
+
+test("a squash-merged night is taken; a branch only on origin is still open work", () => {
+  const dir = tempRepo("bounds-squash", { "a.txt": "a\n" });
+  git(dir, "branch", "-M", "main");
+  earlierNight(dir);
+  const o = {
+    repoDir: dir,
+    prefix: "adopt/standards",
+    base: "main",
+    branch: "adopt/standards-2026-01-02",
+    stateFile: "docs/ADOPTION_STATE.json",
+    phases: ["11"],
+  };
+  // The branch now lives only as a remote-tracking ref: still open, still refused.
+  git(
+    dir,
+    "update-ref",
+    "refs/remotes/origin/adopt/standards-2026-01-01",
+    "adopt/standards-2026-01-01",
+  );
+  git(dir, "branch", "-q", "-D", "adopt/standards-2026-01-01");
+  assert.deepEqual(openNightWork(o), [{ ref: "adopt/standards-2026-01-01", phases: ["11"] }]);
+  // Squash-merged: main's own state file says phase 11 was worked, though the branch is no ancestor.
+  mkdirSync(join(dir, "docs"), { recursive: true });
+  writeFileSync(
+    join(dir, "docs/ADOPTION_STATE.json"),
+    JSON.stringify({ phases: [{ id: 11, status: "done" }] }) + "\n",
+  );
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "chore: squash of phase 11");
+  assert.deepEqual(openNightWork(o), []);
+  assert.deepEqual(
+    openNightWork({ ...o, base: "nowhere" }),
+    [],
+    "no base: the checkout step refuses, not this one",
+  );
+});
+
+test("the diff is measured against the base on origin when there is no local one, and not at all without one", () => {
+  const dir = tempRepo("bounds-count", { "a.txt": "a\n" });
+  git(dir, "branch", "-M", "main");
+  git(dir, "checkout", "-q", "-b", "adopt/standards-2026-01-03");
+  writeFileSync(join(dir, "a.txt"), "a\nb\nc\n");
+  git(dir, "commit", "-qam", "feat: two lines");
+  assert.equal(changedLineCount(dir, "main", "adopt/standards-2026-01-03"), 2);
+  git(dir, "update-ref", "refs/remotes/origin/develop", "main");
+  assert.equal(changedLineCount(dir, "develop", "adopt/standards-2026-01-03"), 2);
+  assert.equal(changedLineCount(dir, "nowhere", "adopt/standards-2026-01-03"), -1);
+  assert.equal(changedLineCount(dir, "main", "no-such-branch"), -1, "a diff git refuses is not an empty one");
+});

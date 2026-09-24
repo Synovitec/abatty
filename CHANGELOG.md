@@ -50,8 +50,10 @@ under Unreleased in the same commit.
 - **A night does not start work already open, and does not push more than one review reads.**
   The pre-flight refuses while an earlier night branch, here or on origin, that the base has not
   taken worked a phase this night would run. It names the branch and the phases: merge it or
-  delete it first. Before the push, a branch that changes more than `maxDiffLines` lines against
-  the base (a new config key, 2000 by default) stays local, and the summary says how many.
+  delete it first; a night squash-merged into the base is taken. Before the push, a branch that
+  adds and removes more than `maxDiffLines` lines against the base (a new config key, 2000 by
+  default, an edited line counting twice) stays local, and the summary says how many. The base is
+  read locally or on origin, and a diff that cannot be measured keeps the branch local too.
 - **`change.testTamper`, on probation, flags a commit that made its tests easier to pass.** An
   agent that cannot make a test pass has cheaper ways out than the fix, and most measured
   cheating was done to the tests. `change.refactorTests` reads refactors only. This probe reads

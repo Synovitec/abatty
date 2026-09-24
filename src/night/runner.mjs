@@ -319,6 +319,10 @@ export function runNight(o) {
     const lines = changedLineCount(repoDir, base, branch);
     if (git(repoDir, "diff", "--name-only", base, "--", ".claude/"))
       log(`branch kept local: the harness (.claude/) differs from ${base}`);
+    else if (lines < 0)
+      log(
+        `branch kept local: its diff against ${base} could not be measured, so the maxDiffLines cap could not be checked`,
+      );
     else if (lines > maxLines)
       log(
         `branch kept local: ${lines} changed line(s) against ${base}, over the ${maxLines} one review reads (maxDiffLines); split it by phase, or push it by day after reading it`,

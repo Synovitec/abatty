@@ -44,9 +44,9 @@ export function openNightWork(o) {
   )
     .split("\n")
     .filter(Boolean);
-  const baseRef = git(o.repoDir, "rev-parse", "--verify", "-q", o.base)
-    ? o.base
-    : `origin/${o.base}`;
+  const baseRef = resolvedBase(o.repoDir, o.base);
+  // No base to compare with: the step that branches from it refuses with the real reason.
+  if (!baseRef) return [];
   const already = new Set(workedPhases(git(o.repoDir, "show", `${baseRef}:${o.stateFile}`)));
   /** @type {{ ref: string, phases: string[] }[]} */
   const open = [];
@@ -73,11 +73,38 @@ function isAncestor(repoDir, a, b) {
 }
 
 /**
- * The lines a branch changes against the base, renames read as moves: what a reviewer reads.
+ * The base as a ref that resolves here: the local branch, else the remote's. The pre-flight
+ * branches from `origin/<base>` when there is no local one, and a diff against a name that does
+ * not resolve read as an empty diff.
+ * @param {string} repoDir @param {string} base @returns {string}
+ */
+function resolvedBase(repoDir, base) {
+  for (const ref of [base, `origin/${base}`])
+    if (git(repoDir, "rev-parse", "--verify", "-q", `${ref}^{commit}`)) return ref;
+  return "";
+}
+
+/**
+ * The lines a branch adds and removes against the base, renames read as moves: what a reviewer
+ * reads (an edited line counts twice, once each way). Read from `--numstat`, which no locale
+ * translates; -1 when the diff cannot be taken, so a caller holds the branch back rather than
+ * reading a failure as an empty diff.
  * @param {string} repoDir @param {string} base @param {string} branch @returns {number}
  */
 export function changedLineCount(repoDir, base, branch) {
-  const stat = git(repoDir, "diff", "--shortstat", "-M", `${base}...${branch}`);
-  const n = (/** @type {RegExp} */ re) => Number(re.exec(stat)?.[1] || 0);
-  return n(/(\d+) insertion/) + n(/(\d+) deletion/);
+  const from = resolvedBase(repoDir, base);
+  if (!from) return -1;
+  const r = spawnSync("git", ["diff", "--numstat", "-M", `${from}...${branch}`], {
+    cwd: repoDir,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (r.status !== 0) return -1;
+  let n = 0;
+  for (const line of String(r.stdout).split("\n")) {
+    const [add = "", del = ""] = line.split("\t");
+    // A binary file reads "-" on both sides: a changed file, one line of review.
+    n += add === "-" ? 1 : (Number(add) || 0) + (Number(del) || 0);
+  }
+  return n;
 }
