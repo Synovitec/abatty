@@ -47,6 +47,7 @@ export function doctor(o: {
         addedAllows: string[];
         readable: string[];
     };
+    optIn: import("./opt-in.mjs").OffProbe[];
     installed: string | null;
     pinned: string | null;
     packageVersion: string;

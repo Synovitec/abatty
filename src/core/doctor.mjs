@@ -18,6 +18,7 @@ import { hookModes } from "./hook-modes.mjs";
 import { gitHooks, hooksNotExecutable } from "./git-hooks.mjs";
 import { managerFor } from "./package-manager.mjs";
 import { loosenedRules, unrefusedSecrets } from "./secret-reads.mjs";
+import { offProbes } from "./opt-in.mjs";
 
 /** @typedef {{ file: string, state: "in step" | "differs" | "missing" }} DriftEvent */
 
@@ -144,6 +145,7 @@ export function doctor(o) {
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
   const permissions = permissionChanges(repoDir);
+  const optIn = offProbes(repoDir);
   const problems = configProblems(repoDir);
   // What each hook does here, day and night; one that does nothing it seems to fails --strict.
   const hooks = hookModes(repoDir);
@@ -166,6 +168,7 @@ export function doctor(o) {
     differs,
     missingScripts: scripts,
     permissions,
+    optIn,
     installed: lock?.abatty || null,
     pinned:
       typeof readAdoption(repoDir)?.abatty === "string"

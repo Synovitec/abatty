@@ -258,7 +258,9 @@ runs every shipped probe over this repository and fails on any finding in the pr
 
 Some built-in probes are **opt-in**, because each reads one stack's conventions and would be
 noise, or a surprise red after an update, anywhere else. A repository switches them on in
-`ratchet.enable`, and `init` enables the ones that suit the preset:
+`ratchet.enable`, and `init` enables the ones that suit the preset. `abatty doctor` names each one a
+repository has left off, with what it would read there today, so leaving one off is a decision
+taken knowing the number:
 
 | Probe                      | Counts                                                                                             | Configured by  |
 | -------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |

@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Doctor names the opt-in probes a repository left off, with what each would read today.** An
+  adopter's coverage exclude list grew for weeks beside a probe that counts it. The probe was
+  off by default, and nothing had said it existed. `abatty doctor` now lists every opt-in probe
+  neither enabled nor excluded that would read something, with its number (the total the ratchet
+  would record), and says how many more would read 0. Enabling one stays the repository's
+  decision, now taken knowing the number.
 - **A suite's missing environment is named before it runs, and the config can supply it.** An
   adopter's browser suite failed 96 journeys in a fresh checkout, every one "Not authenticated".
   The server under test had no auth secret: CI sets placeholders in its workflow, and the laptop

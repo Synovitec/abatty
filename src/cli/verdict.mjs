@@ -183,6 +183,19 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(" · abatty hooks stages the mode (git update-index --chmod=+x); then commit")}\n`,
     );
+  // The opt-in probes left off, with what each would read: enabling one is then a decision taken
+  // knowing the number.
+  const reading = r.optIn.filter((p) => p.reads !== null && p.reads > 0);
+  if (reading.length)
+    out(
+      `  ${t.glyph.warn} opt-in probes not enabled here, with what each would read today (ratchet.enable):\n${reading
+        .map(
+          (p) => `      ${p.metric.padEnd(26)} ${String(p.reads).padStart(4)}  ${t.gray(p.title)}`,
+        )
+        .join(
+          "\n",
+        )}\n${t.gray(`      ${r.optIn.filter((p) => p.reads === 0).length} more would read 0`)}\n`,
+    );
   const perm = r.permissions;
   if (perm.readable.length)
     out(
