@@ -7,6 +7,7 @@
 import { dirname, posix } from "node:path";
 import { lastChange, verifiedIn } from "./history.mjs";
 import { frontMatter } from "./lib.mjs";
+import { BEHIND_CODE_CONTROLS } from "./freshness-controls.mjs";
 
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
@@ -35,14 +36,15 @@ export const probes = [
     // redefined rather than compared: the two numbers answer different questions.
     // 3: whitespace ignored outside Python and YAML, comment-only commits ignored: counted
     // differently, so a floor written under 2 is reported as redefined.
-    version: 3,
+    // 4: a Markdown source moves when its body does, not its front matter.
+    version: 4,
     standard: ["DOC.5"],
     title: "Documents whose source_truth changed after the document last did",
     why: "Freshness is measured against the diff, never the calendar: when the code a doc names changed after the doc last did, the doc is unverified against what it describes, and an agent reading it confidently does the wrong thing. It is judged by commits, not by the typed date: a date that could be bumped without reading anything made the rule a habit of date-bump commits, and flagged a decision log updated in the very commit as its source. The count is a prompt to re-read, not a claim that the doc is wrong.",
     axis: "docs-freshness",
     lossAt: 20,
     approximates:
-      "whether a document is still true. It counts one observable fact instead: a commit changed a cited path after the last commit that changed the document itself, a commit that only moves a document's verification date, or only reformats (outside Python and YAML, where indentation is meaning) or rewrites a comment in code, counting for neither side; a `docs-verified:` line naming a document's path counts as a re-read of it at that commit, and names only the documents it lists. A document never committed falls back to its typed last_verified date; a shallow clone is not judged at all. It is wrong in both directions - an unrelated edit to the document counts as a re-read, a change to a part of the source the document never described counts as a move, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
+      "whether a document is still true. It counts one observable fact instead: a commit changed a cited path after the last commit that changed the document itself, a commit that only moves a document's verification date, or only reformats (outside Python and YAML, where indentation is meaning) or rewrites a comment in code, counting for neither side; a cited Markdown source moves only when its body does, not its front matter; a `docs-verified:` line naming a document's path counts as a re-read of it at that commit, and names only the documents it lists. A document never committed falls back to its typed last_verified date; a shallow clone is not judged at all. It is wrong in both directions - an unrelated edit to the document counts as a re-read, a change to a part of the source the document never described counts as a move, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
     scan: (c) => {
       // A shallow clone's oldest commit adds every file at once, so it read as the last change of
       // every document and every source, and every document read fresh: a floor above zero then
@@ -87,7 +89,7 @@ export const probes = [
         for (const entry of truth) {
           const p = prefixOf(entry, f);
           if (!p || !c.exists(p)) continue;
-          const moved = lastChange(c, p);
+          const moved = lastChange(c, p, { bodyOnly: true });
           if (!moved) continue;
           if (read) {
             if (at(moved) < at(read)) behind.push(`${entry} changed ${dateOf(moved)}`);
@@ -104,164 +106,7 @@ export const probes = [
       }
       return { scanned, findings };
     },
-    controls: [
-      {
-        name: "the source moved after the doc was verified",
-        files: {
-          "docs/a.md": FM('last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n'),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [
-          {
-            files: { "src/x.ts": "export const later = 1;\n" },
-            message: "feat: later",
-            date: "2021-06-01T12:00:00Z",
-          },
-        ],
-        expect: 1,
-      },
-      {
-        // The typed date alone re-reads nothing: bumping it after the source moved used to be the
-        // whole cure, and a rule that a date satisfies trains date-bump commits.
-        name: "a date bumped alone after the source moved is not a re-read",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [
-          { files: { "src/x.ts": "export const later = 1;\n" }, message: "feat: later" },
-          {
-            files: {
-              "docs/a.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-            },
-            message: "docs: date",
-          },
-        ],
-        expect: 1,
-      },
-      {
-        name: "a doc changed in the same commit as its source, or after it, is fresh whatever its date says",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/y.ts"\n`),
-          "src/x.ts": "export {};\n",
-          "src/y.ts": "export {};\n",
-        },
-        commits: [
-          {
-            files: {
-              "src/x.ts": "export const later = 1;\n",
-              "docs/a.md":
-                FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`) +
-                "\nThe later export.\n",
-            },
-            message: "feat: later, and its doc",
-          },
-          { files: { "src/y.ts": "export const y = 1;\n" }, message: "feat: y" },
-          {
-            files: {
-              "docs/b.md":
-                FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/y.ts"\n`) +
-                "\nWhat y is.\n",
-            },
-            message: "docs: y",
-          },
-        ],
-        expect: 0,
-      },
-      {
-        name: "a re-read that changed nothing is on the record, and a source doc whose date alone moved has not moved",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "./c.md"\n`),
-          "docs/c.md": FM(`last_verified: "2020-01-01"\n`),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [
-          { files: { "src/x.ts": "export const later = 1;\n" }, message: "feat: later" },
-          {
-            files: {
-              "docs/a.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-              "docs/c.md": FM(`last_verified: "2099-01-01"\n`),
-            },
-            message: "docs: re-read\n\ndocs-verified: a.md still describes x.ts",
-          },
-        ],
-        expect: 0,
-      },
-      {
-        name: "a re-read named in a commit message counts for the documents it names, and only those",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [
-          { files: { "src/x.ts": "export const later = 1;\n" }, message: "feat: later" },
-          {
-            files: { "notes.txt": "read\n" },
-            message: "chore: re-read\n\ndocs-verified: docs/a.md, still describes x.ts",
-          },
-        ],
-        expect: 1,
-      },
-      {
-        // One meaning for the line: a date bumped on two documents re-reads only the one it names,
-        // and a config's `updated:` line is content, not a document's date.
-        name: "a docs-verified line re-reads the documents it names only, and a config's date is a move",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/c.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "config/app.yml"\n`),
-          "src/x.ts": "export {};\n",
-          "config/app.yml": "updated: 1\n",
-        },
-        commits: [
-          { files: { "src/x.ts": "export const later = 1;\n" }, message: "feat: later" },
-          {
-            files: {
-              "docs/a.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-              "docs/b.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-            },
-            message: "docs: dates\n\ndocs-verified: docs/a.md, still describes x.ts",
-          },
-          { files: { "config/app.yml": "updated: 2\n" }, message: "chore: config" },
-        ],
-        expect: 2,
-      },
-      {
-        // A reformat or a reworded comment changes nothing a document describes; a private
-        // field's `#` is code in JavaScript, not a comment.
-        // In Python and YAML the indentation is the meaning: a statement moved out of a block moved.
-        name: "a cited file only reformatted or recommented has not moved; a private field or a Python reindent has",
-        files: {
-          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
-          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/y.mjs"\n`),
-          "docs/c.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/z.py"\n`),
-          "src/x.ts": "// the export\nexport function x() {\nreturn 1;\n}\n",
-          "src/y.mjs": "export class Y {}\n",
-          "src/z.py": "def z(a):\n    if a:\n        a = 1\n    return a\n",
-        },
-        commits: [
-          {
-            files: {
-              "src/x.ts": "// the one export there is\nexport function x() {\n  return 1;\n}\n",
-            },
-            message: "style: format and a comment",
-          },
-          {
-            files: { "src/y.mjs": "export class Y {\n  #count = 0;\n}\n" },
-            message: "feat: count",
-          },
-          {
-            // only the indentation moved: the return now sits inside the branch
-            files: { "src/z.py": "def z(a):\n    if a:\n        a = 1\n        return a\n" },
-            message: "fix: a is always one",
-          },
-        ],
-        expect: 2,
-      },
-    ],
+    controls: BEHIND_CODE_CONTROLS,
   },
   {
     metric: "docs.danglingSource",

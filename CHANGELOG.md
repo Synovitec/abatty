@@ -5,6 +5,43 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-24
+
+### Upgrading
+
+- **`docs.behindCode` is redefined (definition 4).** Its floor reads as redefined once; run
+  `abatty baseline` to rewrite it. Nothing is raised, and the only effect of the change is fewer
+  documents read as behind.
+
+### Fixed
+
+- **A cited document moves when its body does, not its front matter.** `docs.behindCode` counted
+  a document as behind when the document it cites changed only in its front matter. A code split
+  rewrites the `source_truth` globs of the domain documents, and that cascaded onto every document
+  citing them: an adopter raised a floor with nothing to re-read. A Markdown source is now judged
+  by the lines past its front-matter block; a document's own re-read is read as before. The
+  metric's definition is 4: its floor reads as redefined once, and `abatty baseline` rewrites it.
+  Reported by an adopter.
+- **The command's path is written as the registry reads it.** Publishing 0.6.0 printed a warning
+  that `bin/abatty.mjs` was invalid and removed. The registry kept the command, which ran, but
+  the warning read as a broken release. `bin` now names `bin/abatty.mjs` without the leading `./`,
+  the form npm normalises to.
+- **The guard reads a package script as the commands it runs.** An adopter's `pnpm db:setup`,
+  whose script was `prisma db push --force-reset --accept-data-loss` against the live database,
+  passed by day and at night: the guard read the line typed, not the script it ran. A
+  `<pm> [run] <script>` is now expanded through `package.json`, three levels deep. The data, deploy
+  and migration rules judge what the script runs. A reset, a drop or a forced schema push is
+  refused at night and asked about by day, the prompt saying it destroys data. Reported by an
+  adopter.
+- **A tool's own `push` is not a git push.** `prisma db push` was refused as a push to the base
+  branch, right only by accident, and a plain schema push never got the migration prompt. A
+  `push` that belongs to prisma, drizzle-kit, docker, helm and the like, with nothing before it
+  that could be git, is read as that tool's.
+- **At night the hooks folder is protected by its bare name too.** `rm -rf .githooks`, `rmdir`,
+  `git rm -r`, `mv`, `find … -delete` and `.husky` passed, while `rm .githooks/pre-push` was
+  refused. A protected folder is matched with or without its slash, and `rmdir` and `find
+  -delete` are writes.
+
 ## [0.6.0] - 2026-09-24
 
 ### Upgrading
