@@ -77,7 +77,12 @@ under Unreleased in the same commit.
   needs no dependency, and `TEST-MUTATION` credits a script that runs it: it is bounded to the
   change and ignores strings and comments by construction. Its first run on this repository read
   three mutants as survived because it had picked tests by a word; a probe is reached through
-  the registry that lists it, so it now follows the imports.
+  the registry that lists it, so it now follows the imports. Each file's tests run once with no
+  mutant first: a suite already red, or a command that cannot run, is reported as such rather
+  than read as every mutant killed. A file is never left mutated: its original waits in a
+  recovery file, a signal stops the run after the file is put back, and a run killed outright is
+  repaired by the next. With no `--range`, it reads the lines changed since the fork from the
+  base; `a...b` reads from their merge base; new untracked files count.
 - **`docs.danglingRefs`, on probation: a name a document cites that the code no longer has.**
   `docs.citations` checks the paths a document cites; a function or a constant named in
   backticks rots as quietly, and a study of popular repositories found such a reference in more

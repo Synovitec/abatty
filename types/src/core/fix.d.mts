@@ -24,6 +24,7 @@ export type Fixer = {
     rule: string;
     path: string;
     why: string;
+    whenMissing?: boolean;
     text: (o: {
         name: string;
         date: string;

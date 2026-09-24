@@ -18,7 +18,10 @@ export function openNightWork(o: {
     phases: string[];
 }[];
 /**
- * The lines a branch changes against the base, renames read as moves: what a reviewer reads.
+ * The lines a branch adds and removes against the base, renames read as moves: what a reviewer
+ * reads (an edited line counts twice, once each way). Read from `--numstat`, which no locale
+ * translates; -1 when the diff cannot be taken, so a caller holds the branch back rather than
+ * reading a failure as an empty diff.
  * @param {string} repoDir @param {string} base @param {string} branch @returns {number}
  */
 export function changedLineCount(repoDir: string, base: string, branch: string): number;

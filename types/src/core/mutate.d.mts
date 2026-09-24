@@ -9,7 +9,11 @@ export function mutantOf(line: string, code: string): {
     operator: string;
 } | null;
 /**
- * The lines each shipped source file gained since `base`, working tree included.
+ * The lines each shipped source file gained since `base`, the working tree and new untracked
+ * files included. The diff is limited to scripts and read with a large buffer: a diff over the
+ * default one was read as empty, and a branch full of changes reported no mutant. A file header
+ * is only read as one between `diff --git` and the first hunk, so a removed line that starts
+ * with `-- ` is never taken for a path.
  * @param {string} repoDir @param {string} base
  * @returns {Map<string, number[]>}
  */
@@ -25,13 +29,22 @@ export function changedLines(repoDir: string, base: string): Map<string, number[
  */
 export function testsFor(repoDir: string, file: string): string[];
 /**
- * @typedef {{ file: string, line: number, operator: string, outcome: "killed" | "survived" | "no test" | "timeout" }} Mutant
+ * Put back a file a run was killed before restoring: the recovery file holds its original.
+ * @param {string} repoDir @returns {string} the path restored, or ""
+ */
+export function restoreInterrupted(repoDir: string): string;
+/**
+ * @typedef {{ file: string, line: number, operator: string, outcome: "killed" | "survived" | "no test" | "timeout" | "tests red" }} Mutant
+ * @typedef {{ mutants: Mutant[], interrupted: boolean, restored: string }} MutationRun
  */
 /**
- * Plant each mutant, run the tests that name its module, put the file back, whatever happened.
+ * Plant each mutant, run the nearest tests, put the file back, whatever happened. A file's tests
+ * run once unmutated first: a suite already red, or a command that cannot run, would read every
+ * mutant as killed, so that file is reported as `tests red` and none of its mutants is judged.
+ * A timeout under a shell ends the shell; on Windows the test process it started can outlive it.
  * @param {{ repoDir: string, base: string, command: string, max: number, timeoutMs: number, log?: (s: string) => void }} o
  * `command` runs the tests, with `{files}` where the test files go (`node --test {files}`).
- * @returns {Mutant[]}
+ * @returns {MutationRun}
  */
 export function runMutants(o: {
     repoDir: string;
@@ -40,10 +53,15 @@ export function runMutants(o: {
     max: number;
     timeoutMs: number;
     log?: (s: string) => void;
-}): Mutant[];
+}): MutationRun;
 export type Mutant = {
     file: string;
     line: number;
     operator: string;
-    outcome: "killed" | "survived" | "no test" | "timeout";
+    outcome: "killed" | "survived" | "no test" | "timeout" | "tests red";
+};
+export type MutationRun = {
+    mutants: Mutant[];
+    interrupted: boolean;
+    restored: string;
 };

@@ -39,7 +39,7 @@ function changed() {
 
 test("a mutant the tests notice is killed, one they miss survives, and a module no test names says so", () => {
   const { dir, base } = changed();
-  const mutants = runMutants({
+  const { mutants } = runMutants({
     repoDir: dir,
     base,
     command: "node --test {files}",
@@ -90,6 +90,43 @@ test("a module reached only through a registry is tested by the tests that impor
     command: "node --test {files}",
     max: 5,
     timeoutMs: 60000,
-  });
+  }).mutants;
   assert.equal(m?.outcome, "killed", "the registry's test ran, not the one that only says refs");
+});
+
+test("a file whose tests are red with no mutant in it is reported, never read as killed", () => {
+  const { dir, base } = changed();
+  writeFileSync(
+    join(dir, "test/adult.test.mjs"),
+    'import { test } from "node:test";\nimport { adult } from "../src/adult.mjs";\ntest("red", () => { throw new Error(String(adult)); });\n',
+  );
+  git(dir, "commit", "-qam", "test: a red suite");
+  const { mutants } = runMutants({
+    repoDir: dir,
+    base,
+    command: "node --test {files}",
+    max: 10,
+    timeoutMs: 60000,
+  });
+  assert.equal(mutants.find((m) => m.file === "src/adult.mjs")?.outcome, "tests red");
+  assert.equal(mutants.filter((m) => m.outcome === "killed").length, 0);
+});
+
+test("a file a killed run left mutated is put back by the next run", () => {
+  const { dir } = changed();
+  writeFileSync(join(dir, "src/adult.mjs"), "export const adult = (age) => age > 18;\n");
+  mkdirSync(join(dir, ".abatty"), { recursive: true });
+  writeFileSync(
+    join(dir, ".abatty/mutate-restore.json"),
+    JSON.stringify({ file: "src/adult.mjs", original: ADULT }),
+  );
+  const run = runMutants({
+    repoDir: dir,
+    base: "HEAD",
+    command: "node --test {files}",
+    max: 0,
+    timeoutMs: 60000,
+  });
+  assert.equal(run.restored, "src/adult.mjs");
+  assert.equal(readFileSync(join(dir, "src/adult.mjs"), "utf8"), ADULT);
 });
