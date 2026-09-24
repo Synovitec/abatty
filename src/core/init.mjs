@@ -24,13 +24,14 @@ import {
   CONFIG_FILE,
   LEGACY_CONFIG,
   dependencyNames,
+  git,
   readJsonFile,
   readPackage,
   writeJsonFile,
 } from "./repo.mjs";
 import { SCHEMA_URL } from "./config.mjs";
 import { commandFor, managerFor } from "./package-manager.mjs";
-import { gitHooks } from "./git-hooks.mjs";
+import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { writeCi } from "../cli/ci.mjs";
@@ -78,8 +79,8 @@ const sameConfig = (a, b) => JSON.stringify(ordered(a)) === JSON.stringify(order
  * The executable bit on a file git must be able to run. git skips a hook that is not executable
  * and says so only as a hint, so a pre-push hook written 644 means the gate never runs and a red
  * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
- * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
- * the file may not be tracked yet.
+ * the index entry's mode is what records it there (the mode alone, never the content), and a
+ * failure is not fatal here because the file may not be tracked yet.
  *
  * Returns true when git will commit the bit on its own, false when the file is untracked on a
  * filesystem without modes (Windows, core.filemode false): there `git add` does not read the bit
@@ -96,8 +97,11 @@ export function makeExecutable(target) {
   }
   const cwd = dirname(target);
   const rel = relative(cwd, target);
-  const r = spawnSync("git", ["update-index", "--chmod=+x", "--", rel], { cwd, stdio: "ignore" });
-  if (r.status === 0) return true;
+  // The mode alone, on the entry git already holds: `--chmod=+x` staged the content with it.
+  if (git(cwd, "ls-files", "--", rel)) {
+    indexExecutable(cwd, [rel]);
+    return true;
+  }
   const modes = spawnSync("git", ["config", "core.fileMode"], { cwd, encoding: "utf8" });
   return String(modes.stdout).trim() !== "false";
 }

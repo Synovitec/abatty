@@ -1,4 +1,13 @@
 /**
+ * The last controls run, when this version of abatty can still read it as evidence, for every
+ * reader (the truth of a finding, the night's precondition, the attestation, INST-CONTROLS): one written
+ * by an older minor version, or by one that did not record its version, planted where that
+ * version planted, and read as today's proof it once dropped three steps a monorepo had watched
+ * fail by hand. Such a run is left unread, so the steps read unproven rather than contradicted.
+ * @param {any} controls
+ */
+export function currentControls(controls: any): any;
+/**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o

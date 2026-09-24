@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
+import { CONTROLS_VERSION } from "../src/core/step-controls.mjs";
 
 /**
  * The night's fixture, shared by the three files that exercise it. The tests were one file of
@@ -43,6 +44,7 @@ export function recordControls(dir, steps = ["format", "typecheck", "unit tests 
     join(dir, ".abatty", "controls.json"),
     JSON.stringify({
       at: new Date().toISOString(),
+      abatty: CONTROLS_VERSION,
       steps: steps.map((label) => ({ label, outcome: "red", detail: "went red, as it must" })),
       absent: [],
     }),

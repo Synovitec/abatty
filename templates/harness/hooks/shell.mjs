@@ -42,9 +42,9 @@ export const programName = (t) => {
 /**
  * Split on `;`, `&&`, `||`, `|` and `&` that are OUTSIDE quotes. A `&` belonging to a
  * redirection (`2>&1`) is not a separator, so it stays with the segment it redirects.
- * @param {string} s @returns {string[]}
+ * @param {string} s @param {boolean} [ps] PowerShell: a backslash is a path character @returns {string[]}
  */
-function splitSegments(s) {
+function splitSegments(s, ps = false) {
   const out = [];
   let cur = "";
   let q = /** @type {string | null} */ (null);
@@ -53,11 +53,11 @@ function splitSegments(s) {
     if (q) {
       cur += c;
       if (c === q) q = null;
-      else if (q === '"' && c === "\\" && i + 1 < s.length) cur += s.charAt(++i);
+      else if (!ps && q === '"' && c === "\\" && i + 1 < s.length) cur += s.charAt(++i);
       continue;
     }
     if (c === "'" || c === '"') { q = c; cur += c; continue; }
-    if (c === "\\" && i + 1 < s.length) { cur += c + s.charAt(++i); continue; }
+    if (!ps && c === "\\" && i + 1 < s.length) { cur += c + s.charAt(++i); continue; }
     if (c === ";" || c === "\n") { out.push(cur); cur = ""; continue; }
     if (c === "|" || (c === "&" && !/[>\d]$/.test(cur))) {
       if (s[i + 1] === c) i++;
@@ -75,9 +75,9 @@ function splitSegments(s) {
  * One segment into tokens, quotes consumed as the shell consumes them, so a quoted flag is the
  * flag and `'a;b'` is one token rather than two segments. An unterminated quote is reported
  * rather than guessed at.
- * @param {string} s @returns {{ tokens: string[], unterminated: boolean }}
+ * @param {string} s @param {boolean} [ps] PowerShell: a backslash is a path character @returns {{ tokens: string[], unterminated: boolean }}
  */
-function tokenize(s) {
+function tokenize(s, ps = false) {
   const tokens = [];
   let cur = "";
   let started = false;
@@ -86,13 +86,13 @@ function tokenize(s) {
     const c = s.charAt(i);
     if (q) {
       if (c === q) { q = null; continue; }
-      if (q === '"' && c === "\\" && i + 1 < s.length) { cur += s.charAt(++i); started = true; continue; }
+      if (!ps && q === '"' && c === "\\" && i + 1 < s.length) { cur += s.charAt(++i); started = true; continue; }
       cur += c;
       started = true;
       continue;
     }
     if (c === "'" || c === '"') { q = c; started = true; continue; }
-    if (c === "\\" && i + 1 < s.length) { cur += s.charAt(++i); started = true; continue; }
+    if (!ps && c === "\\" && i + 1 < s.length) { cur += s.charAt(++i); started = true; continue; }
     if (/\s/.test(c)) { if (started) { tokens.push(cur); cur = ""; started = false; } continue; }
     cur += c;
     started = true;
@@ -146,12 +146,16 @@ function ungroup(seg) {
  * after it, the raw text it came from, and `opaque`: true when this segment must NOT be trusted
  * to a precise reading, because the program is unknown, is reached through a substitution or a
  * variable, or the quoting does not close. An opaque segment is the caller's cue to fall back.
- * @param {string} raw
+ * PowerShell takes a backslash as part of a path, where bash takes it as an escape: read the bash
+ * way, `C:\Users\me\wt` reached the folder resolution as `C:Usersmewt` and every push after it
+ * was refused as going nowhere known.
+ * @param {string} raw @param {{ powershell?: boolean }} [o]
  * @returns {{ program: string, args: string[], tokens: string[], raw: string, opaque: boolean }[]}
  */
-export function shellSegments(raw) {
-  return splitSegments(String(raw || "")).map((seg) => {
-    const { tokens, unterminated } = tokenize(ungroup(seg).text);
+export function shellSegments(raw, o = {}) {
+  const ps = o.powershell === true;
+  return splitSegments(String(raw || ""), ps).map((seg) => {
+    const { tokens, unterminated } = tokenize(ungroup(seg).text, ps);
     const words = stripRedirections(tokens);
     let i = 0;
     // Leading `VAR=value` assignments belong to the environment, not to the command.
@@ -216,8 +220,13 @@ export function segmentDirs(segments, start, home = "") {
   return segments.map((s) => {
     const { opens, closes } = ungroup(s.raw);
     for (let n = 0; n < opens; n++) outer.push(dir);
-    const here = dir;
+    let here = dir;
     if (s.program === "popd" || s.program === "Pop-Location") dir = null;
+    // A `cd` this reading cannot follow: inside a group (`{ cd wt; ... }`), a condition
+    // (`if cd wt; then`), a builtin prefix, `env -C`, or a wrapper's quoted text. The folder is
+    // unknown from here on, this segment included, rather than the hook's own guessed.
+    else if (!CD.has(s.program) && /(^|[\s;{(&|"'])(cd|pushd|builtin\s+cd|Set-Location)\s|\benv\s+(-C|--chdir)\b/.test(s.raw))
+      here = dir = null;
     else if (CD.has(s.program)) {
       const target = s.args.filter((a) => !/^-[LPe@]$|^-Path$/i.test(a))[0];
       dir = dir === null ? null : resolveDir(dir, target, home);
@@ -243,7 +252,10 @@ export function gitLocation(args) {
     const pair = a === "-C" || a === "--git-dir" || a === "--work-tree";
     const value = pair ? args[++i] : /^--(git-dir|work-tree)=/.test(a) ? a.slice(a.indexOf("=") + 1) : null;
     if (value === null) {
-      if (a === "-c") i++; // a config pair belongs to git too, and is not a location
+      // An option that takes its value as the next word is not a location, and neither is the
+      // word: stopping at it dropped a `-C` behind `--namespace x`, and the push was judged by
+      // the hook's own folder.
+      if (/^(-c|--namespace|--config-env|--attr-source|--super-prefix)$/.test(a)) i++;
       continue;
     }
     if (value === undefined || /[$`]/.test(value)) return null;

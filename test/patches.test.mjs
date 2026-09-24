@@ -36,3 +36,18 @@ test("doctor names a stale patch of abatty", () => {
   const r = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(r.out, /a patch of abatty 0\.0\.1 is still declared/);
 });
+
+test("a patch with no version, a range, or patch-package's numbered name is named too", () => {
+  const dir = tempRepo("patches-forms", {
+    "package.json": JSON.stringify({
+      pnpm: { patchedDependencies: { abatty: "patches/abatty.patch", "abatty@^0.4.0": "x" } },
+    }),
+    "patches/abatty+0.4.0+001+fix-audit.patch": "diff\n",
+  });
+  assert.deepEqual(
+    stalePatches(dir, "0.5.2")
+      .map((p) => p.patched)
+      .sort(),
+    ["(any version)", "0.4.0", "^0.4.0"].sort(),
+  );
+});

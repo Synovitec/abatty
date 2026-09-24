@@ -37,6 +37,26 @@ export const CONTROLS_VERSION = String(
   JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version,
 );
 
+/** The major and minor of a version, as one comparable number. @param {unknown} v */
+const minorOf = (v) => {
+  const [major = 0, minor = 0] = String(v || "0.0")
+    .split(".")
+    .map(Number);
+  return major * 1000 + minor;
+};
+
+/**
+ * The last controls run, when this version of abatty can still read it as evidence, for every
+ * reader (the truth of a finding, the night's precondition, the attestation, INST-CONTROLS): one written
+ * by an older minor version, or by one that did not record its version, planted where that
+ * version planted, and read as today's proof it once dropped three steps a monorepo had watched
+ * fail by hand. Such a run is left unread, so the steps read unproven rather than contradicted.
+ * @param {any} controls
+ */
+export function currentControls(controls) {
+  return controls && minorOf(controls.abatty) >= minorOf(CONTROLS_VERSION) ? controls : null;
+}
+
 /**
  * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
  */

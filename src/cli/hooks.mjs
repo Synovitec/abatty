@@ -10,7 +10,7 @@ import { chmodSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { SHIM_DIR, SHIM_FILES } from "../core/shim.mjs";
-import { hooksNotExecutable } from "../core/git-hooks.mjs";
+import { hooksNotExecutable, indexExecutable } from "../core/git-hooks.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
 
@@ -39,13 +39,20 @@ export function hooksCommand(cx) {
   // already tracked that way gets the bit in the index too, which is a change to commit. One not
   // yet tracked is left alone: nothing is staged that the repository did not already carry.
   const inert = hooksNotExecutable(dir);
-  if (inert.length) spawnSync("git", ["update-index", "--chmod=+x", "--", ...inert], { cwd: dir });
+  const marked = indexExecutable(dir, inert);
   out(
     `${t.glyph.ok} hooks installed: core.hooksPath=.githooks · ${files.length} file(s) executable\n`,
   );
-  if (inert.length)
+  if (marked.length)
     out(
-      `${t.glyph.warn} ${inert.join(", ")} ${inert.length > 1 ? "were" : "was"} committed as not executable; the mode is staged now: commit it\n`,
+      `${t.glyph.warn} ${marked.join(", ")} ${marked.length > 1 ? "were" : "was"} committed as not executable; the mode alone is staged now: commit it\n`,
     );
+  const failed = inert.filter((f) => !marked.includes(f));
+  if (failed.length) {
+    err(
+      `${t.glyph.fail} ${failed.join(", ")}: git would not take the executable mode (git update-index --cacheinfo)\n`,
+    );
+    return EXIT.error;
+  }
   return EXIT.clean;
 }

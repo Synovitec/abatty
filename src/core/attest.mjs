@@ -19,7 +19,7 @@
  */
 import { git, readConfig } from "./repo.mjs";
 import { readJsonFile } from "./repo.mjs";
-import { CONTROLS_FILE } from "./step-controls.mjs";
+import { CONTROLS_FILE, currentControls } from "./step-controls.mjs";
 
 /** The in-toto Statement type, version 1. */
 export const STATEMENT_TYPE = "https://in-toto.io/Statement/v1";
@@ -84,9 +84,15 @@ function waiversOf(findings) {
  * @param {string} repoDir
  */
 function controlsOf(repoDir) {
-  const c = readJsonFile(repoDir, CONTROLS_FILE);
+  const recorded = readJsonFile(repoDir, CONTROLS_FILE);
+  const c = currentControls(recorded);
   if (!c || !Array.isArray(c.steps))
-    return { ran: false, note: "no control run recorded: run `abatty doctor --controls`" };
+    return {
+      ran: false,
+      note: recorded
+        ? "the control run on record is from an older abatty: run `abatty doctor --controls`"
+        : "no control run recorded: run `abatty doctor --controls`",
+    };
   return {
     ran: true,
     at: String(c.at || ""),

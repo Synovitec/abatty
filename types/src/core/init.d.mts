@@ -2,8 +2,8 @@
  * The executable bit on a file git must be able to run. git skips a hook that is not executable
  * and says so only as a hint, so a pre-push hook written 644 means the gate never runs and a red
  * push looks like a green one. Windows carries the bit in the index rather than the filesystem;
- * `git update-index --chmod=+x` is what records it there, and a failure is not fatal here because
- * the file may not be tracked yet.
+ * the index entry's mode is what records it there (the mode alone, never the content), and a
+ * failure is not fatal here because the file may not be tracked yet.
  *
  * Returns true when git will commit the bit on its own, false when the file is untracked on a
  * filesystem without modes (Windows, core.filemode false): there `git add` does not read the bit

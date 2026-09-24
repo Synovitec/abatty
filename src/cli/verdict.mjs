@@ -14,7 +14,7 @@ import { git, readAdoption } from "../core/repo.mjs";
 import { pushLines, pushPlan, refRange } from "../core/push-refs.mjs";
 import { readFileSync } from "node:fs";
 import * as t from "../ui/term.mjs";
-import { stalePatches } from "../core/patches.mjs";
+import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
@@ -203,7 +203,7 @@ export async function doctorCommand(cx, preset) {
   out("\n");
   for (const p of stalePatches(dir, VERSION))
     out(
-      `  ${t.glyph.warn} ${t.yellow(`a patch of abatty ${p.patched} is still declared (${p.where}), and this is ${VERSION}`)}${t.gray(" · remove it once the upgrade carries its fix, or it applies to code it was not written for")}
+      `  ${t.glyph.warn} ${t.yellow(stalePatchNote(p, VERSION).says)}${t.gray(` · ${stalePatchNote(p, VERSION).fix}`)}
 `,
     );
   for (const p of r.config.problems) out(`  ${t.glyph.fail} ${t.red("config: " + p)}\n`);

@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-24
+
 ### Added
 
 - **`types.nonNull`, an opt-in probe that counts non-null assertions.** To pass a coverage gate an
@@ -37,6 +39,43 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`types.nonNull` and the stale-patch notice read more of what they are for.** The probe now
+  counts an assertion before a call, a cast, a closing brace and a spaced comparison, and no
+  longer counts a class field's definite assignment (`name!: string`) or a `!` ending a line of
+  JSX text. The stale-patch notice also names a patch declared with no version or with a range,
+  which applies to every version, and patch-package's numbered file names.
+- **The review's fixes to this release's new pieces.** A source folder that shares the fragments
+  folder's name (`src/features/changes/`) no longer counts as a changelog entry.
+  `changelog --release` refuses a version already released and a changelog without
+  `[Unreleased]`, as bad input rather than a crash, and keeps a CRLF file CRLF. A range the gate
+  could not trust is not handed to the changed-lines step, which was told an empty one and passed
+  green over nothing. The integration-test plant reads the workspace's tsconfig as the unit plant
+  does, and the changed-lines plant is typed, so a coverage command that also typechecks goes red
+  on coverage.
+- **An outdated controls run is not proof anywhere.** Only the reading of a finding ignored a
+  controls run an older abatty had planted; the night's precondition, the attestation and
+  INST-CONTROLS still accepted it, so a night could be cleared by a proof the changelog above calls
+  no longer evidence. All four now read it the same way, and each says the run is outdated and to
+  run `abatty doctor --controls` again.
+- **Setting a hook's executable bit stages the mode alone.** `abatty hooks` and `init`/`update`
+  used `git update-index --chmod=+x`, which also stages the file's working-tree content, so an
+  edit in progress to a hook went into the index with the bit. The mode is now set on the entry
+  git already holds, and `abatty hooks` says so, or fails, rather than reporting a change it did
+  not make. Only files git runs as hooks are checked: a README or a sourced helper under
+  `.githooks/` is not failed for its mode, and INST-GATE reads the mode only where git runs the
+  hook itself, not a husky hook or a lefthook config, which are 100644 by design. `update` treats
+  a hook whose comments are the repository's own as edited, and puts its version beside it.
+- **The guard reads every destination of a push, and more of the shapes a push hides in.** A
+  review of this release found the worktree fix had narrowed the night's rule: a push naming
+  several refspecs was judged by the last, so `git push origin main adopt/x` passed a night that
+  0.5.1 refused. Every refspec is now a destination, and `--all` or `--mirror` writes the base. Also
+  closed: a push behind git's own options (`--attr-source`, `--namespace`, `--config-env`) or inside
+  a wrapper (`sh -c "git -C . push ..."`); a `cd` inside a group, a condition, `env -C` or a wrapper,
+  which now makes the folder unknown rather than guessed; a destination the shell computes
+  (`$(...)`). Two false refusals the first cut introduced are gone: an ordinary command that only
+  quotes the words "git push" after a `cd`, and a PowerShell path, whose backslashes were read as
+  escapes. Where the repository takes direct pushes to its base, a push to an unknown branch is no
+  longer refused by day.
 - **A red cross means the run failed.** The ratchet listed every finding in a file the push
   touched with ✗, the debt the file already carried within its floor included, and an adopter's
   session read a push that had gone through as refused and had to ask the remote. A finding whose

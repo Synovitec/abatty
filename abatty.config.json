@@ -111,7 +111,7 @@
   "maxSessionsPerPhase": 2,
   "phases": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   "stack": "node",
-  "abatty": "0.5.1",
+  "abatty": "0.5.2",
   "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config.",
   "secrets": {
     "allow": ["src/core/secret-corpus.mjs"]

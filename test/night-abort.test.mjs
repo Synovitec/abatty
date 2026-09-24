@@ -97,3 +97,14 @@ test("a night is refused until the gate steps have been watched failing", () => 
   const ok = night(dir, { canaryOnly: true });
   assert.equal(/never been watched failing/.test(ok.out + ok.abort), false);
 });
+
+test("a night refuses a controls run an older abatty planted", () => {
+  const dir = nightRepo("night-stale-controls");
+  const file = join(dir, ".abatty", "controls.json");
+  const rec = JSON.parse(readFileSync(file, "utf8"));
+  delete rec.abatty;
+  writeFileSync(file, JSON.stringify(rec));
+  const stale = night(dir);
+  assert.equal(stale.ok, false);
+  assert.match(stale.out + stale.abort, /from an older abatty/);
+});

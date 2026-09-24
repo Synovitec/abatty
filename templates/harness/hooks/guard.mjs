@@ -14,7 +14,7 @@
 import { homedir } from "node:os";
 import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
-import { gitLocation, segmentDirs, shellSegments } from "./shell.mjs";
+import { gitLocation, programName, segmentDirs, shellSegments } from "./shell.mjs";
 
 // Fail closed: a crashed PreToolUse hook does not block, so at night an internal error denies.
 process.on("uncaughtException", (err) => {
@@ -59,7 +59,7 @@ const argv = raw
 // no longer this command's, which is what stops the guard refusing honest read-only work and
 // teaching its user to route around the thing it exists for. Both the raw and the unquoted form
 // are tested, since a quote sits exactly where these patterns anchor a short flag.
-const segments = shellSegments(argv);
+const segments = shellSegments(argv, { powershell: event.tool_name === "PowerShell" });
 const opaqueText = segments.filter((s) => s.opaque).map((s) => s.raw).join(" ; ");
 // The folder each segment runs in: `cd <worktree> && git push` pushes the worktree's branch, not
 // the one checked out where this hook runs (shell.mjs). Asked once, here, the branch was another
@@ -72,9 +72,17 @@ function branchAt(i, args = []) {
   const dir = dirs[i];
   const loc = gitLocation(args);
   if (dir === null || dir === undefined || loc === null) return UNKNOWN;
-  if (dir === process.cwd() && !loc.length) return branch;
+  // An empty answer (git failing here) is not a branch: judged as one, it named no target, the
+  // push produced none, and the night's adoption-branch rule had nothing to refuse.
+  if (dir === process.cwd() && !loc.length) return branch || UNKNOWN;
   return git("-C", dir, ...loc, "rev-parse", "--abbrev-ref", "HEAD") || UNKNOWN;
 }
+/**
+ * `git` and the options it takes before its subcommand, as a pattern: a wrapper's text
+ * (`sh -c "git -C . push --force"`) is read by pattern, and one that required `git push` side by
+ * side let every global option hide the push inside a wrapper.
+ */
+const GIT = String.raw`\bgit(?:\s+(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env|--attr-source)\s+\S+|\s+-{1,2}[\w-]+(?:=\S+)?)*\s+`;
 const hasFlag = (re) => re.test(opaqueText) || re.test(opaqueText.replace(/['"]/g, ""));
 /** The argument lists of one program, from the segments that were understood. */
 const invocations = (name) => segments.filter((s) => !s.opaque && s.program === name).map((s) => s.args);
@@ -93,7 +101,7 @@ const carries = (args, short, ...longs) =>
 const sub = (args) => {
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (/^(-C|-c|--git-dir|--work-tree|--namespace|--config-env)$/.test(a)) i++;
+    if (/^(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--attr-source|--super-prefix)$/.test(a)) i++;
     else if (!a.startsWith("-") && !/^[A-Za-z_]\w*=/.test(a)) return a;
   }
   return "";
@@ -112,7 +120,7 @@ const forces = (a) =>
 const forcePush =
   invocations("git").some((a) => sub(a) === "push" && forces(a)) ||
   maybeGit.some((t) => t.includes("push") && forces(t));
-if (forcePush || hasFlag(/\bgit push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+[\w/])/)) {
+if (forcePush || hasFlag(new RegExp(GIT + String.raw`push\b[^;&|]*(\s--force\b|\s--force-with-lease\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+[\w/])`))) {
   deny("Force push is never allowed. Rebase onto the remote or make a new commit.");
 }
 // The short form, read the way the shim beside this hook reads it. Two defects lived in the
@@ -127,7 +135,7 @@ const bypasses = (a) => a.includes("--no-verify") || (a.includes("commit") && ca
 const bypass =
   invocations("git").some((a) => a.includes("--no-verify") || (sub(a) === "commit" && carries(a, "n"))) ||
   maybeGit.some(bypasses);
-if (bypass || hasFlag(/--no-verify\b|\bgit commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b/)) {
+if (bypass || hasFlag(new RegExp(String.raw`--no-verify\b|` + GIT + String.raw`commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b`))) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
 }
 // Provenance is the default: nothing here refuses a commit for naming the agent. A repository
@@ -171,51 +179,70 @@ if (NIGHT && trailer && /\bgit commit\b.*\s-m\b/.test(cmd) && !cmd.includes(trai
  * @param {string} w
  */
 const unquote = (w) => w.replace(/^['"]+/, "").replace(/['"]+$/, "");
-/** The branch a push writes to, from an argument list a shell has already been read off. */
-function destinationOf(args, here = branch) {
+/**
+ * Every branch a push writes to, from an argument list a shell has already been read off (from
+ * `push` on). Each refspec after the remote is a destination: reading the last one alone let
+ * `git push origin main adopt/x` through a night whose rule is "the adoption branch only", which
+ * the version before had refused. `--all` and `--mirror` write every branch, the base among them.
+ * A destination the shell computes (`$(...)`, a variable) is unknown, never read as a name.
+ * @param {string[]} args @param {string} [here] the branch checked out where the push runs
+ * @returns {string[]}
+ */
+function destinationsOf(args, here = branch || UNKNOWN) {
+  if (args.some((a) => /^--(all|mirror|branches)$/.test(a))) return [base];
   const positional = args.filter((a) => !a.startsWith("-"));
-  if (positional.length < 3) return here; // `git`, `push`, and nothing said: the upstream
-  const spec = positional[positional.length - 1];
-  const dest = (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^refs\/heads\//, "");
-  // `HEAD` and its alias `@` are not the name of a branch: git resolves them to the branch you
-  // are standing on, so ON the base branch `git push origin HEAD` IS a push to the base. Read
-  // as a literal it matched no branch name and the push went through - this hook's own
-  // repository, 2026-09-22, by the agent that had just finished closing the two flag holes.
-  // `HEAD:main` is unaffected: the destination side is read before this, and it says main.
-  return dest === "HEAD" || dest === "@" ? here : dest;
+  if (positional.length < 3) return [here]; // `push` and a remote at most: the upstream
+  return positional.slice(2).map((spec) => {
+    if (/[$`]/.test(spec)) return UNKNOWN;
+    const dest = (spec.includes(":") ? spec.slice(spec.lastIndexOf(":") + 1) : spec).replace(/^\+/, "").replace(/^refs\/heads\//, "");
+    // `HEAD` and its alias `@` are not the name of a branch: git resolves them to the branch you
+    // are standing on, so ON the base branch `git push origin HEAD` IS a push to the base. Read
+    // as a literal it matched no branch name and the push went through - this hook's own
+    // repository, 2026-09-22, by the agent that had just finished closing the two flag holes.
+    // `HEAD:main` is unaffected: the destination side is read before this, and it says main.
+    return dest === "HEAD" || dest === "@" ? here : dest;
+  });
 }
-/** The old whole-line reading, kept for the segments a shell could not be read off. */
-function opaqueTarget() {
-  const m = opaqueText.match(/\bgit push\b([^;&|]*)/);
-  if (!m) return null;
-  const args = [];
-  for (const w of m[1].trim().split(/\s+/).filter(Boolean)) {
-    if (/^\d*>{1,2}|^<|^&>/.test(w)) break;
-    const bare = unquote(w);
-    if (bare && !bare.startsWith("-")) args.push(bare);
-  }
-  // The whole-line reading cannot tell which segment moved the shell: any `cd` makes it unknown.
-  const here = dirs.every((d) => d === process.cwd()) ? branch : UNKNOWN;
-  return args.length < 2 ? here : destinationOf(["push", ...args], here);
+/** The index of git in a segment's tokens, whatever path or extension reached it. */
+const gitAt = (tokens) => tokens.findIndex((t) => programName(t) === "git");
+/**
+ * The whole-line reading, kept for the segments a shell could not be read off: each such segment
+ * whose text pushes is read where IT runs, so a `cd` before an unrelated command that merely
+ * quotes the words (`cd sub && npm test -- -t 'git push'`) is not a push from nowhere.
+ */
+function opaqueTargets() {
+  return segments.flatMap((s, i) => {
+    if (!s.opaque) return [];
+    const m = s.raw.replace(/['"]/g, " ").match(new RegExp(GIT + String.raw`push\b([^;&|]*)`));
+    if (!m) return [];
+    const args = [];
+    for (const w of String(m[1]).trim().split(/\s+/).filter(Boolean)) {
+      if (/^\d*>{1,2}|^<|^&>/.test(w)) break;
+      const bare = unquote(w);
+      if (bare) args.push(bare);
+    }
+    const loc = m[0].match(/\s-C\s+(\S+)/);
+    return destinationsOf(["push", ...args], branchAt(i, loc ? ["-C", String(loc[1])] : []));
+  });
 }
-// Every destination this command writes to: one per understood `git push`, plus the conservative
-// reading of anything that was not understood. A command can carry several.
+// Every destination this command writes to: one per refspec of each understood `git push`,
+// plus the conservative reading of anything that was not understood. A command can carry several.
 const targets = [
   // Read from `push` on: git's own `-C <dir>` before it is a location, not an argument, and read
   // as one it made `git -C wt push origin` a push to a branch named origin.
   ...segments.flatMap((s, i) =>
     !s.opaque && s.program === "git" && sub(s.args) === "push"
-      ? [destinationOf(s.args.slice(s.args.indexOf("push")), branchAt(i, s.args))]
+      ? destinationsOf(s.args.slice(s.args.indexOf("push")), branchAt(i, s.args))
       : [],
   ),
   // An opaque segment that mentions `push` is read from that word on, so a substitution in
   // command position cannot hide the destination either.
   ...segments.flatMap((s, i) =>
     s.opaque && s.tokens.includes("push")
-      ? [destinationOf(s.tokens.slice(s.tokens.indexOf("push")), branchAt(i, s.tokens.slice(s.tokens.indexOf("git") + 1)))]
+      ? destinationsOf(s.tokens.slice(s.tokens.indexOf("push")), branchAt(i, s.tokens.slice(gitAt(s.tokens) + 1)))
       : [],
   ),
-  hasFlag(/\bgit push\b/) ? opaqueTarget() : null,
+  ...opaqueTargets(),
 ].filter(Boolean);
 // A push is not the only write to a branch: the forge's API moves a ref or merges into it
 // without git. `gh api` with a write method (or a body flag, which implies POST) to the base's
@@ -233,7 +260,9 @@ const apiRefWritePrecise = invocations("gh").some((a) => {
 const apiWrite = /\bgh api\b/.test(opaqueText) && /\s(-X|--method)\s+(PATCH|POST|PUT|DELETE)\b|\s(-f|-F|--field|--raw-field|--input)\b/i.test(opaqueText);
 const B = "\\b"; // a word boundary as a string: in a template literal the same two characters are a backspace
 const apiRefWrite = apiRefWritePrecise || (apiWrite && new RegExp(B + "gh api" + B + "[^;&|]*/(git/refs/heads/(" + base + "|master)" + B + "|merges" + B + ")").test(opaqueText));
-if (targets.includes(UNKNOWN))
+// By the repository's push policy: where a push to the base is allowed by day, the branch a push
+// writes to does not matter by day, and refusing it for being unknown was a denial for nothing.
+if (targets.includes(UNKNOWN) && (NIGHT || config.directPushToBase !== true))
   deny("This push names no branch and runs in a folder the guard cannot follow (a variable, a subshell, `cd -`), so the branch it writes to is unknown. Name it: git push origin <branch>.");
 const pushesBase = targets.some((t) => t === base || t === "master") || apiRefWrite;
 if (pushesBase && (NIGHT || config.directPushToBase !== true)) {

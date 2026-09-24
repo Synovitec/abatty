@@ -44,9 +44,16 @@ export function readFragments(repoDir, folder) {
  */
 export function foldRelease(o) {
   const path = join(o.repoDir, o.changelog);
-  const text = existsSync(path) ? readFileSync(path, "utf8") : "# Changelog\n\n## [Unreleased]\n";
+  const raw = existsSync(path) ? readFileSync(path, "utf8") : "# Changelog\n\n## [Unreleased]\n";
+  // Read and written in the file's own line endings: a CRLF changelog came back mixed.
+  const crlf = raw.includes("\r\n");
+  const text = crlf ? raw.replace(/\r\n/g, "\n") : raw;
   const head = /^## \[Unreleased\][^\n]*\n/m.exec(text);
   if (!head) throw new Error(`${o.changelog} has no ## [Unreleased] section to release`);
+  // A release cut twice wrote a second, empty section of the same version.
+  const escaped = o.version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (new RegExp(`^## \\[${escaped}\\]`, "m").test(text))
+    throw new Error(`${o.changelog} already has a ## [${o.version}] section`);
   const start = head.index + head[0].length;
   const next = text.slice(start).search(/^## \[/m);
   const end = next < 0 ? text.length : start + next;
@@ -68,7 +75,8 @@ export function foldRelease(o) {
     .map((s) => `### ${s}\n\n${(by.get(s) || []).join("\n")}\n`)
     .join("\n");
   const release = `## [${o.version}] - ${o.date}\n\n${body || "Nothing recorded.\n"}\n`;
-  writeFileSync(path, `${text.slice(0, start)}\n${release}${text.slice(end)}`);
+  const out = `${text.slice(0, start)}\n${release}${text.slice(end)}`;
+  writeFileSync(path, crlf ? out.replace(/\n/g, "\r\n") : out);
   for (const f of fragments) rmSync(join(o.repoDir, f.file));
   return { fragments: fragments.length, written: true };
 }
