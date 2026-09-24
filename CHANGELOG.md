@@ -104,6 +104,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **Every false positive an adopter reported is locked by a case that must stay green.** An audit
+  of eighteen reported false positives found three whose fix no case held: variable reads, call
+  results and test data in the secret scan, a commit message that mentions the bypass flag, and a
+  CI step with its own `working-directory:`. Each now has the reporter's own situation as a case,
+  the secret corpus grows to 52 (32 look-alikes), and the README states the rule: a false
+  positive is fixed together with the case that keeps it fixed.
 - **`docs.behindCode` is judged by commits, not by the typed date.** A doc is behind when a
   source it names changed in a later commit than the last one that changed the doc itself. A doc
   changed in the same commit as its source is fresh, whatever its date says: an adopter's decision

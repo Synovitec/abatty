@@ -194,8 +194,8 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
 - **Enforcement is a hook, guidance is `CLAUDE.md`.** `.claude/settings.json` (committed,
   because it is the file whose hooks run in headless `-p` sessions) carries a `PreToolUse`
   guard on `Bash|PowerShell` (denies a push to the base branch when the repo is PR-only, by
-  any door: behind a redirection or through the forge's API; force push and `--no-verify`
-  always; at night also any move off the work branch, the merge of a pull request, history
+  any door: behind a redirection or through the forge's API; force push and `--no-verify`,
+  with its spelling as configuration (`core.hooksPath` moved or unset), always; at night also any move off the work branch, the merge of a pull request, history
   rewrite, destructive SQL, deploy, publish, dependency change, a shell write to the harness), a
   `PreToolUse` guard on `Edit|Write` (at night denies a write under `.claude/`, to an applied
   migration, to an env file, outside the tree), a `Stop` gate that refuses to end an
@@ -582,7 +582,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   Pre-commit holds only what takes seconds on staged files (format, a secret scan, the
   locale-set check); pre-push holds the gate. The hooks manager is `core.hooksPath` for a
   single package and Lefthook for a monorepo (parallel, glob-scoped, no Node dependency);
-  either way the list lives in the gate script, not in the hook. Whether `main` takes direct
+  either way the list lives in the gate script, not in the hook. Pointing `core.hooksPath`
+  elsewhere or unsetting it skips the hooks as the flag does, and is the same bypass. Whether `main` takes direct
   pushes or PRs only is a per-repository decision written in its `CLAUDE.md` and in
   `abatty.config.json` (a client project with a signed IP transfer is PR-only; an internal
   platform may push to `main`). Either way `main` is never red on purpose, and a branch lives

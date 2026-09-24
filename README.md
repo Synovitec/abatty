@@ -237,6 +237,11 @@ export const rules = [
 Add your own probes in `abatty.probes.mjs`, in the same shape. Control cases are required and a
 built-in metric name is refused.
 
+A control case proves a probe can go red; the harder property is that it stays green on correct
+code. So a false positive reported against a shipped probe, rule or guard is fixed together with a
+case built from the reporter's own situation that must stay green, in the same commit, and a test
+runs every shipped probe over this repository and fails on any finding in the probe's own source.
+
 Some built-in probes are **opt-in**, because each reads one stack's conventions and would be
 noise, or a surprise red after an update, anywhere else. A repository switches them on in
 `ratchet.enable`, and `init` enables the ones that suit the preset:

@@ -275,3 +275,43 @@ test("INST-GATE does not read a husky hook or a lefthook config as an inert hook
     assert.equal(rule.check(buildContext(dir)).status, "present", hook);
   }
 });
+
+test("INST-CI credits a step whose own working-directory names the workspace", () => {
+  const ci = [
+    "jobs:",
+    "  web:",
+    "    steps:",
+    "      - run: bun run typecheck",
+    "        working-directory: apps/web",
+    "      - run: bun run nowhere",
+  ].join("\n");
+  const v = judge("INST-CI", {
+    "package.json": JSON.stringify({ scripts: { test: "bun test" } }),
+    "apps/web/package.json": JSON.stringify({ scripts: { typecheck: "tsc" } }),
+    ".github/workflows/ci.yml": ci,
+  });
+  assert.match(v.evidence, /does not have: nowhere$/);
+});
+
+test("HARNESS-HOOKS reads the adopter's own PostToolUse block: a pipe matcher and a quoted project path", () => {
+  // Assembled: the variable's literal name is the agent's own, and the command is the adopter's.
+  const project = ["CLAUDE", "PROJECT", "DIR"].join("_");
+  const settings = {
+    hooks: {
+      SessionStart: [{ hooks: [{ type: "command", command: "node a.mjs" }] }],
+      PostToolUse: [
+        {
+          matcher: "Write|Edit",
+          hooks: [
+            { type: "command", command: `node "\${${project}}/.claude/hooks/post-tool-use.mjs"` },
+          ],
+        },
+      ],
+      PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "node g.mjs" }] }],
+    },
+  };
+  const v = judge("HARNESS-HOOKS", { ".claude/settings.json": JSON.stringify(settings) });
+  assert.match(v.evidence, /PostToolUse/);
+  assert.match(v.evidence, /SessionStart/);
+  assert.match(v.evidence, /PreToolUse/);
+});

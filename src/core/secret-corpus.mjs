@@ -279,6 +279,50 @@ export const NEGATIVES = [
     secret: false,
     why: "a readable sample in a fixture: a person typed it to look like a key",
   },
+  // An adopter's scan reported variable reads and test data as leaks; each shape it named is
+  // locked here, so a precision fix cannot quietly come undone.
+  {
+    text: "  const creds = { password: userPassword, username };",
+    path: "src/auth/login.ts",
+    secret: false,
+    why: "a bare identifier under a secret-looking key: the value is a variable, not a credential",
+  },
+  {
+    text: "  headers: { Authorization: `Bearer ${token}` }, apiKey: getApiKey(),",
+    path: "src/api/client.ts",
+    secret: false,
+    why: "an interpolated variable and a call's result: both are read at run time, neither is written here",
+  },
+  {
+    text: "const client = new Stripe(config.stripe.secretKey);",
+    path: "src/api/client.ts",
+    secret: false,
+    why: "a member read from configuration, the correct way to hand a key to a client",
+  },
+  {
+    text: 'const user = { email: "a@b.c", password: "Sup3rS3cretPassw0rd!" };',
+    path: "src/users.test.ts",
+    secret: false,
+    why: "a readable password in a test file: the user it logs in exists only in the test's database",
+  },
+  {
+    text: 'await page.fill("#password", "Correct-Horse-Battery-9");',
+    path: "e2e/login.spec.ts",
+    secret: false,
+    why: "a browser test typing its seeded user's password into a form",
+  },
+  {
+    text: "      POSTGRES_PASSWORD: devpassword",
+    path: "docker-compose.yml",
+    secret: false,
+    why: "a local development database's password, a word nobody would pick for anything that matters",
+  },
+  {
+    text: "JWT_SECRET=change-me-in-production",
+    path: ".env.example",
+    secret: false,
+    why: "the placeholder an example environment file carries so a newcomer knows the variable exists",
+  },
 ];
 
 /** Every case, positives first. @type {Case[]} */
