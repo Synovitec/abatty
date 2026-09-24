@@ -11,14 +11,13 @@
 import { spawn } from "node:child_process";
 import { createWriteStream, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { pipedStepEnv } from "./env.mjs";
 
 const [log = "", shell = "0", command = "", ...args] = process.argv.slice(2);
 mkdirSync(dirname(log), { recursive: true });
 const copy = createWriteStream(log);
 // A tool writing to a pipe drops its colours; the reader is still a terminal when ours is one.
-const env = process.stdout.isTTY
-  ? { ...process.env, FORCE_COLOR: process.env.FORCE_COLOR || "1" }
-  : process.env;
+const env = pipedStepEnv(Boolean(process.stdout.isTTY));
 const child = spawn(command, args, {
   stdio: ["inherit", "pipe", "pipe"],
   shell: shell === "1",
