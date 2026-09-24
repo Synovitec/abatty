@@ -21,16 +21,23 @@ export function changelogCommand(cx) {
   const version = opt("--release");
   if (version) {
     const cfg = resolveConfig(readAdoption(dir));
-    const r = foldRelease({
-      repoDir: dir,
-      changelog: cfg.changelog,
-      folder: cfg.changelogFragments,
-      version,
-      date: opt("--date") || localToday(),
-    });
+    /** @type {{ fragments: number }} */
+    let r;
+    try {
+      r = foldRelease({
+        repoDir: dir,
+        changelog: cfg.changelog,
+        folder: cfg.changelogFragments,
+        version,
+        date: opt("--date") || localToday(),
+      });
+    } catch (e) {
+      // A changelog with no [Unreleased], or one that already has this version: bad input, said.
+      err(`${t.glyph.fail} ${e instanceof Error ? e.message : String(e)}\n`);
+      return EXIT.input;
+    }
     out(
-      `${t.glyph.ok} ${cfg.changelog}: [Unreleased] released as [${version}]${r.fragments ? `, ${r.fragments} fragment(s) folded in and removed` : ""}
-`,
+      `${t.glyph.ok} ${cfg.changelog}: [Unreleased] released as [${version}]${r.fragments ? `, ${r.fragments} fragment(s) folded in and removed` : ""}\n`,
     );
     return EXIT.clean;
   }

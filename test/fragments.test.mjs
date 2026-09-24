@@ -145,3 +145,29 @@ test("the Stop hook takes a fragment as the changelog entry", () => {
   const allowed = stop();
   assert.equal(allowed.status, 0, allowed.stdout + allowed.stderr);
 });
+
+test("a source folder that shares the fragments folder's name is not a changelog entry", () => {
+  const pairs = changelogPairs({
+    changelog: "CHANGELOG.md",
+    changelogRequiredFor: ["src/"],
+    changelogFragments: "changes",
+  });
+  assert.equal(stagedVerdict(["src/features/changes/model.ts"], pairs).ok, false);
+  assert.equal(stagedVerdict(["src/a.ts", "changes/a.fixed.md"], pairs).ok, true);
+});
+
+test("a release is refused when the version exists or there is no [Unreleased], and keeps CRLF", () => {
+  const crlf = CHANGELOG.replace(/\n/g, "\r\n");
+  const dir = tempRepo("fragments-robust", { "CHANGELOG.md": crlf });
+  const first = cli(["changelog", dir, "--release", "0.2.0", "--date", "2026-09-24"], dir);
+  assert.equal(first.code, 0, first.out);
+  const text = readFileSync(join(dir, "CHANGELOG.md"), "utf8");
+  assert.equal(text.replace(/\r\n/g, "").includes("\n"), false, "no bare LF in a CRLF file");
+  const again = cli(["changelog", dir, "--release", "0.2.0"], dir);
+  assert.equal(again.code, 2, again.out);
+  assert.match(again.out, /already has a ## \[0\.2\.0\] section/);
+  const none = tempRepo("fragments-none", { "CHANGELOG.md": "# Changelog\n" });
+  const r = cli(["changelog", none, "--release", "1.0.0"], none);
+  assert.equal(r.code, 2);
+  assert.match(r.out, /has no ## \[Unreleased\] section/);
+});

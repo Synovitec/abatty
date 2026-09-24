@@ -163,8 +163,9 @@ export function runGate(o) {
     log(`\n▶ ${prefix}${s.label}`);
     const t0 = Date.now();
     // Every step is told the range the gate judges (ABATTY_RANGE), so a check of the changed
-    // lines measures the push rather than guessing a base of its own.
-    const env = { ...stepDatabase(o.db), ...suiteEnv, ABATTY_RANGE: range };
+    // lines measures the push rather than guessing a base of its own. A range the gate could not
+    // trust is not handed on: told an empty one, a coverage script passed green over nothing.
+    const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
     const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
     const ms = Date.now() - t0;
     if (res.errored) {

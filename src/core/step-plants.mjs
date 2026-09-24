@@ -172,11 +172,18 @@ export const STEP_CONTROLS = {
     // and none is covered. The plant is marked as about to be committed, so a check of the
     // changed lines sees it; a check that stays green on it is not checking the change.
     means: "a new source file with a branch no test covers",
-    files: ({ dir }) =>
-      file(
-        `${plantRoot(dir)}/${MARK}${checkedExt(tsHome(dir))}`,
-        "export function abattyUncovered(flag) {\n  if (flag) return 1;\n  return 2;\n}\n",
-      ),
+    // Typed in the file's own language: an untyped parameter made a coverage command that also
+    // typechecks go red on the type, and read as a coverage step proven red.
+    files: ({ dir }) => {
+      const ext = checkedExt(tsHome(dir));
+      const signature = /[jm]js?$/.test(ext)
+        ? "/** @param {boolean} flag */\nexport function abattyUncovered(flag) {"
+        : "export function abattyUncovered(flag: boolean): number {";
+      return file(
+        `${plantRoot(dir)}/${MARK}${ext}`,
+        `${signature}\n  if (flag) return 1;\n  return 2;\n}\n`,
+      );
+    },
   },
   standards: {
     means: "a file over the 800-line cap",
@@ -193,7 +200,7 @@ export const STEP_CONTROLS = {
     means: "an integration test that throws",
     files: ({ deps, dir, scripts }) =>
       file(
-        testPlantPath(scripts["test:integration"] || "", checkedExt(dir), plantRoot(dir)),
+        testPlantPath(scripts["test:integration"] || "", checkedExt(tsHome(dir)), plantRoot(dir)),
         (deps.has("vitest")
           ? 'import { test } from "vitest";\n'
           : 'import { test } from "node:test";\n') +

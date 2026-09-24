@@ -72,3 +72,35 @@ test("the step's control goes red on a check of the changed lines, and green on 
   });
   assert.equal(blind.steps.find((s) => /changed lines/.test(s.label))?.outcome, "green");
 });
+
+test("a range the gate could not trust is not handed to the changed-lines step", () => {
+  /** @type {Record<string, string> | undefined} */
+  let env;
+  runGate({
+    repoDir: repo("changed-blind-range", { "test:changed": "vitest --changed" }),
+    preset: node,
+    range: "HEAD..HEAD",
+    ci: true,
+    run: (_d, script, _a, e) => {
+      if (script === "test:changed") env = e;
+      return 0;
+    },
+    audit: () => ({ status: 0, output: "" }),
+    log: () => {},
+  });
+  assert.ok(env, "the step ran");
+  assert.equal(env?.ABATTY_RANGE, undefined);
+});
+
+test("the controls leave the index as they found it, the intent-to-add marks included", () => {
+  const dir = repo("changed-clean", { "coverage:changed": "node -e 0" });
+  const before = git(dir, "status", "--porcelain");
+  runStepControls({ repoDir: dir, preset: node });
+  // .abatty/ is where the run records its outcome; nothing else may have moved.
+  const after = git(dir, "status", "--porcelain")
+    .split("\n")
+    .filter((l) => l !== "?? .abatty/")
+    .join("\n");
+  assert.equal(after, before);
+  assert.doesNotMatch(git(dir, "ls-files"), /abatty-control/);
+});

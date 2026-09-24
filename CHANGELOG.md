@@ -37,6 +37,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The review's fixes to this release's new pieces.** A source folder that shares the fragments
+  folder's name (`src/features/changes/`) no longer counts as a changelog entry.
+  `changelog --release` refuses a version already released and a changelog without
+  `[Unreleased]`, as bad input rather than a crash, and keeps a CRLF file CRLF. A range the gate
+  could not trust is not handed to the changed-lines step, which was told an empty one and passed
+  green over nothing. The integration-test plant reads the workspace's tsconfig as the unit plant
+  does, and the changed-lines plant is typed, so a coverage command that also typechecks goes red
+  on coverage.
 - **An outdated controls run is not proof anywhere.** Only the reading of a finding ignored a
   controls run an older abatty had planted; the night's precondition, the attestation and
   INST-CONTROLS still accepted it, so a night could be cleared by a proof the changelog above calls

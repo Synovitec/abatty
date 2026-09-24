@@ -136,7 +136,9 @@ export function changelogPairs(c) {
       when: c.changelogRequiredFor,
       then: [
         c.changelog,
-        ...(c.changelogFragments ? [`${c.changelogFragments.replace(/\/+$/, "")}/`] : []),
+        // As an anchored glob, not a prefix: a prefix also matches the folder's name deeper in a
+        // path, and `src/features/changes/model.ts` counted as its own changelog entry.
+        ...(c.changelogFragments ? [`${c.changelogFragments.replace(/\/+$/, "")}/**`] : []),
       ],
       why: "a change is written in the changelog of the same push",
       excuse: REASON,
