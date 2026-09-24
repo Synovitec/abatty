@@ -26,9 +26,15 @@ function commentLine(file, line) {
  * source doc whose date alone moved has not moved. In any other file a date line is content: a
  * config whose `updated:` changed has moved. A re-read with no edit is not read here but from a
  * `docs-verified:` line naming the document (see `readOf`), one rule for both.
+ *
+ * With `bodyOnly`, for a path judged as a SOURCE: a Markdown document moves only when its body
+ * does. Its front matter is where a split rewrites the `source_truth` globs, and read as a move it
+ * put every document citing it behind, with nothing to re-read (an adopter raised a floor for it).
+ * A document's own re-read is not judged this way.
  * @param {import("../../rules/context.mjs").RepoContext} c @param {string} path
+ * @param {{ bodyOnly?: boolean }} [o]
  */
-export function lastChange(c, path) {
+export function lastChange(c, path, o = {}) {
   const log = c.git("log", "-50", "--format=%H", "--", path);
   const indented = INDENTED.map((ext) => `:(exclude,glob)**/*.${ext}`);
   for (const sha of log.split("\n").filter(Boolean)) {
@@ -36,7 +42,9 @@ export function lastChange(c, path) {
     // except where indentation is the meaning (Python, YAML), which is read with it.
     const loose = c.git("show", "--format=", "-U0", "-w", sha, "--", path, ...indented);
     const strict = c.git("show", "--format=", "-U0", sha, "--", path);
-    if (moved(loose, () => true) || moved(strict, (f) => INDENTED_FILE.test(f))) return sha;
+    const body = o.bodyOnly ? frontMatterEnds(c, sha) : null;
+    if (moved(loose, () => true, body) || moved(strict, (f) => INDENTED_FILE.test(f), body))
+      return sha;
   }
   return "";
 }
@@ -70,13 +78,37 @@ const INDENTED = ["py", "yml", "yaml"];
 const INDENTED_FILE = new RegExp(`\\.(${INDENTED.join("|")})$`);
 
 /**
- * Whether a zero-context diff moves anything a document could describe, in the files `keep`
- * accepts.
- * @param {string} diff @param {(file: string) => boolean} keep
+ * The last line of a Markdown file's front matter at a commit (`side` "new") or at its parent
+ * ("old"), 0 when it has none: the lines up to it are metadata, not what the document says.
+ * @param {import("../../rules/context.mjs").RepoContext} c @param {string} sha
+ * @returns {(file: string, side: "old" | "new") => number}
  */
-function moved(diff, keep) {
-  for (const [file, l] of contentLines(diff)) {
+function frontMatterEnds(c, sha) {
+  /** @type {Map<string, number>} */
+  const seen = new Map();
+  return (file, side) => {
+    const key = `${side} ${file}`;
+    if (!seen.has(key)) {
+      const rev = side === "new" ? sha : `${sha}^`;
+      const lines = c.git("show", `${rev}:${file}`).split("\n");
+      const close =
+        lines[0]?.trim() === "---" ? lines.findIndex((l, i) => i > 0 && l.trim() === "---") : -1;
+      seen.set(key, close > 0 ? close + 1 : 0);
+    }
+    return seen.get(key) || 0;
+  };
+}
+
+/**
+ * Whether a zero-context diff moves anything a document could describe, in the files `keep`
+ * accepts; with `body`, a Markdown file's front-matter lines are passed over.
+ * @param {string} diff @param {(file: string) => boolean} keep
+ * @param {((file: string, side: "old" | "new") => number) | null} [body]
+ */
+function moved(diff, keep, body = null) {
+  for (const [file, l, at] of contentLines(diff)) {
     if (!keep(file)) continue;
+    if (body && file.endsWith(".md") && at <= body(file, l[0] === "+" ? "new" : "old")) continue;
     if (file.endsWith(".md") && DATE_LINE.test(l)) continue;
     // Nor did one that only rewrote a comment in code: the behaviour a document cites is the
     // code's. A comment line is `//`, `#`, or a block comment's own lines.

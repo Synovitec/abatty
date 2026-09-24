@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A cited document moves when its body does, not its front matter.** `docs.behindCode` counted
+  a document as behind when the document it cites changed only in its front matter. A code split
+  rewrites the `source_truth` globs of the domain documents, and that cascaded onto every document
+  citing them: an adopter raised a floor with nothing to re-read. A Markdown source is now judged
+  by the lines past its front-matter block; a document's own re-read is read as before. The
+  metric's definition is 4: its floor reads as redefined once, and `abatty baseline` rewrites it.
+  Reported by an adopter.
 - **The command's path is written as the registry reads it.** Publishing 0.6.0 printed a warning
   that `bin/abatty.mjs` was invalid and removed. The registry kept the command, which ran, but
   the warning read as a broken release. `bin` now names `bin/abatty.mjs` without the leading `./`,

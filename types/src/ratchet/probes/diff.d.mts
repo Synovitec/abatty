@@ -5,8 +5,9 @@
  * for a path, and a quoted path (a name git escapes) is unquoted.
  */
 /**
- * The added and removed lines of a diff, each with its file: the new path, or the old one for a
- * file the diff deletes.
- * @param {string} diff @returns {Generator<[string, string]>} [file, the line with its + or -]
+ * The added and removed lines of a diff, each with its file (the new path, or the old one for a
+ * file the diff deletes) and its line number on its own side: the old file's for a removed line,
+ * the new file's for an added one.
+ * @param {string} diff @returns {Generator<[string, string, number]>} [file, the line with its + or -, its number]
  */
-export function contentLines(diff: string): Generator<[string, string]>;
+export function contentLines(diff: string): Generator<[string, string, number]>;
