@@ -5,6 +5,11 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.1] - 2026-09-24
+
+A release candidate, published under the `next` tag: `npm i -D abatty@next` to replay it before
+0.7.0 goes to `latest` (docs/decisions/0002-the-road-to-1-0.md).
+
 ### Upgrading
 
 - **The JSON report gains a `probation` key** (an array, one entry per check on probation). A
