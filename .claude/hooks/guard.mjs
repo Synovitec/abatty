@@ -2,7 +2,8 @@
 //
 //   daytime  (ADOPTION_RUN unset)  warns about the risky shapes and DENIES only the three that
 //                                  are never right: push to the base branch, force push, --no-verify
-//                                  (and its spelling as configuration, core.hooksPath)
+///                                  (and its spelling as configuration, core.hooksPath); it ASKS
+//                                  before a migration, naming the database host it would reach
 //   night    (ADOPTION_RUN=1)      additionally denies anything that leaves the adoption branch,
 //                                  rewrites history, deletes outside the tree, destroys data,
 //                                  deploys, publishes, or WRITES to the harness (.claude/) or a
@@ -12,6 +13,7 @@
 // unattended run an ask becomes a denial, which is the intent. Everything else exits 0 with no
 // output and the normal permission flow decides. protect.mjs is the twin for the file tools.
 
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { GIT_HOOKS_DIRS, HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
@@ -412,7 +414,41 @@ const warnings = [
 for (const [re, why] of warnings) {
   if (has(re)) process.stderr.write(`[guard] ${why}\n`);
 }
+// A migration by day is asked about, naming the database it would reach. By day nothing else
+// stood between a migration and a shared database: one from an unmerged branch was applied to
+// an adopter's shared database from a shell whose DATABASE_URL nobody had looked at. The host is
+// named; the user and the password never are.
+const MIGRATION = /\b(prisma\s+(migrate\s+(deploy|dev|reset|resolve)|db\s+push)|drizzle-kit\s+(migrate|push)|sequelize(-cli)?\s+db:migrate|knex\s+migrate:(latest|up|down|rollback)|alembic\s+(upgrade|downgrade)|rails\s+db:(migrate|rollback)|manage\.py\s+migrate|flyway\s+migrate|goose\s+(up|down)|(npm|pnpm|yarn|bun)\s+(run\s+)?[\w:-]*migrat[\w:-]*)\b/i;
+if (has(MIGRATION)) decide("ask", `This runs a migration against ${migrationTarget(cmd)}. Is that the database you mean?`);
 process.exit(0);
+
+/**
+ * Where a migration would go: the DATABASE_URL set on the command itself, else this shell's,
+ * else the repository's .env.local or .env, read for the host alone. A URL that does not parse
+ * is named as unreadable rather than guessed.
+ */
+function migrationTarget(command) {
+  const inline = /\bDATABASE_URL=("[^"]*"|'[^']*'|\S+)/.exec(command)?.[1]?.replace(/^["']|["']$/g, "");
+  let url = inline || process.env.DATABASE_URL || "";
+  let from = inline ? "set on the command" : url ? "from this shell's DATABASE_URL" : "";
+  for (const f of [".env.local", ".env"]) {
+    if (url) break;
+    try {
+      const line = readFileSync(f, "utf8").split(/\r?\n/).find((l) => /^\s*(export\s+)?DATABASE_URL\s*=/.test(l));
+      if (line) {
+        url = line.replace(/^\s*(export\s+)?DATABASE_URL\s*=\s*/, "").trim().replace(/^["']|["']$/g, "");
+        from = `from ${f}`;
+      }
+    } catch {}
+  }
+  if (!url) return "a database this command does not name (no DATABASE_URL on it, in this shell, or in .env): check which one the tool reads";
+  try {
+    const u = new URL(url);
+    return `${u.hostname || "a local socket"}${u.port ? `:${u.port}` : ""}${u.pathname && u.pathname !== "/" ? u.pathname : ""} (${from})`;
+  } catch {
+    return `a DATABASE_URL that does not parse as a URL (${from})`;
+  }
+}
 
 /** True when one segment of the command (split on | ; && ||) writes to a path containing `p`. */
 function writesTo(command, p) {

@@ -48,6 +48,12 @@ the guard holds is the agent's shell on this machine; the policy on the branch i
 branch protection or nobody's, and `abatty doctor` says so on every run rather than letting a
 regex pass for a policy (`abatty ci --ruleset` prints the rules to import).
 
+**A migration by day is asked about.** Before `prisma migrate deploy`, `drizzle-kit push`, a
+`db:migrate` script and their kin, the guard asks, naming the database host the command would
+reach: the `DATABASE_URL` on the command, else the shell's, else `.env.local` or `.env`. It
+never shows the user or the password. An unmerged branch's migration once reached a shared
+database from a shell whose URL nobody had looked at.
+
 ## The harness is read-only to the worker
 
 The hooks constrain the worker; a control the worker can rewrite is prose. Three layers, each
