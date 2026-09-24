@@ -136,14 +136,18 @@ function floorsRaised(repoDir) {
 }
 
 /**
- * How many raises each metric carries that were recorded as its probe being wrong, by metric.
+ * How many raises each metric carries that were recorded as its probe being wrong, by metric. A
+ * raise is one write, with its day, reason and owner; the entries it leaves, one for the metric
+ * and one per file whose floor rose, are that one raise, and counting them made a single false
+ * positive in one file read as two.
  * @param {FloorRaise[]} raised
  */
 function disputesOf(raised) {
-  /** @type {Record<string, number>} */
-  const out = {};
-  for (const f of raised) if (f.disputed) out[f.metric] = (out[f.metric] || 0) + 1;
-  return out;
+  /** @type {Record<string, Set<string>>} */
+  const by = {};
+  for (const f of raised)
+    if (f.disputed) (by[f.metric] ||= new Set()).add([f.at, f.reason, f.owner].join("\u001f"));
+  return Object.fromEntries(Object.entries(by).map(([m, s]) => [m, s.size]));
 }
 
 /**

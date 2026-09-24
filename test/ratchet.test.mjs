@@ -671,6 +671,6 @@ test("a raise recorded as the probe being wrong is counted per probe in the repo
   writeFileSync(join(dir, "src/c.ts"), LONG(310));
   assert.equal(write({ reason: "false-positive: a generated client", owner: "platform" }).ok, true);
   const json = JSON.parse(cli(["report", dir, "--json"], dir).out);
-  assert.equal(json.floors.disputes["size.overBudget"], 2, "the total and the file");
-  assert.match(cli(["report", dir], dir).out, /disputed as false positives: .*size\.overBudget 2/);
+  assert.equal(json.floors.disputes["size.overBudget"], 1, "one raise, whatever entries it left");
+  assert.match(cli(["report", dir], dir).out, /disputed as false positives: .*size\.overBudget 1/);
 });

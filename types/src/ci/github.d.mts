@@ -9,6 +9,14 @@
  * @param {Preset} preset @param {CiOptions} [o]
  */
 export function renderGithubActions(preset: Preset, o?: CiOptions): string;
+export namespace ACTIONS {
+    let checkout: string;
+    let setupNode: string;
+    let setupPnpm: string;
+    let setupBun: string;
+    let uploadSarif: string;
+    let attest: string;
+}
 export type CiStep = import("./generate.mjs").CiStep;
 export type CiOptions = import("./generate.mjs").CiOptions;
 export type Preset = import("../presets/index.mjs").Preset;
