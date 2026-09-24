@@ -152,7 +152,7 @@ export const rules = [
     phase: "8",
     ...JS_SOURCES,
     why: "Past 800 lines a file has more than one responsibility, and no reader, human or model, holds it whole.",
-    next: "Split by responsibility; the ratchet holds the count",
+    next: "Split by responsibility; a file a generator writes (an OpenAPI client, a schema dump) is not split but moved under a generated/ folder, which the budgets exempt; the ratchet holds the count",
     check: (c) => {
       const over = budgeted(c).filter((f) => c.read(f).split(/\r?\n/).length > 800);
       return {
@@ -172,7 +172,7 @@ export const rules = [
     phase: "8",
     ...JS_SOURCES,
     why: "Three hundred code lines is where an agent starts reading a file in pieces and editing what it did not read; per-kind budgets keep modules under it.",
-    next: "Per-kind budgets in the ratchet, then split worst-first",
+    next: "Per-kind budgets in the ratchet, then split worst-first; a generated file goes under a generated/ folder instead, which the budgets exempt",
     check: (c) => {
       const over = budgeted(c)
         .map((f) => /** @type {[string, number]} */ ([f, c.codeLines(c.read(f))]))

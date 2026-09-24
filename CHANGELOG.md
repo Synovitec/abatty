@@ -109,6 +109,10 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The size rules say where a generated file goes.** An adopter took a generated OpenAPI client
+  off its size count by moving it under `src/generated/`, which the budgets exempt, and nothing had
+  told them that was the answer rather than a split. CODE-SIZE-800 and CODE-SIZE-300 now say so in
+  their next step.
 - **Test folders are exempt from the kind budgets at any depth.** The default exempt list skipped a
   root `tests/` or `e2e/` only, so a monorepo's `apps/<app>/tests/` was held to the test budget,
   and read by every probe of what ships, while the same folder at the root was exempt, as the
