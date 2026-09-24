@@ -6,6 +6,7 @@ import { EXIT } from "./exit.mjs";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { PROVIDERS } from "../ci/generate.mjs";
+import { narrowFallbacks } from "../ci/fallback.mjs";
 import { renderGithubActions } from "../ci/github.mjs";
 import { renderWoodpecker } from "../ci/woodpecker.mjs";
 import { renderPullRequestTemplate, renderRuleset } from "../ci/templates.mjs";
@@ -97,9 +98,22 @@ export function ciCommand(c) {
     out(
       `  ${e.action === "in step" || e.action === "written" ? t.glyph.ok : t.glyph.fail} ${t.gray(e.action.padEnd(8))} ${e.file}\n`,
     );
+  // A hand-written pipeline is not behind the generated one on purpose, but one that judges a
+  // new branch by its last commit is judging less than the push, whatever else it does.
+  const narrow = flag("--check") ? narrowFallbacks(dir) : [];
+  for (const n of narrow)
+    out(
+      `  ${t.glyph.fail} ${t.gray("narrow".padEnd(8))} ${n.file}:${n.line} falls back to the last commit when the push has no before (a new branch): ${t.gray(n.text)}\n`,
+    );
+  if (narrow.length)
+    out(
+      t.gray(
+        `    a new branch is then judged on one commit of many; --range auto (the fork from ${config?.baseBranch || "main"}) judges the branch\n`,
+      ),
+    );
   const behind = events.filter((e) => e.action === "behind" || e.action === "missing").length;
   out(
     `\n${behind ? t.glyph.fail + " " + t.red(`${behind} file(s) behind the gate: run abatty ci`) : t.glyph.ok + " " + t.green("CI is the gate")}${flag("--ruleset") ? "" : t.gray(" · --ruleset prints the organisation ruleset for import")}\n\n`,
   );
-  return behind ? EXIT.findings : EXIT.clean;
+  return behind || narrow.length ? EXIT.findings : EXIT.clean;
 }

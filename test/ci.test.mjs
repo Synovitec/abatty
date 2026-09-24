@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
@@ -303,4 +303,43 @@ test("the pipeline is the repository's: its package manager's install and audit,
   );
   // Without scripts, every step of the preset is rendered: the preset alone, for a reader.
   assert.ok(ciSteps(preset, { base: "main" }).every((s) => !s.absent));
+});
+
+test("ci --check names a pipeline that judges a new branch by its last commit", () => {
+  const dir = tempRepo("ci-narrow", {
+    "package.json": NEXT_PKG,
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.equal(cli(["ci", dir, "--provider", "github"], dir).code, 0);
+  assert.equal(
+    cli(["ci", dir, "--provider", "github", "--check"], dir).code,
+    0,
+    "the generated pipeline",
+  );
+  mkdirSync(join(dir, ".github/workflows"), { recursive: true });
+  writeFileSync(
+    join(dir, ".github/workflows/push.yml"),
+    [
+      "on: push",
+      "jobs:",
+      "  gate:",
+      "    steps:",
+      "      - run: |",
+      '          BEFORE="${{ github.event.before }}"',
+      '          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then RANGE="HEAD~1..HEAD"; else RANGE="$BEFORE..HEAD"; fi',
+      "",
+    ].join("\n"),
+  );
+  const narrow = cli(["ci", dir, "--provider", "github", "--check"], dir);
+  assert.equal(narrow.code, 3, narrow.out);
+  assert.match(
+    narrow.out,
+    /narrow\s+\.github\/workflows\/push\.yml:7 falls back to the last commit/,
+  );
+  // The same HEAD~1 in a pipeline that never reads the push's before is some other use.
+  writeFileSync(
+    join(dir, ".github/workflows/push.yml"),
+    "on: push\njobs:\n  a:\n    steps:\n      - run: git show HEAD~1\n",
+  );
+  assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0);
 });

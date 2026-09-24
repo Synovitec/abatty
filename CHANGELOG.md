@@ -177,6 +177,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **`abatty ci --check` names a pipeline that judges a new branch by its last commit.** A push
+  that opens a branch carries no `before`. A hand-written fallback to `HEAD~1` then judges one
+  commit of however many the branch holds. A pipeline that reads the push's `before` and falls
+  back to the last commit is now listed with its line, and the check exits 3. `--range auto` (the
+  fork from the base) judges the branch. A `HEAD~1` in a pipeline that never reads `before` is
+  left alone.
 - **The gate says when a range given by hand is narrower than the branch.** A CI run on a new
   branch has no `before` to diff from, and a hand-written fallback to `HEAD~1` judged one commit
   of four and printed green. On a branch other than the base, `--range` now prints how many of the
