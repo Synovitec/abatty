@@ -1,47 +1,81 @@
 # A release is a tag: `vX.Y.Z` pushed after the version and the changelog section are on
 # main. The gate runs again on the tagged commit, then the package is published to the
-# registry with provenance (the tarball attested to this workflow and this commit). The token
-# is a granular automation token stored as NPM_TOKEN; without it the publish step fails and
-# nothing is released.
+# registry with provenance (the tarball attested to this workflow and this commit). Publishing is
+# trusted publishing: the package's settings on the registry name this repository and this
+# workflow as its one publisher and refuse tokens, so there is no stored credential to steal. A
+# zero-dependency package concentrates its whole supply-chain risk in this workflow, which is why
+# it is three jobs: the one that runs the dev dependencies (the gate) never holds the identity a
+# publish is made with, and the one that holds it runs no script of anybody's.
 name: release
 on:
   push:
     tags: ["v*"]
 permissions:
   contents: read
-  # The workload identity the registry's provenance and the conformance signature are both made
-  # with: short-lived, issued to this run, and not exportable by anybody.
-  id-token: write
-  attestations: write
 jobs:
-  publish:
+  gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run -s gate
       - name: the tag is the version
         run: |
           v="$(node -p "require('./package.json').version")"
           [ "refs/tags/v$v" = "$GITHUB_REF" ] || { echo "tag $GITHUB_REF is not v$v"; exit 1; }
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  publish:
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The workload identity the registry's provenance is made with: short-lived, issued to this
+      # job alone, and not exportable by anybody. No dependency is installed in this job.
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later, which Node 22 does not ship, so this job
+      # installs one pinned. --ignore-scripts: the gate ran in the job before, on the same commit,
+      # and no lifecycle script runs where the identity is.
+      - run: npm install -g npm@11.20.0
+      - run: npm publish --provenance --access public --ignore-scripts
+  attest:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
       # What held at the released commit, signed by the run rather than by a key anybody holds.
       # The package prints the statement and never signs: a signature is worth the identity
       # behind it, and a measurement tool's only identity would be a key on a laptop or a secret
       # in a repository, which is the weakest of the options and the likeliest to leak.
+      # 3 means written, and the statement says the gate's controls never ran on this runner: a
+      # fact it carries, not a failure. Anything else is a crash, and a step that swallowed it
+      # would be indistinguishable from one switched off.
       - name: the conformance statement for this release
-        run: node bin/abatty.mjs attest --out abatty-conformance.json || true
+        run: |
+          node bin/abatty.mjs attest --out abatty-conformance.json || code=$?
+          [ "${code:-0}" -eq 0 ] || [ "${code:-0}" -eq 3 ]
+          test -s abatty-conformance.json
       - name: sign it with this run's identity
-        uses: actions/attest@v2
+        uses: actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc # v2.4.0
         with:
           subject-path: abatty-conformance.json
           predicate-type: https://abatty.dev/attestation/conformance/v1

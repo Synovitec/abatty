@@ -24,7 +24,9 @@ import { configuredAdapters, lostGuarantees } from "../agents/index.mjs";
 import { prepareSandbox } from "./sandbox.mjs";
 import { capsOf, describeCaps, nothingSpent, spentOf } from "./allowance.mjs";
 import { localToday } from "../core/today.mjs";
+import { openNightWork } from "./bounds.mjs";
 
+/** The files a night refuses to start without: the harness the worker is constrained by, committed on the base before any night runs. */
 export const HARNESS_FILES = [
   ".claude/settings.json",
   ".claude/hooks/stop-gate.mjs",
@@ -145,6 +147,15 @@ export function preflight(o, c) {
   );
   const date = localToday();
   let branch = `${prefix}-${date}`;
+
+  // Before anything is checked out: work already open on another night branch is not started twice.
+  const open = o.canaryOnly
+    ? []
+    : openNightWork({ repoDir, prefix, base, branch, stateFile, phases });
+  if (open.length)
+    return refuse(
+      `${open.map((w) => `${w.ref} already worked phase(s) ${w.phases.join(", ")}`).join("; ")}, and ${base} has not taken it. Merge it, or delete the branch, before a night works the same phases again`,
+    );
 
   if (o.canaryOnly) branch = git(repoDir, "rev-parse", "--abbrev-ref", "HEAD");
   else if (git(repoDir, "show-ref", "--verify", `refs/heads/${branch}`))

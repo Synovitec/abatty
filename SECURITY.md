@@ -43,3 +43,28 @@ pull request is welcome.
 
 Only the latest published version is supported. This package has no runtime dependencies, so a
 vulnerability here is in code this repository owns.
+
+## How a release reaches you
+
+With no runtime dependency, the package's whole supply-chain risk sits in one place: its own
+publish. A compromised release would run inside every adopter's commit and push hooks, so the
+path is short and has no stored secret in it.
+
+- **A release is a tag.** `vX.Y.Z` is pushed after the version and the changelog section are on
+  `main`; `.github/workflows/release.yml` runs the whole gate again on the tagged commit and
+  refuses a tag that is not the version.
+- **Trusted publishing, no token.** The registry names this repository and that workflow as the
+  package's one publisher and refuses tokens, so no credential exists to be phished or leaked.
+  The tarball carries provenance: which commit and which workflow run built it. The job that
+  holds the identity a publish is made with installs nothing and runs no lifecycle script; the
+  gate, and every development dependency it runs, is a job before it with no identity at all.
+- **Every action the workflows use is pinned to a commit**, and a test in the package's own suite
+  refuses one that is not, as it refuses a runtime dependency or an install script.
+- **The conformance statement** for the release is signed with the run's identity, not with a key
+  anybody holds.
+- **Scorecard** measures the repository weekly, and its results are public.
+
+The installed hooks call `npm run gate` and `npx abatty`, which resolve the copy your lockfile
+pins, not the newest one. A release-age cooldown (`min-release-age` in npm, `minimumReleaseAge`
+in pnpm) adds a day between a publish and your install; it also delays this package's own fixes by
+that day, which is the trade.

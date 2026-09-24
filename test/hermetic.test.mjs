@@ -129,3 +129,59 @@ test("every step, not only the suites, runs with the run's own database when one
   const none = typecheckEnv({ url: "postgres://live/app", test: "" });
   assert.equal(none?.DATABASE_URL, undefined, "the ambient one is never handed on");
 });
+
+test("an inherited NODE_ENV other than test or development is named before the first step", () => {
+  /** @param {string} nodeEnv */
+  const header = (nodeEnv) => {
+    /** @type {string[]} */
+    const lines = [];
+    runGate({
+      repoDir: touched("herm-node-env"),
+      preset: /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next")),
+      run: () => 0,
+      audit: () => ({ status: 0, output: "" }),
+      dockerUp: () => true,
+      db: { url: "", test: "" },
+      nodeEnv,
+      log: (l) => lines.push(l),
+    });
+    return lines.join("\n");
+  };
+  assert.match(header("production"), /NODE_ENV=production is inherited/);
+  assert.doesNotMatch(header(""), /NODE_ENV=/);
+});
+
+test("a suite runs with the config's suiteEnv, and a name the example declares but nothing sets is said first", () => {
+  const dir = touched("hermetic-suite-env", {
+    "abatty.config.json": JSON.stringify({
+      suiteEnv: { ABATTY_T_AUTH_URL: "http://localhost:3000" },
+    }),
+    ".env.example": "ABATTY_T_AUTH_URL=\nABATTY_T_AUTH_SECRET=\n",
+  });
+  /** @type {string[]} */
+  const lines = [];
+  /** @type {(Record<string, string> | undefined)[]} */
+  const envs = [];
+  const preset = presetById("next");
+  assert.ok(preset);
+  runGate({
+    repoDir: dir,
+    preset,
+    run: (_d, script, _a, env) => {
+      if (script === "test:rls") envs.push(env);
+      return 0;
+    },
+    audit: () => ({ status: 0, output: "" }),
+    dockerUp: () => true,
+    db: { url: "", test: "postgres://localhost:5499/throwaway" },
+    log: (l) => lines.push(l),
+  });
+  assert.equal(envs[0]?.ABATTY_T_AUTH_URL, "http://localhost:3000");
+  assert.equal(
+    envs[0]?.DATABASE_URL,
+    "postgres://localhost:5499/throwaway",
+    "the run's own database over it",
+  );
+  assert.match(lines.join("\n"), /names ABATTY_T_AUTH_SECRET, set nowhere this run can see/);
+  assert.doesNotMatch(lines.join("\n"), /names ABATTY_T_AUTH_URL/);
+});

@@ -41,6 +41,18 @@ export function databaseFromEnv() {
 }
 
 /**
+ * The NODE_ENV the gate inherited, when it is one a gate's steps would not expect: anything but
+ * unset, `test` or `development`. An adopter built for production and pushed in the same shell;
+ * the gate ran under NODE_ENV=production, thirteen unit tests asserting development behaviour went
+ * red, and the database scripts loaded the production env file. It read as broken infrastructure.
+ * @returns {string}
+ */
+export function unexpectedNodeEnv() {
+  const v = process.env.NODE_ENV || "";
+  return v && v !== "test" && v !== "development" ? v : "";
+}
+
+/**
  * A child's environment: this process's, with `extra` over it, or undefined when there is nothing
  * to add (the child then inherits, which is spawn's default). The one place the package hands
  * the whole environment on.
@@ -48,6 +60,25 @@ export function databaseFromEnv() {
  */
 export function childEnv(extra) {
   return Object.keys(extra).length ? { ...process.env, ...extra } : undefined;
+}
+
+/**
+ * The environment for a test run the package starts itself (a gate step's control, a mutant):
+ * this process's, without what a parent test runner sets. Under `node --test`, a child run that
+ * inherited NODE_TEST_CONTEXT reported to the parent instead of exiting on its own result, and
+ * read every mutant as survived.
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function testRunEnv() {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  delete env.NODE_V8_COVERAGE;
+  return env;
+}
+
+/** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
+export function envNames() {
+  return Object.keys(process.env);
 }
 
 /** The port the service listens on when none is given, or "". */

@@ -3,6 +3,7 @@ title: "Roadmap"
 description: "Superseded by the plan. What this file tracked is now one queue in docs/PLAN.md, checked against the code rather than against the research that asked for it; the one item it still held that the plan does not is recorded here with where it went."
 category: governance
 status: archived
+superseded_by: "./PLAN.md"
 audience: ["developer", "architect"]
 tags: ["roadmap", "archived"]
 related: ["./PLAN.md", "./DESIGN.md", "./POSITION.md"]

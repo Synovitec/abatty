@@ -23,7 +23,53 @@ import { fileURLToPath } from "node:url";
 export const SHIM_REFUSALS = {
   "force-push": "Force push is never allowed. Rebase onto the remote or make a new commit.",
   "no-verify": "Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.",
+  "hooks-path":
+    "Pointing core.hooksPath elsewhere, or unsetting it, skips the hooks exactly as --no-verify does. Make the gate pass instead; reinstall the hooks with the package's hooks command.",
 };
+
+const HOOKS_KEY = /^core\.hookspath\b/i;
+/**
+ * A folder that holds the hooks. Setting the key to one installs them: `abatty hooks` runs
+ * `git config core.hooksPath .githooks` through this very shim, and a rule that refused every
+ * write refused the command its own message sent people to.
+ */
+const HOOKS_HOME = /^(\.\/)?(\.githooks|\.husky(\/_)?)\/?$/;
+
+/**
+ * Whether this call points the hooks away, by its arguments or its environment: `-c` and
+ * `--config-env` for one call, a `config` write for good, `GIT_CONFIG_KEY_n` or
+ * `GIT_CONFIG_PARAMETERS` naming the key. The same bypass as the flag, by its effect; reading
+ * the key is not a write.
+ * @param {string[]} args @param {string} name @param {string[]} rest @param {Record<string, string | undefined>} env
+ */
+function pointsHooksAway(args, name, rest, env) {
+  const global = args.slice(0, args.length - rest.length - (name ? 1 : 0));
+  if (
+    global.some(
+      (a, i) =>
+        (global[i - 1] === "-c" && HOOKS_KEY.test(a) && !HOOKS_HOME.test(a.slice(a.indexOf("=") + 1))) ||
+        (global[i - 1] === "--config-env" && HOOKS_KEY.test(a)) ||
+        /^--config-env=core\.hookspath/i.test(a),
+    )
+  )
+    return true;
+  if (name === "config") {
+    const at = rest.findIndex((a) => HOOKS_KEY.test(a));
+    const reads = rest.some((a) => /^(--get(-all|-regexp)?|--list|-l|get|list)$/.test(a));
+    if (at >= 0 && !reads) {
+      if (rest.some((a) => /^(--unset(-all)?|unset)$/.test(a))) return true;
+      const value = rest[at + 1];
+      if (value !== undefined && !value.startsWith("-") && !HOOKS_HOME.test(value)) return true;
+    }
+  }
+  return Object.entries(env).some(
+    ([k, v]) =>
+      (/^GIT_CONFIG_KEY_\d+$/.test(k) &&
+        HOOKS_KEY.test(v || "") &&
+        !HOOKS_HOME.test(env[k.replace("KEY", "VALUE")] || "")) ||
+      (k === "GIT_CONFIG_PARAMETERS" && /core\.hookspath/i.test(v || "")),
+  );
+}
 
 /** git's global options that swallow the next argument, so a subcommand is not mistaken for one. */
 const GLOBAL_WITH_VALUE = new Set([
@@ -82,15 +128,17 @@ function flagsOf(rest) {
  * What this call is refused for, or null when it is ordinary work. The short-flag cluster is
  * checked because `git commit -am` exists and so does the bypass bundled into one.
  * @param {string[]} args the arguments git was called with, without the program name
+ * @param {Record<string, string | undefined>} [env] the environment git would run in
  * @returns {{ id: string, reason: string } | null}
  */
-export function shimVerdict(args) {
+export function shimVerdict(args, env = process.env) {
   const { name, rest } = subcommandOf(args);
   const flags = flagsOf(rest);
-  const refuse = (/** @type {"force-push" | "no-verify"} */ id) => ({
+  const refuse = (/** @type {"force-push" | "no-verify" | "hooks-path"} */ id) => ({
     id,
     reason: SHIM_REFUSALS[id],
   });
+  if (pointsHooksAway(args, name, rest, env)) return refuse("hooks-path");
   if (flags.includes("--no-verify")) return refuse("no-verify");
   if (name === "commit" && flags.some((f) => /^-[a-zA-Z]*n/.test(f))) return refuse("no-verify");
   if (name === "push") {

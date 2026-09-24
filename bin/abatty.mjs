@@ -30,6 +30,7 @@
  *   abatty baseline [dir] [--reason <why>] [--dry-run]                 write today's numbers as the floor
  *   abatty hooks [dir]                                                 git reads .githooks, and the hooks are executable here (what hooks:install runs)
  *   abatty raises [dir] [--base <ref>] [--require-review <pr>] [--json]  the floors loosened against the base, and the review that can land them
+ *   abatty mutate [dir] [--range <a..b>] [--max <n>] [--timeout <s>] [--strict]  one mutant per changed line, the tests that name the module run against it
  *   abatty night [dir] [--until HH:MM|+Nmin] [--max-cost <usd>] [--phases "0 1"] [--model] [--effort] [--mode auto|dontAsk] [--no-push] [--skip-canary] [--canary-only] [--agent <cmd>] [--sandbox auto|required|off] [--max-sessions N] [--max-tokens N] [--resume]
  *   abatty profiles [dir] [--json]                                    the profiles this repository follows: rules, phases, presets as one package
  *   abatty presets · abatty version
@@ -73,6 +74,7 @@ const KNOWN = [
   "ratchet",
   "baseline",
   "raises",
+  "mutate",
   "hooks",
   "night",
   "presets",
@@ -171,6 +173,20 @@ function openFile(file) {
 /** What every command screen is handed: the repository, the flags, the two streams, the version. */
 const ctx = { dir, opt, flag, out, err, VERSION };
 
+// A help flag asks and never acts: `abatty baseline --help` rewrote the baseline, because only
+// the bare `help` command was read as one. Every command answers it with its own usage lines.
+if (flag("--help") || flag("-h")) {
+  const { presets } = await import("../src/presets/index.mjs");
+  const { renderHelp } = await import("../src/ui/help.mjs");
+  const all = renderHelp({ version: VERSION, presets });
+  const plain = (/** @type {string} */ l) => l.replace(/\x1b\[[0-9;]*m/g, "");
+  const mine = named
+    ? all.split("\n").filter((l) => new RegExp(`^\\s*abatty ${command}\\b`).test(plain(l)))
+    : [];
+  out(mine.length ? `\n${mine.join("\n")}\n\n` : all);
+  process.exit(0);
+}
+
 switch (command) {
   case "status": {
     const { statusCommand } = await import("../src/cli/status.mjs");
@@ -231,6 +247,10 @@ switch (command) {
         config: readAdoption(dir),
       }),
     );
+  }
+  case "mutate": {
+    const { mutateCommand } = await import("../src/cli/mutate.mjs");
+    process.exit(mutateCommand({ dir, opt, flag, out, err, VERSION }));
   }
   case "secrets": {
     const { secretsCommand } = await import("../src/cli/secrets.mjs");

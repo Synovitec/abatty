@@ -12,7 +12,8 @@
  */
 import { readJsonFile, writeJsonFile } from "../core/repo.mjs";
 import { BASELINE_NOTE } from "./config.mjs";
-import { scoreOf } from "./index.mjs";
+import { failed, scoreOf } from "./index.mjs";
+import { baselineCommit, carryRenames, renamesSince } from "./renames.mjs";
 
 /**
  * @typedef {import("./index.mjs").Baseline} Baseline
@@ -31,11 +32,16 @@ export function probeVersion(m) {
   return typeof m.probe.version === "number" ? m.probe.version : 1;
 }
 
-/** The committed baseline, or null. @param {string} repoDir @param {string} rel @returns {Baseline | null} */
+/**
+ * The committed baseline, or null. Its per-file floors are read where their files are now: a
+ * file renamed since the commit that wrote the baseline carries its floor to the new path.
+ * @param {string} repoDir @param {string} rel @returns {Baseline | null}
+ */
 export function readBaseline(repoDir, rel) {
   try {
     const b = readJsonFile(repoDir, rel);
-    return b && typeof b === "object" && b.metrics && typeof b.metrics === "object" ? b : null;
+    if (!(b && typeof b === "object" && b.metrics && typeof b.metrics === "object")) return null;
+    return carryRenames(b, renamesSince(repoDir, baselineCommit(repoDir, rel)));
   } catch {
     return null;
   }
@@ -58,6 +64,8 @@ export function writeBaseline(o) {
   const promoted = [];
   /** @type {string[]} */
   const rises = [];
+  /** @type {{ metric: string, file: string, was: number, now: number }[]} */
+  const fileRisen = [];
   const hard = new Set(previous?.hard || []);
   /** @type {Record<string, number>} */
   const metrics = {};
@@ -70,12 +78,31 @@ export function writeBaseline(o) {
   /** Kept from the previous write: an entry explains ITS metric, not the day it was written. */
   const entries = { .../** @type {Record<string, BaselineEntry>} */ (previous?.entries || {}) };
   for (const m of measurements) {
-    if (m.skipped) continue;
+    if (m.skipped) {
+      // A probe that could not run on this read (a rule about a push, read without a range)
+      // keeps what the last write recorded: dropping it lost its floor and its debt, and the
+      // next run read NO FLOOR.
+      const kept = previous?.metrics?.[m.metric];
+      if (typeof kept === "number") {
+        metrics[m.metric] = kept;
+        const v = previous?.versions?.[m.metric];
+        if (typeof v === "number") versions[m.metric] = v;
+        const s = previous?.scanned?.[m.metric];
+        if (typeof s === "number") scanned[m.metric] = s;
+        const d = previous?.debt?.[m.metric];
+        if (d) debt[m.metric] = d;
+      }
+      continue;
+    }
     const forcedRatchet = config.ratchet.includes(m.metric);
+    // A probe on probation never blocks: not promoted to HARD at zero, so a finding later cannot
+    // refuse this write and with it the locking of every other floor.
+    const onProbation = Boolean(m.probe.probation);
     const isHard =
-      config.hard.includes(m.metric) ||
-      hard.has(m.metric) ||
-      (m.probe.kind === "hard" && !forcedRatchet);
+      !onProbation &&
+      (config.hard.includes(m.metric) ||
+        hard.has(m.metric) ||
+        (m.probe.kind === "hard" && !forcedRatchet));
     if (isHard && m.value > 0) {
       refusals.push(
         `${m.metric} is HARD and reads ${m.value}; a HARD metric is never recorded above zero - fix the findings, or hold it as a ratchet through \`ratchet.ratchet\` in the adoption config with the reason in the decisions file`,
@@ -83,11 +110,25 @@ export function writeBaseline(o) {
       continue;
     }
     const was = previous?.metrics?.[m.metric];
-    if (typeof was === "number" && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
+    // A rise is only a rise against a floor counted the same way: after a redefinition the old
+    // floor answers another question, and the write that records the new one is not a raise.
+    const wroteUnder = previous?.versions?.[m.metric];
+    const comparable =
+      typeof was === "number" &&
+      !onProbation &&
+      (typeof wroteUnder !== "number" || wroteUnder === probeVersion(m));
+    if (comparable && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
+    // Per file as well as in total: a total that fell carried ten files whose floors rose, with
+    // nothing in the record, so a fall anywhere could hide a rise anywhere else.
+    if (comparable)
+      for (const [file, now, before] of fileRises(previous?.debt?.[m.metric], m.debt)) {
+        rises.push(`${m.metric} ${file} ${before} → ${now}`);
+        fileRisen.push({ metric: m.metric, file, was: before, now });
+      }
     metrics[m.metric] = m.value;
     versions[m.metric] = probeVersion(m);
     if (!m.probe.emptyScanOk) scanned[m.metric] = m.scanned;
-    if (m.value === 0 && !forcedRatchet) {
+    if (m.value === 0 && !forcedRatchet && !onProbation) {
       if (!hard.has(m.metric) && m.probe.kind !== "hard") promoted.push(m.metric);
       hard.add(m.metric);
     } else {
@@ -110,7 +151,21 @@ export function writeBaseline(o) {
       entries[m.metric] = { at: o.today, was, now: m.value, reason: o.reason, owner: o.owner };
     else if (entries[m.metric] && m.value <= (entries[m.metric]?.was ?? -1))
       delete entries[m.metric];
+    // The same per file, under `metric file`: written with the rise, gone when that file's debt
+    // falls back to the floor it explained.
+    for (const [key, e] of Object.entries(entries))
+      if (key.startsWith(`${m.metric} `) && (m.debt[key.slice(m.metric.length + 1)] ?? 0) <= e.was)
+        delete entries[key];
   }
+  if (o.reason && o.owner)
+    for (const r of fileRisen)
+      entries[`${r.metric} ${r.file}`] = {
+        at: o.today,
+        was: r.was,
+        now: r.now,
+        reason: o.reason,
+        owner: o.owner,
+      };
   const { score } = scoreOf(measurements);
   /** @type {Baseline} */
   const baseline = {
@@ -131,4 +186,49 @@ export function writeBaseline(o) {
   const ok = refusals.length === 0;
   if (ok && !o.dryRun) writeJsonFile(o.repoDir, o.rel, baseline);
   return { ok, baseline, refusals, promoted, rises };
+}
+
+/**
+ * The files whose debt rose against the previous floor, as [file, now, before]: a file new to the
+ * debt counts from 0, because debt that moved into a file is a rise there whatever the total did.
+ * @param {Record<string, number> | undefined} before @param {Record<string, number>} now
+ * @returns {[string, number, number][]}
+ */
+function fileRises(before, now) {
+  return Object.entries(now || {})
+    .map(([file, n]) => /** @type {[string, number, number]} */ ([file, n, before?.[file] ?? 0]))
+    .filter(([, n, b]) => n > b)
+    .sort(([a], [b]) => a.localeCompare(b));
+}
+
+/**
+ * The floors a change earned, written for it. When every verdict that fails the run is a floor
+ * left above today's count (`improved`), the numbers only fell, so writing today's baseline can
+ * only lower a floor: nothing is raised, nothing needs a reason. Lowering by hand made "leave the
+ * findings in" simpler than "remove them", which is the friction adopters of every ratchet name.
+ * The file is written, not committed: a hook cannot add a commit to the push it judges, so the
+ * run still fails, with one thing left to do. Anything else failing, and nothing is written.
+ * @param {{ repoDir: string, rel: string, verdicts: import("./index.mjs").Verdict[], measurements: Measurement[], config: RatchetConfig, previous: Baseline | null, today: string }} o
+ * @returns {{ locked: string[] }}
+ */
+export function lockEarned(o) {
+  const failing = o.verdicts.filter((v) => failed([v]));
+  // A probe on probation never fails a run, so its rise is not among the failures; written here,
+  // it would become the floor, unannounced, the day it leaves probation.
+  const before = o.previous?.metrics || {};
+  const risenOnProbation = o.verdicts.some(
+    (v) =>
+      v.status === "probation" &&
+      typeof before[v.metric] === "number" &&
+      v.value > Number(before[v.metric]),
+  );
+  if (
+    !failing.length ||
+    !o.previous ||
+    risenOnProbation ||
+    failing.some((v) => v.status !== "improved")
+  )
+    return { locked: [] };
+  const r = writeBaseline({ ...o });
+  return { locked: r.ok ? failing.map((v) => `${v.metric} ${v.floor} → ${v.value}`) : [] };
 }

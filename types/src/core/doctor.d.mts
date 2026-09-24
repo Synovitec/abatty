@@ -41,7 +41,13 @@ export function doctor(o: {
     drift: DriftEvent[];
     missing: DriftEvent[];
     differs: DriftEvent[];
-    missingScripts: (string | undefined)[];
+    missingScripts: string[];
+    permissions: {
+        removedDenies: string[];
+        addedAllows: string[];
+        readable: string[];
+    };
+    optIn: import("./opt-in.mjs").OffProbe[];
     installed: string | null;
     pinned: string | null;
     packageVersion: string;

@@ -34,6 +34,7 @@ import { cra } from "./cra.mjs";
 
 /** The built-in profiles. @type {Profile[]} */
 export const PROFILES = [synovitec, cra];
+/** The profile a repository is measured against when its config names none. */
 export const DEFAULT_PROFILES = ["synovitec"];
 
 /** @param {string} id */

@@ -5,6 +5,405 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-24
+
+### Upgrading
+
+Several changes here can turn a run that was green red, which is why this is a minor release.
+Each is named, with what to do:
+
+- **`docs.behindCode` is redefined (definition 3).** Its floor reads as redefined once; run
+  `abatty baseline` to write it under the new definition. Nothing is raised.
+- **`abatty ci --check` exits 3** on a pipeline generated before this release (the generated one
+  is now pinned to commits and fails on a crash), and on a hand-written one that falls back to
+  `HEAD~1` when a push has no `before`. Run `abatty ci` to regenerate.
+- **`abatty doctor` fails, and `SEC-AGENT-PERMISSIONS` is partial,** when the settings let the
+  agent read an env file (a `Read(./.env.*)` deny narrowed to named files). Restore the wildcard
+  and name the example file `env.example`.
+- **`TEST-E2E-ERRORS` is a new must-level rule** for a repository with a Playwright suite:
+  `abatty fix --phase 3 --write` writes the fixture that holds it.
+
+### Added
+
+- **Doctor names the opt-in probes a repository left off, with what each would read today.** An
+  adopter's coverage exclude list grew for weeks beside a probe that counts it. The probe was
+  off by default, and nothing had said it existed. `abatty doctor` now lists every opt-in probe
+  neither enabled nor excluded that would read something, with its number (the total the ratchet
+  would record), and says how many more would read 0. Enabling one stays the repository's
+  decision, now taken knowing the number.
+- **A suite's missing environment is named before it runs, and the config can supply it.** An
+  adopter's browser suite failed 96 journeys in a fresh checkout, every one "Not authenticated".
+  The server under test had no auth secret: CI sets placeholders in its workflow, and the laptop
+  had them only in a `.env` the checkout lacked, so the failure read as broken journeys.
+  - Before a suite that needs a database starts, the gate lists the variables the example env
+    file declares that neither the shell, a dotenv file nor the config supplies. It reads names
+    only, never values.
+  - `suiteEnv` in the config (a new key) gives the suites non-secret values, the way a workflow
+    does. The run's own database still wins over it.
+- **`test.unvisitedRoutes`, opt-in and on probation: the pages no browser test opens.** An adopter
+  had every metric green, with library coverage near ninety-nine, while two forms on one screen
+  saved nothing in production. Nothing measured which pages the browser suite drives.
+  - The probe reads the page routes Next declares by file (`app/**/page` and `pages/**` at the
+    root, under `src/`, or in one workspace; API, special files, intercepting routes and a browser
+    suite's page objects left out).
+  - It counts each route that no path-shaped string in the browser suite, specs and helpers
+    alike, would open. A template placeholder stands for any one segment.
+  - On that adopter's tree it names 22 of 59 pages, their dish edit forms among them.
+  - New Next repositories get it enabled. Opening a page is not submitting its form, which is
+    written in what the probe approximates.
+- **`TEST-E2E-ERRORS`: a browser test fails when its page throws or does not hydrate.** The
+  browser runner passes a page that threw an uncaught error or logged a hydration mismatch unless
+  a test listens. An adopter shipped a hydration mismatch through sixty-two green browser tests,
+  twice. The new rule wants a listener for `pageerror` and a console listener that matches
+  hydration errors (a test merely titled "hydration" hears nothing), and it
+  names every spec that takes `test` straight from `@playwright/test` and so skips it. `abatty fix
+  --phase 3 --write` writes the shared fixture (`e2e/fixtures.ts`), which fails the test on either,
+  when no listener exists anywhere; a fixture is not a document, so it gets no docs index row.
+  The catalog now holds 80 rules.
+- **Each incident a night records becomes a proposal the morning can act on.** `abatty
+  night-report` used to propose a lesson only when a decision code recurred, and cited a count.
+  Now each of tonight's `ADOPTION_DECISIONS.md` entries of an incident kind proposes what would
+  have caught it, and quotes the entry:
+  - `behaviour-risk` proposes a test;
+  - `seam-unclear` proposes a boundary-map line;
+  - `harness-change` proposes a config value;
+  - `sensitive-path` proposes a protected path;
+  - `doc-left-stale` proposes a split document;
+  - `step-restored` proposes a smaller phase step.
+
+  Ordinary defaults (a dependency deferred, the gate deferred) propose nothing. Earlier nights'
+  entries are left to their own mornings.
+- **By day, the guard asks before a migration and names the database it would reach.** Nothing
+  stood between a migration and a shared database by day. An adopter applied an unmerged
+  branch's migration to a shared database from a shell whose `DATABASE_URL` nobody had looked
+  at. `prisma migrate deploy|dev|reset`, `prisma db push`, `drizzle-kit migrate|push`, a
+  `db:migrate` script and their kin now get a prompt naming the host, port and database. The
+  host is read from the command, the shell, or `.env.local` and `.env`; when the two files
+  disagree, both are named. A command that only mentions a migration (a commit message, a search,
+  `migration:generate`) is not asked about. The user and the password are never shown: a URL
+  whose credentials sit where a host would (a SQL Server connection string) is named as
+  unreadable instead. `abatty update` installs it; the self-test proves both directions.
+- **A night does not start work already open, and does not push more than one review reads.**
+  The pre-flight refuses while an earlier night branch, here or on origin, that the base has not
+  taken worked a phase this night would run. It names the branch and the phases: merge it or
+  delete it first; a night squash-merged into the base is taken. Before the push, a branch that
+  adds and removes more than `maxDiffLines` lines against the base (a new config key, 2000 by
+  default, an edited line counting twice) stays local, and the summary says how many. The base is
+  read locally or on origin, and a diff that cannot be measured keeps the branch local too.
+- **`change.testTamper`, on probation, flags a commit that made its tests easier to pass.** An
+  agent that cannot make a test pass has cheaper ways out than the fix, and most measured
+  cheating was done to the tests. `change.refactorTests` reads refactors only. This probe reads
+  every commit in the push and names each way out:
+  - a test case or subtest removed (counted over the commit, so one moved to another file is
+    not);
+  - a case skipped, focused or marked todo, in each runner's spelling, the platform runner's
+    `{ skip: true }` included;
+  - a snapshot rewritten with no `tests-changed:` line;
+  - a checker suppression added in code, outside strings and patterns (prose that names one is
+    not counted);
+  - a coverage or quality threshold lowered (a size budget like `max-lines` is not one).
+
+  A shallow clone is not judged. Over this repository's 280 commits it names two, both real.
+
+  `abatty night-report` lists the same for every commit of a night, under "Tests and checks the
+  night changed", and proposes a lesson when there is any. Probation means shown, never failing.
+- **`abatty mutate` asks whether your tests would notice the lines this change wrote.** A green
+  suite says the tests passed, not that they hold the new code. For each changed line of shipped
+  code, the command makes one small change in the code itself, never in a string or a comment: a
+  comparison flipped, a boundary moved, an `&&` made `||`, a result inverted. It then runs the
+  tests nearest that module on the import graph and puts the file back whatever happened. A
+  mutant no test noticed is reported with its line and what changed. `--strict` makes one fail
+  the run, `--max` bounds the count, and `mutation.command` in the config names the runner. It
+  needs no dependency, and `TEST-MUTATION` credits a script that runs it: it is bounded to the
+  change and ignores strings and comments by construction. Its first run on this repository read
+  three mutants as survived because it had picked tests by a word; a probe is reached through
+  the registry that lists it, so it now follows the imports. Each file's tests run once with no
+  mutant first: a suite already red, or a command that cannot run, is reported as such rather
+  than read as every mutant killed. A file is never left mutated: its original waits in a
+  recovery file, a signal stops the run after the file is put back, and a run killed outright is
+  repaired by the next. With no `--range`, it reads the lines changed since the fork from the
+  base; `a...b` reads from their merge base; new untracked files count.
+- **`docs.danglingRefs`, on probation: a name a document cites that the code no longer has.**
+  `docs.citations` checks the paths a document cites; a function or a constant named in
+  backticks rots as quietly, and a study of popular repositories found such a reference in more
+  than a quarter of them. The new probe counts a backticked name shaped like code (an inner
+  capital, an underscore, or written as a call) that the code had at the document's last commit
+  and has nowhere now, reading the same files on both sides; a concept never in the code, a plain
+  word, a fenced block and an archived or superseded record are not read.
+- **A false positive recorded is counted per probe.** A raise already needs a reason; one written
+  `false-positive: <what it misread>` is now a dispute of that probe, marked on the raise and
+  counted per metric by `abatty report` (and its `--json`), one per raise however many files it
+  touched. It is the count a blocking check lives by: which probe to fix, and which to keep on
+  probation.
+- **`code.undocumentedExports`, CODE-JSDOC without a dependency.** The rule was held only by a
+  linter plugin, so a repository that would not add one, this package included, could not hold
+  it. The new opt-in probe, on probation, counts exported functions, constants, classes, types,
+  interfaces and enums with no `/** */` block directly above them (a `@typedef` block does not
+  count), and CODE-JSDOC now reads a floor for it as present. It checks presence only: whether a
+  block says why is a reviewer's reading. Its first reading here found 30 undocumented exports;
+  each now says why it exists, and the metric holds at zero.
+- **`docs/VERSIONING.md` says what a version promises at 0.x.** SemVer promises nothing below 1.0,
+  and a tool that runs in an adopter's hooks needs to say in advance what an update can do: a
+  minor is anything that can turn a green run red or change what a machine reads (a probe that
+  blocks or counts differently, a default that moves numbers, a hook that refuses more, the
+  config schema, `--json`, `--sarif`, MCP and exit codes); a patch cannot; the terminal's words
+  are not part of the contract. One breaking axis per minor, with its migration in the same
+  release.
+- **A probe can be on probation: counted and shown, never failing a run.** A blocking check lives
+  on its false positives, and one wrong red is a reason to reach for the bypass. A new or
+  heuristic probe now ships marked `probation`: its findings are listed under a yellow
+  `PROBATION`, a verdict that would have failed says which one it would have been, and the run
+  stays green. A probe leaves probation in a release once a named repository has run it clean,
+  the rule presets already follow. A probe on probation is never promoted to HARD, so its findings
+  cannot refuse `abatty baseline`, SARIF reports them as notes, and the MCP ratchet tool names the
+  verdict. The five probes added in this release start there.
+- **`docs.frontMatterSyntax`, on probation, counts front matter a YAML reader refuses.** The
+  probes read front matter by hand, and that reading forgave what a site generator or a content
+  schema does not: an adopter's documents passed every docs probe with a block a YAML parser
+  rejects. The new metric counts a document with a duplicate key, a key or a list item indented
+  under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an
+  unquoted value, or a reserved first character, each on its line. No dependency: the reading was
+  checked against a YAML parser, and every shape it refuses or accepts is a test case whose verdict
+  the parser gave; a list or a quote continued on indented lines, and keys like `og:image`, are
+  read as YAML reads them. An unquoted date is not counted, since a reader accepts it.
+  `docs.frontMatter` keeps its definition.
+- **`obs.catchOnlyLogs` and `sec.weakRandom`, two opt-in probes for bugs no metric counted.**
+  Documentation written by an adopter's sessions found a "cryptographic" temporary password drawn
+  from `Math.random` and forms whose failed save was caught, written to the console and dropped,
+  so the user saw a saved form. `obs.catchOnlyLogs` counts a `catch` block or a `.catch()`
+  handler whose every statement is a `console.*` call; `sec.weakRandom` counts a `Math.random`
+  call when a name on its line, or the function around it, says password, token, secret, salt,
+  nonce, credential, API key or a one-time code, read by its words and outside strings, so an id,
+  a shuffle, a DOM id's text or `plotPoints` is left alone. Both read
+  JavaScript and TypeScript outside test folders at any depth, and `init` enables them on every
+  preset. SEC.1 and OBS.1 in the standard say what each one holds.
+- **`measure` names each new reading in the one before it, and `docs.supersededChain` counts a
+  broken chain.** `abatty measure` wrote `GAP_ANALYSIS_<date>.md` on every run and left the
+  previous reading naming nothing, so an adopter's older reading was quoted as the current score
+  and no docs probe said so. `measure` now writes `superseded_by` into the earlier readings of its
+  series that name no successor, leaving a link already written alone. The new opt-in probe,
+  enabled by `init` on every preset, counts a reading of a chained dated series that names no
+  successor, an archived document without `superseded_by`, and a `superseded_by` that names
+  nothing. A series nobody chained, such as nightly reports, is a record and is not read.
+- **`valid.sqlCurrentDate`, an opt-in probe for the day a query takes.** `valid.utcDay` reads the
+  code, so an adopter's read 0 while 196 `CURRENT_DATE` sat in its SQL, each one the session's
+  day, UTC unless the connection says otherwise, and yesterday for the length of the offset every
+  night east of Greenwich. The probe counts `CURRENT_DATE`, `now()::date`, `current_timestamp::date`,
+  `date(now())` and `date_trunc('day', now())` in `.sql` files and in the strings of JavaScript and
+  TypeScript, comments left out; a timestamp converted with `AT TIME ZONE` before its day is taken
+  is not counted. Enable it in `ratchet.enable`.
+
+### Fixed
+
+- **The direction check tells a tightened config from a loosened one, and names the file.**
+  Enabling a probe in `abatty.config.json` was reported as a loosening of "1 file(s) under
+  .claude/", with a command to restore the looser file. The root config is now judged as itself.
+  By day, a probe enabled, a metric made HARD or a metric no longer held as a ratchet is a
+  tightening and says nothing; any other change is named key by key. At night the root config
+  stays read-only whatever the change, and the finding says that. Reported by an adopter.
+- **A help flag never acts.** `abatty baseline --help` rewrote the baseline, because only the
+  bare `help` command was read as a request for help. `--help` or `-h` on any command now prints
+  that command's usage and exits 0 without doing anything. Reported by an adopter.
+- **A narrowed secret-read deny is caught, by what it matches rather than by its words.** An
+  adopter narrowed the template's `Read(./.env.*)` to eight named files so an allow for
+  `.env.example` could work. Every daytime check stayed green while `.env.staging`, `.env.prod`
+  and any backup became readable by the agent.
+  - `SEC-AGENT-PERMISSIONS` now plants those names and asks whether the deny rules refuse each
+    one. It is partial, and names the readable files, when any is not refused. A rule rooted
+    with one slash (`Read(/.env.*)`) is the project root in the settings' syntax and counts.
+  - `abatty doctor` fails on an env file the settings no longer refuse. It names any deny rule
+    the template ships that the settings dropped, and any allow rule they added, instead of
+    reporting generic drift.
+  - The harness README recommends `env.example`, which the wildcard does not match.
+- **Doctor no longer calls a gate step's script absent when the gate runs it under its other
+  name.** A repository with `test:changed` was told `coverage:changed` was missing, while the gate
+  was running `test:changed` for that very step.
+- **A reformat or a reworded comment no longer makes a document behind.** `docs.behindCode` read
+  any commit to a cited file as a move, so a formatting pass or a comment edit flagged every
+  document that cited the file, and the only way out was a re-read that found nothing. A commit
+  whose change to a cited file is whitespace, or comment lines in the file's own spelling, now
+  counts as no move. A JavaScript private field's `#` is code, not a comment, and in Python and
+  YAML, where indentation is meaning, a reindent is a move. The count changed, so the metric's
+  definition is 3: a floor written under 2 reads as redefined and is rewritten by `abatty
+  baseline`, not compared.
+- **An escape or an env read quoted in a string is text, not code.** `types.escapes` read the raw
+  file, so a message warning against `as any` counted as one, and `valid.rawEnv` counted a
+  `process.env` quoted in a rule's advice or a comment. Escapes are now read with strings blanked
+  and comments kept, where the ignore directives live, and env reads with both blanked; the
+  TYPES-ESCAPES rule reads code the same way. A count can only fall from this, and a local run
+  locks the lower floor itself.
+- **TEST-COVERAGE credits the gate's own `coverage:changed` step.** The rule looked for a gate on
+  the changed lines in a coverage tool's spelling only, so a repository that wrote the
+  `coverage:changed` script the gate itself runs was told it had no gate on the change. Its next
+  step now also names the dependency-free route: a `coverage:changed` script fed by Node's own
+  `--experimental-test-coverage`. This repository runs one: `npm test` measures coverage as it
+  runs (about five per cent of its time), and the step judges the lines the push changed at 80%,
+  counting a new file no test loads and nothing imports as untested (an import is the specifier
+  resolved from the importing file, not a matching file name), and failing, rather than passing,
+  when the runtime's coverage carries no per-line data.
+- **A front-matter list the formatter wrapped is read.** Prettier wraps a `[...]` list that passes
+  its print width onto the line below the key, and the docs probes read that as an empty list: a
+  wrapped `source_truth` switched `docs.behindCode` and `docs.danglingSource` off for its document
+  without a word, and seven of this repository's own documents had lost their `related` list this
+  way. A list opened under an empty key, or on the key's line and closed lines later, is read now;
+  a comment after its closing bracket closes it, and a list never closed ends at the next key
+  instead of swallowing every key after it.
+- **The git shim refuses the hooks pointed away too.** The shim on `PATH` refuses the force push
+  and the bypass flag in every shell the guard never sees; it now refuses `core.hooksPath` pointed
+  elsewhere or unset in the same shells, by argument (`-c`, `--config-env`, a `git config` write)
+  or by the environment it is called in, which it reads directly rather than from the command's
+  text. Reading the key, a message that names it, and pointing it at a hooks folder (`.githooks`,
+  `.husky`, `.husky/_`), which is how `abatty hooks` and husky install them, pass.
+- **The guard refuses switching the hooks off by configuration.** Git runs its hooks from
+  `core.hooksPath`, so pointing it elsewhere or unsetting it skips the gate exactly as the bypass
+  flag does, and an adopter replayed five such spellings against the last release: every one
+  passed, from the base branch too. The guard now refuses the key unset, or set by `git -c`,
+  `git config` or a wrapper's text to anything but a hooks folder, and `GIT_CONFIG_KEY_n` or
+  `GIT_CONFIG_PARAMETERS` naming it; reading the setting, pointing it at `.githooks`, `.husky` or
+  `.husky/_` (the install), and a search or an edit that only mentions it stay allowed.
+  At night, `.githooks/` and `.husky/` are harness, so a shell delete or edit of a hook is
+  refused as a write to `.claude/` is. The self-test proves the new family on every machine.
+- **No probe counts its own source, and every shipped probe is held to it.** A probe reads the
+  tree it ships in, so its pattern, its prose and its control fixtures were findings against
+  itself: `sec.weakRandom` failed this repository's ratchet on its own controls, and
+  `valid.sqlCurrentDate`, opt-in and not enabled here, counted eight lines of its own file unseen.
+  Older probes did the same: 4 of this repository's 7 type escapes and 3 of its 7 raw environment
+  reads were the probes' own text, so its numbers overstated its debt. The spellings are now
+  assembled from parts, and a test runs every built-in probe, enabled or not, over this tree,
+  untracked files included, and fails on any finding in the file that defines it.
+- **`test.coverageExclusions` reads Node's own ignore comments.** The probe knew istanbul, c8 and
+  v8 spellings only, so a `node --test` suite could take code out of its coverage with
+  `/* node:coverage ignore next */` or a `disable` region and no count saw it: a practice read
+  through one tool's spelling. `node:coverage ignore next` and `node:coverage disable` now count,
+  and `enable`, which only closes a region, does not.
+- **A file over its floor lists every finding it carries, and the two ways out.** The ratchet
+  printed at most twelve lines, so a file that worsened by one showed a few of its findings and
+  read as "these are the ones you introduced", which a count cannot know. Each file over its
+  floor now lists all of its findings for that metric, and the verdict ends with the two ways
+  out: fix findings until the count is back at the floor, or record the rise with
+  `abatty baseline --reason --owner`.
+- **A renamed file keeps its floor.** Per-file floors are keyed by path, so a `git mv` of a file
+  carrying debt read as a new file rising from zero: the ratchet failed a change that moved no
+  debt, and `abatty baseline`, now that a file's rise needs a reason, would have refused it
+  without one. Git's rename detection, run from the commit that wrote the baseline, now carries
+  each file's floor and its recorded exception to the new path, and `abatty raises` carries the
+  base's floors the same way. A moved file whose debt rose is still a rise against its own floor,
+  and debt in a file git does not see as a move still counts from zero.
+- **A file's floor that rises is refused and recorded, even when the metric's total fell.** An
+  adopter's baseline write took `size.excessCode` from 30109 to 30072 while ten files' floors rose,
+  and the tool's record said nothing: a fall anywhere could hide a rise anywhere else, although the
+  standard holds every number to "only falls, by its total and per file". `abatty baseline` now
+  refuses a per-file rise, a file newly carrying debt included, without `--reason` and `--owner`,
+  records it under `metric file` in the baseline's entries, and drops the entry when that file's
+  debt falls back. The report lists each such raise with its file. The write that records a
+  redefined metric under its new definition is not a rise, since the old floor counted another thing.
+- **A raise in a repository that pushes to its base directly has a way to be recorded.** A raise
+  lands through a pull request approved by somebody other than its author, and a repository that
+  delivers straight to `main` by policy never opens one, so an adopter's raise could be written
+  down and never recorded as anything. There, `abatty raises` now reads a line the pushed range
+  adds to the decisions file naming each loosened metric, and says plainly that this is the
+  decision on record, not a second person's approval. A repository that takes pull requests still
+  needs the approval. The base branch's config decides which one applies: a range can switch
+  direct pushes off, never on, so it cannot approve its own raise with a line it wrote.
+- **The gate names an inherited `NODE_ENV`.** An adopter built for production and pushed in the
+  same shell: the gate ran under `NODE_ENV=production`, thirteen unit tests went red and the
+  database scripts loaded the production env file, and it read as broken infrastructure. A
+  `NODE_ENV` other than `test` or `development` is now named in the gate's header, before the
+  first step. It is said rather than overridden, since a repository may set it on purpose.
+
+### Changed
+
+- **The pipeline `abatty ci` generates is pinned and fails on a crash, as this package's own is.**
+  Its SARIF and conformance steps ended in `|| true`, so a crash uploaded nothing while the step
+  showed green, and its actions were pinned by tag. Every action is now pinned to a commit with
+  its version beside it. Those two steps accept exit 0 or 3 (written, with findings) and a
+  non-empty file, and nothing else. `abatty ci --check` names a pipeline generated before this
+  as behind.
+- **The release's publishing identity is held by one job that runs nothing of anybody's.** The
+  gate, and every development dependency it runs, is a job with no identity. The job after it
+  publishes with `--ignore-scripts` and installs nothing, and the signature job after that has
+  only the attestation permissions. Code-scanning write is granted to the one job that uploads.
+- **The harness self-test runs its guard cases a few at a time: doctor takes about a third less
+  time.** Its two hundred guard and file-guard cases each start a process, which costs about a
+  tenth of a second on Windows. Run one after another they were most of doctor's time (27.6 s
+  here). They now run as many at once as the machine has cores, and are reported in the order
+  they are written: 18.6 s here. `abatty update` installs it.
+- **`abatty ci --check` names a pipeline that judges a new branch by its last commit.** A push
+  that opens a branch carries no `before`. A hand-written fallback to `HEAD~1` then judges one
+  commit of however many the branch holds. A pipeline that reads the push's `before` and falls
+  back to the last commit is now listed with its line, and the check exits 3. `--range auto` (the
+  fork from the base) judges the branch. A `HEAD~1` in a pipeline that never reads the event's
+  `before` field is left alone, whatever its steps are named.
+- **The gate says when a range given by hand is narrower than the branch.** A CI run on a new
+  branch has no `before` to diff from, and a hand-written fallback to `HEAD~1` judged one commit
+  of four and printed green. Off the base, a `--range` counted back from HEAD (the shape of that
+  fallback) now prints how many of the branch's commits it holds, and the range from the fork that
+  holds them all; a range from the push's own `before` is the push and is left alone. It is a notice, not
+  a refusal: a narrower range may be what was meant.
+- **A floor a change lowered is written for it.** A floor left above today's count fails the run,
+  and locking it took a separate `abatty baseline`, which made leaving findings in easier than
+  removing them. When every failure of a run is such a floor, a run outside CI now writes the
+  lowered floors itself and says to commit the baseline with the change; the run still fails
+  until it is committed, since a hook cannot add a commit to the push it judges. CI never writes,
+  a run with anything else failing writes nothing, and neither does one where a probe on
+  probation rose (it would become the floor unannounced). A metric the run could not read, such as
+  a rule about a push read without a range, keeps the floor it had.
+- **The context-file template asks for what helps an agent, and a wrapped placeholder is still
+  named.** Studies of context files found descriptive overviews the one kind of content that does
+  not help, workflow hints the one that measurably shortens a run, and security and performance
+  the sections few files carry. The template's opening is now one sentence, and it gains slots for
+  workflow hints (what is slow, what to run first), security frontiers and performance budgets.
+  DOC-CONTEXT read placeholders one line at a time, so a placeholder that wrapped onto a second
+  line, as several of the template's longer ones do, was never named and could stay unanswered
+  while the rule said present; one that opens like a question now counts across lines.
+- **The standard says what the size budgets are not, and the plan carries three adopters' lessons.**
+  CODE.1 now says its budgets are readability budgets and a floor that may only fall, not a defect
+  predictor: no study validates the exact numbers. The adoption plan adds independent branches
+  over stacked pull requests where the base requires an up-to-date branch, landing a repository-
+  wide format change alone with its floor recorded, and the burn-down cycle (fix, watch the
+  number fall, lock it in the same commit).
+- **The package's own release path holds no secret, and its checks say when they break.** With no
+  runtime dependency, a compromised release is the one way this package could hurt an adopter,
+  since it runs inside their hooks. Publishing moves to trusted publishing: the registry names
+  this repository's release workflow as the one publisher and refuses tokens, and the stored
+  `NPM_TOKEN` is gone. Every action in the workflows is pinned to a commit, a Scorecard workflow
+  measures the repository weekly, and a test refuses an unpinned action, a stored publish token,
+  a runtime dependency or an install script. The SARIF and conformance steps no longer end in
+  `|| true`: findings (exit 3) still produce their file, and a crash now fails the step.
+  SECURITY.md describes the publish path.
+- **The size rules say where a generated file goes.** An adopter took a generated OpenAPI client
+  off its size count by moving it under `src/generated/`, which the budgets exempt, and nothing had
+  told them that was the answer rather than a split. CODE-SIZE-800 and CODE-SIZE-300 now say so in
+  their next step.
+- **Test folders are exempt from the kind budgets at any depth.** The default exempt list skipped a
+  root `tests/` or `e2e/` only, so a monorepo's `apps/<app>/tests/` was held to the test budget,
+  and read by every probe of what ships, while the same folder at the root was exempt, as the
+  standard says tests are. The default now matches `tests/`, `test/`, `__tests__/` and `e2e/` at
+  any depth; the 800-line cap still applies. A repository that sets its own `ratchet.exempt`
+  keeps its list. In a monorepo that uses the default, a count may fall once: the ratchet reads it
+  as a floor to lock, and `abatty baseline` records it.
+- **Every false positive an adopter reported is locked by a case that must stay green.** An audit
+  of eighteen reported false positives found three whose fix no case held: variable reads, call
+  results and test data in the secret scan, a commit message that mentions the bypass flag, and a
+  CI step with its own `working-directory:`. Each now has the reporter's own situation as a case,
+  the secret corpus grows to 52 (32 look-alikes), and the README states the rule: a false
+  positive is fixed together with the case that keeps it fixed.
+- **`docs.behindCode` is judged by commits, not by the typed date.** A doc is behind when a
+  source it names changed in a later commit than the last one that changed the doc itself. A doc
+  changed in the same commit as its source is fresh, whatever its date says: an adopter's decision
+  log, updated in the very commit as its config, was flagged because its date lagged a day. A
+  commit that only moves `last_verified` counts for neither side: bumping the date re-read
+  nothing, so the rule no longer trains date-bump commits, and a source document whose date alone
+  moved no longer cascades to the documents that cite it. A re-read that found nothing to change
+  is recorded as a `docs-verified: <paths>` line in a commit message naming the documents read,
+  and re-reads those documents only. A date line is ignored in documents alone: a config whose
+  `updated:` changed has moved. A document never committed falls back to its typed date, and a
+  shallow clone, whose one commit adds every file, is not judged at all and says so. The
+  probe's definition is now 2, so an existing floor reads as redefined, with how to re-read and
+  record it, rather than as a regression nobody caused. This repository's own `DOGFOOD.md` is the
+  first case: it had called a bug fixed in 0.5.0 "not fixed" for two releases, behind a date that
+  had been bumped.
+
 ## [0.5.2] - 2026-09-24
 
 ### Added

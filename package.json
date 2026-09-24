@@ -1,6 +1,6 @@
 {
   "name": "abatty",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
   "license": "Apache-2.0",
   "repository": {
@@ -90,6 +90,8 @@
   ],
   "scripts": {
     "test": "node scripts/test.mjs \"test/*.test.mjs\"",
+    "coverage:changed": "node scripts/coverage-changed.mjs",
+    "mutate": "node bin/abatty.mjs mutate",
     "typecheck": "tsc -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check --end-of-line auto .",

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { cli, tempRepo } from "./helpers.mjs";
+import { cli, git, tempRepo } from "./helpers.mjs";
 import { floorRises, reviewApproval } from "../src/core/raises.mjs";
 
 const REL = "scripts/ci/standards-baseline.json";
@@ -156,4 +156,85 @@ test("debt moved into a file, or a floor loosened through the config, is a raise
     "abatty.config.json": JSON.stringify(cfg),
   });
   assert.deepEqual(floorRises(same, "main").loosened, []);
+});
+
+test("where the base takes direct pushes, a raise is recorded by a decision naming the metric, and said to be only that", () => {
+  const dir = tempRepo("raises-direct", {
+    [REL]: JSON.stringify(BASE),
+    "abatty.config.json": JSON.stringify({ directPushToBase: true }),
+    "docs/ADOPTION_DECISIONS.md": "# Decisions\n",
+  });
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(
+    join(dir, REL),
+    JSON.stringify({ ...BASE, metrics: { ...BASE.metrics, "size.overBudget": 4 } }),
+  );
+  git(dir, "commit", "-qam", "chore: raise");
+  const bare = cli(["raises", dir, "--base", "main"], dir);
+  assert.equal(bare.code, 3, bare.out);
+  assert.match(bare.out, /no decision in the range names it/);
+  writeFileSync(
+    join(dir, "docs/ADOPTION_DECISIONS.md"),
+    "# Decisions\n\n- 2026-09-24 · size.overBudget 3 → 4 · a vendored file, split next week · owner: A. Person\n",
+  );
+  git(dir, "commit", "-qam", "docs: the decision");
+  const recorded = cli(["raises", dir, "--base", "main"], dir);
+  assert.equal(recorded.code, 0, recorded.out);
+  assert.match(recorded.out, /the record is the decision, not a second person's approval/);
+  // A repository that takes pull requests still needs the approval, not a line in a file.
+  writeFileSync(join(dir, "abatty.config.json"), JSON.stringify({ directPushToBase: false }));
+  git(dir, "commit", "-qam", "chore: pull requests");
+  assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 3);
+});
+
+test("a file moved since the base carries its floor, so the move loosens nothing", () => {
+  const floor = (/** @type {string} */ path) =>
+    JSON.stringify({
+      metrics: { "size.overBudget": 1 },
+      hard: [],
+      debt: { "size.overBudget": { [path]: 1 } },
+    });
+  const dir = tempRepo("raises-renamed", {
+    [REL]: floor("src/a.ts"),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  git(dir, "mv", "src/a.ts", "src/b.ts");
+  writeFileSync(join(dir, REL), floor("src/b.ts"));
+  assert.deepEqual(floorRises(dir, "main").loosened, []);
+});
+
+test("a range that switches direct pushes on cannot approve its own raise with a decision line", () => {
+  const dir = tempRepo("raises-flip", {
+    [REL]: JSON.stringify(BASE),
+    "abatty.config.json": JSON.stringify({ directPushToBase: false }),
+    "docs/ADOPTION_DECISIONS.md": "# Decisions\n",
+  });
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(join(dir, "abatty.config.json"), JSON.stringify({ directPushToBase: true }));
+  writeFileSync(
+    join(dir, REL),
+    JSON.stringify({ ...BASE, metrics: { ...BASE.metrics, "size.overBudget": 4 } }),
+  );
+  writeFileSync(
+    join(dir, "docs/ADOPTION_DECISIONS.md"),
+    "# Decisions\n\n- 2026-09-24 · size.overBudget 3 → 4 · because · owner: A. Person\n",
+  );
+  git(dir, "commit", "-qam", "chore: raise and approve it");
+  assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 3);
+});
+
+test("a file renamed on the base after its floor was written loosens nothing on a later branch", () => {
+  const floor = JSON.stringify({
+    metrics: { "size.overBudget": 1 },
+    hard: [],
+    debt: { "size.overBudget": { "src/a.ts": 1 } },
+  });
+  const dir = tempRepo("raises-base-rename", { [REL]: floor, "src/a.ts": "export const a = 1;\n" });
+  git(dir, "mv", "src/a.ts", "src/b.ts");
+  git(dir, "commit", "-qm", "refactor: move a to b");
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(join(dir, "notes.txt"), "unrelated\n");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-qm", "docs: notes");
+  assert.deepEqual(floorRises(dir, "main").loosened, []);
 });

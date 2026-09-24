@@ -36,7 +36,9 @@ import {
 import { presetRules } from "../presets/index.mjs";
 import { localToday } from "./today.mjs";
 
+/** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
 export const LOCK = ".claude/harness.lock.json";
+/** Where `update` keeps the copy each file was installed from, the base of its three-way merge. */
 export const BASE_DIR = ".abatty/harness";
 
 /**

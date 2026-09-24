@@ -10,6 +10,7 @@ import { spawnSync } from "node:child_process";
 import { CONFIG_FILE, LEGACY_CONFIG, git, readAdoption, readJsonFile } from "./repo.mjs";
 import { baselinePath } from "../ratchet/config.mjs";
 import { readBaseline } from "../ratchet/baseline.mjs";
+import { carryRenames, renamesSince } from "../ratchet/renames.mjs";
 
 /**
  * @typedef {{ metric: string, was: number | string, now: number | string | null, how: "rose" | "vanished" | "no longer hard" | "rose in a file" | "config", path?: string }} Loosened
@@ -28,6 +29,20 @@ function onBase(repoDir, base, rel) {
 }
 
 /**
+ * Whether the BASE says the repository delivers straight to it. Read from the working tree, a
+ * range could turn it on, write the decision line it then accepts, and raise a floor with no
+ * approval: the machine that raised the floor would be approving the raise.
+ * @param {string} repoDir @param {string} base
+ */
+export function directPushOnBase(repoDir, base) {
+  const config = {
+    ...(onBase(repoDir, base, LEGACY_CONFIG) || {}),
+    ...(onBase(repoDir, base, CONFIG_FILE) || {}),
+  };
+  return config.directPushToBase === true;
+}
+
+/**
  * Every floor the working baseline and config loosened against `base`: a total above the base's,
  * a file's debt above its own floor or a file newly carrying some (debt moved is debt loosened),
  * a metric dropped, a HARD metric demoted, and the config's ways to the same end (see
@@ -36,8 +51,13 @@ function onBase(repoDir, base, rel) {
  */
 export function floorRises(repoDir, base) {
   const rel = baselinePath(readAdoption(repoDir));
+  // Carried along the renames since the commit that wrote the base's floor, which is where the
+  // working baseline is carried from too (readBaseline). Carried from the base's tip instead, a
+  // file renamed on the base after the floor was written read as a loosening on every branch.
   /** @type {import("../ratchet/index.mjs").Baseline | null} */
-  const before = onBase(repoDir, base, rel);
+  const found = onBase(repoDir, base, rel);
+  const anchor = git(repoDir, "log", "-1", "--format=%H", base, "--", rel) || base;
+  const before = found ? carryRenames(found, renamesSince(repoDir, anchor)) : found;
   const now = readBaseline(repoDir, rel);
   if (!before?.metrics) return { base, found: false, loosened: [] };
   /** @type {Loosened[]} */
@@ -153,4 +173,23 @@ export function reviewApproval(pr, gh = ghCli) {
       ? `approved at the head by ${by.join(", ")}`
       : `no approval of the head commit by anybody but ${author || "the author"}`,
   };
+}
+
+/**
+ * The decision that records a raise where no pull request exists to approve it: a line the pushed
+ * range added to the decisions file, naming the metric. A repository that delivers straight to its
+ * base by policy (`directPushToBase: true`) never opens the pull request a second approver would
+ * read, so an adopter's raise could be written down and never recorded as anything. The record is
+ * not a second person's approval, and the command says so; it is the decision, on file, dated by
+ * its commit. "" when the range adds no such line.
+ * @param {string} repoDir @param {string} base @param {string} metric
+ * @returns {string}
+ */
+export function recordedDecision(repoDir, base, metric) {
+  const file = String(readAdoption(repoDir)?.files?.decisions || "docs/ADOPTION_DECISIONS.md");
+  const added = git(repoDir, "diff", "--no-color", "-U0", `${base}...HEAD`, "--", file)
+    .split("\n")
+    .filter((l) => l.startsWith("+") && !l.startsWith("+++"))
+    .map((l) => l.slice(1).trim());
+  return added.find((l) => l.includes(metric)) || "";
 }

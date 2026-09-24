@@ -20,8 +20,11 @@ export function templatePlaceholders(text) {
     // A choice offered in a code span (`<package.json | docs/version.json>`) is the template's
     // own question, written in code because it names files: it stays a blank to fill.
     .replace(/`[^`\n]*`/g, (span) => (/<[^<>\n]*\s\|\s[^<>\n]*>/.test(span) ? span : ""));
-  return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
-    .map((m) => `<${m[1]}>`)
+  // A placeholder may span lines when it opens like the template's questions do (a capital, or
+  // `e.g.`): the template's longer ones wrap, and read one line at a time they were never named,
+  // so an adopter's context file could keep them for good. A `<` in wrapped prose opens neither.
+  return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*|(?:[A-Z]|e\.g\.)[^<>]*\n[^<>]*)>/g)]
+    .map((m) => `<${String(m[1]).replace(/\s+/g, " ")}>`)
     .filter((p) => !/^<[a-z][a-z0-9-]*(\s+[a-z-]+="[^"]*")*\s*\/?>$/i.test(p)); // an HTML tag: attributes carry a value, or it closes itself
 }
 
@@ -36,7 +39,7 @@ export const rules = [
     enforcement: "prose",
     phase: "A.1 / status",
     why: "The context file is read whole at the start of every session; past two hundred lines the model stops holding it and confidently applies the wrong half. The one repository that let it reach 1,124 lines is the motivating case. A file that is still the template, placeholders and all, is a description of a context file, not one.",
-    next: "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template",
+    next: "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template, and answer every <placeholder>, the ones that wrap onto a second line included",
     check: (c) => {
       const f = c.contextFile;
       const text = f ? c.read(f) : "";

@@ -1,11 +1,9 @@
 /**
- * Documents (standard DOC.2..5): front matter, the index against the tree, citations that
- * resolve, freshness against the diff, and the dangling source_truth entry that switches a
- * doc's update trigger off.
+ * Documents (standard DOC.2..4): front matter, the index against the tree, and citations that
+ * resolve. Freshness against the diff (DOC.5) is in freshness.mjs.
  */
 import { dirname, posix } from "node:path";
 import { frontMatter, matchesAny, regexes } from "./lib.mjs";
-import { localToday } from "../../core/today.mjs";
 
 const CITATION =
   /`([^`\s]+\/[^`\s]*\.(?:mjs|cjs|js|ts|tsx|jsx|json|jsonc|md|ya?ml|sql|ps1|sh|toml|css)(?::\d+)?)`/g;
@@ -14,21 +12,6 @@ const CITATION =
 const NAMED = /(?:^|[\s`([<|])((?:[\w.-]+\/)*[\w.-]+\.md)(?=[\s`)\]>|,.:]|$)/gm;
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
-
-/**
- * The tree prefix of a source_truth entry: the folders before the segment that holds the first
- * glob character, without a trailing slash; an entry starting with `./` or `../` is read from the
- * document's folder, any other from the root. Null when the entry leaves the repository. The
- * whole segment goes, not the text after the character: `src/core/secret*.mjs` cut at the star
- * left `src/core/secret`, a path that never exists, and a live entry read as dangling.
- * @param {string} entry @param {string} doc the document's path
- */
-function prefixOf(entry, doc) {
-  const i = entry.search(/[*?{[]/);
-  const raw = (i < 0 ? entry : entry.slice(0, entry.lastIndexOf("/", i) + 1)).replace(/\/+$/, "");
-  const p = /^\.\.?\//.test(raw) ? posix.normalize(posix.join(dirname(doc), raw)) : raw;
-  return p.startsWith("../") || p === ".." ? null : p;
-}
 
 /** @type {import("../index.mjs").Probe[]} */
 export const probes = [
@@ -183,137 +166,6 @@ export const probes = [
       {
         name: "a glob is not a citation",
         files: { "docs/a.md": FM() + "Under `src/**/*.ts`.\n" },
-        expect: 0,
-      },
-    ],
-  },
-  {
-    metric: "docs.behindCode",
-    kind: "ratchet",
-    standard: ["DOC.5"],
-    title: "Documents whose source_truth moved after their last_verified date",
-    why: "Freshness is measured against the diff, never the calendar: when the code a doc names was committed after the doc was verified, the doc is unverified against what it describes, and an agent reading it confidently does the wrong thing. The count is a prompt to re-read, not a claim that the doc is wrong.",
-    axis: "docs-freshness",
-    lossAt: 20,
-    approximates:
-      "whether a document is still true. It counts one observable fact instead: a commit touched a cited path after the document's last_verified date. It is wrong in both directions - a formatting pass or a change to a part of the file the document never described counts, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
-    scan: (c) => {
-      const findings = [];
-      let scanned = 0;
-      for (const f of c.docFiles) {
-        const fm = frontMatter(c.read(f));
-        const truth = fm && Array.isArray(fm.source_truth) ? fm.source_truth : [];
-        const verified = fm && typeof fm.last_verified === "string" ? fm.last_verified : "";
-        if (!truth.length || !verified) continue;
-        if (["archived", "deprecated", "stable"].includes(String(fm?.status))) continue;
-        scanned++;
-        const behind = [];
-        for (const entry of truth) {
-          const p = prefixOf(entry, f);
-          if (!p || !c.exists(p)) continue;
-          const last = c.git("log", "-1", "--format=%cs", "--", p);
-          if (last && last > verified) behind.push(`${entry} moved ${last}`);
-        }
-        if (behind.length)
-          findings.push({ path: f, detail: `verified ${verified}; ${behind.join("; ")}` });
-      }
-      return { scanned, findings };
-    },
-    controls: [
-      {
-        name: "the source moved after the doc was verified",
-        files: {
-          "docs/a.md": FM('last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n'),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [
-          {
-            files: { "src/x.ts": "export const later = 1;\n" },
-            message: "feat: later",
-            date: "2021-06-01T12:00:00Z",
-          },
-        ],
-        expect: 1,
-      },
-      {
-        // The day the source moves is the day its author can re-read the doc. An exemption for
-        // today let the change merge green and the base go red at midnight, charged to the next push.
-        name: "a source moved today after a doc verified yesterday counts, today",
-        files: {
-          "docs/a.md": FM(
-            `last_verified: "${localToday(new Date(Date.now() - 36 * 3600 * 1000))}"\nsource_truth:\n  - "src/x.ts"\n`,
-          ),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [{ files: { "src/x.ts": "export const now = 1;\n" }, message: "feat: now" }],
-        expect: 1,
-      },
-      {
-        name: "a doc verified today holds, its source moved today too",
-        files: {
-          "docs/a.md": FM(`last_verified: "${localToday()}"\nsource_truth:\n  - "src/x.ts"\n`),
-          "src/x.ts": "export {};\n",
-        },
-        commits: [{ files: { "src/x.ts": "export const now = 1;\n" }, message: "feat: now" }],
-        expect: 0,
-      },
-    ],
-  },
-  {
-    metric: "docs.danglingSource",
-    kind: "hard",
-    standard: ["DOC.5"],
-    title: "source_truth entries that name nothing in the tree",
-    why: "A dangling source_truth entry is the doc's update trigger switched off: the code it watched is gone or renamed and the doc will never be marked behind again.",
-    axis: "docs-freshness",
-    lossAt: 5,
-    scan: (c) => {
-      const findings = [];
-      let scanned = 0;
-      for (const f of c.docFiles) {
-        const fm = frontMatter(c.read(f));
-        const truth = fm && Array.isArray(fm.source_truth) ? fm.source_truth : [];
-        for (const entry of truth) {
-          const p = prefixOf(entry, f);
-          if (p === null) continue;
-          scanned++;
-          if (!p || !c.exists(p))
-            findings.push({ path: f, detail: `source_truth \`${entry}\` names nothing` });
-        }
-      }
-      return { scanned, findings };
-    },
-    controls: [
-      {
-        name: "an entry naming a file that is gone",
-        files: { "docs/a.md": FM('source_truth:\n  - "src/gone/**"\n') },
-        expect: 1,
-      },
-      {
-        name: "an entry naming a folder that exists",
-        files: { "docs/a.md": FM('source_truth:\n  - "src/**"\n'), "src/x.ts": "export {};\n" },
-        expect: 0,
-      },
-      {
-        name: "a star inside a file name keeps the folder that holds it",
-        files: {
-          "docs/a.md": FM('source_truth:\n  - "src/core/secret*.mjs"\n'),
-          "src/core/secrets.mjs": "export {};\n",
-        },
-        expect: 0,
-      },
-      {
-        name: "a star inside a file name in a folder that is gone",
-        files: { "docs/a.md": FM('source_truth:\n  - "src/gone/secret*.mjs"\n') },
-        expect: 1,
-      },
-      {
-        name: "an entry relative to the document's folder resolves from there",
-        files: {
-          "docs/standard/a.md": FM('source_truth:\n  - "./guides/*.md"\n  - "../../src/**"\n'),
-          "docs/standard/guides/g.md": FM(),
-          "src/x.ts": "export {};\n",
-        },
         expect: 0,
       },
     ],

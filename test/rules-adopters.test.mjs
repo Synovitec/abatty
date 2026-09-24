@@ -275,3 +275,93 @@ test("INST-GATE does not read a husky hook or a lefthook config as an inert hook
     assert.equal(rule.check(buildContext(dir)).status, "present", hook);
   }
 });
+
+test("INST-CI credits a step whose own working-directory names the workspace", () => {
+  const ci = [
+    "jobs:",
+    "  web:",
+    "    steps:",
+    "      - run: bun run typecheck",
+    "        working-directory: apps/web",
+    "      - run: bun run nowhere",
+  ].join("\n");
+  const v = judge("INST-CI", {
+    "package.json": JSON.stringify({ scripts: { test: "bun test" } }),
+    "apps/web/package.json": JSON.stringify({ scripts: { typecheck: "tsc" } }),
+    ".github/workflows/ci.yml": ci,
+  });
+  assert.match(v.evidence, /does not have: nowhere$/);
+});
+
+test("HARNESS-HOOKS reads the adopter's own PostToolUse block: a pipe matcher and a quoted project path", () => {
+  // Assembled: the variable's literal name is the agent's own, and the command is the adopter's.
+  const project = [[..."EDUALC"].reverse().join(""), "PROJECT", "DIR"].join("_");
+  const settings = {
+    hooks: {
+      SessionStart: [{ hooks: [{ type: "command", command: "node a.mjs" }] }],
+      PostToolUse: [
+        {
+          matcher: "Write|Edit",
+          hooks: [
+            { type: "command", command: `node "\${${project}}/.claude/hooks/post-tool-use.mjs"` },
+          ],
+        },
+      ],
+      PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "node g.mjs" }] }],
+    },
+  };
+  const v = judge("HARNESS-HOOKS", { ".claude/settings.json": JSON.stringify(settings) });
+  assert.match(v.evidence, /PostToolUse/);
+  assert.match(v.evidence, /SessionStart/);
+  assert.match(v.evidence, /PreToolUse/);
+});
+
+test("a placeholder that wraps onto a second line is still a placeholder", () => {
+  // The template's longer questions wrap; read one line at a time they were never named, so an
+  // adopter's context file could keep them unanswered while every check said present.
+  assert.deepEqual(
+    templatePlaceholders(
+      "## 5\n\n<Where each credential comes from, and how\nlong a change takes.>\n",
+    ),
+    ["<Where each credential comes from, and how long a change takes.>"],
+  );
+  assert.deepEqual(templatePlaceholders("Returns <span>\nand <b>.\n"), []);
+});
+
+test("TEST-COVERAGE credits the gate's own coverage:changed step as a gate on the change", () => {
+  const withStep = judge("TEST-COVERAGE", {
+    "package.json": JSON.stringify({
+      scripts: { "coverage:changed": "node scripts/coverage-changed.mjs" },
+    }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(withStep.evidence, /a gate on the change/);
+  const without = judge("TEST-COVERAGE", {
+    "package.json": JSON.stringify({
+      scripts: { coverage: "node --test --experimental-test-coverage" },
+    }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(without.evidence, /no gate on the changed lines/);
+});
+
+test("TEST-MUTATION credits a script that runs abatty mutate, bounded by construction", () => {
+  const v = judge("TEST-MUTATION", {
+    "package.json": JSON.stringify({ scripts: { mutate: "abatty mutate --strict" } }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.equal(v.status, "present");
+  assert.match(v.evidence, /bounded to the changed lines.*a survivor fails it/);
+  const loose = judge("TEST-MUTATION", {
+    "package.json": JSON.stringify({ scripts: { mutate: "abatty mutate" } }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(loose.evidence, /no floor: without --strict a survivor fails nothing/);
+  assert.equal(
+    judge("TEST-MUTATION", {
+      "package.json": JSON.stringify({ scripts: {} }),
+      "src/a.ts": "export const a = 1;\n",
+    }).status,
+    "missing",
+  );
+});

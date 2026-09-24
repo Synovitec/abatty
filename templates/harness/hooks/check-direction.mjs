@@ -60,9 +60,23 @@ export function checkDirection({ base, config = loadConfig(), cwd = process.cwd(
 
   // A. The harness. Tracked files under .claude/ that differ from the base: modified, deleted or
   // added to the index. The hooks that judge the run are not the run's to edit.
-  const harness = g("diff", "--name-only", base, "--", HARNESS_DIR, ROOT_CONFIG).out.split(/\r?\n/).filter(Boolean);
+  const harness = g("diff", "--name-only", base, "--", HARNESS_DIR).out.split(/\r?\n/).filter(Boolean);
   if (harness.length) {
     add({ kind: "harness", file: harness.join(", "), hard: true, detail: `${harness.length} file(s) under ${HARNESS_DIR} differ from ${base}`, fix: `git checkout ${base} -- ${HARNESS_DIR} && git commit -m "chore(standards): restore the harness"` });
+  }
+  // The root config, named as itself. At night it is read-only whatever the change. By day only a
+  // loosening is one: an adopter who enabled a probe was told a tightening was a loosening "under
+  // .claude/", with a command to restore the looser file.
+  if (g("diff", "--name-only", base, "--", ROOT_CONFIG).out.trim()) {
+    const loosened = configLoosenings(atBase(ROOT_CONFIG), inTree(ROOT_CONFIG));
+    if (process.env.ADOPTION_RUN === "1" || loosened.length)
+      add({
+        kind: "harness",
+        file: ROOT_CONFIG,
+        hard: true,
+        detail: process.env.ADOPTION_RUN === "1" ? `${ROOT_CONFIG} differs from ${base}; it is read-only to an unattended run` : `${ROOT_CONFIG} changed against ${base} beyond a tightening: ${loosened.join(", ")}`,
+        fix: `git checkout ${base} -- ${ROOT_CONFIG}, or record the change in the decisions file`,
+      });
   }
 
   // B. The baseline: no number under metrics or debt rises, no metric disappears.
@@ -250,6 +264,33 @@ function safeJson(text) {
   } catch {
     return null;
   }
+}
+
+/**
+ * What a change to the root config loosened, by key: every change except a tightening of the
+ * ratchet (a probe enabled, a metric made HARD, a metric no longer held as a ratchet) is named.
+ * A file that does not parse on either side is named as unreadable rather than read as tight.
+ */
+function configLoosenings(baseText, treeText) {
+  const a = safeJson(baseText);
+  const b = safeJson(treeText);
+  if (!a || !b) return ["the file does not parse on one side"];
+  const list = (o, k) => (Array.isArray(o?.ratchet?.[k]) ? o.ratchet[k].map(String) : []);
+  const out = [];
+  // Growing: enable, hard. Shrinking: ratchet (a metric held as a ratchet instead of HARD).
+  if (list(a, "enable").some((x) => !list(b, "enable").includes(x))) out.push("ratchet.enable lost an entry");
+  if (list(a, "hard").some((x) => !list(b, "hard").includes(x))) out.push("ratchet.hard lost an entry");
+  if (list(b, "ratchet").some((x) => !list(a, "ratchet").includes(x))) out.push("ratchet.ratchet gained an entry");
+  const rest = (o) => {
+    const copy = JSON.parse(JSON.stringify(o));
+    if (copy.ratchet) for (const k of ["enable", "hard", "ratchet"]) delete copy.ratchet[k];
+    return copy;
+  };
+  const ra = rest(a);
+  const rb = rest(b);
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)]))
+    if (JSON.stringify(ra[k]) !== JSON.stringify(rb[k])) out.push(`${k} changed`);
+  return out;
 }
 
 /** Numbers for `key:` inside every `thresholds: { ... }` block, in file order. */

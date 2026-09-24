@@ -8,9 +8,6 @@ on:
   pull_request:
 permissions:
   contents: read
-  # The findings are uploaded to code scanning, which is what puts them on the diff of the change
-  # under review rather than in a report nobody opens.
-  security-events: write
 jobs:
   # Every Node the package claims (`engines`), not only the newest: a launcher spawned the way
   # only one version accepts is exactly what one runner cannot see. The claim is the package's:
@@ -19,15 +16,20 @@ jobs:
   # said so on this matrix's first run; that is the tooling's floor, not the package's.
   gate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The findings are uploaded to code scanning, which is what puts them on the diff of the
+      # change under review rather than in a report nobody opens. This job alone uploads.
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
         node: ["20", "22"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -44,10 +46,15 @@ jobs:
       # whose findings a reviewer needs on the diff. Uploaded once per commit, from the newest Node.
       - name: findings as SARIF
         if: always() && matrix.node == '22'
-        run: node bin/abatty.mjs ratchet --range auto --sarif > abatty.sarif || true
+        # 3 means findings, which is what the file is for; anything else is a crash, and a step
+        # that swallowed it would upload nothing and say nothing.
+        run: |
+          node bin/abatty.mjs ratchet --range auto --sarif > abatty.sarif || code=$?
+          [ "${code:-0}" -eq 0 ] || [ "${code:-0}" -eq 3 ]
+          test -s abatty.sarif
       - name: upload the findings
         if: always() && matrix.node == '22'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
         with:
           sarif_file: abatty.sarif
           category: abatty
@@ -62,10 +69,10 @@ jobs:
   skewed-clock:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -94,14 +101,14 @@ jobs:
       matrix:
         pm: [npm, pnpm]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         if: matrix.pm == 'pnpm'
         with:
           version: 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -120,12 +127,12 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         pm: [npm, pnpm, yarn]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         if: matrix.pm == 'pnpm'
         with:
           version: 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
       - name: the audit of ${{ matrix.pm }}, clean and with a known advisory

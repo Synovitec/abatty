@@ -183,6 +183,30 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.fail} ${t.red(`git records ${r.notExecutable.join(", ")} as not executable, so git skips ${r.notExecutable.length > 1 ? "them" : "it"} on every other machine`)}${t.gray(" · abatty hooks stages the mode (git update-index --chmod=+x); then commit")}\n`,
     );
+  // The opt-in probes left off, with what each would read: enabling one is then a decision taken
+  // knowing the number.
+  const reading = r.optIn.filter((p) => p.reads !== null && p.reads > 0);
+  if (reading.length)
+    out(
+      `  ${t.glyph.warn} opt-in probes not enabled here, with what each would read today (ratchet.enable):\n${reading
+        .map(
+          (p) => `      ${p.metric.padEnd(26)} ${String(p.reads).padStart(4)}  ${t.gray(p.title)}`,
+        )
+        .join(
+          "\n",
+        )}\n${t.gray(`      ${r.optIn.filter((p) => p.reads === 0).length} more would read 0`)}\n`,
+    );
+  const perm = r.permissions;
+  if (perm.readable.length)
+    out(
+      `  ${t.glyph.fail} ${t.red(`the agent may read ${perm.readable.join(", ")}: the settings no longer deny them`)}${t.gray(" · deny ./.env and ./.env.*; name the example file env.example so no allow has to punch through")}\n`,
+    );
+  if (perm.removedDenies.length)
+    out(
+      `  ${t.glyph.warn} deny rule(s) the template ships and the settings dropped: ${perm.removedDenies.join(", ")}\n`,
+    );
+  if (perm.addedAllows.length)
+    out(`  ${t.glyph.warn} allow rule(s) the settings added: ${perm.addedAllows.join(", ")}\n`);
   if (r.missingScripts.length)
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,

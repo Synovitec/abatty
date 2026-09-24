@@ -10,6 +10,7 @@
  * not failing them; it is not running them, and the finding says so.
  */
 import { HARNESSED } from "../applies.mjs";
+import { unrefusedSecrets } from "../../core/secret-reads.mjs";
 
 /** The settings file an agent's permission surface lives in. @param {import("../context.mjs").RepoContext} c */
 const settings = (c) => (c.exists(".claude/settings.json") ? c.read(".claude/settings.json") : "");
@@ -47,16 +48,28 @@ export const rules = [
     phase: "0",
     ...HARNESSED,
     why: "A permission surface that is not written down is whatever the tool defaulted to on the day it was installed, and nobody on the team can tell you what it is. The deny list is the one place a reviewer can read what the agent may never do.",
-    next: "Declare the permission surface in the agent's settings, with the force push, the history rewrite and the hook bypass denied",
+    next: "Declare the permission surface in the agent's settings, with the force push, the history rewrite and the hook bypass denied, and every env file refused (./.env and ./.env.*; an example file named env.example needs no allow)",
     check: (c) => {
       const text = settings(c);
       if (!text) return { status: "missing", evidence: "no .claude/settings.json" };
       const denied = ["--no-verify", "push --force", "reset --hard", "filter-branch"].filter((d) =>
         text.includes(d),
       );
+      // The secret reads are judged by what the deny globs match, on names planted for it: a
+      // wildcard narrowed to a list of files still read as denied to a check of the words.
+      /** @type {any} */
+      let parsed = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch {}
+      const readable = unrefusedSecrets(parsed);
+      const secrets = readable.length
+        ? `; readable by the agent: ${readable.join(", ")} (a deny on ./.env and ./.env.* covers them; name the example file env.example so no allow has to punch through)`
+        : "; every env file variant refused";
+      const commands = denied.length >= 3 ? "present" : denied.length ? "partial" : "missing";
       return {
-        status: denied.length >= 3 ? "present" : denied.length ? "partial" : "missing",
-        evidence: denied.length ? `denied: ${denied.join(", ")}` : "nothing dangerous is denied",
+        status: commands === "present" && readable.length ? "partial" : commands,
+        evidence: `${denied.length ? `denied: ${denied.join(", ")}` : "nothing dangerous is denied"}${secrets}`,
       };
     },
   },

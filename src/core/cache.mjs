@@ -15,7 +15,9 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { join } from "node:path";
 import { git } from "./repo.mjs";
 
+/** The package's own folder in a repository: gitignored, so nothing in it is ever an input a rule may depend on. */
 export const CACHE_ROOT = ".abatty";
+/** Where measurements are cached, keyed by the content of everything a rule could read and never by a time, so a cache can never turn a finding into a pass. */
 export const CACHE_DIR = join(CACHE_ROOT, "cache");
 
 /**

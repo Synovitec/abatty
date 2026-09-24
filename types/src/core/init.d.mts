@@ -41,6 +41,7 @@ export function initRepo(o: {
     missingDeps: string[];
     preset: import("../presets/index.mjs").Preset;
 };
+/** The templates `init` and `update` copy from, read as files: nothing under `src/` imports them (CLAUDE.md §3). */
 export const TEMPLATES: string;
 export type InitEvent = {
     file: string;

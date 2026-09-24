@@ -19,5 +19,6 @@ export function stageOf(config: any, stack: {
  * documents family, the changelog, a decisions log and a CI that can fail, not a dead-code gate.
  */
 /** @typedef {"design" | "build" | "run"} Stage */
+/** The stages a repository can be at, earliest first: a rule applies from the stage it names onwards. */
 export const STAGES: string[];
 export type Stage = "design" | "build" | "run";

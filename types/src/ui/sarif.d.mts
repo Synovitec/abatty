@@ -74,7 +74,9 @@ export function sarifOfVerdicts(o: {
         results: SarifResult[];
     }[];
 };
+/** The schema a SARIF log names, so a forge and a validator read it as the version it is. */
 export const SARIF_SCHEMA: "https://json.schemastore.org/sarif-2.1.0.json";
+/** The one SARIF version emitted: the one code-scanning services accept. */
 export const SARIF_VERSION: "2.1.0";
 export function sarifLevel(enforcement: string, rising?: boolean): "error" | "warning" | "note";
 export function fingerprint(parts: (string | number | undefined)[]): string;

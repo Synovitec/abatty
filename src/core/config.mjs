@@ -18,7 +18,9 @@ import {
 } from "./repo.mjs";
 
 export { CONFIG_FILE, LEGACY_CONFIG, readConfig };
+/** The `$schema` a written config names, so an editor validates it without the package installed. */
 export const SCHEMA_URL = "https://abatty.io/schema/abatty.config.json";
+/** The schema the package ships, the one `abatty config` validates against: the same file the URL serves. */
 export const SCHEMA_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
   "..",

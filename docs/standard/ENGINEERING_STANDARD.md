@@ -194,8 +194,8 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
 - **Enforcement is a hook, guidance is `CLAUDE.md`.** `.claude/settings.json` (committed,
   because it is the file whose hooks run in headless `-p` sessions) carries a `PreToolUse`
   guard on `Bash|PowerShell` (denies a push to the base branch when the repo is PR-only, by
-  any door: behind a redirection or through the forge's API; force push and `--no-verify`
-  always; at night also any move off the work branch, the merge of a pull request, history
+  any door: behind a redirection or through the forge's API; force push and `--no-verify`,
+  with its spelling as configuration (`core.hooksPath` moved or unset), always; at night also any move off the work branch, the merge of a pull request, history
   rewrite, destructive SQL, deploy, publish, dependency change, a shell write to the harness), a
   `PreToolUse` guard on `Edit|Write` (at night denies a write under `.claude/`, to an applied
   migration, to an env file, outside the tree), a `Stop` gate that refuses to end an
@@ -259,7 +259,12 @@ The full design, settings and templates are in `AUTONOMOUS_ADOPTION.md` and
   for anything.** Budgets are in code lines (blank and comment lines excluded), with a
   raw-line budget at 1.5x so a file is not charged for the JSDoc CODE.7 requires. **About
   300 lines is the real threshold**: beyond it an agent stops reading the whole file
-  reliably and works from fragments; at 500 a file has more than one responsibility.
+  reliably and works from fragments; at 500 a file has more than one responsibility. These
+  are readability budgets and a floor that may only fall, not a defect predictor: no study
+  validates the exact numbers, and the structural metrics' defect signal travels largely
+  through size. Sell them as "an agent and a reviewer can hold this file", never as "this
+  file has fewer bugs", and do not drive one to zero by splitting along syntax rather than
+  meaning (CODE.5).
 
   | Kind                                                       | Target  | Hard max              |
   | ---------------------------------------------------------- | ------- | --------------------- |
@@ -523,7 +528,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   `npm ci` / `--frozen-lockfile` everywhere, regenerated on Linux, reviewed like code. Updates
   arrive by Renovate on a cadence: a security fix without a major bump auto-merges after a
   green day, everything else batched weekly and reviewed. Fixtures are synthetic; diagnostic
-  output masks names; `.env*` never enters a Docker build context.
+  output masks names; `.env*` never enters a Docker build context. A password, a token or a
+  one-time code is drawn from the platform's cryptographic generator, never from `Math.random`.
 - **SEC.2 (MUST) - An audit trail is append-only**, enforced by the database role, and an
   actor is recorded as exactly one of a person or an integration.
 - **SEC.3 (MUST) - A tenant-supplied URL is hostile.** Resolve DNS, refuse private, loopback,
@@ -572,7 +578,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   is in flight, then exits - never `process.exit(0)` on the signal, never ignoring it. Every
   job type has a fallback path or its absence is documented in the operations runbook. The
   error tracker is configured from the environment, not from the database, because it has to
-  work when the database is the broken thing.
+  work when the database is the broken thing. A caught error is handled, rethrown or reported
+  through that logger; a catch whose only act is a console line is a failure nobody sees.
 - **FLOW.1 (MUST) - Conventional Commits, no em-dash anywhere** (code, copy, i18n, commit
   messages; the house separator is `·` or a hyphen), **no `authorship` trailer.** The
   message says why, for the reader, not what the diff shows.
@@ -580,7 +587,8 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   Pre-commit holds only what takes seconds on staged files (format, a secret scan, the
   locale-set check); pre-push holds the gate. The hooks manager is `core.hooksPath` for a
   single package and Lefthook for a monorepo (parallel, glob-scoped, no Node dependency);
-  either way the list lives in the gate script, not in the hook. Whether `main` takes direct
+  either way the list lives in the gate script, not in the hook. Pointing `core.hooksPath`
+  elsewhere or unsetting it skips the hooks as the flag does, and is the same bypass. Whether `main` takes direct
   pushes or PRs only is a per-repository decision written in its `CLAUDE.md` and in
   `abatty.config.json` (a client project with a signed IP transfer is PR-only; an internal
   platform may push to `main`). Either way `main` is never red on purpose, and a branch lives
@@ -622,8 +630,9 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   mutation.** Every new guard, ratchet and probe: reintroduce the defect, watch it fail,
   restore. Confirm the mutant EXISTS (grep the file) before reading a green as a verdict;
   break both halves of a rule enforced twice; check the assertion can tell the outcomes
-  apart. Where the stack allows it, StrykerJS on changed files per PR with `break` at
-  today's floor (never aspirational) and the full sweep on a schedule.
+  apart. Where the stack allows it, a mutation run on the changed lines per PR (StrykerJS,
+  or `abatty mutate` with no dependency) with `break` at today's floor (never aspirational)
+  and the full sweep on a schedule.
 - **TEST.6 (MUST) - A flaky test is quarantined, owned and dated, never retried away or
   deleted.** A separate non-blocking lane, an owner and a deadline, back into the blocking
   suite only after the root cause is fixed. Leaving it red intermittently is how a team
@@ -759,14 +768,16 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   longer resolves is counted; a rule ID or npm script named in prose that does not exist is
   counted.
 - **DOC.5 (MUST) - Freshness is measured against the DIFF, never the calendar.** A doc is
-  behind when a file it cites, or a `source_truth` entry, was committed after its
-  `last_verified` (a frozen doc is exempt, it is supposed to age; an uncommitted edit counts as
-  today). A same-day change is not exempt: the day a cited file moves is the day its author is
-  there to re-read the doc, and an exemption let the change merge green and the base branch go
-  red at midnight, charged to whoever pushed next. A dangling
-  `source_truth` entry is a hard failure, not a warning: it is the doc's update trigger
-  switched off. **Bumping a date without re-reading the doc against the code is the lie the
-  metric exists to prevent** - if you cannot verify it, leave it stale.
+  behind when a `source_truth` entry changed in a commit later than the last commit that changed
+  the doc itself (a frozen doc is exempt, it is supposed to age). A doc changed in the same commit
+  as its source is fresh. A commit that only moves a `last_verified` date counts for neither side:
+  bumping the date re-read nothing, and a source document whose date alone moved has not moved.
+  A re-read that found nothing to change is put on the record instead, as a `docs-verified:` line
+  in a commit message naming the documents read, and it re-reads those alone. The typed date is
+  the fallback for a document never committed; a shallow clone is not judged, since its one
+  commit reads as the last change of everything. A dangling `source_truth` entry is a hard failure, not a warning: it is
+  the doc's update trigger switched off. **Recording a re-read without re-reading the doc against
+  the code is the lie the metric exists to prevent** - if you cannot verify it, leave it stale.
 - **CHANGE.1 (MUST) - A push that touches source, migrations, tests, CI or scripts touches
   `CHANGELOG.md`**, checked over the pushed range. Entries are written for the reader, not the
   committer.

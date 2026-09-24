@@ -18,11 +18,13 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
-import { pendingPaths, pushRangeInfo } from "./range.mjs";
+import { narrowerThanBranch, pendingPaths, pushRangeInfo } from "./range.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
+import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
+import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 
 /**
@@ -31,7 +33,7 @@ import { commentOnly, liveDevServer } from "./suite-select.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -76,6 +78,11 @@ export function runGate(o) {
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
       : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
+  const wider = blind ? null : narrowerThanBranch(repoDir, o.base || "main", info);
+  if (wider)
+    log(
+      `· --range ${range} judges ${info.commits} of the ${wider.commits} commit(s) this branch carries since it left ${o.base || "main"}; --range ${wider.fork.slice(0, 12)}..HEAD judges the branch`,
+    );
   // A pushed file whose diff is only comments changes no behaviour and selects no suite; one
   // with uncommitted edits as well is read whole, so it still selects.
   const quiet = blind
@@ -93,12 +100,41 @@ export function runGate(o) {
   // Said before the first step rather than found after the slowest one; said, not refused.
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
+  // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
+  // it would be judging something else. What it must never be is invisible.
+  const nodeEnv = o.nodeEnv ?? unexpectedNodeEnv();
+  if (nodeEnv)
+    log(
+      `! environment: NODE_ENV=${nodeEnv} is inherited from this shell, and every step runs under it; a test or a script that expects development or test behaviour will fail for that reason alone (unset it for the push)`,
+    );
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(
       (s) => typeof s === "string" && typeof pkgScripts[s] === "string",
     ) || null;
 
+  /**
+   * The outcome of a step that ran, recorded and logged, and whether the gate goes on. One
+   * place for both kinds of step, so "could not run" and "failed" cannot drift apart in wording.
+   * @param {string} label @param {{ errored?: boolean, detail?: string, code?: number | null }} res
+   * @param {number} ms @param {string} what the command, as the reader would type it
+   */
+  const settle = (label, res, ms, what) => {
+    if (res.errored) {
+      events.push({ label, outcome: "errored", ms, detail: res.detail });
+      log(
+        `\n✗ ${label} could not run: ${what} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
+      );
+      return false;
+    }
+    if (res.code !== 0) {
+      events.push({ label, outcome: "failed", ms });
+      log(`\n✗ ${label} failed (exit ${res.code}). The gate stops here.`);
+      return false;
+    }
+    events.push({ label, outcome: "ok", ms });
+    return true;
+  };
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
     if (s.builtin) return builtinStep(s, { repoDir, log, events, audit: o.audit });
@@ -130,21 +166,7 @@ export function runGate(o) {
       log(`\n▶ ${prefix}${s.label}`);
       const t0 = Date.now();
       const res = asResult(runCommand(cwd, s.command));
-      const ms = Date.now() - t0;
-      if (res.errored) {
-        events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
-        log(
-          `\n✗ ${prefix}${s.label} could not run: ${s.command.join(" ")} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
-        );
-        return false;
-      }
-      if (res.code !== 0) {
-        events.push({ label: prefix + s.label, outcome: "failed", ms });
-        log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
-        return false;
-      }
-      events.push({ label: prefix + s.label, outcome: "ok", ms });
-      return true;
+      return settle(prefix + s.label, res, Date.now() - t0, s.command.join(" "));
     }
     if (s.rangeArg && prefix) return true; // the ratchet runs once, at the root
     const script = resolveScript(s);
@@ -167,21 +189,7 @@ export function runGate(o) {
     // trust is not handed on: told an empty one, a coverage script passed green over nothing.
     const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
     const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
-    const ms = Date.now() - t0;
-    if (res.errored) {
-      events.push({ label: prefix + s.label, outcome: "errored", ms, detail: res.detail });
-      log(
-        `\n✗ ${prefix}${s.label} could not run: npm run ${script} · ${res.detail}. The gate stops here, and this is the instrument, not the work.`,
-      );
-      return false;
-    }
-    if (res.code !== 0) {
-      events.push({ label: prefix + s.label, outcome: "failed", ms });
-      log(`\n✗ ${prefix}${s.label} failed (exit ${res.code}). The gate stops here.`);
-      return false;
-    }
-    events.push({ label: prefix + s.label, outcome: "ok", ms });
-    return true;
+    return settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
   };
 
   // Which inputs changed is half the question; which workspaces can observe them is the other,
@@ -233,7 +241,16 @@ export function runGate(o) {
         log(`\n· DEFERRED to CI: ${name}\n  reason: ${why}.`);
         continue;
       }
-      suiteEnv = db.ok ? db.env : {};
+      // The config's non-secret values for the suites, under the database the run owns.
+      const declared = suiteEnvOf(repoDir);
+      suiteEnv = { ...declared, ...(db.ok ? db.env : {}) };
+      const gaps = suite.docker
+        ? suiteEnvGaps([repoDir, join(repoDir, under)], { ci: o.ci === true, declared })
+        : [];
+      if (gaps.length)
+        log(
+          `\n! ${name}: the example env file names ${gaps.join(", ")}, set nowhere this run can see (this shell, a dotenv file, the config's suiteEnv). A server that needs one fails every test that reaches it; give non-secret values under suiteEnv, as CI's workflow does.`,
+        );
       for (const s of suite.steps)
         if (!step({ ...s, label: `${s.label} · ${suite.name}` })) return false;
       suiteEnv = {};
@@ -289,11 +306,17 @@ export function runGate(o) {
 }
 
 /**
- * The always-on scripts the preset expects that package.json does not have (for doctor).
+ * The always-on scripts the preset expects that package.json does not have (for doctor). A step
+ * the gate runs under one of its alternative names is present: doctor called `coverage:changed`
+ * absent in a repository whose `test:changed` the gate was running.
  * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
  */
 export function missingGateScripts(repoDir, preset) {
   return preset.gate.always
-    .map((s) => s.script)
-    .filter((s) => typeof s === "string" && !hasScript(repoDir, s));
+    .filter(
+      (s) =>
+        typeof s.script === "string" &&
+        ![s.script, ...(s.alternatives || [])].some((a) => hasScript(repoDir, a)),
+    )
+    .map((s) => String(s.script));
 }

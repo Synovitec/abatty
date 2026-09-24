@@ -6,11 +6,13 @@ import { EXIT } from "./exit.mjs";
 import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
 import { changedPaths, pushRange } from "../core/range.mjs";
+import { ciFromEnv } from "../core/env.mjs";
 import {
   BUILTIN_PROBES,
   compare,
   failed,
   loadProbes,
+  lockEarned,
   measureAll,
   ratchetSetup,
   readBaseline,
@@ -96,7 +98,13 @@ export async function ratchetCommand(command, c) {
       );
       // `improved` reads as a failure now: an unlocked floor is slack the gate still accepts.
       const mark = (/** @type {string} */ s) =>
-        s === "ok" ? t.glyph.ok : s === "skipped" ? t.glyph.skip : t.glyph.fail;
+        s === "ok"
+          ? t.glyph.ok
+          : s === "skipped"
+            ? t.glyph.skip
+            : s === "probation"
+              ? t.glyph.warn
+              : t.glyph.fail;
       for (const v of verdicts) {
         const word =
           v.status === "regressed"
@@ -111,9 +119,11 @@ export async function ratchetCommand(command, c) {
                     ? t.red("FLOOR UNLOCKED")
                     : v.status === "redefined"
                       ? t.red("REDEFINED")
-                      : v.status === "skipped"
-                        ? t.gray("skipped")
-                        : t.green("ok");
+                      : v.status === "probation"
+                        ? t.yellow("PROBATION")
+                        : v.status === "skipped"
+                          ? t.gray("skipped")
+                          : t.green("ok");
         out(
           `  ${mark(v.status)} ${t.bold(v.metric.padEnd(24))} ${String(v.value).padStart(5)}${v.floor !== null ? t.gray(` / ${v.floor}`) : t.gray("      ")}  ${t.gray(v.kind.padEnd(7))} ${word}${v.scanned ? t.gray(`  · ${v.scanned} scanned`) : ""}\n`,
         );
@@ -148,6 +158,22 @@ export async function ratchetCommand(command, c) {
         }
       }
       const red = failed(verdicts);
+      // A floor the change earned is written for it, never in CI, which judges what was pushed.
+      if (red && !ciFromEnv()) {
+        const { locked } = lockEarned({
+          repoDir: dir,
+          rel: baselineRel,
+          verdicts,
+          measurements,
+          config,
+          previous: baseline,
+          today: ctx.today,
+        });
+        if (locked.length)
+          out(
+            `\n  ${t.glyph.ok} ${t.green(`floor(s) locked where this change left them: ${locked.join(", ")}`)}\n      ${t.yellow(`${baselineRel} now says so; commit it with the change, then push again`)}\n`,
+          );
+      }
       out(
         `\n  ${t.gray("readability")} ${t.bold(String(score))}${t.gray("/100")} ${t.gray(
           Object.entries(axes)

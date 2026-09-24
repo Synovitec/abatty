@@ -9,6 +9,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readJsonFile } from "./repo.mjs";
 
+/** The prefix of every file a control plants, so a planted file is never mistaken for the repository's own and is always removed. */
 export const MARK = "abatty-control.__";
 
 /**

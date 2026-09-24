@@ -3,5 +3,9 @@
  * presets spelling it out drifted the day a probe was added to four of them, and the copies were
  * the clones the package's own ratchet counts.
  */
-/** Stack-neutral opt-in probes: exemptions, refactors that drop tests, clones, coverage exclusions, non-null assertions (none in a repository without TypeScript). */
+/**
+ * Stack-neutral opt-in probes: exemptions, refactors that drop tests, clones, coverage
+ * exclusions, non-null assertions, broken reading chains, catches that only log and secrets from
+ * Math.random (the last three read nothing in a repository without JavaScript or TypeScript).
+ */
 export const COMMON_PROBES: string[];

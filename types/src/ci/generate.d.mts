@@ -31,6 +31,7 @@ export function ident(name: string): string;
  * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null }} CiOptions
  * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser", absent?: string }} CiStep
  */
+/** The pipelines `abatty ci` can write, each from the same list of steps. */
 export const PROVIDERS: string[];
 export type Preset = import("../presets/index.mjs").Preset;
 export type GateStep = import("../presets/index.mjs").GateStep;

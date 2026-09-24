@@ -22,13 +22,13 @@ New rules and new probes are the best first contribution: small, self-contained,
 
 ## Releasing
 
-A release is a tag. On `main`: the version in `package.json` bumped (SemVer: a rule or a
-probe added is a minor, a floor or a default changed for adopters is a major until 1.0, a fix
-is a patch), the `[Unreleased]` section of the changelog renamed to the version and the date,
+A release is a tag. On `main`: the version in `package.json` bumped (what bumps which number
+is `docs/VERSIONING.md`), the `[Unreleased]` section of the changelog renamed to the version and the date,
 `npm pack --dry-run` read once (the tarball is `bin`, `src`, `types`, `templates`, `schema`,
 `docs/standard`, the README, the changelog and the license, nothing else), then
 `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow runs the gate on the tagged
-commit, checks the tag is the version, and publishes to the registry with provenance; the
-token is the repository secret `NPM_TOKEN`. A local `npm publish` runs the gate first
-(`prepublishOnly`) and is for the day the workflow cannot. Adopters pin the version through
+commit, checks the tag is the version, and publishes to the registry with provenance through
+trusted publishing: no token is stored anywhere (SECURITY.md, "How a release reaches you"). A
+local `npm publish` runs the gate first (`prepublishOnly`), needs a maintainer's two-factor
+session since the package refuses tokens, and is for the day the workflow cannot. Adopters pin the version through
 `harness.lock.json`, written by `init` and `update`.

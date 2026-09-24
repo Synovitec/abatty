@@ -28,12 +28,30 @@ export function databaseFromEnv(): {
     test: string;
 };
 /**
+ * The NODE_ENV the gate inherited, when it is one a gate's steps would not expect: anything but
+ * unset, `test` or `development`. An adopter built for production and pushed in the same shell;
+ * the gate ran under NODE_ENV=production, thirteen unit tests asserting development behaviour went
+ * red, and the database scripts loaded the production env file. It read as broken infrastructure.
+ * @returns {string}
+ */
+export function unexpectedNodeEnv(): string;
+/**
  * A child's environment: this process's, with `extra` over it, or undefined when there is nothing
  * to add (the child then inherits, which is spawn's default). The one place the package hands
  * the whole environment on.
  * @param {Record<string, string>} extra @returns {NodeJS.ProcessEnv | undefined}
  */
 export function childEnv(extra: Record<string, string>): NodeJS.ProcessEnv | undefined;
+/**
+ * The environment for a test run the package starts itself (a gate step's control, a mutant):
+ * this process's, without what a parent test runner sets. Under `node --test`, a child run that
+ * inherited NODE_TEST_CONTEXT reported to the parent instead of exiting on its own result, and
+ * read every mutant as survived.
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function testRunEnv(): NodeJS.ProcessEnv;
+/** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
+export function envNames(): string[];
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;
 /** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */

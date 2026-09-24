@@ -332,3 +332,29 @@ Review pointed out that two of the eight takes the new floor recorded were this 
 code: `process.env` as a default parameter in `src/core/which.mjs`. They now read the search path
 through `searchFromEnv()` in the env module, the one place the package reads its environment, and
 the floor is locked at 6. The readability score in the baseline returns from 91 to 93.
+
+### 2026-09-24 - Floors since 0.5.2: probes that counted themselves, four new metrics, one exempt widened
+
+`types.escapes` 7 → 3 and `valid.rawEnv` 7 → 4: four escapes and three raw reads were the probes'
+own pattern and control fixtures in `src/ratchet/probes/code.mjs`, found when a test began running
+every built-in probe over this tree. The spellings are assembled from parts, and the test holds
+every probe to zero findings in its own source. `code.clones` 26 → 25 from the same range's
+splits. Four metrics join at zero, all on probation and so never promoted to hard:
+`docs.frontMatterSyntax`, `docs.supersededChain`, `obs.catchOnlyLogs` and `sec.weakRandom`. The
+exempt list's test pattern widens from a root `tests/` to a test folder at any depth; `abatty
+raises` reads that as a loosening, and it is one by the letter. The reason is that the standard
+exempts tests from the kind budgets and a monorepo's `apps/<app>/tests/` was held to them while
+the same folder at the root was not. No number here moved because of it: this repository keeps its
+tests at the root. The readability score in the baseline moves from 93 to 94.
+
+### 2026-09-24 - The suite: 6 min 30 s to 5 min 16 s, and where the rest goes
+
+Timed per file with a reporter that sums each file's tests: 1,916 s of test time over 85 files,
+and the wall clock was one file, `night-abort.test.mjs`, at 380 s, because the runner runs files at
+once and the tests inside a file one after another, and one test of six abort cases took 262 s
+alone. Split by what each group proves (canary refusals, run aborts, resume, the canary alone) into
+four more files, the wall clock is 5 min 16 s. Less than the arithmetic promised: with more files
+at once every file slowed, the sum rose to 3,324 s, because the night tests spawn processes and
+git by the hundred and the machine saturates. The suite is spawn-bound, not serial, so the next
+cut is fewer spawns (the harness self-test runs one process per guard case), not more files. The
+coverage `npm test` now measures costs about five per cent of the run.

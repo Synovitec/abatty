@@ -1,6 +1,6 @@
 ---
 title: "Running abatty on abatty"
-description: "What the instrument produced when it was pointed at the repository that builds it: the score and what is behind it, the bugs it found in its own code, the five rules it cannot hold and why, and the things it got wrong. Negative results included, because a dogfood page without them is marketing."
+description: "What the instrument produced when it was pointed at the repository that builds it: the score and what is behind it, the bugs it found in its own code, the four rules it cannot hold and why, and the things it got wrong. Negative results included, because a dogfood page without them is marketing."
 category: reference
 status: living
 audience: ["developer", "architect", "reviewer"]
@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-23"
+last_verified: "2026-09-24"
 ---
 
 # Running abatty on abatty
@@ -75,21 +75,24 @@ vulnerability disclosure policy. There is now, and `SEC-DISCLOSURE` is a rule.
 
 ## What it cannot hold, and why
 
-Four rules of its own catalog are missing here, and they are open rather than waived. A fifth,
-`CODE-DUP`, was on this list until 2026-09-23: the package's own `code.clones` reading holds it
-without a dependency.
+Three rules of its own catalog are missing here and one is partial, all open rather than waived.
+Three more left this list once the package learned to hold them without a dependency: `CODE-DUP` on
+2026-09-23 (`code.clones`) and `CODE-JSDOC` on 2026-09-24 (`code.undocumentedExports`, at zero
+after the 30 undocumented exports its first reading found here were documented), and
+`TEST-MUTATION` the same day (`abatty mutate`, the changed lines only, run by hand as
+`npm run mutate`; its first run here read three killable mutants as survived, because it picked
+tests by a word, and it now follows the import graph).
 
 | Rule                                        | Why not                                                                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CODE-LINTER`, `CODE-MAXWARN`, `CODE-SHAPE` | This package has not adopted eslint. The gate reports the absent `lint` step as **skipped** rather than passing it, and the gap analysis names it |
-| `CODE-JSDOC`                                | Wants `eslint-plugin-jsdoc`                                                                                                                       |
-| `TEST-COVERAGE`                             | Wants a coverage runner with thresholds                                                                                                           |
-| `TEST-MUTATION`                             | Wants StrykerJS                                                                                                                                   |
+| `TEST-COVERAGE` (partial)                   | The changed lines are gated since 2026-09-24, with Node's own coverage and no dependency (`coverage:changed`, 80%); no floor holds the total yet  |
 
-Every one of them is a dependency, and `CLAUDE.md` §1.1 says the package has no runtime
-dependency and that a dev dependency is a decision rather than a default. So the instrument
-scores itself down for a decision it took deliberately, which is the correct behaviour and is
-worth more than a green screen.
+The three linter rules wait on a dependency, and `CLAUDE.md` §1.1 says the package has no
+runtime dependency and that a dev dependency is a decision rather than a default. So the
+instrument scores itself down for a decision it took deliberately, which is the correct behaviour
+and is worth more than a green screen. `TEST-COVERAGE` is partial for a different reason: the
+floor under the total is work not yet done, not a dependency declined.
 
 `SEC-AGENT-BYPASS` is missing for a different reason: the generated pipeline reports a bypassed
 commit, and this repository's own pipeline is hand-written and does not yet.
@@ -103,8 +106,11 @@ commit, and this repository's own pipeline is hand-written and does not yet.
   when this page was first written, that `abatty ci --provider github` writes a pull-request
   template while no code did; `src/cli/ci.mjs` writes one since 2026-09-19, so that half is
   closed and `CLAUDE.md` §10 says so.
-- **`abatty update` silently adds a `lint` script to `package.json`** on every run here, and it
-  has to be reverted by hand each time. It is a real sharp edge and it is not fixed.
+- **`abatty update` used to add a `lint` script to `package.json`** on every run here, and it had
+  to be reverted by hand each time. Since 0.5.0 the lock records the scripts it offered, and one a
+  repository removed is not offered again. The page said "not fixed" for two releases after it was,
+  because its date was bumped without it being read, which is why freshness is now judged by
+  commits rather than by that date.
 - **Three of six presets are proven by nobody.** `node` is proven by this repository, `next` and
   `vite-react` by two others; `astro`, `python` and `docs` have a fixture repository the suite
   runs and no repository behind them. A fixture is not a proof and `abatty presets` says so.

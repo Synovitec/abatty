@@ -22,6 +22,8 @@ export function suiteDatabase(dirs: string[], o?: {
         test: string;
     };
 }): SuiteDatabase;
+/** The dotenv files a framework loads for a development run or a build, in the order it reads them. */
+export const DOTENV: string[];
 /**
  * `env`: the variables the suite's steps run with, on top of this process's.
  */

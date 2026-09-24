@@ -1,7 +1,3 @@
-/**
- * What every probe shares: the exempt test, the kind budget of a path, a regex list compiled
- * once, the front matter of a document.
- */
 /** Compile regex sources once per call site. @param {string[]} sources */
 export function regexes(sources: string[]): RegExp[];
 /** True when a path matches any of the sources. @param {string} path @param {RegExp[]} list */
@@ -23,5 +19,16 @@ export function budgetOf(path: string, config: import("../index.mjs").RatchetCon
  * @returns {Record<string, string | string[]> | null}
  */
 export function frontMatter(text: string): Record<string, string | string[]> | null;
+/**
+ * The JavaScript and TypeScript sources a probe of what ships reads: outside the exempt list and
+ * outside test folders at any depth, where a monorepo keeps them (`apps/<app>/tests/`). A test's
+ * setup that logs and carries on, or a fixture's random password, is not what a user meets.
+ * @param {import("../../rules/context.mjs").RepoContext} c @param {{ config: { exempt: string[] } }} o
+ */
+export function shippedScripts(c: import("../../rules/context.mjs").RepoContext, o: {
+    config: {
+        exempt: string[];
+    };
+}): string[];
 /** Lines of a text, CRLF or LF. @param {string} text */
 export function lines(text: string): string[];

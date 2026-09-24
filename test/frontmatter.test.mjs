@@ -1,0 +1,107 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { frontMatterFaults } from "../src/ratchet/probes/frontmatter.mjs";
+import { frontMatter } from "../src/ratchet/probes/lib.mjs";
+
+// An adopter's docs passed every docs probe with front matter a YAML reader refuses. Each case
+// below was read by a YAML parser when this reading was written: the refused ones are faults, the
+// accepted ones are not, so the hand reading and a real reader agree without a dependency.
+
+const faults = (/** @type {string} */ block) =>
+  frontMatterFaults(`---\n${block}\n---\n\n# T\n`).map((f) => `${f.line} ${f.fault}`);
+
+test("what a YAML reader refuses is a fault, on its line", () => {
+  assert.deepEqual(faults('title: "A"\ntitle: "B"'), ["3 `title` twice"]);
+  assert.deepEqual(faults('title: "A"\n  status: living'), [
+    "3 `status: living` indented under a scalar",
+  ]);
+  assert.deepEqual(faults('title: "A"\n- a'), ["3 a list item under a scalar"]);
+  assert.deepEqual(faults('title: "open'), ["2 `title`: a quote that does not close"]);
+  assert.deepEqual(faults("title: A: B"), ["2 `title`: a `: ` inside an unquoted value"]);
+  assert.deepEqual(faults("title: @scope"), ["2 `title`: `@` cannot open an unquoted value"]);
+  assert.deepEqual(faults("related: [a, b"), ["2 `related`: a list that does not close"]);
+  assert.deepEqual(faults("title: A\n\tstatus: x"), [
+    "3 a tab in the indentation",
+    "3 `status: x` indented under a scalar",
+  ]);
+  assert.deepEqual(faults("description: long text\n  continues: here"), [
+    "3 `continues: here` indented under a scalar",
+  ]);
+});
+
+test("what a YAML reader accepts is not a fault", () => {
+  for (const block of [
+    "title:\n  status: living",
+    "tags:\n- a\n- b",
+    'title: "Issue #4"',
+    "title: 'it''s'",
+    "title: A:B",
+    "title: A # a comment: here",
+    "title: C# notes",
+    "related: [a, b] # c",
+    "meta: {a: 1}",
+    "description: long text\n  continues here",
+    "url: http://x.y",
+    "title: 50%",
+    "title: '#x'",
+    "key: |\n  text: with colon",
+    "key: >\n  folded",
+    "last_verified: 2026-09-24",
+  ])
+    assert.deepEqual(faults(block), [], block);
+});
+
+test("a document without front matter has no faults: its absence is reported on its own", () => {
+  assert.deepEqual(frontMatterFaults("# T\n\ntitle: A: B\n"), []);
+});
+
+test("a CRLF document is read like an LF one", () => {
+  assert.deepEqual(
+    frontMatterFaults('---\r\ntitle: "A"\r\ntitle: "B"\r\n---\r\n'),
+    ["`title` twice"].map((fault) => ({ line: 3, fault })),
+  );
+});
+
+test("a value continued on indented lines, and keys YAML reads as keys, are not faults", () => {
+  for (const block of [
+    "tags: [a,\n  b]",
+    'description: "a long line\n  that goes on"',
+    "meta: {a: 1,\n  b: 2}",
+    "og:image: /cover.png",
+    "2fa: required",
+    '"quoted key": value',
+  ])
+    assert.deepEqual(faults(block), [], block);
+});
+
+test("a list that opens and never closes is a fault on the line that opened it", () => {
+  assert.deepEqual(faults("tags: [a,\n  b\nstatus: living"), [
+    "2 `tags`: a list that does not close",
+  ]);
+  assert.deepEqual(faults('title: "open\nstatus: living'), [
+    "2 `title`: a quote that does not close",
+  ]);
+});
+
+test("a list the formatter wrapped is read, under an empty key or opened on the key's line", () => {
+  // Read as nothing, a wrapped source_truth switched the freshness check off for its document.
+  const fm = frontMatter(
+    '---\nsource_truth:\n  ["../src/a.mjs", "../src/b.mjs"]\nrelated: [\n  "./x.md",\n  "./y.md"]\nstatus: living\n---\n',
+  );
+  assert.deepEqual(fm?.source_truth, ["../src/a.mjs", "../src/b.mjs"]);
+  assert.deepEqual(fm?.related, ["./x.md", "./y.md"]);
+  assert.equal(fm?.status, "living");
+});
+
+test("an unclosed wrapped list ends at the next key, and a comment after the bracket closes it", () => {
+  assert.deepEqual(
+    frontMatter(
+      '---\ntitle: x\nrelated: [\n  "./x.md",\nstatus: living\nsource_truth: ["../a.mjs"]\n---\n',
+    ),
+    { title: "x", related: ["./x.md"], status: "living", source_truth: ["../a.mjs"] },
+  );
+  assert.deepEqual(
+    frontMatter('---\nrelated:\n  [\n    "./x.md",\n    "./y.md"] # note\nstatus: living\n---\n'),
+    { related: ["./x.md", "./y.md"], status: "living" },
+  );
+});

@@ -121,27 +121,40 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
 15. **The `CLAUDE.md` "known gaps" section exists and is empty**, so the next person knows
     where a gap goes.
 
-### A.2 `CLAUDE.md` skeleton (200 lines maximum; the full template with the delivery rules, the skills table and the autonomy contract is `templates/harness/CLAUDE.md.template`)
+### A.2 `CLAUDE.md` skeleton (200 lines maximum; the full template with the delivery rules, the skills table and the autonomy contract is `templates/harness/agent-context.md.template`)
+
+The file holds constraints, commands and facts the agent would otherwise get wrong. An overview
+it could read from the code is the one content measured not to help; workflow hints (what is slow,
+what to run first) are the one measured to shorten a run; security frontiers and performance
+budgets are what few context files carry and agents most often miss.
 
 ```markdown
 # CLAUDE.md - <project>
 
-<Two sentences: what the product is, who the client is, who builds it.>
+<One sentence: what the product is and who it is for.>
 This file is the agent's entry point. The rules are the standard
 (ops-hub/engineering/ENGINEERING_STANDARD.md); how they apply here is docs/CODE_CONVENTIONS.md;
 the narrative is docs/README.md.
 
 ## 1. The non-negotiables <3 to 6; violating one is an incident, not a bug>
 
-## 2. Commands <dev, gate, gate:fast, standards, test, e2e, db, hooks:install>
+## 2. Commands <dev, gate, gate:fast, standards, test, e2e, db, hooks:install; what is slow, what to run first>
 
 ## 3. Boundary map <one row per module: responsibility, what to read first>
 
-## 4. Known gaps between docs and code <the register; empty is a valid state>
+## 4. Conventions that surprise <what a competent newcomer would get wrong>
 
-## 5. Conventions that surprise <what a competent newcomer would get wrong>
+## 5. Secrets and configuration <precedence, what beats what, invalidation delay; the security frontiers>
 
-## 6. Secrets and configuration <precedence, what beats what, invalidation delay>
+## 6. Size, shape and quality limits <the budgets, and what must not get slower, where it is measured>
+
+## 7. Delivery rules <the changelog, the coupled paths, versioning, commits, branches>
+
+## 8. Skills and agents <what each is for, and what it must not do>
+
+## 9. Autonomy contract <the defaults an unattended run takes instead of asking>
+
+## 10. Known gaps between docs and code <the register; empty is a valid state>
 ```
 
 ### A.3 Baseline shape
@@ -201,24 +214,24 @@ the largest churn. Typecheck after the splits: a 2,300-line component is the har
 thing to type. Coverage pinned early so the refactors cannot erode it, raised to target last
 when the code has stopped moving. Docs and JSDoc are independent and run alongside.
 
-| #   | Phase                                                                                                                                      | Size | Blocks on | Exit criterion (the switch)                                                                                                                                                                                                                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | The instrument: ratchet with per-file floors, gate + hook, CI step, control cases                                                          | S    | -         | `standards` blocking in CI; verified by lowering a baseline number and watching the step go red                                                                                                                                                |
-| 1   | Lint to zero warnings                                                                                                                      | M    | 0         | `--max-warnings=0` in the lint script; the step blocking                                                                                                                                                                                       |
-| 2   | Coverage pinned                                                                                                                            | S    | 0         | thresholds in the test config at the measured figure; CI fails on a drop                                                                                                                                                                       |
-| 3   | Accessibility proxies to zero                                                                                                              | M    | -         | `jsx-a11y` at error with component mapping; icon-name, clickable-non-interactive and inline-style metrics HARD                                                                                                                                 |
-| 4   | Zod: every boundary parses, one schema both sides, one env module, one local day                                                           | M    | -         | `valid.unparsedBoundary` HARD; `valid.rawEnv` at its documented floor; `valid.utcDay` HARD                                                                                                                                                     |
-| 5   | Caching conformance (or the written decision not to cache tenant reads)                                                                    | M    | -         | every cache key carries every parameter; every write invalidates; metrics HARD - or "not applicable" with the reason                                                                                                                           |
-| 6   | API conformance: bounded lists, one input object, payload returns, loaders per association                                                 | L    | 5         | metrics HARD; growth lists have a paginated twin, migrated, old field deprecated one release                                                                                                                                                   |
-| 7   | Function shape to zero                                                                                                                     | L    | 5, 6      | the three rules unconditional in eslint at error; the exemption list (generated from the baseline's `debt`, never hand-maintained) empty                                                                                                       |
-| 8   | File size to zero, per kind                                                                                                                | XL   | 7         | per-kind budgets enforced; `size.overBudget` HARD; `size.overRaw` at zero                                                                                                                                                                      |
-| 9   | Typecheck to zero                                                                                                                          | L    | 8         | `tsc --noEmit` blocking in CI                                                                                                                                                                                                                  |
-| 10  | Testing to target: real Postgres integration, branches first                                                                               | L    | 8         | floors at target; integration suite against a real database in a rolled-back transaction                                                                                                                                                       |
-| 11  | Docs and JSDoc: front matter, index, citations, freshness by diff, JSDoc on the boundary surface                                           | M    | -         | `docs.*` metrics HARD; freshness step blocking; JSDoc rule at error on the named surfaces                                                                                                                                                      |
-| 12  | The import graph and dead code: dependency-cruiser rules from the boundary map, known violations to zero; knip to zero                     | M    | 0         | `depcruise --ignore-known --output-type err` in the gate with an empty known-violations file; `knip --max-issues 0` in the gate; both proven red on a scratch violation                                                                        |
-| 13  | Observability: a structured logger with redaction at the logger, no bare console from the server, a health endpoint, a SIGTERM that drains | M    | 0         | the redaction list covers the named fields and a test proves one is masked; `no-console` at error on the server's paths; the health endpoint answers and the SIGTERM handler fails it before draining, both proven by a test that watches them |
-| -   | PWA to standard (independent)                                                                                                              | M    | -         | the never-stale-shell contract test green; asset references HARD                                                                                                                                                                               |
-| -   | agent-readability score, printed then blocking on the weak axes                                                                            | S    | 4, 7      | printed on every gate run; blocking condition stated in axes and met                                                                                                                                                                           |
+| #   | Phase                                                                                                                                      | Size | Blocks on | Exit criterion (the switch)                                                                                                                                                                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | The instrument: ratchet with per-file floors, gate + hook, CI step, control cases                                                          | S    | -         | `standards` blocking in CI; verified by lowering a baseline number and watching the step go red                                                                                                                                                                                                                        |
+| 1   | Lint to zero warnings                                                                                                                      | M    | 0         | `--max-warnings=0` in the lint script; the step blocking                                                                                                                                                                                                                                                               |
+| 2   | Coverage pinned                                                                                                                            | S    | 0         | thresholds in the test config at the measured figure; CI fails on a drop                                                                                                                                                                                                                                               |
+| 3   | Accessibility proxies to zero                                                                                                              | M    | -         | `jsx-a11y` at error with component mapping; icon-name, clickable-non-interactive and inline-style metrics HARD                                                                                                                                                                                                         |
+| 4   | Zod: every boundary parses, one schema both sides, one env module, one local day                                                           | M    | -         | `valid.unparsedBoundary` HARD; `valid.rawEnv` at its documented floor; `valid.utcDay` HARD                                                                                                                                                                                                                             |
+| 5   | Caching conformance (or the written decision not to cache tenant reads)                                                                    | M    | -         | every cache key carries every parameter; every write invalidates; metrics HARD - or "not applicable" with the reason                                                                                                                                                                                                   |
+| 6   | API conformance: bounded lists, one input object, payload returns, loaders per association                                                 | L    | 5         | metrics HARD; growth lists have a paginated twin, migrated, old field deprecated one release                                                                                                                                                                                                                           |
+| 7   | Function shape to zero                                                                                                                     | L    | 5, 6      | the three rules unconditional in eslint at error; the exemption list (generated from the baseline's `debt`, never hand-maintained) empty                                                                                                                                                                               |
+| 8   | File size to zero, per kind                                                                                                                | XL   | 7         | per-kind budgets enforced; `size.overBudget` HARD; `size.overRaw` at zero                                                                                                                                                                                                                                              |
+| 9   | Typecheck to zero                                                                                                                          | L    | 8         | `tsc --noEmit` blocking in CI                                                                                                                                                                                                                                                                                          |
+| 10  | Testing to target: real Postgres integration, branches first                                                                               | L    | 8         | floors at target; integration suite against a real database in a rolled-back transaction                                                                                                                                                                                                                               |
+| 11  | Docs and JSDoc: front matter, index, citations, freshness by diff, JSDoc on the boundary surface                                           | M    | -         | `docs.*` metrics HARD; freshness step blocking; JSDoc rule at error on the named surfaces                                                                                                                                                                                                                              |
+| 12  | The import graph and dead code: dependency-cruiser rules from the boundary map, known violations to zero; knip to zero                     | M    | 0         | `depcruise --ignore-known --output-type err` in the gate with an empty known-violations file; `knip --max-issues 0` in the gate; both proven red on a scratch violation                                                                                                                                                |
+| 13  | Observability: a structured logger with redaction at the logger, no bare console from the server, a health endpoint, a SIGTERM that drains | M    | 0         | the redaction list covers the named fields and a test proves one is masked; `no-console` at error on the server's paths; the health endpoint answers and the SIGTERM handler fails it before draining, both proven by a test that watches them; `obs.catchOnlyLogs` at zero, so no caught error ends in a console line |
+| -   | PWA to standard (independent)                                                                                                              | M    | -         | the never-stale-shell contract test green; asset references HARD                                                                                                                                                                                                                                                       |
+| -   | agent-readability score, printed then blocking on the weak axes                                                                            | S    | 4, 7      | printed on every gate run; blocking condition stated in axes and met                                                                                                                                                                                                                                                   |
 
 ### B.3 Phase notes that saved the most time
 
@@ -261,8 +274,9 @@ when the code has stopped moving. Docs and JSDoc are independent and run alongsi
   count is a scope decision, not more tests; the standard already exempts them.
 - **Phase 11 - touching `package.json`, the CI file or `CLAUDE.md` stales ten docs at once**,
   because they are the most-cited `source_truth` entries. That is the check working; budget
-  for it. A green freshness run before the commit used to prove nothing because it read
-  committed history only; an uncommitted `source_truth` edit now counts as today.
+  for it. Freshness is judged by commits, so a green run before the commit says nothing about
+  the change being made: re-read the documents that cite what the diff touches, and record a
+  re-read that changed nothing as a `docs-verified:` line naming each document.
 - **Parallel bursts:** several agents splitting on one checkout share one git index. The
   whole-tree ratchet is meaningless while any agent is mid-split; the integrator measures on a
   clean tree, each agent beats the committed ORIGINAL's function-shape count for its territory,
@@ -270,6 +284,18 @@ when the code has stopped moving. Docs and JSDoc are independent and run alongsi
   `PARALLEL_REFACTOR_PROTOCOL.md` of the repository named in `ADOPTION_STATUS.md`; its finding
   that the agent count is not the binding constraint (the integrator is) transfers, and
   `isolation: worktree` on the subagent is the enforced form of a disjoint territory.
+- **Independent branches, not stacked pull requests**, where the base requires a branch to be
+  up to date before it merges. Each merge below a stack forces a rebase of every branch above it,
+  each rebase reruns the gate and needs a force push the guard refuses; an adopter spent a day on
+  that. Branch each step from the base, and let the one that depends on another wait for it.
+- **A repository-wide format change moves every text-based reading.** Formatting the whole tree
+  shifts the line a clone, a citation or a finding sits on, and wraps lists a reader then has to
+  follow. Land it alone, in its own commit, with the ratchet re-read and the floor recorded in
+  that commit, so the next real change is not charged for it.
+- **The burn-down cycle is: fix, watch the number fall, lock it.** A number that fell reads as a
+  floor left unlocked until `abatty baseline` records it, in the same commit as the fix, which is
+  the only moment anyone knows why it moved. A number that must rise is a decision with a reason
+  and an owner, recorded where the floor is, and never taken at night.
 
 ### B.4 What not to do, learned
 

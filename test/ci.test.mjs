@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
@@ -163,7 +163,7 @@ test("the generated pipeline emits SARIF and uploads it, so findings land on the
   const yaml = renderGithubActions(preset, { base: "main" });
   assert.match(yaml, /security-events: write/, "the upload needs the permission");
   assert.match(yaml, /abatty ratchet --range auto --sarif > abatty\.sarif/);
-  assert.match(yaml, /github\/codeql-action\/upload-sarif@v3/);
+  assert.match(yaml, /github\/codeql-action\/upload-sarif@[0-9a-f]{40} # v3\./);
   assert.match(yaml, /sarif_file: abatty\.sarif/);
   // Both steps run even when the gate went red, because that is the run whose findings matter.
   const upload = yaml.slice(
@@ -180,7 +180,11 @@ test("the generated pipeline signs the conformance statement with the run's iden
   assert.match(yaml, /id-token: write/, "the workload identity the signature is made with");
   assert.match(yaml, /attestations: write/, "the write the transparency log needs");
   assert.match(yaml, /npx abatty attest --out abatty-conformance\.json/);
-  assert.match(yaml, /uses: actions\/attest@v2/);
+  assert.match(yaml, /uses: actions\/attest@[0-9a-f]{40} # v2\./);
+  // An adopter's pipeline is pinned as this package's own is, and a crash fails its step.
+  for (const uses of yaml.match(/uses: \S+/g) || [])
+    assert.match(uses, /@[0-9a-f]{40}$/, `${uses} is pinned to a commit`);
+  assert.doesNotMatch(yaml, /\|\| true/, "no step swallows a crash");
   assert.match(yaml, /predicate-type: https:\/\/abatty\.dev\/attestation\/conformance\/v1/);
   // The package prints and never signs: no key, no secret, nothing to leak out of a repository.
   assert.equal(/cosign sign|--key |GPG|gpg --|secrets\.SIGNING/i.test(yaml), false);
@@ -191,7 +195,8 @@ test("the generated pipeline signs the conformance statement with the run's iden
   );
   assert.match(release, /npm publish --provenance/);
   assert.match(release, /attest --out abatty-conformance\.json/);
-  assert.match(release, /uses: actions\/attest@v2/);
+  // Pinned to a commit, with the version it is in a comment: a tag can be moved under the release.
+  assert.match(release, /uses: actions\/attest@[0-9a-f]{40} # v2\./);
   assert.match(release, /attestations: write/);
 });
 
@@ -259,7 +264,7 @@ test("the pipeline is the repository's: its package manager's install and audit,
   const w = cli(["ci", pnpm, "--provider", "woodpecker,github"], pnpm);
   assert.equal(w.code, 0, w.out);
   const gh = readFileSync(join(pnpm, ".github/workflows/checks.yml"), "utf8");
-  assert.match(gh, /uses: pnpm\/action-setup@v4/);
+  assert.match(gh, /uses: pnpm\/action-setup@[0-9a-f]{40} # v4\./);
   assert.match(gh, /cache: pnpm/);
   assert.match(gh, /run: pnpm install --frozen-lockfile/);
   assert.match(gh, /run: pnpm audit --audit-level=high --prod/);
@@ -302,4 +307,44 @@ test("the pipeline is the repository's: its package manager's install and audit,
   );
   // Without scripts, every step of the preset is rendered: the preset alone, for a reader.
   assert.ok(ciSteps(preset, { base: "main" }).every((s) => !s.absent));
+});
+
+test("ci --check names a pipeline that judges a new branch by its last commit", () => {
+  const dir = tempRepo("ci-narrow", {
+    "package.json": NEXT_PKG,
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.equal(cli(["ci", dir, "--provider", "github"], dir).code, 0);
+  assert.equal(
+    cli(["ci", dir, "--provider", "github", "--check"], dir).code,
+    0,
+    "the generated pipeline",
+  );
+  mkdirSync(join(dir, ".github/workflows"), { recursive: true });
+  writeFileSync(
+    join(dir, ".github/workflows/push.yml"),
+    [
+      "on: push",
+      "jobs:",
+      "  gate:",
+      "    steps:",
+      "      - run: |",
+      '          BEFORE="${{ github.event.before }}"',
+      '          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then RANGE="HEAD~1..HEAD"; else RANGE="$BEFORE..HEAD"; fi',
+      "",
+    ].join("\n"),
+  );
+  const narrow = cli(["ci", dir, "--provider", "github", "--check"], dir);
+  assert.equal(narrow.code, 3, narrow.out);
+  assert.match(
+    narrow.out,
+    /narrow\s+\.github\/workflows\/push\.yml:7 falls back to the last commit/,
+  );
+  // The same HEAD~1 in a pipeline that never reads the push's before is some other use.
+  writeFileSync(
+    join(dir, ".github/workflows/push.yml"),
+    // "before" as a word in a step's name is not the push's before field
+    "on: push\njobs:\n  a:\n    steps:\n      - name: lint before build\n        run: git show HEAD~1\n",
+  );
+  assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0);
 });

@@ -4,7 +4,7 @@
  * `--require-review <number>`; without a pull request a loosened floor is a finding, because no
  * approval can be read from this machine.
  */
-import { floorRises, reviewApproval } from "../core/raises.mjs";
+import { directPushOnBase, floorRises, recordedDecision, reviewApproval } from "../core/raises.mjs";
 import { git, readAdoption } from "../core/repo.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
@@ -25,7 +25,16 @@ export function raisesCommand(cx) {
   const pr = opt("--require-review");
   const r = floorRises(dir, base);
   const approval = r.loosened.length && pr ? reviewApproval(pr) : null;
-  const ok = r.loosened.length === 0 || Boolean(approval?.approved);
+  // Where the repository delivers straight to its base, there is no pull request to approve a
+  // raise: the decision written in the range is what is read instead, and said to be that. The
+  // base must say so, and the range may only take it back: a branch that switched it on would
+  // approve its own raise.
+  const direct = !pr && directPushOnBase(dir, base) && readAdoption(dir)?.directPushToBase === true;
+  const records = direct
+    ? r.loosened.map((l) => ({ metric: l.metric, line: recordedDecision(dir, base, l.metric) }))
+    : [];
+  const recorded = direct && records.every((x) => x.line);
+  const ok = r.loosened.length === 0 || Boolean(approval?.approved) || recorded;
   if (flag("--json")) {
     out(JSON.stringify({ ...r, approval, ok }, null, 2) + "\n");
     return ok ? EXIT.clean : EXIT.findings;
@@ -46,7 +55,17 @@ export function raisesCommand(cx) {
     out(`  ${t.glyph.warn} ${l.metric}  ${l.how}${l.path ? ` ${l.path}` : ""}${change}\n`);
   }
   if (!r.loosened.length) out(`${t.glyph.ok} ${t.green(`no floor loosened against ${base}`)}\n`);
-  else if (approval?.approved)
+  else if (direct) {
+    for (const x of records)
+      out(
+        `    ${x.line ? t.glyph.ok : t.glyph.fail} ${x.metric}${t.gray(x.line ? ` · recorded: ${x.line.slice(0, 120)}` : " · no decision in the range names it")}\n`,
+      );
+    out(
+      recorded
+        ? `${t.glyph.ok} ${t.green("floor(s) loosened, each recorded in the decisions file")}${t.gray(" · this repository pushes to its base directly, so the record is the decision, not a second person's approval")}\n`
+        : `${t.glyph.fail} ${t.red("floor(s) loosened without a decision in the range that names each one")}${t.gray(" · add a line to the decisions file naming the metric, why and who decided")}\n`,
+    );
+  } else if (approval?.approved)
     out(`${t.glyph.ok} ${t.green(`floor(s) loosened, ${approval.detail}`)}\n`);
   else
     out(

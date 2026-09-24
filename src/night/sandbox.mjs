@@ -26,7 +26,9 @@ import { buildSandbox } from "./sandbox-drivers.mjs";
  * @typedef {{ driver: string, sandbox: Sandbox | null, note: string, refuse: string }} Prepared
  */
 
+/** How hard a night insists on the boundary: take one when it exists, refuse to run without one, or run without and say so. */
 export const MODES = ["auto", "required", "off"];
+/** The boundaries the runner knows how to build and prove: bubblewrap, a Seatbelt profile, a container. */
 export const DRIVERS = ["bwrap", "sandbox-exec", "container"];
 
 /** @param {unknown} v @returns {string[]} */

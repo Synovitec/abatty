@@ -29,21 +29,7 @@ export async function statusCommand(c, preset) {
       `  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
   );
   out(enforcedLine(r.enforced) + "\n\n");
-  out(
-    t.table(
-      [
-        ["family", "", "present", "partial", "missing"],
-        ...r.families.map((f) => [
-          f.name,
-          t.stacked(f.present, f.partial, f.missing, 16),
-          String(f.present),
-          String(f.partial),
-          String(f.missing),
-        ]),
-      ],
-      { align: ["l", "l", "r", "r", "r"] },
-    ) + "\n",
-  );
+  out(familyTable(r.families) + "\n");
   out(t.heading("Harness"));
   out(
     t.kv(
@@ -115,6 +101,27 @@ export async function statusCommand(c, preset) {
       );
   }
   out(`\n${t.gray("abatty measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
+}
+
+/**
+ * The per-family table the status screen and `measure` both print: one table, so the two screens
+ * cannot drift into counting the families differently. `measure` adds the not-applicable column.
+ * @param {{ name: string, present: number, partial: number, missing: number, na: number }[]} families
+ * @param {{ na?: boolean }} [o]
+ */
+export function familyTable(families, o = {}) {
+  const head = ["family", "", "present", "partial", "missing", ...(o.na ? ["n/a"] : [])];
+  const rows = families.map((f) => [
+    f.name,
+    t.stacked(f.present, f.partial, f.missing, 16),
+    String(f.present),
+    String(f.partial),
+    String(f.missing),
+    ...(o.na ? [String(f.na)] : []),
+  ]);
+  /** @type {("l" | "r")[]} */
+  const align = ["l", "l", ...head.slice(2).map(() => /** @type {const} */ ("r"))];
+  return t.table([head, ...rows], { align });
 }
 
 /**

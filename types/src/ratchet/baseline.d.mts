@@ -15,7 +15,11 @@ export function probeVersion(m: {
         version?: number;
     };
 }): number;
-/** The committed baseline, or null. @param {string} repoDir @param {string} rel @returns {Baseline | null} */
+/**
+ * The committed baseline, or null. Its per-file floors are read where their files are now: a
+ * file renamed since the commit that wrote the baseline carries its floor to the new path.
+ * @param {string} repoDir @param {string} rel @returns {Baseline | null}
+ */
 export function readBaseline(repoDir: string, rel: string): Baseline | null;
 /**
  * Write today's numbers as the floor. A metric at zero is promoted to HARD (a floor of zero and
@@ -42,6 +46,27 @@ export function writeBaseline(o: {
     refusals: string[];
     promoted: string[];
     rises: string[];
+};
+/**
+ * The floors a change earned, written for it. When every verdict that fails the run is a floor
+ * left above today's count (`improved`), the numbers only fell, so writing today's baseline can
+ * only lower a floor: nothing is raised, nothing needs a reason. Lowering by hand made "leave the
+ * findings in" simpler than "remove them", which is the friction adopters of every ratchet name.
+ * The file is written, not committed: a hook cannot add a commit to the push it judges, so the
+ * run still fails, with one thing left to do. Anything else failing, and nothing is written.
+ * @param {{ repoDir: string, rel: string, verdicts: import("./index.mjs").Verdict[], measurements: Measurement[], config: RatchetConfig, previous: Baseline | null, today: string }} o
+ * @returns {{ locked: string[] }}
+ */
+export function lockEarned(o: {
+    repoDir: string;
+    rel: string;
+    verdicts: import("./index.mjs").Verdict[];
+    measurements: Measurement[];
+    config: RatchetConfig;
+    previous: Baseline | null;
+    today: string;
+}): {
+    locked: string[];
 };
 export type Baseline = import("./index.mjs").Baseline;
 export type Measurement = import("./index.mjs").Measurement;

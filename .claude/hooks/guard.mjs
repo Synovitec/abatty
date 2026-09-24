@@ -2,6 +2,8 @@
 //
 //   daytime  (ADOPTION_RUN unset)  warns about the risky shapes and DENIES only the three that
 //                                  are never right: push to the base branch, force push, --no-verify
+///                                  (and its spelling as configuration, core.hooksPath); it ASKS
+//                                  before a migration, naming the database host it would reach
 //   night    (ADOPTION_RUN=1)      additionally denies anything that leaves the adoption branch,
 //                                  rewrites history, deletes outside the tree, destroys data,
 //                                  deploys, publishes, or WRITES to the harness (.claude/) or a
@@ -11,8 +13,9 @@
 // unattended run an ask becomes a denial, which is the intent. Everything else exits 0 with no
 // output and the normal permission flow decides. protect.mjs is the twin for the file tools.
 
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
+import { GIT_HOOKS_DIRS, HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
 import { gitLocation, programName, segmentDirs, shellSegments } from "./shell.mjs";
 
@@ -137,6 +140,76 @@ const bypass =
   maybeGit.some(bypasses);
 if (bypass || hasFlag(new RegExp(String.raw`--no-verify\b|` + GIT + String.raw`commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b`))) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
+}
+// The same bypass by its effect: git runs the hooks from `core.hooksPath`, so pointing it
+// elsewhere or unsetting it skips every hook exactly as the flag does, once (`git -c`, the
+// GIT_CONFIG_* environment) or for good (`git config`). An adopter replayed five such spellings
+// and all passed, from the base branch too. Reading the setting stays allowed, and so does
+// pointing it AT the hooks: `abatty hooks` sets it to `.githooks`, husky to `.husky/_`, and a
+// first rule that refused every write refused the install command its own message named.
+const HOOKS_PATH = /^core\.hookspath\b/i;
+/** A folder that holds the hooks: setting the key to one installs them rather than skipping them. */
+const HOOKS_HOME = /^(\.\/)?(\.githooks|\.husky(\/_)?)\/?$/;
+const bareWord = (v) => String(v).replace(/^["']|["']$/g, "");
+// The environment spelling, as an assignment and not as text: a search for it stays a search.
+const CONFIG_ENV = /^GIT_CONFIG_(KEY_\d+=["']?core\.hookspath|PARAMETERS=.*core\.hookspath)/i;
+/** The `VAR=value` words that lead a segment: the environment its program runs in. */
+const assignments = (tokens) => {
+  const out = [];
+  for (const t of tokens) {
+    if (!/^[A-Za-z_]\w*=/.test(t)) break;
+    out.push(t);
+  }
+  return out;
+};
+const configRead = (a) => a.some((x) => /^(--get(-all|-regexp)?|--list|-l|get|list)$/.test(x));
+/**
+ * Whether a list of words points the hooks away: `-c` directly followed by the key with a value
+ * that is not a hooks folder, `--config-env` naming it, or a `config` that unsets the key or sets
+ * it to anything but a hooks folder. The same reading serves a git call the guard understood and
+ * an opaque segment, where it is what keeps `bash -c "grep core.hooksPath …"` (bash's own `-c`)
+ * and `$(git config core.hooksPath)` (a read) from being refused.
+ */
+const pointsAway = (t) => {
+  for (let i = 0; i < t.length; i++) {
+    const x = bareWord(t[i]);
+    const next = bareWord(t[i + 1] || "");
+    if (x === "-c" && HOOKS_PATH.test(next) && !HOOKS_HOME.test(next.slice(next.indexOf("=") + 1))) return true;
+    if (/^--config-env(=core\.hookspath|$)/i.test(x) && (x.includes("=") || HOOKS_PATH.test(next))) return true;
+    if (x !== "config") continue;
+    const rest = t.slice(i + 1).map(bareWord);
+    const at = rest.findIndex((y) => HOOKS_PATH.test(y));
+    if (at < 0 || configRead(rest)) continue;
+    if (rest.some((y) => /^(--unset(-all)?|unset)$/.test(y))) return true;
+    // `git config core.hooksPath` alone reads it; the word after the key is the value it sets.
+    const value = rest[at + 1];
+    if (value !== undefined && !value.startsWith("-") && !HOOKS_HOME.test(value)) return true;
+  }
+  return false;
+};
+// A wrapper's quoted text (`sh -c "git config core.hooksPath /tmp"`) is one word to the segments,
+// so it is read by pattern, anchored on git as the other rules' patterns are, and judged by value.
+const HOME_AHEAD = String.raw`(?:\.\/)?(?:\.githooks|\.husky(?:\/_)?)\/?(?:\s|["']|\)|$)`;
+const HOOKS_TEXT = new RegExp(
+  [
+    String.raw`\bgit\b[^;&|]*\s-c\s+["']?core\.hookspath=(?!${HOME_AHEAD})`,
+    String.raw`\bgit\b[^;&|]*\sconfig\b[^;&|]*\s(?:--unset(?:-all)?|unset)\s+["']?core\.hookspath`,
+    String.raw`\bgit\b[^;&|]*\sconfig\b(?:\s+-[\w-]+)*\s+["']?core\.hookspath["']?\s+(?!-|["']?${HOME_AHEAD})\S`,
+  ].join("|"),
+  "i",
+);
+const hooksOff =
+  invocations("git").some(pointsAway) ||
+  maybeGit.some(pointsAway) ||
+  hasFlag(HOOKS_TEXT) ||
+  segments.some(
+    (s) =>
+      assignments(s.tokens).some((x) => CONFIG_ENV.test(x)) ||
+      (/^(export|env|set|declare)$/.test(s.program) && s.args.some((x) => CONFIG_ENV.test(x))),
+  ) ||
+  /\$env:GIT_CONFIG_(KEY_\d+|PARAMETERS)\s*=\s*["']?[^;&|]*core\.hookspath/i.test(cmd);
+if (hooksOff) {
+  deny("Pointing core.hooksPath elsewhere, or unsetting it, skips the hooks exactly as --no-verify does. Make the gate pass instead; reinstall the hooks with the package's hooks command.");
 }
 // Provenance is the default: nothing here refuses a commit for naming the agent. A repository
 // that opted into the scrub (adoption.json → scrub.enabled, white-label work) has a commit, a
@@ -319,11 +392,11 @@ if (NIGHT) {
   // A WRITE to the harness or a protected path from the shell: a write verb, a redirection or a
   // scripted write whose segment names the path. Reading, linting, running or restoring it
   // (`node .claude/hooks/x.mjs`, `git checkout <base> -- .claude/`) is not a write and passes.
-  const protectedPaths = [HARNESS_DIR, ROOT_CONFIG, ...(config.protectedPaths || [])];
+  const protectedPaths = [HARNESS_DIR, ROOT_CONFIG, ...GIT_HOOKS_DIRS, ...(config.protectedPaths || [])];
   const hit = protectedPaths.find((p) => writesTo(cmd, p));
   if (hit) {
     deny(
-      hit === HARNESS_DIR || hit === ROOT_CONFIG
+      hit === HARNESS_DIR || hit === ROOT_CONFIG || GIT_HOOKS_DIRS.includes(hit)
         ? "Unattended run: the harness (.claude/, abatty.config.json) is read-only tonight. Record the change you need as decision: harness-change; the morning applies it."
         : "Unattended run: that path is protected (applied migrations, env files, production compose). Write the next migration instead of editing one; never touch env files.",
     );
@@ -341,7 +414,56 @@ const warnings = [
 for (const [re, why] of warnings) {
   if (has(re)) process.stderr.write(`[guard] ${why}\n`);
 }
+// A migration by day is asked about, naming the database it would reach. By day nothing else
+// stood between a migration and a shared database: one from an unmerged branch was applied to
+// an adopter's shared database from a shell whose DATABASE_URL nobody had looked at. The host is
+// named; the user and the password never are.
+// Read with quoted text taken out: a commit message, a search pattern or an echo that names a
+// migration command runs none. A script counts when its name is a migration's (db:migrate,
+// migrate:deploy), not when it only contains the word (migration:generate, test:migrations).
+const MIGRATION = /\b(prisma\s+(migrate\s+(deploy|dev|reset|resolve)|db\s+push)|drizzle-kit\s+(migrate|push)|sequelize(-cli)?\s+db:migrate|knex\s+migrate:(latest|up|down|rollback)|alembic\s+(upgrade|downgrade)|rails\s+db:(migrate|rollback)|manage\.py\s+migrate|flyway\s+migrate|goose\s+(up|down)|(npm|pnpm|yarn|bun)\s+(run\s+)?(db:migrate|db:push|migrate)(:(deploy|dev|up|latest|run|reset|prod))?(?=\s|$))/i;
+const unquoted = argv.replace(/"(?:[^"\\]|\\.)*"|'[^']*'/g, " ");
+if (MIGRATION.test(unquoted)) decide("ask", `This runs a migration against ${migrationTarget(cmd)}. Is that the database you mean?`);
 process.exit(0);
+
+/**
+ * Where a migration would go: the DATABASE_URL set on the command itself, else this shell's,
+ * else the repository's env files, read for the host alone. Tools disagree on which env file
+ * they load (one reads .env alone, a framework reads .env.local first), so when the two files
+ * name different hosts both are named. Only a host that reads as one is ever shown: a URL whose
+ * credentials sit where a host would (a SQL Server connection string, an opaque URL) is named
+ * as unreadable, so the prompt can never carry a password.
+ */
+function migrationTarget(command) {
+  const inline = /\bDATABASE_URL=("[^"]*"|'[^']*'|\S+)/.exec(command)?.[1]?.replace(/^["']|["']$/g, "");
+  if (inline) return hostOf(inline, "set on the command");
+  if (process.env.DATABASE_URL) return hostOf(process.env.DATABASE_URL, "from this shell's DATABASE_URL");
+  const found = [];
+  for (const f of [".env.local", ".env"]) {
+    try {
+      const line = readFileSync(f, "utf8").split(/\r?\n/).find((l) => /^\s*(export\s+)?DATABASE_URL\s*=/.test(l));
+      if (line) found.push(hostOf(line.replace(/^\s*(export\s+)?DATABASE_URL\s*=\s*/, "").trim().replace(/^["']|["']$/g, ""), `from ${f}`));
+    } catch {}
+  }
+  if (!found.length) return "a database this command does not name (no DATABASE_URL on it, in this shell, or in .env): check which one the tool reads";
+  const hosts = new Set(found.map((x) => x.replace(/ \(from [^)]*\)$/, "")));
+  return hosts.size > 1 ? `${found.join(" or ")}, depending on which file the tool loads` : String(found[found.length - 1]);
+}
+
+/** A URL's host, port and database name, or "unreadable" when any of them could be a secret. */
+function hostOf(url, from) {
+  try {
+    const u = new URL(url);
+    const hierarchical = /^[a-z][\w+.-]*:\/\//i.test(url);
+    const host = u.hostname;
+    const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
+    if (!hierarchical || (host && !/^[\w.-]+$|^\[[0-9a-f:.]+\]$/i.test(host)) || (path && !/^\/[\w.-]+$/.test(path)))
+      return `a DATABASE_URL whose host cannot be shown safely (${from}): read it yourself before answering`;
+    return `${host || "a local socket"}${u.port ? `:${u.port}` : ""}${path} (${from})`;
+  } catch {
+    return `a DATABASE_URL that does not parse as a URL (${from})`;
+  }
+}
 
 /** True when one segment of the command (split on | ; && ||) writes to a path containing `p`. */
 function writesTo(command, p) {

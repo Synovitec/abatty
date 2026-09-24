@@ -143,7 +143,9 @@ export function dependencyNames(dir) {
   return names;
 }
 
+/** The one configuration of a repository, at its root, where the hooks and the gate both read it. */
 export const CONFIG_FILE = "abatty.config.json";
+/** Where the configuration lived before it moved to the root; still read, key by key under the root one, so an older repository keeps working. */
 export const LEGACY_CONFIG = ".claude/adoption.json";
 
 /** @param {unknown} v */

@@ -127,7 +127,7 @@ export const rules = [
     phase: "2",
     ...SOURCES,
     why: "A threshold on the tree total is the wrong question asked loudly: a whole new untested file passes while the total holds, and a refactor that deletes well-tested code fails for improving the codebase. What a reviewer wants to know is whether THIS change is tested, which is the coverage of the lines it touched. The total is still worth a floor, so coverage cannot drift down unnoticed; it is a floor, not the gate.",
-    next: "Gate on the coverage of the changed lines (a patch status, a diff-coverage step, or the runner's changed-files mode), keep a threshold on the total as a floor, and keep the report when the suite is red, which is when it is read",
+    next: "Gate on the coverage of the changed lines (a patch status, a diff-coverage step, the runner's changed-files mode, or a coverage:changed script the gate runs, which Node's own --experimental-test-coverage can feed with no dependency), keep a threshold on the total as a floor, and keep the report when the suite is red, which is when it is read",
     check: (c) => {
       const text = toolText(c, COVERAGE_FILES);
       if (!/coverage|nyc|c8|codecov|cobertura|lcov/i.test(text))
@@ -138,10 +138,13 @@ export const rules = [
         );
       // The delta gate, in whichever shape the ecosystem spells it: a patch status, a diff
       // coverage tool, or a runner told to look only at what changed.
+      // The gate's own step counts too: a `coverage:changed` or `test:changed` script is what the
+      // gate runs on the pushed range, and a repository that followed the package's convention
+      // was told it had no gate on the change.
       const delta =
         /diff[-_]?cover|patch:|patch_?status|--changed\b|changedSince|--since\b|--diff\b|compare[-_]?branch|newCodePeriod|new_code/i.test(
           text,
-        );
+        ) || Boolean(c.script(/^(coverage|test):changed$/));
       // Most runners write the report before they set the exit code, so it survives a red suite
       // by default. Vitest discards it unless told otherwise, so the flag is asked for THERE and
       // nowhere else: a rule that demanded it of every ecosystem would be asking for a vitest
@@ -227,8 +230,16 @@ export const rules = [
     phase: "10",
     ...SOURCES,
     why: "A test that passes when the code is broken proves nothing; the mutation score is the measure of the tests, not of the code. Unbounded, it is also the slowest check anybody has ever switched off: it mutates the whole tree on every run, and it mutates nodes no test could ever observe - a log line, a message string, a piece of code with no behaviour behind it - so it reports survivors nobody can kill and a run nobody waits for.",
-    next: "Bound it twice before you trust it: mutate what the change touched (--since / --incremental / a diff-driven glob) and ignore the nodes a mutant cannot prove anything about (arid nodes, excluded mutators, ignore patterns), with a floor it breaks at",
+    next: "Bound it twice before you trust it: mutate what the change touched (--since / --incremental / a diff-driven glob, or abatty mutate, which needs no dependency) and ignore the nodes a mutant cannot prove anything about (arid nodes, excluded mutators, ignore patterns), with a floor it breaks at",
     check: (c) => {
+      // The package's own run is bounded twice by construction: the lines the push changed, and
+      // code only, never a string or a comment. No dependency.
+      const own = c.script(/\babatty(\.mjs)?\s+mutate\b/);
+      if (own)
+        return {
+          status: "present",
+          evidence: `\`${own[0]}\` runs abatty mutate: bounded to the changed lines, strings and comments never mutated${/--strict/.test(own[1]) ? ", a survivor fails it" : "; no floor: without --strict a survivor fails nothing, as the other runners' evidence says of theirs"}`,
+        };
       const text = toolText(c, MUTATION_FILES);
       const runner =
         c.has("@stryker-mutator/core") ||

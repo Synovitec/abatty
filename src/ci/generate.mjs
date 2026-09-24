@@ -17,6 +17,7 @@ import { TERMS } from "../core/vocabulary.mjs";
  * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser", absent?: string }} CiStep
  */
 
+/** The pipelines `abatty ci` can write, each from the same list of steps. */
 export const PROVIDERS = ["woodpecker", "github"];
 
 /**

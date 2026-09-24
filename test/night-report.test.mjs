@@ -97,7 +97,7 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
   const dir = tempRepo("nr-synthetic", {
     "package.json": NEXT_PKG,
     "docs/ADOPTION_DECISIONS.md":
-      "# Decisions\n\n- **2026-09-15** phase 1 · decision: seam-unclear · x\n- **2026-09-15** phase 1 · decision: seam-unclear · y\n- **2026-09-15** phase 1 · decision: harness-change · z\n",
+      "# Decisions\n\n- **2026-09-15** phase 1 · decision: seam-unclear · x\n- **2026-09-15** phase 1 · decision: seam-unclear · y\n- **2026-09-15** phase 1 · decision: harness-change · z\n- **2026-09-14** phase 1 · decision: behaviour-risk · last night\n",
   });
   const date = "2026-09-15";
   const night = join(dir, ".claude", "night");
@@ -191,15 +191,28 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
       ],
     }),
   );
+  // The night branch skipped a test case the base had: the morning reads it first.
+  git(dir, "branch", "-M", "main");
+  writeFileSync(join(dir, "a.test.mjs"), 'test("one", () => {});\ntest("two", () => {});\n');
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "test: a");
+  git(dir, "checkout", "-q", "-b", "adopt/standards-2026-09-15");
+  writeFileSync(join(dir, "a.test.mjs"), 'test("one", () => {});\ntest.skip("two", () => {});\n');
+  git(dir, "commit", "-q", "-am", "fix: a");
   const n = gatherNight(dir, date);
   assert.ok(n);
+  assert.deepEqual(n.tamper, ["a.test.mjs · fix: a: 1 case(s) skipped or focused"]);
+  assert.match(
+    renderNightReport(n),
+    /## Tests and checks the night changed\n\n- a\.test\.mjs · fix: a/,
+  );
   assert.equal(n.denials.length, 2, "only this night's denials");
   assert.equal(n.sessions.length, 2);
   assert.equal(n.sessions[1]?.crashed, true);
   const kinds = n.lessons.map((l) => l.kind).sort();
   assert.deepEqual(
     [...new Set(kinds)],
-    ["canary", "decision", "direction", "guard", "phase", "session", "stop-gate"],
+    ["canary", "decision", "direction", "guard", "phase", "session", "stop-gate", "tamper"],
   );
   assert.match(n.lessons.find((l) => l.kind === "guard")?.title || "", /git push --force" 2 times/);
   assert.match(
@@ -222,10 +235,24 @@ test("the heuristics, on synthetic evidence: a refused command shape, a denial s
       phases: [],
       decisions: {},
       direction: [],
+      tamper: [],
+      decisionEntries: [],
       canary: { ok: true, findings: [] },
     }).length,
     0,
     "a quiet night proposes nothing",
   );
   assert.match(renderNightReport(n), /### the guard refused "git push --force" 2 times/);
+  // Each incident of tonight proposes what would have caught it, quoting the entry; last
+  // night's entry is last night's morning.
+  const proposals = n.lessons.filter((l) => /: propose /.test(l.title)).map((l) => l.title);
+  assert.deepEqual(proposals, [
+    "seam-unclear on 2026-09-15: propose a context line",
+    "seam-unclear on 2026-09-15: propose a context line",
+    "harness-change on 2026-09-15: propose a config value",
+  ]);
+  assert.match(
+    n.lessons.find((l) => l.title.startsWith("harness-change on"))?.evidence[0] || "",
+    /phase 1 · decision: harness-change · z/,
+  );
 });

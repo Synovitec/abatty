@@ -88,7 +88,16 @@
     "$comment": "The ratchet's configuration (abatty ratchet / abatty baseline): the repository's own probes file, metrics to exclude, kind overrides (hard, ratchet), exempt path patterns; the budgets by kind, the caps and the env module take the standard's defaults unless set here.",
     "local": "abatty.probes.mjs",
     "exclude": [],
-    "enable": ["valid.wholeEnv", "fn.shapeExemptions", "change.refactorTests", "code.clones"],
+    "enable": [
+      "valid.wholeEnv",
+      "fn.shapeExemptions",
+      "change.refactorTests",
+      "code.clones",
+      "docs.supersededChain",
+      "obs.catchOnlyLogs",
+      "sec.weakRandom",
+      "code.undocumentedExports"
+    ],
     "hard": [],
     "ratchet": [],
     "exempt": [
@@ -99,7 +108,7 @@
       "^scripts/",
       "^bin/",
       "^\\.claude/(hooks|bin)/",
-      "^(tests?|e2e)/",
+      "(^|/)(tests?|__tests__|e2e)/",
       "^templates/harness/(hooks|testing|bin)/",
       "^src/core/secret-corpus\\.mjs$"
     ],
@@ -111,7 +120,7 @@
   "maxSessionsPerPhase": 2,
   "phases": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   "stack": "node",
-  "abatty": "0.5.2",
+  "abatty": "0.6.0",
   "$comment": "abatty's own configuration (the root config, the start of the roadmap's item 4). The ratchet reads `ratchet` and `files` from here on top of the adoption config.",
   "secrets": {
     "allow": ["src/core/secret-corpus.mjs"]

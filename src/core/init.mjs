@@ -38,6 +38,7 @@ import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
 
+/** The templates `init` and `update` copy from, read as files: nothing under `src/` imports them (CLAUDE.md §3). */
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 
 /** @typedef {{ file: string, action: "written" | "kept" | "overwritten" | "merged" | "n/a", detail?: string }} InitEvent */

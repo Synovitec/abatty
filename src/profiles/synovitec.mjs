@@ -13,6 +13,7 @@ import { rules as types } from "../rules/families/types.mjs";
 import { rules as boundaries } from "../rules/families/boundaries.mjs";
 import { rules as data } from "../rules/families/data.mjs";
 import { rules as tests } from "../rules/families/tests.mjs";
+import { rules as browserTests } from "../rules/families/browser-tests.mjs";
 import { rules as security } from "../rules/families/security.mjs";
 import { rules as delivery } from "../rules/families/delivery.mjs";
 import { rules as platform } from "../rules/families/platform.mjs";
@@ -167,6 +168,7 @@ export const synovitec = {
     ...boundaries,
     ...data,
     ...tests,
+    ...browserTests,
     ...security,
     ...delivery,
     ...platform,

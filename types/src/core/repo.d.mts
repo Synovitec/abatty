@@ -46,7 +46,9 @@ export function readConfig(dir: string): Record<string, any> | null;
 export function readAdoption(dir: string): Record<string, any> | null;
 /** True when a package.json script of that name exists. @param {string} dir @param {string} name */
 export function hasScript(dir: string, name: string): boolean;
+/** The one configuration of a repository, at its root, where the hooks and the gate both read it. */
 export const CONFIG_FILE: "abatty.config.json";
+/** Where the configuration lived before it moved to the root; still read, key by key under the root one, so an older repository keeps working. */
 export const LEGACY_CONFIG: ".claude/adoption.json";
 export type PackageJson = {
     name?: string;

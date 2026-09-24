@@ -215,7 +215,7 @@
           "items": {
             "type": "string"
           },
-          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions, types.nonNull)."
+          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions, types.nonNull, valid.sqlCurrentDate, docs.supersededChain, obs.catchOnlyLogs, sec.weakRandom, code.undocumentedExports, test.unvisitedRoutes)."
         },
         "boundedBy": {
           "type": "array",
@@ -504,6 +504,18 @@
       "type": "integer",
       "minimum": 1
     },
+    "maxDiffLines": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The changed lines past which a night branch stays local instead of being pushed: what one review reads. Default 2000."
+    },
+    "suiteEnv": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Non-secret environment values the gate's suites run with, as a pipeline's workflow gives them (an auth URL, a placeholder secret the test server needs). Never a real secret: this file is committed."
+    },
     "phases": {
       "type": "array",
       "items": {
@@ -617,6 +629,27 @@
               }
             ]
           }
+        }
+      }
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Diff-scoped mutation (`abatty mutate`): the command that runs a set of test files, with {files} where they go, how many mutants a run plants, and how long one may take.",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "The test command, with {files} where the test files go. Default: node --test {files}."
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The most mutants one run plants. Default 20."
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How long the tests may run against one mutant. Default 120."
         }
       }
     }

@@ -71,7 +71,15 @@ export async function reportCommand(cx) {
     // machine cannot see, so the row stays unverified here and says where it is verified.
     for (const f of r.floors.raised)
       out(
-        `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,
+        `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric}${f.file ? ` ${f.file}` : ""} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,
+      );
+    // The raises recorded as the probe being wrong (a reason opening with "false-positive"),
+    // counted per probe: what the package needs to decide which probe to fix or keep on
+    // probation. A report from before the count carries none.
+    const disputes = Object.entries(r.floors.disputes || {});
+    if (disputes.length)
+      out(
+        `  ${t.glyph.warn} ${t.yellow("disputed as false positives:")} ${disputes.map(([m, n]) => `${m} ${n}`).join(", ")} ${t.gray("· worth an issue on the package, with the case")}\n`,
       );
   }
   return;

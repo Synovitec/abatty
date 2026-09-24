@@ -10,6 +10,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { git, parseJson, readConfig } from "../core/repo.mjs";
 import { distil } from "./lessons.mjs";
+import { tamperIn } from "../ratchet/probes/tamper.mjs";
 
 export { distil } from "./lessons.mjs";
 export { renderNightReport } from "./report-render.mjs";
@@ -21,8 +22,9 @@ import { localToday } from "../core/today.mjs";
  * @typedef {{ sessionId: string, phase: string | null, decision: string | null, reason: string | null, blocks: number, failedCheck: string | null }} ReceiptFact
  * @typedef {{ at: string, sessionId: string, phase: string | null, check: string, reason: string, block: number }} BlockFact
  * @typedef {{ at: string, tool: string, what: string, reason: string }} DenialFact
- * @typedef {{ kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary", title: string, lesson: string, check: string, evidence: string[], count: number }} Lesson
- * @typedef {{ date: string, branch: string, base: string, run: any, sessions: SessionFact[], receipts: ReceiptFact[], blocks: BlockFact[], denials: DenialFact[], direction: string[], phases: any[], decisions: Record<string, number>, commits: string[], canary: { ok: boolean | null, findings: string[] }, lessons: Lesson[], footprint: ReturnType<typeof harnessFootprint>, footprintShare: ReturnType<typeof footprintShare> }} NightReport
+ * @typedef {{ date: string, code: string, text: string }} DecisionEntry
+ * @typedef {{ kind: "guard" | "stop-gate" | "phase" | "decision" | "direction" | "session" | "canary" | "tamper", title: string, lesson: string, check: string, evidence: string[], count: number }} Lesson
+ * @typedef {{ date: string, branch: string, base: string, run: any, sessions: SessionFact[], receipts: ReceiptFact[], blocks: BlockFact[], denials: DenialFact[], direction: string[], phases: any[], decisions: Record<string, number>, decisionEntries: DecisionEntry[], commits: string[], tamper: string[], canary: { ok: boolean | null, findings: string[] }, lessons: Lesson[], footprint: ReturnType<typeof harnessFootprint>, footprintShare: ReturnType<typeof footprintShare> }} NightReport
  */
 
 /** @param {string} p @returns {any} */
@@ -162,12 +164,31 @@ export function gatherNight(repoDir, date) {
     repoDir,
     String(config.files?.decisions || "docs/ADOPTION_DECISIONS.md"),
   );
-  if (existsSync(decisionsFile))
-    for (const m of readFileSync(decisionsFile, "utf8").matchAll(/decision:\s*([a-z][a-z0-9-]*)/g))
+  /** @type {DecisionEntry[]} */
+  const decisionEntries = [];
+  if (existsSync(decisionsFile)) {
+    const text = readFileSync(decisionsFile, "utf8");
+    for (const m of text.matchAll(/decision:\s*([a-z][a-z0-9-]*)/g))
       decisions[m[1] || "?"] = (decisions[m[1] || "?"] || 0) + 1;
+    // This night's bullets, whole: each is an incident the morning can turn into a check.
+    for (const line of text.split(/\r?\n/)) {
+      const m = /^\s*-\s.*?(\d{4}-\d{2}-\d{2}).*?decision:\s*([a-z][a-z0-9-]*)/.exec(line);
+      if (m && m[1] === d)
+        decisionEntries.push({
+          date: d,
+          code: String(m[2]),
+          text: line.replace(/^\s*-\s*/, "").trim(),
+        });
+    }
+  }
   const commits = git(repoDir, "log", "--format=%h %s", `${base}..${branch}`)
     .split("\n")
     .filter(Boolean);
+  // Every commit of the night, not only its refactors: the tests a night is judged by, changed by
+  // the night, are the first thing the morning reads.
+  const tamper = tamperIn((...a) => git(repoDir, ...a), `${base}..${branch}`).findings.map(
+    (x) => `${x.path} · ${x.detail}`,
+  );
   const footprint = harnessFootprint(repoDir);
   const canaryJson = readJsonOrNull(join(dir, "canary.json"));
   const canary = {
@@ -187,7 +208,9 @@ export function gatherNight(repoDir, date) {
     direction,
     phases,
     decisions,
+    decisionEntries,
     commits,
+    tamper,
     canary,
     lessons: /** @type {Lesson[]} */ ([]),
     // What the harness itself cost to carry, on every one of those sessions. The adopter is

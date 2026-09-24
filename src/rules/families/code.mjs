@@ -101,20 +101,31 @@ export const rules = [
   {
     id: "CODE-JSDOC",
     family: "Code",
-    title: "jsdoc/require-jsdoc publicOnly on the exported surface",
+    title: "Every export carries a doc comment, held by a linter rule or the ratchet",
     standard: ["CODE.7"],
     level: "must",
     enforcement: "hard",
     phase: "11",
     ...JS_SOURCES,
-    why: "An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say.",
-    next: "Add eslint-plugin-jsdoc (typescript-flavor on TS) with the fixer disabled",
+    why: "An export without a block is a contract nobody wrote down; the block says why it exists, which is the one thing the code cannot say. The practice is the count, not a tool: a linter plugin holds it, and so does the package's own reading, with no dependency.",
+    next: "Add code.undocumentedExports to ratchet.enable (no dependency) and record its floor with abatty baseline, or add eslint-plugin-jsdoc's require-jsdoc (publicOnly) with the fixer disabled",
     check: (c) => {
       const rule = /jsdoc\/require-jsdoc/.test(c.lintText);
+      const metrics = c.readJson(c.firstFile(/standards-baseline\.json$/) || "")?.metrics || {};
+      const floored = "code.undocumentedExports" in metrics;
+      const enabled = (c.adoption?.ratchet?.enable || []).includes("code.undocumentedExports");
       const probe = c.script(/jsdoc|check-limits/);
       return {
-        status: rule ? "present" : probe ? "partial" : "missing",
-        evidence: rule ? "a linter rule" : probe ? "probe script only (" + probe[0] + ")" : "none",
+        status: rule || floored ? "present" : enabled || probe ? "partial" : "missing",
+        evidence: rule
+          ? "a linter rule"
+          : floored
+            ? `code.undocumentedExports in the baseline at ${metrics["code.undocumentedExports"]}`
+            : enabled
+              ? "code.undocumentedExports enabled, no floor yet (abatty baseline)"
+              : probe
+                ? "probe script only (" + probe[0] + ")"
+                : "none",
       };
     },
   },

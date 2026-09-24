@@ -12,9 +12,9 @@
 // counter, receipt and log the probes write goes to a temporary folder (ADOPTION_NIGHT_DIR), never
 // into a real night's .claude/night/.
 
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { availableParallelism, cpus, homedir, tmpdir } from "node:os";
 import { agentCommand, configPath } from "./lib.mjs";
 import { sampleTrailer } from "./vocabulary.mjs";
 import { dirname, join, resolve } from "node:path";
@@ -70,6 +70,38 @@ function hook(file, event, env = {}, cwd = process.cwd()) {
     env: { ...process.env, ...baseEnv, ...env },
   });
   return { code: r.status, stdout: r.stdout || "", stderr: r.stderr || "" };
+}
+/**
+ * The same, without waiting: the guard and file-guard cases are two hundred independent runs of
+ * one hook, and run one after another they were most of doctor's thirty seconds on Windows, where
+ * starting a process costs about a tenth of a second. They run a few at a time instead, as many
+ * as the machine has cores, and are reported in the order they are written.
+ */
+function hookAsync(file, event, env = {}, cwd = process.cwd()) {
+  return new Promise((done) => {
+    const child = spawn(process.execPath, [join(HOOKS_ABS, file)], { cwd, env: { ...process.env, ...baseEnv, ...env } });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (e) => done({ code: -1, stdout, stderr: stderr + String(e) }));
+    child.on("close", (code) => done({ code, stdout, stderr }));
+    child.stdin.end(JSON.stringify(event));
+  });
+}
+/** Run `fn` over `items`, `width` at a time; the results in the items' order. */
+async function pooled(items, fn) {
+  const width = Math.max(2, Math.min(8, typeof availableParallelism === "function" ? availableParallelism() : cpus().length));
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: width }, worker));
+  return out;
 }
 const decisionOf = (r) => {
   try {
@@ -206,6 +238,12 @@ try {
     ["day: --no-verify", bash("git commit --no-verify -m x"), {}, "deny"],
     ["day: ordinary commit", bash("git commit -m 'feat: x'"), {}, "none"],
     ["day: run the gate", bash("npm run gate:fast"), {}, "none"],
+    ["day: a migration is asked about, naming the host", bash("DATABASE_URL=postgres://u:p@db.example.com:5432/app npx prisma migrate deploy"), {}, "ask"],
+    ["day: a migration script is asked about", bash("pnpm run db:migrate"), {}, "ask"],
+    ["day: reading the migration status is not", bash("npx prisma migrate status"), {}, "none"],
+    ["day: listing migrations is not", bash("ls prisma/migrations"), {}, "none"],
+    ["day: a message that names a migration command is not", bash('git commit -m "fix: prisma migrate deploy in CI"'), {}, "none"],
+    ["day: a script that only generates a migration is not", bash("pnpm migration:generate"), {}, "none"],
     ["night: push the adoption branch", bash("git push -u origin adopt/standards-selftest"), night, "none"],
     ["night: push main", bash("git push origin main"), night, "deny"],
     ["night: push another branch", bash("git push origin feat/other"), night, "deny"],
@@ -261,6 +299,15 @@ try {
   // sentence naming a commit with a flag behind it is a bypass.
   cases.push(["a -n belonging to another command is not a bypass of this one", bash(`git commit -m "x" && sed -n 1p README.md`), {}, "none"]);
   cases.push(["nor is one behind a pipe", bash(`git commit -m "x" | tee -n log`), {}, "none"]);
+  // The same bypass by its effect: the hooks run from core.hooksPath, so moving or unsetting it
+  // skips them as the flag does. Reading it is not a write.
+  const hooksKey = ["core", "hooksPath"].join(".");
+  cases.push(["core.hooksPath pointed away for one commit is refused", bash(`git -c ${hooksKey}=/dev/null commit -m x`), {}, "deny"]);
+  cases.push(["core.hooksPath unset for good is refused", bash(`git config --unset ${hooksKey}`), {}, "deny"]);
+  cases.push(["core.hooksPath through the environment is refused", bash(`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=${hooksKey} GIT_CONFIG_VALUE_0=/dev/null git commit -m x`), {}, "deny"]);
+  cases.push(["reading core.hooksPath is allowed", bash(`git config --get ${hooksKey}`), {}, "none"]);
+  cases.push(["pointing core.hooksPath at the hooks installs them and is allowed", bash(`git config ${hooksKey} .githooks`), {}, "none"]);
+  cases.push(["editing a line that names core.hooksPath is not setting it", bash(`sed -i s/a/b/ docs/${hooksKey}.md`), {}, "none"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
   // The short form and its cluster, the same defect the bypass check carried: `-fu` is a force
   // push and the boundary after `f` never held inside a cluster.
@@ -366,11 +413,26 @@ try {
   cases.push(["provenance, day: a human commit without the trailer is the human's decision", bash('git commit -m "feat: x"'), provOn, "none"]);
   // A case may name the directory it is judged from: the branch the guard reads is the branch of
   // the repository it runs in, and `HEAD` means a different thing on the base branch than off it.
-  for (const [name, event, env, expected, cwd] of cases) {
-    const r = hook("guard.mjs", event, env, cwd || process.cwd());
+  const guardRuns = await pooled(cases, ([, event, env, , cwd]) => hookAsync("guard.mjs", event, env, cwd || process.cwd()));
+  for (const [i, [name, , , expected]] of cases.entries()) {
+    const r = guardRuns[i];
     const got = decisionOf(r);
     check(`guard · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code : ""}`);
   }
+
+  // The migration prompt names the host and never a credential, whatever shape the URL has.
+  const reasonOf = (r) => {
+    try {
+      return String(JSON.parse(r.stdout).hookSpecificOutput?.permissionDecisionReason || "");
+    } catch {
+      return "";
+    }
+  };
+  const migrationReason = reasonOf(hook("guard.mjs", bash("DATABASE_URL=postgres://u:pw1@db.example.com:5432/app npx prisma migrate deploy"), { DATABASE_URL: "" }));
+  check("guard · day: the migration prompt names host, port and database", /db\.example\.com:5432\/app/.test(migrationReason), oneLine(migrationReason));
+  check("guard · day: the migration prompt never shows the user or the password", migrationReason !== "" && !/pw1|\bu:/.test(migrationReason), oneLine(migrationReason));
+  const opaque = reasonOf(hook("guard.mjs", bash('DATABASE_URL="sqlserver://localhost;user=SA;password=S3cret" npx prisma migrate deploy'), { DATABASE_URL: "" }));
+  check("guard · day: a connection string with the password where a host would be is not shown", opaque !== "" && !/S3cret|SA;/.test(opaque), oneLine(opaque));
 
   // ---- 2b. the file guard: the harness and the protected paths are read-only at night ----------
   const mcp = (tool_name, tool_input) => ({ tool_name, tool_input });
@@ -406,8 +468,9 @@ try {
     ["night: a named code server, a path outside the repository", mcp("mcp__serena__create_text_file", { relative_path: "../elsewhere/x.ts" }), { ...night, ADOPTION_CONFIG: withMcp }, "deny"],
     ["night: a named code server, a server name written with a dot", mcp("mcp__mail_example__send_message", { text: "y" }), { ...night, ADOPTION_CONFIG: withDotted }, "none"],
   ];
-  for (const [name, event, env, expected] of fileCases) {
-    const r = hook("protect.mjs", event, env);
+  const fileRuns = await pooled(fileCases, ([, event, env]) => hookAsync("protect.mjs", event, env));
+  for (const [i, [name, , , expected]] of fileCases.entries()) {
+    const r = fileRuns[i];
     const got = decisionOf(r);
     check(`protect · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code + " " + oneLine(r.stderr) : ""}`);
   }

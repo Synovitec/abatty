@@ -8,6 +8,9 @@
  */
 export function currentControls(controls: any): any;
 /**
+ * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
+ */
+/**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
@@ -26,6 +29,7 @@ export function runStepControls(o: {
     absent: string[];
 };
 export { STEP_CONTROLS } from "./step-plants.mjs";
+/** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
 export const CONTROLS_FILE: ".abatty/controls.json";
 /**
  * The version of abatty that planted the controls, recorded with them: where a step is planted

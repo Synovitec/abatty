@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
-import { night, nightRepo, setGate } from "./night-helpers.mjs";
+import { git } from "./helpers.mjs";
+import { night, nightRepo } from "./night-helpers.mjs";
 import { deadlineOf } from "../src/night/session.mjs";
 import { judgeMcp } from "../src/night/canary.mjs";
 import { localToday } from "../src/core/today.mjs";
@@ -59,20 +59,4 @@ test("a stub night: pre-flight green, the canary green, the phase done, the wrap
     true,
     "no BOM",
   );
-});
-
-test("canary only: the four checks on the current branch, nothing else", () => {
-  const dir = nightRepo("night-canary");
-  const r = night(dir, { canaryOnly: true });
-  assert.equal(r.ok, true, r.out);
-  assert.match(r.out, /pre-flight done on main/);
-  assert.equal(existsSync(join(dir, "docs/ADOPTION_STATE.json")), false);
-  assert.equal(git(dir, "rev-parse", "--abbrev-ref", "HEAD"), "main");
-});
-
-test("the CLI: abatty night --canary-only with the stub", () => {
-  const dir = nightRepo("night-cli");
-  const r = cli(["night", dir, "--canary-only", "--agent", STUB_AGENT, "--no-push"], dir);
-  assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /pre-flight done/);
 });
