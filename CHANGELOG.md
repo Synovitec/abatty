@@ -5,6 +5,24 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The guard reads a package script as the commands it runs.** An adopter's `pnpm db:setup`,
+  whose script was `prisma db push --force-reset --accept-data-loss` against the live database,
+  passed by day and at night: the guard read the line typed, not the script it ran. A
+  `<pm> [run] <script>` is now expanded through `package.json`, three levels deep. The data, deploy
+  and migration rules judge what the script runs. A reset, a drop or a forced schema push is
+  refused at night and asked about by day, the prompt saying it destroys data. Reported by an
+  adopter.
+- **A tool's own `push` is not a git push.** `prisma db push` was refused as a push to the base
+  branch, right only by accident, and a plain schema push never got the migration prompt. A
+  `push` that belongs to prisma, drizzle-kit, docker, helm and the like, with nothing before it
+  that could be git, is read as that tool's.
+- **At night the hooks folder is protected by its bare name too.** `rm -rf .githooks`, `rmdir`,
+  `git rm -r`, `mv`, `find … -delete` and `.husky` passed, while `rm .githooks/pre-push` was
+  refused. A protected folder is matched with or without its slash, and `rmdir` and `find
+  -delete` are writes.
+
 ## [0.6.0] - 2026-09-24
 
 ### Upgrading
