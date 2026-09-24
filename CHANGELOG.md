@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`docs.danglingRefs`, on probation: a name a document cites that the code no longer has.**
+  `docs.citations` checks the paths a document cites; a function or a constant named in
+  backticks rots as quietly, and a study of popular repositories found such a reference in more
+  than a quarter of them. The new probe counts a backticked name shaped like code (an inner
+  capital, an underscore, or written as a call) that the code had at the document's last commit
+  and has nowhere now, reading the same files on both sides; a concept never in the code, a plain
+  word, a fenced block and an archived or superseded record are not read.
 - **A false positive recorded is counted per probe.** A raise already needs a reason; one written
   `false-positive: <what it misread>` is now a dispute of that probe, marked on the raise and
   counted per metric by `abatty report` (and its `--json`). It is the count a blocking check lives
