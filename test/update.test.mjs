@@ -207,7 +207,7 @@ test("the CLI: update --dry-run writes nothing; --force takes the package's vers
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(
     doc.out,
-    /harness installed by abatty 0\.0\.9, the package is \d+\.\d+\.\d+ · abatty update/,
+    /harness installed by abatty 0\.0\.9, the package is \d+\.\d+\.\d+(?:-[\w.]+)? · abatty update/,
   );
   writeFileSync(join(dir, HOOK), "// mine\n");
   const forced = cli(["update", dir, "--force"], dir);
@@ -224,7 +224,7 @@ test("the version pin: init records the version in the config, update moves it, 
   assert.match(cfg.abatty, /^\d+\.\d+\.\d+/);
   writeFileSync(cfgPath, JSON.stringify({ ...cfg, abatty: "0.0.9" }, null, 2) + "\n");
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
-  assert.match(doc.out, /the config pins abatty 0\.0\.9, the package is \d+\.\d+\.\d+/);
+  assert.match(doc.out, /the config pins abatty 0\.0\.9, the package is \d+\.\d+\.\d+(?:-[\w.]+)?/);
   const up = cli(["update", dir], dir);
   assert.equal(up.code, 0, up.out);
   assert.equal(
