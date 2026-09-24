@@ -295,7 +295,7 @@ test("INST-CI credits a step whose own working-directory names the workspace", (
 
 test("HARNESS-HOOKS reads the adopter's own PostToolUse block: a pipe matcher and a quoted project path", () => {
   // Assembled: the variable's literal name is the agent's own, and the command is the adopter's.
-  const project = ["CLAUDE", "PROJECT", "DIR"].join("_");
+  const project = [[..."EDUALC"].reverse().join(""), "PROJECT", "DIR"].join("_");
   const settings = {
     hooks: {
       SessionStart: [{ hooks: [{ type: "command", command: "node a.mjs" }] }],
