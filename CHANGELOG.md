@@ -34,6 +34,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A renamed file keeps its floor.** Per-file floors are keyed by path, so a `git mv` of a file
+  carrying debt read as a new file rising from zero: the ratchet failed a change that moved no
+  debt, and `abatty baseline`, now that a file's rise needs a reason, would have refused it
+  without one. Git's rename detection, run from the commit that wrote the baseline, now carries
+  each file's floor and its recorded exception to the new path, and `abatty raises` carries the
+  base's floors the same way. A moved file whose debt rose is still a rise against its own floor,
+  and debt in a file git does not see as a move still counts from zero.
 - **`docs.frontMatter` counts front matter a YAML reader refuses.** The probes read front matter by
   hand, and that reading forgave what a site generator or a content schema does not: an adopter's
   documents passed every docs probe with a block a YAML parser rejects. A document now also counts

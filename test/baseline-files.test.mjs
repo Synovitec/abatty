@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempRepo } from "./helpers.mjs";
+import { git, tempRepo } from "./helpers.mjs";
 import {
   BUILTIN_PROBES,
   DEFAULT_CONFIG,
@@ -57,4 +57,43 @@ test("a file whose floor rose is a rise even when the metric's total fell, and i
     { was: 100, now: 110, owner: "platform" },
   );
   assert.equal(readBaseline(dir, REL)?.entries?.["size.excessCode src/a.ts"], undefined, "a fell");
+});
+
+// A floor is keyed by path, so a `git mv` read as a new file rising from zero: the rule above
+// then refused a change that moved no debt. Git's rename detection carries the floor.
+
+/** A repository whose baseline is written and committed, with a's debt at 100. */
+function committedFloor() {
+  const dir = tempRepo("baseline-renames", { "src/a.ts": LONG(400) });
+  assert.equal(write(dir).ok, true);
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "floor");
+  return dir;
+}
+
+test("a file moved with git mv keeps its floor, and the next write stores it at the new path", () => {
+  const dir = committedFloor();
+  git(dir, "mv", "src/a.ts", "src/moved.ts");
+  assert.equal(readBaseline(dir, REL)?.debt?.["size.excessCode"]?.["src/moved.ts"], 100);
+  const moved = write(dir);
+  assert.equal(moved.ok, true, moved.refusals.join("\n"));
+  assert.deepEqual(readBaseline(dir, REL)?.debt?.["size.excessCode"], { "src/moved.ts": 100 });
+});
+
+test("a moved file whose debt rose is a rise against its own floor", () => {
+  const dir = committedFloor();
+  git(dir, "mv", "src/a.ts", "src/moved.ts");
+  writeFileSync(join(dir, "src/moved.ts"), LONG(410));
+  const refused = write(dir);
+  assert.equal(refused.ok, false);
+  assert.match(refused.refusals.join("\n"), /src\/moved\.ts 100 → 110/);
+});
+
+test("debt that appears in a new file git does not see as a move still counts from zero", () => {
+  const dir = committedFloor();
+  writeFileSync(join(dir, "src/other.ts"), LONG(350).replace(/v(\d+)/g, "w$1"));
+  git(dir, "add", "-A");
+  const refused = write(dir);
+  assert.equal(refused.ok, false);
+  assert.match(refused.refusals.join("\n"), /src\/other\.ts 0 → 50/);
 });

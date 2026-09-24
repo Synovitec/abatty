@@ -15,7 +15,11 @@ export function probeVersion(m: {
         version?: number;
     };
 }): number;
-/** The committed baseline, or null. @param {string} repoDir @param {string} rel @returns {Baseline | null} */
+/**
+ * The committed baseline, or null. Its per-file floors are read where their files are now: a
+ * file renamed since the commit that wrote the baseline carries its floor to the new path.
+ * @param {string} repoDir @param {string} rel @returns {Baseline | null}
+ */
 export function readBaseline(repoDir: string, rel: string): Baseline | null;
 /**
  * Write today's numbers as the floor. A metric at zero is promoted to HARD (a floor of zero and

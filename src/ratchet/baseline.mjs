@@ -13,6 +13,7 @@
 import { readJsonFile, writeJsonFile } from "../core/repo.mjs";
 import { BASELINE_NOTE } from "./config.mjs";
 import { scoreOf } from "./index.mjs";
+import { baselineCommit, carryRenames, renamesSince } from "./renames.mjs";
 
 /**
  * @typedef {import("./index.mjs").Baseline} Baseline
@@ -31,11 +32,16 @@ export function probeVersion(m) {
   return typeof m.probe.version === "number" ? m.probe.version : 1;
 }
 
-/** The committed baseline, or null. @param {string} repoDir @param {string} rel @returns {Baseline | null} */
+/**
+ * The committed baseline, or null. Its per-file floors are read where their files are now: a
+ * file renamed since the commit that wrote the baseline carries its floor to the new path.
+ * @param {string} repoDir @param {string} rel @returns {Baseline | null}
+ */
 export function readBaseline(repoDir, rel) {
   try {
     const b = readJsonFile(repoDir, rel);
-    return b && typeof b === "object" && b.metrics && typeof b.metrics === "object" ? b : null;
+    if (!(b && typeof b === "object" && b.metrics && typeof b.metrics === "object")) return null;
+    return carryRenames(b, renamesSince(repoDir, baselineCommit(repoDir, rel)));
   } catch {
     return null;
   }

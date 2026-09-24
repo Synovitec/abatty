@@ -10,6 +10,7 @@ import { spawnSync } from "node:child_process";
 import { CONFIG_FILE, LEGACY_CONFIG, git, readAdoption, readJsonFile } from "./repo.mjs";
 import { baselinePath } from "../ratchet/config.mjs";
 import { readBaseline } from "../ratchet/baseline.mjs";
+import { carryRenames, renamesSince } from "../ratchet/renames.mjs";
 
 /**
  * @typedef {{ metric: string, was: number | string, now: number | string | null, how: "rose" | "vanished" | "no longer hard" | "rose in a file" | "config", path?: string }} Loosened
@@ -36,8 +37,10 @@ function onBase(repoDir, base, rel) {
  */
 export function floorRises(repoDir, base) {
   const rel = baselinePath(readAdoption(repoDir));
+  // Carried along the renames since the base, so a moved file compares with its own floor.
   /** @type {import("../ratchet/index.mjs").Baseline | null} */
-  const before = onBase(repoDir, base, rel);
+  const found = onBase(repoDir, base, rel);
+  const before = found ? carryRenames(found, renamesSince(repoDir, base)) : found;
   const now = readBaseline(repoDir, rel);
   if (!before?.metrics) return { base, found: false, loosened: [] };
   /** @type {Loosened[]} */

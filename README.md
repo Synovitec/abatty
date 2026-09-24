@@ -112,7 +112,8 @@ A metric at zero is promoted to hard. A floor that rises is refused without a re
 both recorded against the metric rather than against the write, so one metric's explanation
 survives an unrelated rebaseline and disappears when the debt it explained does. A file's floor is
 a floor too: one that rises is refused and recorded the same way even when the metric's total
-fell, so a fall in one file cannot hide a rise in another. A probe that
+fell, so a fall in one file cannot hide a rise in another. A file git sees as renamed since the
+baseline was committed keeps its floor at the new path, so a `git mv` moves no debt. A probe that
 scans zero files where the baseline saw some fails the run, so a moved directory never reports
 green forever.
 

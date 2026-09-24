@@ -186,3 +186,19 @@ test("where the base takes direct pushes, a raise is recorded by a decision nami
   git(dir, "commit", "-qam", "chore: pull requests");
   assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 3);
 });
+
+test("a file moved since the base carries its floor, so the move loosens nothing", () => {
+  const floor = (/** @type {string} */ path) =>
+    JSON.stringify({
+      metrics: { "size.overBudget": 1 },
+      hard: [],
+      debt: { "size.overBudget": { [path]: 1 } },
+    });
+  const dir = tempRepo("raises-renamed", {
+    [REL]: floor("src/a.ts"),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  git(dir, "mv", "src/a.ts", "src/b.ts");
+  writeFileSync(join(dir, REL), floor("src/b.ts"));
+  assert.deepEqual(floorRises(dir, "main").loosened, []);
+});
