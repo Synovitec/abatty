@@ -75,6 +75,8 @@ test("the release job that runs the dev dependencies never holds the publishing 
   assert.match(String(jobs.publish), /id-token: write/);
   assert.match(String(jobs.publish), /needs: gate/);
   assert.match(String(jobs.publish), /npm publish [^\n]*--ignore-scripts/);
+  // A candidate never becomes `latest`: a version with a `-` is published under `next`.
+  assert.match(String(jobs.publish), /\*-\*\) npm publish [^\n]*--ignore-scripts --tag next/);
   assert.doesNotMatch(
     String(jobs.publish),
     /npm (ci|install)(?! -g npm@)/,

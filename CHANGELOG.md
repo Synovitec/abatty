@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **A minor release goes out as a candidate first.** A version with a `-` (like `0.7.0-rc.1`) is
+  published under the `next` tag, never `latest`, so adopters can replay it with `abatty@next`
+  before anyone upgrades. A miss they find costs another candidate, not a patch release.
+  CONTRIBUTING.md describes the routine: the candidate, the replay, the reports as corpus cases,
+  and the same commit released once a replay finds no must-level miss.
+
 ### Added
 
 - **Every adopter report is a permanent case.** The misses adopters found this week are now one

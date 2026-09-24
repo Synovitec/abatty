@@ -47,7 +47,16 @@ jobs:
       # installs one pinned. --ignore-scripts: the gate ran in the job before, on the same commit,
       # and no lifecycle script runs where the identity is.
       - run: npm install -g npm@11.20.0
-      - run: npm publish --provenance --access public --ignore-scripts
+      # A release candidate (a version with a `-`, like 0.7.0-rc.1) goes out under `next`: the
+      # adopters replay it with `abatty@next` before `latest` moves, so a miss they find costs a
+      # candidate, not a patch release. npm refuses a prerelease without a tag, on purpose.
+      - name: publish (a candidate under next)
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          case "$v" in
+            *-*) npm publish --provenance --access public --ignore-scripts --tag next ;;
+            *) npm publish --provenance --access public --ignore-scripts ;;
+          esac
   attest:
     needs: publish
     runs-on: ubuntu-latest
