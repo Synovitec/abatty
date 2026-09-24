@@ -45,6 +45,12 @@ test("the template refuses every env variant; a list of names leaves the others 
     ".env.vercel",
   ]);
   assert.deepEqual(unrefusedSecrets({ permissions: { deny: ["Read(**/.env*)"] } }), []);
+  // A single leading slash is the project root in the settings' syntax; only // is absolute.
+  assert.deepEqual(
+    unrefusedSecrets({ permissions: { deny: ["Read(/.env)", "Read(/.env.*)"] } }),
+    [],
+  );
+  assert.equal(unrefusedSecrets({ permissions: { deny: ["Read(//etc/.env)"] } }).length, 8);
   assert.deepEqual(loosenedRules(SHIPPED, narrowed()), {
     removedDenies: ["Read(./.env.*)"],
     addedAllows: ["Read(./.env.example)"],

@@ -24,11 +24,12 @@ export const SECRET_NAMES = [
 
 /**
  * A permission rule's path glob as a pattern over a repository-relative path: `*` stays within a
- * folder, `**` crosses folders, a leading `./` is the root. What the agent's settings mean by one.
+ * folder, `**` crosses folders, a leading `./` or a single `/` is the project root (`//` is the
+ * filesystem's, and is not read here). What the agent's settings mean by one.
  * @param {string} glob @returns {RegExp}
  */
 function globPattern(glob) {
-  const g = glob.replace(/^\.\//, "");
+  const g = glob.replace(/^\.?\//, "");
   let re = "";
   for (let i = 0; i < g.length; i++) {
     const ch = String(g[i]);
@@ -51,7 +52,7 @@ export function readDenies(settings) {
   const deny = Array.isArray(settings?.permissions?.deny) ? settings.permissions.deny : [];
   return deny
     .map((d) => /^Read\((.+)\)$/.exec(String(d))?.[1] || "")
-    .filter((g) => g && !g.startsWith("~") && !g.startsWith("/"));
+    .filter((g) => g && !g.startsWith("~") && !g.startsWith("//"));
 }
 
 /**

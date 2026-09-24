@@ -52,6 +52,8 @@ test("a harnessed repository with all of it: each rule holds", () => {
     ".claude/settings.json": JSON.stringify({
       permissions: {
         deny: [
+          "Read(./.env)",
+          "Read(./.env.*)",
           "Bash(git commit --no-verify *)",
           "Bash(git push --force *)",
           "Bash(git reset --hard *)",

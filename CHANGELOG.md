@@ -151,7 +151,8 @@ under Unreleased in the same commit.
   `.env.example` could work. Every daytime check stayed green while `.env.staging`, `.env.prod`
   and any backup became readable by the agent.
   - `SEC-AGENT-PERMISSIONS` now plants those names and asks whether the deny rules refuse each
-    one. It is partial, and names the readable files, when any is not refused.
+    one. It is partial, and names the readable files, when any is not refused. A rule rooted
+    with one slash (`Read(/.env.*)`) is the project root in the settings' syntax and counts.
   - `abatty doctor` fails on an env file the settings no longer refuse. It names any deny rule
     the template ships that the settings dropped, and any allow rule they added, instead of
     reporting generic drift.
