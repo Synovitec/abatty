@@ -5,6 +5,16 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`valid.sqlCurrentDate`, an opt-in probe for the day a query takes.** `valid.utcDay` reads the
+  code, so an adopter's read 0 while 196 `CURRENT_DATE` sat in its SQL, each one the session's
+  day, UTC unless the connection says otherwise, and yesterday for the length of the offset every
+  night east of Greenwich. The probe counts `CURRENT_DATE`, `now()::date`, `current_timestamp::date`,
+  `date(now())` and `date_trunc('day', now())` in `.sql` files and in the strings of JavaScript and
+  TypeScript, comments left out; a timestamp converted with `AT TIME ZONE` before its day is taken
+  is not counted. Enable it in `ratchet.enable`.
+
 ### Fixed
 
 - **A file's floor that rises is refused and recorded, even when the metric's total fell.** An

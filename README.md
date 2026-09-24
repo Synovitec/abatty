@@ -254,6 +254,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `code.clones`             | Blocks of six or more meaningful lines that appear in two places, without a dependency             |                |
 | `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
 | `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
+| `valid.sqlCurrentDate`    | Calendar days SQL takes in the session's time zone (`CURRENT_DATE`, `now()::date`), unconverted    |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,
