@@ -52,7 +52,7 @@
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 167,
+    "code.clones": 170,
     "context.overCap": 1,
     "docs.behindCode": 8,
     "docs.citations": 75,
@@ -60,13 +60,13 @@
     "docs.frontMatter": 34,
     "docs.frontMatterSyntax": 34,
     "docs.indexDrift": 33,
-    "size.excessCode": 167,
-    "size.overBudget": 167,
-    "size.overRaw": 187,
-    "types.escapes": 167,
-    "valid.rawEnv": 166,
-    "valid.utcDay": 167,
-    "valid.wholeEnv": 166
+    "size.excessCode": 170,
+    "size.overBudget": 170,
+    "size.overRaw": 190,
+    "types.escapes": 170,
+    "valid.rawEnv": 169,
+    "valid.utcDay": 170,
+    "valid.wholeEnv": 169
   },
   "debt": {
     "code.clones": {
@@ -111,7 +111,7 @@
     "code.undocumentedExports": 1,
     "context.overCap": 1,
     "context.unsourcedGrowth": 1,
-    "docs.behindCode": 3,
+    "docs.behindCode": 4,
     "docs.citations": 1,
     "docs.danglingRefs": 1,
     "docs.danglingSource": 1,
