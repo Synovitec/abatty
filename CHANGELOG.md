@@ -21,7 +21,7 @@ under Unreleased in the same commit.
   published under the `next` tag, never `latest`, so adopters can replay it with `abatty@next`
   before anyone upgrades. A miss they find costs another candidate, not a patch release.
   CONTRIBUTING.md describes the routine: the candidate, the replay, the reports as corpus cases,
-  and the same commit released once a replay finds no must-level miss.
+  and, once a replay finds no must-level miss, one commit on top that only sets the final version.
 
 ### Added
 
