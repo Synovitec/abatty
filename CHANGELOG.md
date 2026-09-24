@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-24
+
+### Upgrading
+
+- **`docs.behindCode` is redefined (definition 4).** Its floor reads as redefined once; run
+  `abatty baseline` to rewrite it. Nothing is raised, and the only effect of the change is fewer
+  documents read as behind.
+
 ### Fixed
 
 - **A cited document moves when its body does, not its front matter.** `docs.behindCode` counted
