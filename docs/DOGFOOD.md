@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-23"
+last_verified: "2026-09-24"
 ---
 
 # Running abatty on abatty
@@ -103,8 +103,11 @@ commit, and this repository's own pipeline is hand-written and does not yet.
   when this page was first written, that `abatty ci --provider github` writes a pull-request
   template while no code did; `src/cli/ci.mjs` writes one since 2026-09-19, so that half is
   closed and `CLAUDE.md` §10 says so.
-- **`abatty update` silently adds a `lint` script to `package.json`** on every run here, and it
-  has to be reverted by hand each time. It is a real sharp edge and it is not fixed.
+- **`abatty update` used to add a `lint` script to `package.json`** on every run here, and it had
+  to be reverted by hand each time. Since 0.5.0 the lock records the scripts it offered, and one a
+  repository removed is not offered again. The page said "not fixed" for two releases after it was,
+  because its date was bumped without it being read, which is why freshness is now judged by
+  commits rather than by that date.
 - **Three of six presets are proven by nobody.** `node` is proven by this repository, `next` and
   `vite-react` by two others; `astro`, `python` and `docs` have a fixture repository the suite
   runs and no repository behind them. A fixture is not a proof and `abatty presets` says so.

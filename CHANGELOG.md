@@ -5,6 +5,22 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **`docs.behindCode` is judged by commits, not by the typed date.** A doc is behind when a
+  source it names changed in a later commit than the last one that changed the doc itself. A doc
+  changed in the same commit as its source is fresh, whatever its date says: an adopter's decision
+  log, updated in the very commit as its config, was flagged because its date lagged a day. A
+  commit that only moves `last_verified` counts for neither side: bumping the date re-read
+  nothing, so the rule no longer trains date-bump commits, and a source document whose date alone
+  moved no longer cascades to the documents that cite it. A re-read that found nothing to change
+  is recorded as a `docs-verified: <paths>` line in a commit message naming the documents read.
+  Without history for a document (a shallow clone) the typed date is still the fallback. The
+  probe's definition is now 2, so an existing floor reads as redefined, with how to re-read and
+  record it, rather than as a regression nobody caused. This repository's own `DOGFOOD.md` is the
+  first case: it had called a bug fixed in 0.5.0 "not fixed" for two releases, behind a date that
+  had been bumped.
+
 ## [0.5.2] - 2026-09-24
 
 ### Added

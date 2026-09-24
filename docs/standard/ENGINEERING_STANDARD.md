@@ -759,14 +759,15 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   longer resolves is counted; a rule ID or npm script named in prose that does not exist is
   counted.
 - **DOC.5 (MUST) - Freshness is measured against the DIFF, never the calendar.** A doc is
-  behind when a file it cites, or a `source_truth` entry, was committed after its
-  `last_verified` (a frozen doc is exempt, it is supposed to age; an uncommitted edit counts as
-  today). A same-day change is not exempt: the day a cited file moves is the day its author is
-  there to re-read the doc, and an exemption let the change merge green and the base branch go
-  red at midnight, charged to whoever pushed next. A dangling
-  `source_truth` entry is a hard failure, not a warning: it is the doc's update trigger
-  switched off. **Bumping a date without re-reading the doc against the code is the lie the
-  metric exists to prevent** - if you cannot verify it, leave it stale.
+  behind when a `source_truth` entry changed in a commit later than the last commit that changed
+  the doc itself (a frozen doc is exempt, it is supposed to age). A doc changed in the same commit
+  as its source is fresh. A commit that only moves a `last_verified` date counts for neither side:
+  bumping the date re-read nothing, and a source document whose date alone moved has not moved.
+  A re-read that found nothing to change is put on the record instead, as a `docs-verified:` line
+  in a commit message naming the documents read. The typed date is the fallback only where the
+  history is out of reach. A dangling `source_truth` entry is a hard failure, not a warning: it is
+  the doc's update trigger switched off. **Recording a re-read without re-reading the doc against
+  the code is the lie the metric exists to prevent** - if you cannot verify it, leave it stale.
 - **CHANGE.1 (MUST) - A push that touches source, migrations, tests, CI or scripts touches
   `CHANGELOG.md`**, checked over the pushed range. Entries are written for the reader, not the
   committer.
