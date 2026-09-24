@@ -47,6 +47,27 @@ export function pushRangeInfo(repoDir, base = "main", explicit = "") {
   return { range: "HEAD~1..HEAD", how: "unknown", commits: count("HEAD~1..HEAD") };
 }
 
+/**
+ * What a range given by hand leaves out: the commits the branch carries since it left the base
+ * that the range does not hold. A CI run on a new branch has no `before` to diff from, and a
+ * hand-written fallback of `HEAD~1` judged one commit of four and printed green, which read as
+ * the branch being judged. Null on the base itself, with no base to fork from, or when the range
+ * already holds the branch. Said, not refused: a narrower range may be exactly what was meant.
+ * @param {string} repoDir @param {string} base @param {RangeInfo} info
+ * @returns {{ commits: number, fork: string } | null}
+ */
+export function narrowerThanBranch(repoDir, base, info) {
+  if (info.how !== "explicit" || info.commits < 0) return null;
+  const branch = git(repoDir, "rev-parse", "--abbrev-ref", "HEAD");
+  if (!branch || branch === "HEAD" || branch === base) return null;
+  const fork =
+    git(repoDir, "merge-base", `origin/${base}`, "HEAD") ||
+    git(repoDir, "merge-base", base, "HEAD");
+  if (!fork) return null;
+  const all = Number(git(repoDir, "rev-list", "--count", `${fork}..HEAD`)) || 0;
+  return all > info.commits ? { commits: all, fork } : null;
+}
+
 /** The push range alone (see pushRangeInfo). @param {string} repoDir @param {string} [base] @param {string} [explicit] */
 export function pushRange(repoDir, base = "main", explicit = "") {
   return pushRangeInfo(repoDir, base, explicit).range;

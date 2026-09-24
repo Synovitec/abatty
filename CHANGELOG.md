@@ -177,6 +177,11 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The gate says when a range given by hand is narrower than the branch.** A CI run on a new
+  branch has no `before` to diff from, and a hand-written fallback to `HEAD~1` judged one commit
+  of four and printed green. On a branch other than the base, `--range` now prints how many of the
+  branch's commits it holds, and the range from the fork that holds them all. It is a notice, not
+  a refusal: a narrower range may be what was meant.
 - **A floor a change lowered is written for it.** A floor left above today's count fails the run,
   and locking it took a separate `abatty baseline`, which made leaving findings in easier than
   removing them. When every failure of a run is such a floor, a run outside CI now writes the

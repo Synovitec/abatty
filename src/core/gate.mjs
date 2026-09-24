@@ -18,7 +18,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
-import { pendingPaths, pushRangeInfo } from "./range.mjs";
+import { narrowerThanBranch, pendingPaths, pushRangeInfo } from "./range.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
@@ -77,6 +77,11 @@ export function runGate(o) {
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
       : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
   );
+  const wider = blind ? null : narrowerThanBranch(repoDir, o.base || "main", info);
+  if (wider)
+    log(
+      `· --range ${range} judges ${info.commits} of the ${wider.commits} commit(s) this branch carries since it left ${o.base || "main"}; --range ${wider.fork.slice(0, 12)}..HEAD judges the branch`,
+    );
   // A pushed file whose diff is only comments changes no behaviour and selects no suite; one
   // with uncommitted edits as well is read whole, so it still selects.
   const quiet = blind
