@@ -52,3 +52,15 @@ test("a dry run writes nothing", async () => {
   assert.equal((await migrateRedefined(dir, { dryRun: true })).length, 1);
   assert.equal(readFileSync(join(dir, REL), "utf8"), before);
 });
+
+test("a HARD metric that now counts above zero is named and left for a person, never written", async () => {
+  const dir = redefinedFloor();
+  const b = read(dir);
+  b.hard = [...(b.hard || []), "size.excessCode"];
+  writeFileSync(join(dir, REL), JSON.stringify(b, null, 2));
+  const [m] = await migrateRedefined(dir);
+  assert.equal(m?.metric, "size.excessCode");
+  assert.equal(m?.written, false);
+  assert.match(String(m?.why), /HARD and above zero/);
+  assert.equal(read(dir).metrics["size.excessCode"], 7, "the floor is as it was");
+});

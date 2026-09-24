@@ -109,7 +109,7 @@ export async function updateCommand(cx, preset) {
   for (const m of await migrateRedefined(dir, { dryRun: flag("--dry-run") }))
     out(
       m.written
-        ? `  ${t.glyph.ok} ${t.gray("migrated".padEnd(11))} ${m.metric}  ${t.gray(`· floor rewritten under definition ${m.version}: ${m.was} → ${m.now} (a redefinition, not a raise)`)}\n`
+        ? `  ${t.glyph.ok} ${t.gray((flag("--dry-run") ? "would migrate" : "migrated").padEnd(11))} ${m.metric}  ${t.gray(`· floor ${flag("--dry-run") ? "to be rewritten" : "rewritten"} under definition ${m.version}: ${m.was} → ${m.now} (a redefinition, not a raise)`)}\n`
         : `  ${t.glyph.warn} ${t.gray("redefined".padEnd(11))} ${m.metric}  ${t.gray(`· ${m.now} under definition ${m.version}: ${m.why}`)}\n`,
     );
   const changed = r.events.filter((e) => e.action !== "in step" && e.action !== "kept").length;

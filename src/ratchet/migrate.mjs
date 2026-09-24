@@ -35,6 +35,13 @@ export async function migrateRedefined(repoDir, o = {}) {
   if (!redefined.length) return [];
   const next = JSON.parse(JSON.stringify(previous));
   const hard = new Set(previous.hard || []);
+  // HARD as `abatty baseline` reads it: the baseline's list, the config's, or a hard probe the
+  // config does not hold as a ratchet. A probe on probation is never HARD.
+  const isHard = (/** @type {import("./index.mjs").Measurement} */ m) =>
+    !m.probe.probation &&
+    (hard.has(m.metric) ||
+      config.hard.includes(m.metric) ||
+      (m.probe.kind === "hard" && !config.ratchet.includes(m.metric)));
   /** @type {Migrated[]} */
   const out = [];
   for (const v of redefined) {
@@ -42,7 +49,7 @@ export async function migrateRedefined(repoDir, o = {}) {
     if (!m) continue;
     const was = Number(previous.metrics?.[v.metric] ?? 0);
     const version = probeVersion(m);
-    if (hard.has(v.metric) && m.value > 0) {
+    if (isHard(m) && m.value > 0) {
       out.push({
         metric: v.metric,
         was,
