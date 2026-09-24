@@ -71,7 +71,7 @@ export async function reportCommand(cx) {
     // machine cannot see, so the row stays unverified here and says where it is verified.
     for (const f of r.floors.raised)
       out(
-        `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,
+        `  ${t.glyph.warn} floor raised ${t.yellow("(unverified)")} ${f.metric}${f.file ? ` ${f.file}` : ""} ${f.was} → ${f.now} on ${f.at} by ${f.owner || "nobody named"}: ${f.reason || "no reason recorded"}\n`,
       );
   }
   return;

@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A file's floor that rises is refused and recorded, even when the metric's total fell.** An
+  adopter's baseline write took `size.excessCode` from 30109 to 30072 while ten files' floors rose,
+  and the tool's record said nothing: a fall anywhere could hide a rise anywhere else, although the
+  standard holds every number to "only falls, by its total and per file". `abatty baseline` now
+  refuses a per-file rise, a file newly carrying debt included, without `--reason` and `--owner`,
+  records it under `metric file` in the baseline's entries, and drops the entry when that file's
+  debt falls back. The report lists each such raise with its file.
 - **A raise in a repository that pushes to its base directly has a way to be recorded.** A raise
   lands through a pull request approved by somebody other than its author, and a repository that
   delivers straight to `main` by policy never opens one, so an adopter's raise could be written

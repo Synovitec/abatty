@@ -58,6 +58,8 @@ export function writeBaseline(o) {
   const promoted = [];
   /** @type {string[]} */
   const rises = [];
+  /** @type {{ metric: string, file: string, was: number, now: number }[]} */
+  const fileRisen = [];
   const hard = new Set(previous?.hard || []);
   /** @type {Record<string, number>} */
   const metrics = {};
@@ -84,6 +86,13 @@ export function writeBaseline(o) {
     }
     const was = previous?.metrics?.[m.metric];
     if (typeof was === "number" && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
+    // Per file as well as in total: a total that fell carried ten files whose floors rose, with
+    // nothing in the record, so a fall anywhere could hide a rise anywhere else.
+    if (typeof was === "number")
+      for (const [file, now, before] of fileRises(previous?.debt?.[m.metric], m.debt)) {
+        rises.push(`${m.metric} ${file} ${before} → ${now}`);
+        fileRisen.push({ metric: m.metric, file, was: before, now });
+      }
     metrics[m.metric] = m.value;
     versions[m.metric] = probeVersion(m);
     if (!m.probe.emptyScanOk) scanned[m.metric] = m.scanned;
@@ -110,7 +119,21 @@ export function writeBaseline(o) {
       entries[m.metric] = { at: o.today, was, now: m.value, reason: o.reason, owner: o.owner };
     else if (entries[m.metric] && m.value <= (entries[m.metric]?.was ?? -1))
       delete entries[m.metric];
+    // The same per file, under `metric file`: written with the rise, gone when that file's debt
+    // falls back to the floor it explained.
+    for (const [key, e] of Object.entries(entries))
+      if (key.startsWith(`${m.metric} `) && (m.debt[key.slice(m.metric.length + 1)] ?? 0) <= e.was)
+        delete entries[key];
   }
+  if (o.reason && o.owner)
+    for (const r of fileRisen)
+      entries[`${r.metric} ${r.file}`] = {
+        at: o.today,
+        was: r.was,
+        now: r.now,
+        reason: o.reason,
+        owner: o.owner,
+      };
   const { score } = scoreOf(measurements);
   /** @type {Baseline} */
   const baseline = {
@@ -131,4 +154,17 @@ export function writeBaseline(o) {
   const ok = refusals.length === 0;
   if (ok && !o.dryRun) writeJsonFile(o.repoDir, o.rel, baseline);
   return { ok, baseline, refusals, promoted, rises };
+}
+
+/**
+ * The files whose debt rose against the previous floor, as [file, now, before]: a file new to the
+ * debt counts from 0, because debt that moved into a file is a rise there whatever the total did.
+ * @param {Record<string, number> | undefined} before @param {Record<string, number>} now
+ * @returns {[string, number, number][]}
+ */
+function fileRises(before, now) {
+  return Object.entries(now || {})
+    .map(([file, n]) => /** @type {[string, number, number]} */ ([file, n, before?.[file] ?? 0]))
+    .filter(([, n, b]) => n > b)
+    .sort(([a], [b]) => a.localeCompare(b));
 }

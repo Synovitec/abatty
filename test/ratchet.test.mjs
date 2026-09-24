@@ -468,14 +468,15 @@ test("a reason is recorded against its metric: an unrelated rebaseline keeps it,
   );
   const json = JSON.parse(cli(["report", dir, "--json"], dir).out);
   assert.deepEqual(
-    json.floors.raised.map((/** @type {any} */ f) => f.metric).sort(),
-    ["size.excessCode", "size.overBudget"],
-    "every metric the one write raised, one row each",
+    json.floors.raised.map((/** @type {any} */ f) => `${f.metric} ${f.file}`.trim()).sort(),
+    ["size.excessCode", "size.excessCode src/b.ts", "size.overBudget", "size.overBudget src/b.ts"],
+    "every metric the one write raised, and every file it raised, one row each",
   );
   assert.deepEqual(
-    json.floors.raised.find((/** @type {any} */ f) => f.metric === "size.overBudget"),
+    json.floors.raised.find((/** @type {any} */ f) => f.metric === "size.overBudget" && !f.file),
     {
       metric: "size.overBudget",
+      file: "",
       at: "2026-09-16",
       was: 1,
       now: 2,
@@ -498,6 +499,11 @@ test("a reason is recorded against its metric: an unrelated rebaseline keeps it,
   assert.equal(write({ today: "2026-09-18" }).ok, true);
   assert.equal(readBaseline(dir, rel)?.metrics["size.overBudget"], 1);
   assert.equal(readBaseline(dir, rel)?.entries?.["size.overBudget"], undefined);
+  assert.equal(
+    readBaseline(dir, rel)?.entries?.["size.overBudget src/b.ts"],
+    undefined,
+    "the file's own entry goes with the file's debt",
+  );
   // and the row goes with it: the control in the other direction
   assert.ok(!/floor raised/.test(cli(["report", dir], dir).out));
 });

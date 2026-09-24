@@ -35,7 +35,7 @@ export function allReports(repoDir: string): Report[];
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  *   floors: { raised: FloorRaise[] },
  * }} Report
- * @typedef {{ metric: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
+ * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
  */
 export const REPORT_DIR: string;
 export type Report = {
@@ -111,6 +111,7 @@ export type Report = {
 };
 export type FloorRaise = {
     metric: string;
+    file: string;
     at: string;
     was: number;
     now: number;

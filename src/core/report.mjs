@@ -42,7 +42,7 @@ import { readBaseline } from "../ratchet/baseline.mjs";
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  *   floors: { raised: FloorRaise[] },
  * }} Report
- * @typedef {{ metric: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
+ * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
  */
 
 export const REPORT_DIR = join(".abatty", "reports");
@@ -118,8 +118,10 @@ function bypassOf(repoDir) {
 function floorsRaised(repoDir) {
   const entries = readBaseline(repoDir, baselinePath(readAdoption(repoDir)))?.entries || {};
   return Object.entries(entries)
-    .map(([metric, e]) => ({
-      metric,
+    .map(([key, e]) => ({
+      // A per-file raise is recorded as `metric file`; the metric alone for a raise of the total.
+      metric: key.split(" ")[0] || key,
+      file: key.includes(" ") ? key.slice(key.indexOf(" ") + 1) : "",
       at: String(e?.at || ""),
       was: Number(e?.was ?? 0),
       now: Number(e?.now ?? 0),
