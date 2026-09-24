@@ -13,7 +13,7 @@
  * preset's steps in its own folder (its own scripts, its suites' paths under its folder); the
  * built-in steps (the secret scan, the audit) and the ratchet run once, at the root.
  */
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
@@ -26,6 +26,7 @@ import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
 import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
+import { explainFailure } from "./flake.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -33,7 +34,7 @@ import { commentOnly, liveDevServer } from "./suite-select.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>, o?: { log?: string }) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -188,8 +189,27 @@ export function runGate(o) {
     // lines measures the push rather than guessing a base of its own. A range the gate could not
     // trust is not handed on: told an empty one, a coverage script passed green over nothing.
     const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
-    const res = asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env));
-    return settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
+    // The output is kept as well as shown, so a red test step can say whose failure it is.
+    const stepLog = join(
+      repoDir,
+      ".abatty",
+      "steps",
+      `${(prefix + s.label).replace(/[^\w.-]+/g, "_")}.log`,
+    );
+    rmSync(stepLog, { force: true });
+    const res = asResult(
+      run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog }),
+    );
+    const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
+    if (!passed && !res.errored)
+      for (const line of explainFailure({
+        repoDir,
+        log: stepLog,
+        changed: selection,
+        head: git(repoDir, "rev-parse", "HEAD"),
+      }))
+        log(line);
+    return passed;
   };
 
   // Which inputs changed is half the question; which workspaces can observe them is the other,

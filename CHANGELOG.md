@@ -25,6 +25,17 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A red test step says whose failure it is.** An adopter's pushes were refused four times in a
+  day, none caused by the pushed change. A test that failed on timing read exactly like one the
+  push broke, and telling them apart meant reading the whole log.
+  - The gate now keeps each step's output while still showing it live, under
+    `.abatty/steps/`.
+  - After a red step it reads the failing test files: Playwright, vitest, jest and Node's own
+    runner.
+  - Each failing file is named as one this push changed, or one it did not touch: likely a flake
+    or the environment, to rerun alone.
+  - A file that fails untouched on more than one commit is recorded in `.abatty/flakes.json` and
+    named as a quarantine candidate, with an owner and a date, never retried away (TEST.6).
 - **Each check on probation is shown with the evidence to promote it.** A check on probation is
   shown and never fails a run until a named repository has run it clean. Nothing recorded that
   evidence, so no check had left probation. `abatty report` now lists each one:
