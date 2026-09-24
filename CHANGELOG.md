@@ -48,6 +48,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The guard refuses switching the hooks off by configuration.** Git runs its hooks from
+  `core.hooksPath`, so pointing it elsewhere or unsetting it skips the gate exactly as the bypass
+  flag does, and an adopter replayed five such spellings against the last release: every one
+  passed, from the base branch too. The guard now refuses `git -c core.hooksPath=…`, a `git config`
+  that sets, unsets, adds or replaces the key, and `GIT_CONFIG_KEY_n` or `GIT_CONFIG_PARAMETERS`
+  naming it; reading the setting, and a search or an edit that only mentions it, stay allowed.
+  At night, `.githooks/` and `.husky/` are harness, so a shell delete or edit of a hook is
+  refused as a write to `.claude/` is. The self-test proves the new family on every machine.
 - **No probe counts its own source, and every shipped probe is held to it.** A probe reads the
   tree it ships in, so its pattern, its prose and its control fixtures were findings against
   itself: `sec.weakRandom` failed this repository's ratchet on its own controls, and

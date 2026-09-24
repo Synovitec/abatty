@@ -2,6 +2,7 @@
 //
 //   daytime  (ADOPTION_RUN unset)  warns about the risky shapes and DENIES only the three that
 //                                  are never right: push to the base branch, force push, --no-verify
+//                                  (and its spelling as configuration, core.hooksPath)
 //   night    (ADOPTION_RUN=1)      additionally denies anything that leaves the adoption branch,
 //                                  rewrites history, deletes outside the tree, destroys data,
 //                                  deploys, publishes, or WRITES to the harness (.claude/) or a
@@ -12,7 +13,7 @@
 // output and the normal permission flow decides. protect.mjs is the twin for the file tools.
 
 import { homedir } from "node:os";
-import { HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
+import { GIT_HOOKS_DIRS, HARNESS_DIR, NIGHT, ROOT_CONFIG, appendLog, currentBranch, decide, git, loadConfig, readEvent } from "./lib.mjs";
 import { FORBIDDEN, onlyRequiredPaths } from "./vocabulary.mjs";
 import { gitLocation, programName, segmentDirs, shellSegments } from "./shell.mjs";
 
@@ -137,6 +138,54 @@ const bypass =
   maybeGit.some(bypasses);
 if (bypass || hasFlag(new RegExp(String.raw`--no-verify\b|` + GIT + String.raw`commit\b[^;&|]*\s-[a-zA-Z]*n[a-zA-Z]*\b`))) {
   deny("Hook bypass (--no-verify) is not a workflow. Make the gate pass instead.");
+}
+// The same bypass by its effect: git runs the hooks from `core.hooksPath`, so pointing it
+// elsewhere or unsetting it skips every hook exactly as the flag does, once (`git -c`, the
+// GIT_CONFIG_* environment) or for good (`git config`). An adopter replayed five such spellings
+// and all passed, from the base branch too. Reading the setting stays allowed; the hooks are put
+// back with the package's own command, which is not a git write.
+const HOOKS_PATH = /^core\.hookspath\b/i;
+// The environment spelling, as an assignment and not as text: a search for it stays a search.
+const CONFIG_ENV = /^GIT_CONFIG_(KEY_\d+=["']?core\.hookspath|PARAMETERS=.*core\.hookspath)/i;
+/** The `VAR=value` words that lead a segment: the environment its program runs in. */
+const assignments = (tokens) => {
+  const out = [];
+  for (const t of tokens) {
+    if (!/^[A-Za-z_]\w*=/.test(t)) break;
+    out.push(t);
+  }
+  return out;
+};
+const configRead = (a) => a.some((x) => /^(--get(-all|-regexp)?|--list|-l|get|list)$/.test(x));
+const configWrite = (a) => {
+  const at = a.findIndex((x) => HOOKS_PATH.test(x));
+  if (at < 0 || configRead(a)) return false;
+  // `git config core.hooksPath` alone reads it; a value after the key, or a verb, writes.
+  return a.length > at + 1 || a.some((x) => /^(--unset(-all)?|--add|--replace-all|set|unset)$/.test(x));
+};
+const hooksOff =
+  invocations("git").some(
+    (a) =>
+      a.some((x, i) => /^(-c|--config-env)$/.test(a[i - 1] || "") && HOOKS_PATH.test(x)) ||
+      a.some((x) => /^--config-env=core\.hookspath/i.test(x)) ||
+      (sub(a) === "config" && configWrite(a.slice(a.indexOf("config") + 1))),
+  ) ||
+  // An opaque segment names the key AND a way to set it, as the force rule asks for `push`: a
+  // `sed` editing a line that mentions the key is not git writing it.
+  maybeGit.some(
+    (t) =>
+      t.some((x) => /core\.hookspath/i.test(x)) &&
+      t.some((x) => /^(config|-c|--config-env(=.*)?)$/.test(x)) &&
+      !configRead(t),
+  ) ||
+  segments.some(
+    (s) =>
+      assignments(s.tokens).some((x) => CONFIG_ENV.test(x)) ||
+      (/^(export|env|set|declare)$/.test(s.program) && s.args.some((x) => CONFIG_ENV.test(x))),
+  ) ||
+  /\$env:GIT_CONFIG_(KEY_\d+|PARAMETERS)\s*=\s*["']?[^;&|]*core\.hookspath/i.test(cmd);
+if (hooksOff) {
+  deny("Pointing core.hooksPath elsewhere, or unsetting it, skips the hooks exactly as --no-verify does. Make the gate pass instead; reinstall the hooks with the package's hooks command.");
 }
 // Provenance is the default: nothing here refuses a commit for naming the agent. A repository
 // that opted into the scrub (adoption.json → scrub.enabled, white-label work) has a commit, a
@@ -319,11 +368,11 @@ if (NIGHT) {
   // A WRITE to the harness or a protected path from the shell: a write verb, a redirection or a
   // scripted write whose segment names the path. Reading, linting, running or restoring it
   // (`node .claude/hooks/x.mjs`, `git checkout <base> -- .claude/`) is not a write and passes.
-  const protectedPaths = [HARNESS_DIR, ROOT_CONFIG, ...(config.protectedPaths || [])];
+  const protectedPaths = [HARNESS_DIR, ROOT_CONFIG, ...GIT_HOOKS_DIRS, ...(config.protectedPaths || [])];
   const hit = protectedPaths.find((p) => writesTo(cmd, p));
   if (hit) {
     deny(
-      hit === HARNESS_DIR || hit === ROOT_CONFIG
+      hit === HARNESS_DIR || hit === ROOT_CONFIG || GIT_HOOKS_DIRS.includes(hit)
         ? "Unattended run: the harness (.claude/, abatty.config.json) is read-only tonight. Record the change you need as decision: harness-change; the morning applies it."
         : "Unattended run: that path is protected (applied migrations, env files, production compose). Write the next migration instead of editing one; never touch env files.",
     );

@@ -261,6 +261,14 @@ try {
   // sentence naming a commit with a flag behind it is a bypass.
   cases.push(["a -n belonging to another command is not a bypass of this one", bash(`git commit -m "x" && sed -n 1p README.md`), {}, "none"]);
   cases.push(["nor is one behind a pipe", bash(`git commit -m "x" | tee -n log`), {}, "none"]);
+  // The same bypass by its effect: the hooks run from core.hooksPath, so moving or unsetting it
+  // skips them as the flag does. Reading it is not a write.
+  const hooksKey = ["core", "hooksPath"].join(".");
+  cases.push(["core.hooksPath pointed away for one commit is refused", bash(`git -c ${hooksKey}=/dev/null commit -m x`), {}, "deny"]);
+  cases.push(["core.hooksPath unset for good is refused", bash(`git config --unset ${hooksKey}`), {}, "deny"]);
+  cases.push(["core.hooksPath through the environment is refused", bash(`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=${hooksKey} GIT_CONFIG_VALUE_0=/dev/null git commit -m x`), {}, "deny"]);
+  cases.push(["reading core.hooksPath is allowed", bash(`git config --get ${hooksKey}`), {}, "none"]);
+  cases.push(["editing a line that names core.hooksPath is not setting it", bash(`sed -i s/a/b/ docs/${hooksKey}.md`), {}, "none"]);
   cases.push(["force push is refused", bash("git push --force origin main"), {}, "deny"]);
   // The short form and its cluster, the same defect the bypass check carried: `-fu` is a force
   // push and the boundary after `f` never held inside a cluster.

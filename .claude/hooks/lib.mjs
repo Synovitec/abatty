@@ -50,8 +50,15 @@ export function configPath() {
 
 /** True for a path the worker never writes at night: the agent folder and the root config. */
 export function isHarnessPath(rel) {
-  return rel.startsWith(HARNESS_DIR) || rel === ROOT_CONFIG;
+  return rel.startsWith(HARNESS_DIR) || rel === ROOT_CONFIG || GIT_HOOKS_DIRS.some((d) => rel.startsWith(d));
 }
+
+/**
+ * The folders git runs its hooks from, the ones `init` writes and the common manager's. They are
+ * the gate's trigger: a night that deletes `pre-push` has switched the gate off as surely as a
+ * bypass flag, so they are harness too.
+ */
+export const GIT_HOOKS_DIRS = [".githooks/", ".husky/"];
 
 /**
  * The commands a config that names none falls back to, in the words of the package manager whose
