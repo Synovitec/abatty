@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A false positive recorded is counted per probe.** A raise already needs a reason; one written
+  `false-positive: <what it misread>` is now a dispute of that probe, marked on the raise and
+  counted per metric by `abatty report` (and its `--json`). It is the count a blocking check lives
+  by: which probe to fix, and which to keep on probation.
 - **`code.undocumentedExports`, CODE-JSDOC without a dependency.** The rule was held only by a
   linter plugin, so a repository that would not add one, this package included, could not hold
   it. The new opt-in probe, on probation, counts exported functions, constants, classes, types,

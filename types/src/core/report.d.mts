@@ -33,9 +33,9 @@ export function allReports(repoDir: string): Report[];
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
- *   floors: { raised: FloorRaise[] },
+ *   floors: { raised: FloorRaise[], disputes: Record<string, number> },
  * }} Report
- * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
+ * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false, disputed: boolean }} FloorRaise
  */
 export const REPORT_DIR: string;
 export type Report = {
@@ -107,6 +107,7 @@ export type Report = {
     };
     floors: {
         raised: FloorRaise[];
+        disputes: Record<string, number>;
     };
 };
 export type FloorRaise = {
@@ -118,4 +119,5 @@ export type FloorRaise = {
     reason: string;
     owner: string;
     verified: false;
+    disputed: boolean;
 };

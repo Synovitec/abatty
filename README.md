@@ -132,6 +132,10 @@ the command says that is a record, not a second person's approval. It counts as 
 metric demoted, a file whose debt grew while the total held, or the same done through the config
 (a metric excluded, a path exempted, a probe switched off, a cap or a budget raised).
 
+A raise whose reason is the probe being wrong is written `--reason "false-positive: <what it
+misread>"`, and `abatty report` counts those per probe. That count is the one the package needs:
+it decides which probe is fixed, and which stays on probation. It is worth an issue with the case.
+
 ### Proving the guards
 
 Every probe ships control cases in both directions: a case it must report, and a case it must not.

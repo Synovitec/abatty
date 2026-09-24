@@ -483,8 +483,10 @@ test("a reason is recorded against its metric: an unrelated rebaseline keeps it,
       reason: "phase 8 splits these two",
       owner: "platform",
       verified: false,
+      disputed: false,
     },
   );
+  assert.deepEqual(json.floors.disputes, {}, "a reason that is not a dispute counts none");
 
   // a later write that touches nothing keeps the explanation on the metric it belongs to
   assert.equal(write({ today: "2026-09-17" }).ok, true);
@@ -648,4 +650,27 @@ test("an opt-in probe runs only where enabled, and until then its name is the re
   assert.ok(on.probes.some((p) => p.metric === "api.rowReturn"));
   assert.match(on.problems.join("\n"), /valid\.wholeEnv: a built-in metric name/);
   assert.match(on.problems.join("\n"), /no\.suchProbe is not an opt-in probe/);
+});
+
+test("a raise recorded as the probe being wrong is counted per probe in the report", () => {
+  // The number that decides which probe to fix or keep on probation, read from the reason the
+  // raiser had to give anyway: one opening with "false-positive".
+  const dir = tempRepo("ratchet-disputes", { "package.json": PKG, "src/a.ts": LONG(310) });
+  const rel = "scripts/ci/standards-baseline.json";
+  const write = (/** @type {any} */ extra) =>
+    writeBaseline({
+      repoDir: dir,
+      rel,
+      measurements: measure(dir, readBaseline(dir, rel)),
+      config: DEFAULT_CONFIG,
+      previous: readBaseline(dir, rel),
+      today: "2026-09-16",
+      ...extra,
+    });
+  assert.equal(write({}).ok, true);
+  writeFileSync(join(dir, "src/c.ts"), LONG(310));
+  assert.equal(write({ reason: "false-positive: a generated client", owner: "platform" }).ok, true);
+  const json = JSON.parse(cli(["report", dir, "--json"], dir).out);
+  assert.equal(json.floors.disputes["size.overBudget"], 2, "the total and the file");
+  assert.match(cli(["report", dir], dir).out, /disputed as false positives: .*size\.overBudget 2/);
 });

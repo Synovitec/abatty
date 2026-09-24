@@ -40,9 +40,9 @@ import { readBaseline } from "../ratchet/baseline.mjs";
  *   scrub: { enabled: boolean, lines: number },
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
- *   floors: { raised: FloorRaise[] },
+ *   floors: { raised: FloorRaise[], disputes: Record<string, number> },
  * }} Report
- * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false }} FloorRaise
+ * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false, disputed: boolean }} FloorRaise
  */
 
 export const REPORT_DIR = join(".abatty", "reports");
@@ -128,8 +128,22 @@ function floorsRaised(repoDir) {
       reason: String(e?.reason || ""),
       owner: String(e?.owner || ""),
       verified: /** @type {false} */ (false),
+      // A raise recorded as the probe being wrong: the one number that says which probe to fix
+      // or demote, read from the reason the raiser had to give anyway.
+      disputed: /^\s*false[- ]positive\b/i.test(String(e?.reason || "")),
     }))
     .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.metric.localeCompare(b.metric)));
+}
+
+/**
+ * How many raises each metric carries that were recorded as its probe being wrong, by metric.
+ * @param {FloorRaise[]} raised
+ */
+function disputesOf(raised) {
+  /** @type {Record<string, number>} */
+  const out = {};
+  for (const f of raised) if (f.disputed) out[f.metric] = (out[f.metric] || 0) + 1;
+  return out;
 }
 
 /**
@@ -155,6 +169,7 @@ export async function buildReport(repoDir, o = {}) {
   }));
   const d = drift(repoDir);
   const harnessPresent = existsSync(join(repoDir, ".claude", "hooks", "self-test.mjs"));
+  const raised = floorsRaised(repoDir);
   /** @type {Report} */
   const report = {
     version: 1,
@@ -204,7 +219,7 @@ export async function buildReport(repoDir, o = {}) {
     bypass: bypassOf(repoDir),
     // The floors raised, by whom, unverified: the row a team lead reads first, and the one the
     // trial's reviewer assembled by hand from commit messages for two days.
-    floors: { raised: floorsRaised(repoDir) },
+    floors: { raised, disputes: disputesOf(raised) },
   };
   if (key) writeCache(repoDir, key, report);
   if (o.write !== false) {
