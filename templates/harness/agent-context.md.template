@@ -1,6 +1,8 @@
 # CLAUDE.md - <project name>
 
-<Two sentences: what the product is, who the client is, who builds it.>
+<One sentence: what the product is and who it is for. Nothing more: an overview the agent could
+read from the code is the one kind of content measured to not help it; every line below states a
+constraint, a command or a fact it would otherwise get wrong.>
 
 This file is the agent's entry point and stays under 200 lines; what matters in one part of
 the tree only lives in `.claude/rules/<topic>.md` with `paths:` front matter. The rules are
@@ -31,6 +33,12 @@ npm test                   # the unit suite
 npm run standards          # the ratchet alone, against the committed floor
 ```
 
+<Workflow hints, the one kind of line measured to shorten an agent's runs: what to run first,
+what is slow and what it costs, what to run after touching what. e.g. "The browser suite takes
+six minutes and needs the test database: run `gate:fast` while iterating. After a schema change,
+run `npm run db:migrate:test` before the integration suite.">
+
+
 ## 3. Boundary map
 
 | Module | Responsibility | Read first |
@@ -38,8 +46,6 @@ npm run standards          # the ratchet alone, against the committed floor
 | `src/<domain>/` | ... | `docs/<DOMAIN>.md` |
 | `src/db/` | pools, tenant context, migrations | `docs/DATABASE.md` |
 | `src/app/api/` | HTTP concerns only: auth, parse, call a module, respond | `docs/API.md` |
-
-<Two or three sentences on the security frontiers and why they never converge.>
 
 ## 4. Conventions that surprise
 
@@ -51,12 +57,22 @@ npm run standards          # the ratchet alone, against the committed floor
 <Where each credential comes from, what beats what (a database row over an env var), and how
 long a change takes to be live.>
 
+**Security frontiers.** <Where trust changes and what is checked there: the tenant boundary
+and who enforces it, what an authenticated user may still not do, which input is hostile (an
+upload, a webhook, a URL a tenant supplies), and why these frontiers never converge. Few context
+files carry this, and it is what an agent most often gets wrong.>
+
 ## 6. Size, shape and quality limits
 
 The numbers are in `.claude/rules/size-limits.md` and the per-kind table in
 `docs/CODE_CONVENTIONS.md`; `npm run standards` measures them. Written here they would be a
 second copy that drifts. A number that must go up is a decision written in
 `docs/STANDARDS_PROGRESS.md` in the same commit.
+
+**Performance budgets.** <What this product must not get slower at, and where it is measured:
+a page's weight or its largest paint, a query's p95, a job's run time, the cold start. e.g. "The
+dashboard query stays under 200 ms at 10,000 rows (`npm run bench:dashboard`)." Empty is an
+honest answer; a number nobody measures is not one.>
 
 ## 7. Delivery rules - every change is recorded
 

@@ -315,3 +315,15 @@ test("HARNESS-HOOKS reads the adopter's own PostToolUse block: a pipe matcher an
   assert.match(v.evidence, /SessionStart/);
   assert.match(v.evidence, /PreToolUse/);
 });
+
+test("a placeholder that wraps onto a second line is still a placeholder", () => {
+  // The template's longer questions wrap; read one line at a time they were never named, so an
+  // adopter's context file could keep them unanswered while every check said present.
+  assert.deepEqual(
+    templatePlaceholders(
+      "## 5\n\n<Where each credential comes from, and how\nlong a change takes.>\n",
+    ),
+    ["<Where each credential comes from, and how long a change takes.>"],
+  );
+  assert.deepEqual(templatePlaceholders("Returns <span>\nand <b>.\n"), []);
+});

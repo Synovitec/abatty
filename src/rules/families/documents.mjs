@@ -20,8 +20,11 @@ export function templatePlaceholders(text) {
     // A choice offered in a code span (`<package.json | docs/version.json>`) is the template's
     // own question, written in code because it names files: it stays a blank to fill.
     .replace(/`[^`\n]*`/g, (span) => (/<[^<>\n]*\s\|\s[^<>\n]*>/.test(span) ? span : ""));
-  return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*)>/g)]
-    .map((m) => `<${m[1]}>`)
+  // A placeholder may span lines when it opens like the template's questions do (a capital, or
+  // `e.g.`): the template's longer ones wrap, and read one line at a time they were never named,
+  // so an adopter's context file could keep them for good. A `<` in wrapped prose opens neither.
+  return [...prose.matchAll(/<(?![!/])([^<>\n]*\s[^<>\n]*|(?:[A-Z]|e\.g\.)[^<>]*\n[^<>]*)>/g)]
+    .map((m) => `<${String(m[1]).replace(/\s+/g, " ")}>`)
     .filter((p) => !/^<[a-z][a-z0-9-]*(\s+[a-z-]+="[^"]*")*\s*\/?>$/i.test(p)); // an HTML tag: attributes carry a value, or it closes itself
 }
 

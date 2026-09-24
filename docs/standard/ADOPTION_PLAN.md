@@ -121,19 +121,24 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
 15. **The `CLAUDE.md` "known gaps" section exists and is empty**, so the next person knows
     where a gap goes.
 
-### A.2 `CLAUDE.md` skeleton (200 lines maximum; the full template with the delivery rules, the skills table and the autonomy contract is `templates/harness/CLAUDE.md.template`)
+### A.2 `CLAUDE.md` skeleton (200 lines maximum; the full template with the delivery rules, the skills table and the autonomy contract is `templates/harness/agent-context.md.template`)
+
+The file holds constraints, commands and facts the agent would otherwise get wrong. An overview
+it could read from the code is the one content measured not to help; workflow hints (what is slow,
+what to run first) are the one measured to shorten a run; security frontiers and performance
+budgets are what few context files carry and agents most often miss.
 
 ```markdown
 # CLAUDE.md - <project>
 
-<Two sentences: what the product is, who the client is, who builds it.>
+<One sentence: what the product is and who it is for.>
 This file is the agent's entry point. The rules are the standard
 (ops-hub/engineering/ENGINEERING_STANDARD.md); how they apply here is docs/CODE_CONVENTIONS.md;
 the narrative is docs/README.md.
 
 ## 1. The non-negotiables <3 to 6; violating one is an incident, not a bug>
 
-## 2. Commands <dev, gate, gate:fast, standards, test, e2e, db, hooks:install>
+## 2. Commands <dev, gate, gate:fast, standards, test, e2e, db, hooks:install; what is slow, what to run first>
 
 ## 3. Boundary map <one row per module: responsibility, what to read first>
 
@@ -141,7 +146,9 @@ the narrative is docs/README.md.
 
 ## 5. Conventions that surprise <what a competent newcomer would get wrong>
 
-## 6. Secrets and configuration <precedence, what beats what, invalidation delay>
+## 6. Secrets and configuration <precedence, what beats what, invalidation delay; the security frontiers>
+
+## 7. Size and performance <the budgets, and what must not get slower, where it is measured>
 ```
 
 ### A.3 Baseline shape

@@ -130,6 +130,14 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The context-file template asks for what helps an agent, and a wrapped placeholder is still
+  named.** Studies of context files found descriptive overviews the one kind of content that does
+  not help, workflow hints the one that measurably shortens a run, and security and performance
+  the sections few files carry. The template's opening is now one sentence, and it gains slots for
+  workflow hints (what is slow, what to run first), security frontiers and performance budgets.
+  DOC-CONTEXT read placeholders one line at a time, so a placeholder that wrapped onto a second
+  line, as several of the template's longer ones do, was never named and could stay unanswered
+  while the rule said present; one that opens like a question now counts across lines.
 - **The standard says what the size budgets are not, and the plan carries three adopters' lessons.**
   CODE.1 now says its budgets are readability budgets and a floor that may only fall, not a defect
   predictor: no study validates the exact numbers. The adoption plan adds independent branches

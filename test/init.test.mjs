@@ -220,13 +220,13 @@ test("the context file is not the template: init fills the name, and DOC-CONTEXT
 
   const before = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
   assert.equal(before?.status, "partial");
-  assert.match(before?.evidence || "", /\d+ template placeholder\(s\) left: <Two sentences/);
+  assert.match(before?.evidence || "", /\d+ template placeholder\(s\) left: <One sentence/);
   assert.match(before?.next || "", /Fill the placeholders/);
 
   // Filled in, the same file is present: the control in the other direction.
   writeFileSync(
     join(dir, "AGENTS.md"),
-    written.replace(/<(?![!/])[^<>\n]*\s[^<>\n]*>/g, "answered"),
+    written.replace(/<(?![!/])([^<>\n]*\s[^<>\n]*|(?:[A-Z]|e\.g\.)[^<>]*\n[^<>]*)>/g, "answered"),
   );
   const after = runCatalog(buildContext(dir), RULES).find((f) => f.id === "DOC-CONTEXT");
   assert.equal(after?.status, "present", after?.evidence);
