@@ -41,9 +41,12 @@ under Unreleased in the same commit.
   stood between a migration and a shared database by day. An adopter applied an unmerged
   branch's migration to a shared database from a shell whose `DATABASE_URL` nobody had looked
   at. `prisma migrate deploy|dev|reset`, `prisma db push`, `drizzle-kit migrate|push`, a
-  `db:migrate` script and their kin now get a prompt naming the host, port and database: from
-  the command, the shell, or `.env.local`/`.env`, and never the user or the password. `abatty
-  update` installs it; the self-test proves both directions.
+  `db:migrate` script and their kin now get a prompt naming the host, port and database. The
+  host is read from the command, the shell, or `.env.local` and `.env`; when the two files
+  disagree, both are named. A command that only mentions a migration (a commit message, a search,
+  `migration:generate`) is not asked about. The user and the password are never shown: a URL
+  whose credentials sit where a host would (a SQL Server connection string) is named as
+  unreadable instead. `abatty update` installs it; the self-test proves both directions.
 - **A night does not start work already open, and does not push more than one review reads.**
   The pre-flight refuses while an earlier night branch, here or on origin, that the base has not
   taken worked a phase this night would run. It names the branch and the phases: merge it or

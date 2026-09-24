@@ -242,6 +242,8 @@ try {
     ["day: a migration script is asked about", bash("pnpm run db:migrate"), {}, "ask"],
     ["day: reading the migration status is not", bash("npx prisma migrate status"), {}, "none"],
     ["day: listing migrations is not", bash("ls prisma/migrations"), {}, "none"],
+    ["day: a message that names a migration command is not", bash('git commit -m "fix: prisma migrate deploy in CI"'), {}, "none"],
+    ["day: a script that only generates a migration is not", bash("pnpm migration:generate"), {}, "none"],
     ["night: push the adoption branch", bash("git push -u origin adopt/standards-selftest"), night, "none"],
     ["night: push main", bash("git push origin main"), night, "deny"],
     ["night: push another branch", bash("git push origin feat/other"), night, "deny"],
@@ -417,6 +419,20 @@ try {
     const got = decisionOf(r);
     check(`guard · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code : ""}`);
   }
+
+  // The migration prompt names the host and never a credential, whatever shape the URL has.
+  const reasonOf = (r) => {
+    try {
+      return String(JSON.parse(r.stdout).hookSpecificOutput?.permissionDecisionReason || "");
+    } catch {
+      return "";
+    }
+  };
+  const migrationReason = reasonOf(hook("guard.mjs", bash("DATABASE_URL=postgres://u:pw1@db.example.com:5432/app npx prisma migrate deploy"), { DATABASE_URL: "" }));
+  check("guard · day: the migration prompt names host, port and database", /db\.example\.com:5432\/app/.test(migrationReason), oneLine(migrationReason));
+  check("guard · day: the migration prompt never shows the user or the password", migrationReason !== "" && !/pw1|\bu:/.test(migrationReason), oneLine(migrationReason));
+  const opaque = reasonOf(hook("guard.mjs", bash('DATABASE_URL="sqlserver://localhost;user=SA;password=S3cret" npx prisma migrate deploy'), { DATABASE_URL: "" }));
+  check("guard · day: a connection string with the password where a host would be is not shown", opaque !== "" && !/S3cret|SA;/.test(opaque), oneLine(opaque));
 
   // ---- 2b. the file guard: the harness and the protected paths are read-only at night ----------
   const mcp = (tool_name, tool_input) => ({ tool_name, tool_input });

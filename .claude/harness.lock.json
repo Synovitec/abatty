@@ -3,11 +3,11 @@
   "installedAt": "2026-09-24",
   "files": {
     ".claude/hooks/check-direction.mjs": "32b328881f2f272c089dafc5d90694ad215c736ee9337afa4b5aa5d15000b458",
-    ".claude/hooks/guard.mjs": "1a63ac5e6653b67c75ad634cb3a7b703ca1811c4f153d54ec9335b39c9109c4f",
+    ".claude/hooks/guard.mjs": "f7962c64c0a971ce47891f9a7eac340d5c4c705ce1210e8ece25545d489d36a0",
     ".claude/hooks/lib.mjs": "dd6a8cd282f0cdfc9ef176736e5d1d4edd284db23b89690ee7e114b5e6cfd0e9",
     ".claude/hooks/lint-on-edit.mjs": "8ceaa8e15dd800811368857fac9f59535823919cfae63f2c19c00968ca213af3",
     ".claude/hooks/protect.mjs": "f67bd4343eaaa51adf9d175883cf5abc1a51ed842e7bc21fd96576f8cf482e0b",
-    ".claude/hooks/self-test.mjs": "917273519579e99fc34ec3c82d3c7e21dd3a4c6ce3fe48e01cf9ce62878cbf1c",
+    ".claude/hooks/self-test.mjs": "a0bde7fc0de6c669fdcf6e6539a485419f2da6d4171700267c89d2b25ff066a5",
     ".claude/hooks/session-brief.mjs": "902ec654f198c5d3c2b8c4c90f34c5d36e09eea379a83593575e26f04b1d5808",
     ".claude/hooks/shell.mjs": "e9edf9201d3f6c1993ee12afef6a8d198a0a4fbd0c207b65c92f6fdb90b6ab05",
     ".claude/hooks/stop-gate.mjs": "26eb1f3bd60678119fa7098cf3d7ec895f1c399363e931e4d0c85f67604b9af9",

@@ -418,33 +418,48 @@ for (const [re, why] of warnings) {
 // stood between a migration and a shared database: one from an unmerged branch was applied to
 // an adopter's shared database from a shell whose DATABASE_URL nobody had looked at. The host is
 // named; the user and the password never are.
-const MIGRATION = /\b(prisma\s+(migrate\s+(deploy|dev|reset|resolve)|db\s+push)|drizzle-kit\s+(migrate|push)|sequelize(-cli)?\s+db:migrate|knex\s+migrate:(latest|up|down|rollback)|alembic\s+(upgrade|downgrade)|rails\s+db:(migrate|rollback)|manage\.py\s+migrate|flyway\s+migrate|goose\s+(up|down)|(npm|pnpm|yarn|bun)\s+(run\s+)?[\w:-]*migrat[\w:-]*)\b/i;
-if (has(MIGRATION)) decide("ask", `This runs a migration against ${migrationTarget(cmd)}. Is that the database you mean?`);
+// Read with quoted text taken out: a commit message, a search pattern or an echo that names a
+// migration command runs none. A script counts when its name is a migration's (db:migrate,
+// migrate:deploy), not when it only contains the word (migration:generate, test:migrations).
+const MIGRATION = /\b(prisma\s+(migrate\s+(deploy|dev|reset|resolve)|db\s+push)|drizzle-kit\s+(migrate|push)|sequelize(-cli)?\s+db:migrate|knex\s+migrate:(latest|up|down|rollback)|alembic\s+(upgrade|downgrade)|rails\s+db:(migrate|rollback)|manage\.py\s+migrate|flyway\s+migrate|goose\s+(up|down)|(npm|pnpm|yarn|bun)\s+(run\s+)?(db:migrate|db:push|migrate)(:(deploy|dev|up|latest|run|reset|prod))?(?=\s|$))/i;
+const unquoted = argv.replace(/"(?:[^"\\]|\\.)*"|'[^']*'/g, " ");
+if (MIGRATION.test(unquoted)) decide("ask", `This runs a migration against ${migrationTarget(cmd)}. Is that the database you mean?`);
 process.exit(0);
 
 /**
  * Where a migration would go: the DATABASE_URL set on the command itself, else this shell's,
- * else the repository's .env.local or .env, read for the host alone. A URL that does not parse
- * is named as unreadable rather than guessed.
+ * else the repository's env files, read for the host alone. Tools disagree on which env file
+ * they load (one reads .env alone, a framework reads .env.local first), so when the two files
+ * name different hosts both are named. Only a host that reads as one is ever shown: a URL whose
+ * credentials sit where a host would (a SQL Server connection string, an opaque URL) is named
+ * as unreadable, so the prompt can never carry a password.
  */
 function migrationTarget(command) {
   const inline = /\bDATABASE_URL=("[^"]*"|'[^']*'|\S+)/.exec(command)?.[1]?.replace(/^["']|["']$/g, "");
-  let url = inline || process.env.DATABASE_URL || "";
-  let from = inline ? "set on the command" : url ? "from this shell's DATABASE_URL" : "";
+  if (inline) return hostOf(inline, "set on the command");
+  if (process.env.DATABASE_URL) return hostOf(process.env.DATABASE_URL, "from this shell's DATABASE_URL");
+  const found = [];
   for (const f of [".env.local", ".env"]) {
-    if (url) break;
     try {
       const line = readFileSync(f, "utf8").split(/\r?\n/).find((l) => /^\s*(export\s+)?DATABASE_URL\s*=/.test(l));
-      if (line) {
-        url = line.replace(/^\s*(export\s+)?DATABASE_URL\s*=\s*/, "").trim().replace(/^["']|["']$/g, "");
-        from = `from ${f}`;
-      }
+      if (line) found.push(hostOf(line.replace(/^\s*(export\s+)?DATABASE_URL\s*=\s*/, "").trim().replace(/^["']|["']$/g, ""), `from ${f}`));
     } catch {}
   }
-  if (!url) return "a database this command does not name (no DATABASE_URL on it, in this shell, or in .env): check which one the tool reads";
+  if (!found.length) return "a database this command does not name (no DATABASE_URL on it, in this shell, or in .env): check which one the tool reads";
+  const hosts = new Set(found.map((x) => x.replace(/ \(from [^)]*\)$/, "")));
+  return hosts.size > 1 ? `${found.join(" or ")}, depending on which file the tool loads` : String(found[found.length - 1]);
+}
+
+/** A URL's host, port and database name, or "unreadable" when any of them could be a secret. */
+function hostOf(url, from) {
   try {
     const u = new URL(url);
-    return `${u.hostname || "a local socket"}${u.port ? `:${u.port}` : ""}${u.pathname && u.pathname !== "/" ? u.pathname : ""} (${from})`;
+    const hierarchical = /^[a-z][\w+.-]*:\/\//i.test(url);
+    const host = u.hostname;
+    const path = u.pathname && u.pathname !== "/" ? u.pathname : "";
+    if (!hierarchical || (host && !/^[\w.-]+$|^\[[0-9a-f:.]+\]$/i.test(host)) || (path && !/^\/[\w.-]+$/.test(path)))
+      return `a DATABASE_URL whose host cannot be shown safely (${from}): read it yourself before answering`;
+    return `${host || "a local socket"}${u.port ? `:${u.port}` : ""}${path} (${from})`;
   } catch {
     return `a DATABASE_URL that does not parse as a URL (${from})`;
   }
