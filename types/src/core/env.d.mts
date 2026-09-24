@@ -52,12 +52,6 @@ export function childEnv(extra: Record<string, string>): NodeJS.ProcessEnv | und
 export function testRunEnv(): NodeJS.ProcessEnv;
 /** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
 export function envNames(): string[];
-/**
- * The environment a step run behind a pipe gets: this process's, with colours asked for when the
- * reader is a terminal, since a tool writing to a pipe drops them (src/core/tee-step.mjs).
- * @param {boolean} terminal @returns {NodeJS.ProcessEnv}
- */
-export function pipedStepEnv(terminal: boolean): NodeJS.ProcessEnv;
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv(): string;
 /** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */

@@ -81,15 +81,6 @@ export function envNames() {
   return Object.keys(process.env);
 }
 
-/**
- * The environment a step run behind a pipe gets: this process's, with colours asked for when the
- * reader is a terminal, since a tool writing to a pipe drops them (src/core/tee-step.mjs).
- * @param {boolean} terminal @returns {NodeJS.ProcessEnv}
- */
-export function pipedStepEnv(terminal) {
-  return terminal ? { ...process.env, FORCE_COLOR: process.env.FORCE_COLOR || "1" } : process.env;
-}
-
 /** The port the service listens on when none is given, or "". */
 export function portFromEnv() {
   return process.env.PORT || "";

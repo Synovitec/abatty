@@ -196,7 +196,11 @@ export function runGate(o) {
       "steps",
       `${(prefix + s.label).replace(/[^\w.-]+/g, "_")}.log`,
     );
-    rmSync(stepLog, { force: true });
+    try {
+      rmSync(stepLog, { force: true });
+    } catch {
+      // A log held open elsewhere is overwritten by the run; it must not stop the gate.
+    }
     const res = asResult(
       run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog }),
     );
@@ -207,6 +211,8 @@ export function runGate(o) {
         log: stepLog,
         changed: selection,
         head: git(repoDir, "rev-parse", "HEAD"),
+        cwd,
+        blind,
       }))
         log(line);
     return passed;

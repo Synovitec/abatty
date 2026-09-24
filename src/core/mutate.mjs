@@ -13,10 +13,11 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, posix } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { git } from "./repo.mjs";
 import { codeOnly } from "../ratchet/probes/lex.mjs";
 import { testRunEnv } from "./env.mjs";
+import { importersOf } from "./imports.mjs";
 
 /**
  * The textual mutants, in the order they are tried: the first one a line's code carries is the
@@ -113,29 +114,6 @@ export function changedLines(repoDir, base) {
 }
 
 /**
- * Who imports whom, by relative specifier, over the tracked scripts: the map from a file to the
- * files that import it.
- * @param {string} repoDir @returns {Map<string, string[]>}
- */
-function importers(repoDir) {
-  /** @type {Map<string, string[]>} */
-  const by = new Map();
-  const files = git(repoDir, "ls-files")
-    .split("\n")
-    .filter((f) => SHIPPED.test(f));
-  const known = new Set(files);
-  for (const f of files) {
-    const text = readFileSync(join(repoDir, f), "utf8");
-    for (const m of text.matchAll(/(?:from|import\s*\(?)\s*["'](\.{1,2}\/[^"']+)["']/g)) {
-      const target = posix.normalize(posix.join(posix.dirname(f), String(m[1])));
-      if (!known.has(target)) continue;
-      by.set(target, [...(by.get(target) || []), f]);
-    }
-  }
-  return by;
-}
-
-/**
  * The tests that can notice a change to a module: the nearest ring of test files on the import
  * graph, the ones importing it or else the ones importing an importer, and so on. A probe is
  * reached through the registry that lists it, never by name, so a test that runs every probe's
@@ -145,7 +123,7 @@ function importers(repoDir) {
  * @param {string} repoDir @param {string} file
  */
 export function testsFor(repoDir, file) {
-  const graph = importers(repoDir);
+  const graph = importersOf(repoDir);
   const seen = new Set([file]);
   let ring = [file];
   for (let depth = 0; depth < 4 && ring.length; depth++) {
