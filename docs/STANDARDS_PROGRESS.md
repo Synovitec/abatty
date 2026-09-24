@@ -332,3 +332,17 @@ Review pointed out that two of the eight takes the new floor recorded were this 
 code: `process.env` as a default parameter in `src/core/which.mjs`. They now read the search path
 through `searchFromEnv()` in the env module, the one place the package reads its environment, and
 the floor is locked at 6. The readability score in the baseline returns from 91 to 93.
+
+### 2026-09-24 - Floors since 0.5.2: probes that counted themselves, four new metrics, one exempt widened
+
+`types.escapes` 7 → 3 and `valid.rawEnv` 7 → 4: four escapes and three raw reads were the probes'
+own pattern and control fixtures in `src/ratchet/probes/code.mjs`, found when a test began running
+every built-in probe over this tree. The spellings are assembled from parts, and the test holds
+every probe to zero findings in its own source. `code.clones` 26 → 25 from the same range's
+splits. Four metrics join at zero, all on probation and so never promoted to hard:
+`docs.frontMatterSyntax`, `docs.supersededChain`, `obs.catchOnlyLogs` and `sec.weakRandom`. The
+exempt list's test pattern widens from a root `tests/` to a test folder at any depth; `abatty
+raises` reads that as a loosening, and it is one by the letter. The reason is that the standard
+exempts tests from the kind budgets and a monorepo's `apps/<app>/tests/` was held to them while
+the same folder at the root was not. No number here moved because of it: this repository keeps its
+tests at the root. The readability score in the baseline moves from 93 to 94.

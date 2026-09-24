@@ -66,7 +66,7 @@ export function tools(repoDir) {
     {
       name: "ratchet",
       description:
-        'Run the ratchet: every probe against the committed baseline, per total and per file. Returns the verdicts (ok, improved, regressed, hard-fail, scanned-zero, unbaselined, skipped) and whether the run fails. `range` judges the changelog over a git range ("auto" for the push).',
+        'Run the ratchet: every probe against the committed baseline, per total and per file. Returns the verdicts (ok, improved, regressed, hard-fail, scanned-zero, unbaselined, redefined, probation, skipped) and whether the run fails; a probation verdict never fails it. `range` judges the changelog over a git range ("auto" for the push).',
       inputSchema: {
         type: "object",
         properties: { range: { type: "string", description: "A git range a..b, or auto" } },

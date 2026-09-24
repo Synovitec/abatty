@@ -13,8 +13,8 @@ under Unreleased in the same commit.
   `PROBATION`, a verdict that would have failed says which one it would have been, and the run
   stays green. A probe leaves probation in a release once a named repository has run it clean,
   the rule presets already follow. A probe on probation is never promoted to HARD, so its findings
-  cannot refuse `abatty baseline`, and SARIF reports them as notes. The five probes added in this
-  release start there.
+  cannot refuse `abatty baseline`, SARIF reports them as notes, and the MCP ratchet tool names the
+  verdict. The five probes added in this release start there.
 - **`docs.frontMatterSyntax`, on probation, counts front matter a YAML reader refuses.** The
   probes read front matter by hand, and that reading forgave what a site generator or a content
   schema does not: an adopter's documents passed every docs probe with a block a YAML parser
