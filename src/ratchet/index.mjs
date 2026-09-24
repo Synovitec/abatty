@@ -19,6 +19,7 @@ import { readConfig } from "../core/repo.mjs";
 import { probes as sizeProbes } from "./probes/size.mjs";
 import { probes as docsProbes } from "./probes/docs.mjs";
 import { probes as freshnessProbes } from "./probes/freshness.mjs";
+import { probes as successionProbes } from "./probes/succession.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
 import { probes as startupProbes } from "./probes/startup.mjs";
@@ -105,6 +106,7 @@ export const BUILTIN_PROBES = [
   ...codeProbes,
   ...docsProbes,
   ...freshnessProbes,
+  ...successionProbes,
   ...changeProbes,
   ...startupProbes,
   ...boundaryProbes,

@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`measure` names each new reading in the one before it, and `docs.supersededChain` counts a
+  broken chain.** `abatty measure` wrote `GAP_ANALYSIS_<date>.md` on every run and left the
+  previous reading naming nothing, so an adopter's older reading was quoted as the current score
+  and no docs probe said so. `measure` now writes `superseded_by` into the earlier readings of its
+  series that name no successor, leaving a link already written alone. The new opt-in probe,
+  enabled by `init` on every preset, counts a reading of a chained dated series that names no
+  successor, an archived document without `superseded_by`, and a `superseded_by` that names
+  nothing. A series nobody chained, such as nightly reports, is a record and is not read.
 - **`valid.sqlCurrentDate`, an opt-in probe for the day a query takes.** `valid.utcDay` reads the
   code, so an adopter's read 0 while 196 `CURRENT_DATE` sat in its SQL, each one the session's
   day, UTC unless the connection says otherwise, and yesterday for the length of the offset every

@@ -146,7 +146,7 @@ by mutation.
 | `abatty baseline`     | Record today's numbers as the floor                                                           |
 | `abatty raises`       | The floors loosened against the base, and the review that can land them                       |
 | `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps       |
-| `abatty measure`      | The gap analysis: every check, with next steps by phase                                       |
+| `abatty measure`      | The gap analysis: every check, with next steps by phase; the reading before names this one    |
 | `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document   |
 | `abatty explain <ID>` | One rule, its reason, and its finding here                                                    |
 | `abatty check <ID>`   | One rule as an exit code, for a script                                                        |
@@ -255,6 +255,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `test.coverageExclusions` | Code taken out of the coverage count, by an exclude list or an inline ignore                       |                |
 | `types.nonNull`           | Non-null assertions (`!`) in TypeScript, the escape `types.escapes` does not count                 |                |
 | `valid.sqlCurrentDate`    | Calendar days SQL takes in the session's time zone (`CURRENT_DATE`, `now()::date`), unconverted    |                |
+| `docs.supersededChain`    | Readings of a chained dated series, or archived documents, that name no successor that exists      |                |
 
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,

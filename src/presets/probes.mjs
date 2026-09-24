@@ -11,4 +11,5 @@ export const COMMON_PROBES = [
   "code.clones",
   "test.coverageExclusions",
   "types.nonNull",
+  "docs.supersededChain",
 ];

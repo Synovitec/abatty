@@ -215,7 +215,7 @@
           "items": {
             "type": "string"
           },
-          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions, types.nonNull, valid.sqlCurrentDate)."
+          "description": "The opt-in probes this repository runs (valid.unparsedBoundary, valid.wholeEnv, auth.unguardedPage, api.unboundedList, api.rowReturn, api.floatMoney, cache.serverCacheUse, fn.shapeExemptions, change.refactorTests, code.clones, test.coverageExclusions, types.nonNull, valid.sqlCurrentDate, docs.supersededChain)."
         },
         "boundedBy": {
           "type": "array",

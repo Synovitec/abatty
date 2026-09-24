@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { buildReport } from "../core/report.mjs";
 import { renderMarkdown, truthLine } from "../core/gap-analysis.mjs";
+import { linkPreviousReadings } from "../core/readings.mjs";
 import { enforcedLine, nextSteps, phaseLine } from "./status.mjs";
 import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
@@ -45,7 +46,10 @@ export async function measureCommand(cx) {
   const target = resolve(dir, to || join("docs", `GAP_ANALYSIS_${r.date}.md`));
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, md);
+  const linked = linkPreviousReadings(target);
   const rel = relative(dir, target).split("\\").join("/");
+  if (linked.length && !flag("--quiet"))
+    err(`${t.glyph.ok} superseded_by written into ${linked.join(", ")}\n`);
   if (flag("--quiet")) {
     out(
       `${r.phase ? `Phase ${r.phase.id}: ${r.phase.held} of ${r.phase.applicable} held · ` : "Every phase held · "}Score ${r.score}/100 over ${r.applicable} applicable checks · ${rel}\n`,
