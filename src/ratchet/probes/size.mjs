@@ -47,6 +47,11 @@ export const probes = [
         expect: 0,
       },
       {
+        name: "a monorepo's nested test folder is exempt as a root one is",
+        files: { "apps/web/tests/e2e/helpers.ts": LONG(420) },
+        expect: 0,
+      },
+      {
         name: "a repository's own kinds replace the defaults",
         files: { "src/big.ts": LONG(320) },
         config: { kinds: [{ match: "^src/", kind: "wide", max: 400 }] },

@@ -51,7 +51,9 @@ export const DEFAULT_EXEMPT = [
   "^scripts/",
   "^bin/",
   "^\\.claude/hooks/",
-  "^(tests?|e2e)/",
+  // At any depth: a monorepo keeps its tests under apps/<app>/tests/, and a root-only pattern
+  // held those to the test budget while the same folder at the root was exempt.
+  "(^|/)(tests?|__tests__|e2e)/",
 ];
 
 /** @type {RatchetConfig} */

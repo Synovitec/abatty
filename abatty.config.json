@@ -107,7 +107,7 @@
       "^scripts/",
       "^bin/",
       "^\\.claude/(hooks|bin)/",
-      "^(tests?|e2e)/",
+      "(^|/)(tests?|__tests__|e2e)/",
       "^templates/harness/(hooks|testing|bin)/",
       "^src/core/secret-corpus\\.mjs$"
     ],

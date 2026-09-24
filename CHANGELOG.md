@@ -109,6 +109,13 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **Test folders are exempt from the kind budgets at any depth.** The default exempt list skipped a
+  root `tests/` or `e2e/` only, so a monorepo's `apps/<app>/tests/` was held to the test budget,
+  and read by every probe of what ships, while the same folder at the root was exempt, as the
+  standard says tests are. The default now matches `tests/`, `test/`, `__tests__/` and `e2e/` at
+  any depth; the 800-line cap still applies. A repository that sets its own `ratchet.exempt`
+  keeps its list. In a monorepo that uses the default, a count may fall once: the ratchet reads it
+  as a floor to lock, and `abatty baseline` records it.
 - **Every false positive an adopter reported is locked by a case that must stay green.** An audit
   of eighteen reported false positives found three whose fix no case held: variable reads, call
   results and test data in the secret scan, a commit message that mentions the bypass flag, and a
