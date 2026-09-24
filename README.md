@@ -215,7 +215,7 @@ and the ratchet run once at the root. A workspace without a preset is listed and
 
 ## Extending
 
-The catalog holds 79 rules across 15 families. Each rule is data: an identifier, the statement,
+The catalog holds 80 rules across 15 families. Each rule is data: an identifier, the statement,
 whether it is a **must** or a **should**, what insures it once present, the phase that installs it,
 the reason, and a check that is a pure function of the repository's facts. Nothing in the
 repository is executed.

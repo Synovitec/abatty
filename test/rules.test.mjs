@@ -74,6 +74,7 @@ const IDS = [
   "TEST-E2E",
   "TEST-E2E-CONFIG",
   "TEST-MUTATION",
+  "TEST-E2E-ERRORS",
   "SEC-SECRETS",
   "SEC-DISCLOSURE",
   "SEC-AUDIT",
@@ -104,7 +105,7 @@ const IDS = [
   "SEC-AGENT-BYPASS",
 ];
 
-test("the catalog is well-formed: 79 rules, unique IDs, every field, a reason on each", () => {
+test("the catalog is well-formed: 80 rules, unique IDs, every field, a reason on each", () => {
   assert.deepEqual(validate(RULES), []);
   assert.deepEqual(
     RULES.map((r) => r.id),
@@ -294,11 +295,11 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   });
   const all = cli(["rules", dir], dir);
   assert.equal(all.code, 0, all.out);
-  assert.match(all.out, /79 of 79/);
+  assert.match(all.out, /80 of 80/);
   assert.match(all.out, /CODE-DEADCODE/);
   assert.match(all.out, /\d+ must · \d+ should · insured by: \d+ hard/);
   const fam = cli(["rules", dir, "--family", "Security", "--level", "must"], dir);
-  assert.match(fam.out, /4 of 79/);
+  assert.match(fam.out, /4 of 80/);
   assert.doesNotMatch(fam.out, /CODE-DEADCODE/);
   const ph = cli(["rules", dir, "--phase", "12", "--json"], dir);
   assert.deepEqual(
@@ -312,7 +313,7 @@ test("abatty rules lists the catalog, filters it, and explain refuses an unknown
   );
   const json = cli(["rules", dir, "--json"], dir);
   const list = JSON.parse(json.out);
-  assert.equal(list.length, 79);
+  assert.equal(list.length, 80);
   assert.equal(list[0].check, undefined, "the function is not in the JSON");
   const nope = cli(["explain", "NOPE-1", dir], dir);
   assert.equal(nope.code, 2);

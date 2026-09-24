@@ -12,6 +12,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { ERROR_FIXTURE } from "../rules/families/browser-tests.mjs";
 
 /**
  * @typedef {{ rule: string, path: string, why: string, text: (o: { name: string, date: string }) => string }} Fixer
@@ -53,6 +54,12 @@ export const FIXERS = [
         date,
       ) +
       `# 0001 - Record the decisions\n\n- Status: accepted\n- Date: ${date}\n\n## Context\n\nA decision nobody wrote down is taken again by the next person, or by the next session, usually\ndifferently. The cost is not the first decision; it is the third time it is re-argued.\n\n## Decision\n\nEvery decision that constrains the code lands here as its own file, numbered in order, and is\nnever deleted. A decision that is reversed gets a new file that supersedes the old one, and the\nold one stays.\n\n## Consequences\n\nThe record grows and is never tidied. That is the point: what was true and why it changed is the\npart a reader needs, and a tidy record has lost it.\n`,
+  },
+  {
+    rule: "TEST-E2E-ERRORS",
+    path: "e2e/fixtures.ts",
+    why: "The browser runner passes a page that threw or failed to hydrate unless a test listens; one fixture listens for every spec that imports test from it.",
+    text: () => ERROR_FIXTURE,
   },
 ];
 
