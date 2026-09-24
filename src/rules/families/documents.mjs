@@ -39,7 +39,7 @@ export const rules = [
     enforcement: "prose",
     phase: "A.1 / status",
     why: "The context file is read whole at the start of every session; past two hundred lines the model stops holding it and confidently applies the wrong half. The one repository that let it reach 1,124 lines is the motivating case. A file that is still the template, placeholders and all, is a description of a context file, not one.",
-    next: "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template",
+    next: "Move domain sections to .claude/rules/<topic>.md with paths: front matter; keep §1-§10 of the template, and answer every <placeholder>, the ones that wrap onto a second line included",
     check: (c) => {
       const f = c.contextFile;
       const text = f ? c.read(f) : "";
