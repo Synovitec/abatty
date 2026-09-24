@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Every adopter report is a permanent case.** The misses adopters found this week are now one
+  test file, run against synthetic repositories shaped like theirs: a Next + Prisma product with
+  a browser suite, and a repository of domain documents citing each other. No adopter's code is
+  used. Each case names its report and its claim, from the force-resetting `db:setup` script to
+  the front-matter-only change. A new report adds its case before its fix lands, so a miss found
+  once cannot come back unseen.
 - **The contract is a file.** Everything an adopter's run or script depends on is now one
   committed snapshot, `test/contract/surface.json`:
   - the commands and the exit codes;
