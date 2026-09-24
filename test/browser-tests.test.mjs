@@ -99,3 +99,14 @@ test("a partial rule gets no second fixture, and the fixture written gets no doc
   assert.deepEqual(applyFix(dir, steps), ["e2e/fixtures.ts"]);
   assert.doesNotMatch(readFileSync(join(dir, "docs/README.md"), "utf8"), /fixtures/);
 });
+
+test("a spec that only says hydration in its title does not hear a hydration error", () => {
+  const v = judge({
+    "e2e/fixtures.ts":
+      'import { test as base } from "@playwright/test";\nexport const test = base.extend({ page: async ({ page }, use) => { page.on("pageerror", (e) => { throw e; }); await use(page); } });\n',
+    "e2e/home.spec.ts":
+      'import { test } from "./fixtures";\ntest("hydration of the home page", async ({ page }) => { await page.goto("/"); });\n',
+  });
+  assert.equal(v.status, "partial", v.evidence);
+  assert.match(v.evidence, /hydration errors not heard/);
+});

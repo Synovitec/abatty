@@ -238,7 +238,7 @@ export const rules = [
       if (own)
         return {
           status: "present",
-          evidence: `\`${own[0]}\` runs abatty mutate: bounded to the changed lines, strings and comments never mutated${/--strict/.test(own[1]) ? ", a survivor fails it" : ""}`,
+          evidence: `\`${own[0]}\` runs abatty mutate: bounded to the changed lines, strings and comments never mutated${/--strict/.test(own[1]) ? ", a survivor fails it" : "; no floor: without --strict a survivor fails nothing, as the other runners' evidence says of theirs"}`,
         };
       const text = toolText(c, MUTATION_FILES);
       const runner =

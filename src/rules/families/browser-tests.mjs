@@ -54,11 +54,17 @@ export const rules = [
     why: "The browser runner passes a page that threw an uncaught error or logged a hydration mismatch unless a test listens for it, so a suite can be green over a page that is broken for every user. One shared fixture that listens, and every spec taking `test` from it, closes that for the whole suite at once.",
     next: "Add a fixture that fails the test on `pageerror` and on a hydration console error, and import `test` from it in every spec (`abatty fix --phase 3` writes e2e/fixtures.ts)",
     check: (c) => {
-      if (!c.has("@playwright/test")) return { status: "n/a", evidence: "no browser suite" };
+      if (!c.has("@playwright/test"))
+        return {
+          status: "n/a",
+          evidence: "no Playwright suite (another browser runner is not read yet)",
+        };
       const files = c.files(/\.[cm]?[jt]sx?$/).filter((f) => RUNNER_IMPORT.test(c.read(f)));
       const listens = (/** @type {RegExp} */ re) => files.filter((f) => re.test(c.read(f)));
       const pageErrors = listens(/["']pageerror["']/);
-      const hydration = listens(/hydrat/i);
+      // Heard only where a console listener sits beside the pattern: a test titled "hydration"
+      // listens to nothing.
+      const hydration = listens(/on\(\s*["']console["']/).filter((f) => /hydrat/i.test(c.read(f)));
       const bare = files.filter((f) => SPEC.test(f) && BARE_TEST.test(c.read(f)));
       const heard = pageErrors.length > 0 && hydration.length > 0;
       return {

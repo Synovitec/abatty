@@ -352,6 +352,11 @@ test("TEST-MUTATION credits a script that runs abatty mutate, bounded by constru
   });
   assert.equal(v.status, "present");
   assert.match(v.evidence, /bounded to the changed lines.*a survivor fails it/);
+  const loose = judge("TEST-MUTATION", {
+    "package.json": JSON.stringify({ scripts: { mutate: "abatty mutate" } }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  assert.match(loose.evidence, /no floor: without --strict a survivor fails nothing/);
   assert.equal(
     judge("TEST-MUTATION", {
       "package.json": JSON.stringify({ scripts: {} }),

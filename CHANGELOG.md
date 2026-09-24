@@ -10,8 +10,9 @@ under Unreleased in the same commit.
 - **`test.unvisitedRoutes`, opt-in and on probation: the pages no browser test opens.** An adopter
   had every metric green, with library coverage near ninety-nine, while two forms on one screen
   saved nothing in production. Nothing measured which pages the browser suite drives.
-  - The probe reads the page routes Next declares by file (`app/**/page` and `pages/**`, API and
-    special files left out).
+  - The probe reads the page routes Next declares by file (`app/**/page` and `pages/**` at the
+    root, under `src/`, or in one workspace; API, special files, intercepting routes and a browser
+    suite's page objects left out).
   - It counts each route that no path-shaped string in the browser suite, specs and helpers
     alike, would open. A template placeholder stands for any one segment.
   - On that adopter's tree it names 22 of 59 pages, their dish edit forms among them.
@@ -20,7 +21,8 @@ under Unreleased in the same commit.
 - **`TEST-E2E-ERRORS`: a browser test fails when its page throws or does not hydrate.** The
   browser runner passes a page that threw an uncaught error or logged a hydration mismatch unless
   a test listens. An adopter shipped a hydration mismatch through sixty-two green browser tests,
-  twice. The new rule wants a listener for `pageerror` and for hydration console errors, and it
+  twice. The new rule wants a listener for `pageerror` and a console listener that matches
+  hydration errors (a test merely titled "hydration" hears nothing), and it
   names every spec that takes `test` straight from `@playwright/test` and so skips it. `abatty fix
   --phase 3 --write` writes the shared fixture (`e2e/fixtures.ts`), which fails the test on either,
   when no listener exists anywhere; a fixture is not a document, so it gets no docs index row.

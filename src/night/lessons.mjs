@@ -38,13 +38,13 @@ const INCIDENT = {
     check: "protectedPaths in the config; the secret scan",
   },
   "doc-left-stale": {
-    artifact: "a rule",
+    artifact: "a split document",
     proposal:
       "a document was left behind the code it cites because it was too large to re-read in a step; split it by what each part is for, so docs.behindCode points at a part a session can re-read",
     check: "docs.behindCode on the document named",
   },
   "step-restored": {
-    artifact: "a context line",
+    artifact: "a smaller phase step",
     proposal:
       "a half-done step was found and restored; the step was larger than what a session finishes, and the phase's entry in the plan should split it",
     check: "the plan's phase entry",

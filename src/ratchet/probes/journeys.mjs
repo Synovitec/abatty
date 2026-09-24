@@ -8,9 +8,14 @@
  */
 import { codeOnly } from "./lex.mjs";
 
-/** A page of the app router, or of the pages router outside its API and special files. */
-const APP_PAGE = /(^|\/)app\/(.*\/)?page\.[cm]?[jt]sx?$/;
-const PAGES_PAGE = /(^|\/)pages\/(?!api\/)(?!.*\/_)(?!_)(.+)\.[jt]sx?$/;
+/**
+ * A page of the app router, or of the pages router outside its API and special files, where the
+ * framework looks for them: the root or `src/`, of the repository or of one workspace under
+ * `apps/` or `packages/`. A `pages/` folder of page objects inside a browser suite is not a router.
+ */
+const ROOT = String.raw`^(?:(?:apps|packages)\/[^/]+\/)?(?:src\/)?`;
+const APP_PAGE = new RegExp(ROOT + String.raw`app\/(.*\/)?page\.[cm]?[jt]sx?$`);
+const PAGES_PAGE = new RegExp(ROOT + String.raw`pages\/(?!api\/)(?!.*\/_)(?!_)(.+)\.[jt]sx?$`);
 /**
  * The browser suite: its specs, and the helpers beside them that log in or open a page for them
  * (an adopter's suite opened its login pages from `e2e/session.ts`, which no spec pattern names).
@@ -33,9 +38,11 @@ export function routeOf(file) {
   const app = APP_PAGE.exec(file);
   const pages = app ? null : PAGES_PAGE.exec(file);
   if (!app && !pages) return null;
-  const rest = app ? String(app[2] || "") : String(pages?.[2] || "").replace(/(^|\/)index$/, "");
+  const rest = app ? String(app[1] || "") : String(pages?.[1] || "").replace(/(^|\/)index$/, "");
   const segs = rest.split("/").filter((s) => s && !/^\(.*\)$/.test(s) && !s.startsWith("@"));
-  if (segs.some((s) => s.startsWith("_"))) return null;
+  // A private folder, or an intercepting route (`(.)photo`), which overlays a page rather than
+  // being one a browser opens by its path.
+  if (segs.some((s) => s.startsWith("_") || /^\(\.+\)/.test(s))) return null;
   return { route: "/" + segs.join("/"), segs };
 }
 
@@ -123,6 +130,9 @@ export const probes = [
           "pages/about.tsx": "export default function About() { return null; }\n",
           "pages/api/orders.ts": "export default function handler() {}\n",
           "pages/_app.tsx": "export default function App() { return null; }\n",
+          // a page object of the browser suite, and an intercepting route: neither is a page
+          "e2e/pages/checkout.page.ts": "export class CheckoutPage {}\n",
+          "app/(.)photo/page.tsx": "export default function Photo() { return null; }\n",
           "e2e/session.ts":
             "export const login = (page, portal) => page.goto(`/${portal}/login`);\n",
           "e2e/journeys.spec.ts": [
