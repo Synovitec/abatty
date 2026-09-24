@@ -504,6 +504,11 @@
       "type": "integer",
       "minimum": 1
     },
+    "maxDiffLines": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The changed lines past which a night branch stays local instead of being pushed: what one review reads. Default 2000."
+    },
     "phases": {
       "type": "array",
       "items": {

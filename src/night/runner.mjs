@@ -25,6 +25,7 @@ import { preflight, readJson, writeJson } from "./preflight.mjs";
 import { deadlineOf, runSession } from "./session.mjs";
 import { describeSpent, exhausted } from "./allowance.mjs";
 import { shimmedPath } from "../core/shim.mjs";
+import { DEFAULT_MAX_DIFF_LINES, changedLineCount } from "./bounds.mjs";
 
 /**
  * @typedef {{
@@ -314,8 +315,14 @@ export function runNight(o) {
     writeFileSync(join(nightDir, "direction.txt"), (d.stdout || "") + (d.stderr || ""));
     for (const l of ((d.stdout || "") + (d.stderr || "")).split(/\r?\n/).filter(Boolean))
       log(`  ${l}`);
+    const maxLines = Number(pf.config?.maxDiffLines) || DEFAULT_MAX_DIFF_LINES;
+    const lines = changedLineCount(repoDir, base, branch);
     if (git(repoDir, "diff", "--name-only", base, "--", ".claude/"))
       log(`branch kept local: the harness (.claude/) differs from ${base}`);
+    else if (lines > maxLines)
+      log(
+        `branch kept local: ${lines} changed line(s) against ${base}, over the ${maxLines} one review reads (maxDiffLines); split it by phase, or push it by day after reading it`,
+      );
     else if (d.status === 2)
       log(
         `branch kept local: something was loosened against ${base} without a decision naming it (above)`,

@@ -349,7 +349,9 @@ The agent's executable comes from `--agent`, else `ABATTY_AGENT`, else `agent.co
 `~/.abatty/config.json`; never from the repository. `--mode auto|dontAsk`, `--model`,
 `--effort` are the session flags; `--skip-canary` for a repository the canary passed on today.
 
-1. Refuses a dirty tree (and lists it). Fetches. Creates or reuses `adopt/standards-<date>`
+1. Refuses a dirty tree (and lists it). Fetches. Refuses while an earlier night branch, here or
+   on origin, that the base has not taken worked a phase this night would run: merge it or
+   delete it first, since two answers to one phase are work to reconcile. Creates or reuses `adopt/standards-<date>`
    from the LOCAL base branch when it exists (it is what carries a harness committed but not
    pushed yet), else from `origin/<base>`. Checks the harness files are on that branch, runs
    `hooks/self-test.mjs` there, and checks `.claude/` is identical to the base; red means no
@@ -379,8 +381,9 @@ The agent's executable comes from `--agent`, else `ABATTY_AGENT`, else `agent.co
    (and the no-op count).
 5. Final session `--wrap-up`. Then `check-direction.mjs` against the base: the branch is
    pushed (`git push -u origin <branch>`, unless `-NoPush`) only if `.claude/` is identical
-   to the base and nothing was loosened without a decision naming it; otherwise it stays local
-   and the summary says why. Transcript, receipts and summary in `.claude/night/`.
+   to the base, nothing was loosened without a decision naming it, and the branch changes no
+   more than `maxDiffLines` lines against the base (2000 by default: what one review reads);
+   otherwise it stays local and the summary says why. Transcript, receipts and summary in `.claude/night/`.
 
 Four things end the night early, each with a named reason, and none of them marks a phase:
 a CLI that exits non-zero without a result twice in a row (a bad flag, no login, a crash on
