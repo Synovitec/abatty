@@ -23,6 +23,7 @@ import { affectedWorkspaces } from "../presets/workspaces.mjs";
 import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
 import { builtinStep } from "./builtins.mjs";
+import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 
 /**
@@ -31,7 +32,7 @@ import { commentOnly, liveDevServer } from "./suite-select.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -93,6 +94,13 @@ export function runGate(o) {
   // Said before the first step rather than found after the slowest one; said, not refused.
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
+  // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
+  // it would be judging something else. What it must never be is invisible.
+  const nodeEnv = o.nodeEnv ?? unexpectedNodeEnv();
+  if (nodeEnv)
+    log(
+      `! environment: NODE_ENV=${nodeEnv} is inherited from this shell, and every step runs under it; a test or a script that expects development or test behaviour will fail for that reason alone (unset it for the push)`,
+    );
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(

@@ -28,6 +28,14 @@ export function databaseFromEnv(): {
     test: string;
 };
 /**
+ * The NODE_ENV the gate inherited, when it is one a gate's steps would not expect: anything but
+ * unset, `test` or `development`. An adopter built for production and pushed in the same shell;
+ * the gate ran under NODE_ENV=production, thirteen unit tests asserting development behaviour went
+ * red, and the database scripts loaded the production env file. It read as broken infrastructure.
+ * @returns {string}
+ */
+export function unexpectedNodeEnv(): string;
+/**
  * A child's environment: this process's, with `extra` over it, or undefined when there is nothing
  * to add (the child then inherits, which is spawn's default). The one place the package hands
  * the whole environment on.

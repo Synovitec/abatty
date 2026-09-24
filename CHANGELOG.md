@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The gate names an inherited `NODE_ENV`.** An adopter built for production and pushed in the
+  same shell: the gate ran under `NODE_ENV=production`, thirteen unit tests went red and the
+  database scripts loaded the production env file, and it read as broken infrastructure. A
+  `NODE_ENV` other than `test` or `development` is now named in the gate's header, before the
+  first step. It is said rather than overridden, since a repository may set it on purpose.
+
 ### Changed
 
 - **`docs.behindCode` is judged by commits, not by the typed date.** A doc is behind when a
