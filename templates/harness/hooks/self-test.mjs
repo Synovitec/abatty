@@ -12,9 +12,9 @@
 // counter, receipt and log the probes write goes to a temporary folder (ADOPTION_NIGHT_DIR), never
 // into a real night's .claude/night/.
 
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { availableParallelism, cpus, homedir, tmpdir } from "node:os";
 import { agentCommand, configPath } from "./lib.mjs";
 import { sampleTrailer } from "./vocabulary.mjs";
 import { dirname, join, resolve } from "node:path";
@@ -70,6 +70,38 @@ function hook(file, event, env = {}, cwd = process.cwd()) {
     env: { ...process.env, ...baseEnv, ...env },
   });
   return { code: r.status, stdout: r.stdout || "", stderr: r.stderr || "" };
+}
+/**
+ * The same, without waiting: the guard and file-guard cases are two hundred independent runs of
+ * one hook, and run one after another they were most of doctor's thirty seconds on Windows, where
+ * starting a process costs about a tenth of a second. They run a few at a time instead, as many
+ * as the machine has cores, and are reported in the order they are written.
+ */
+function hookAsync(file, event, env = {}, cwd = process.cwd()) {
+  return new Promise((done) => {
+    const child = spawn(process.execPath, [join(HOOKS_ABS, file)], { cwd, env: { ...process.env, ...baseEnv, ...env } });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (e) => done({ code: -1, stdout, stderr: stderr + String(e) }));
+    child.on("close", (code) => done({ code, stdout, stderr }));
+    child.stdin.end(JSON.stringify(event));
+  });
+}
+/** Run `fn` over `items`, `width` at a time; the results in the items' order. */
+async function pooled(items, fn) {
+  const width = Math.max(2, Math.min(8, typeof availableParallelism === "function" ? availableParallelism() : cpus().length));
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: width }, worker));
+  return out;
 }
 const decisionOf = (r) => {
   try {
@@ -379,8 +411,9 @@ try {
   cases.push(["provenance, day: a human commit without the trailer is the human's decision", bash('git commit -m "feat: x"'), provOn, "none"]);
   // A case may name the directory it is judged from: the branch the guard reads is the branch of
   // the repository it runs in, and `HEAD` means a different thing on the base branch than off it.
-  for (const [name, event, env, expected, cwd] of cases) {
-    const r = hook("guard.mjs", event, env, cwd || process.cwd());
+  const guardRuns = await pooled(cases, ([, event, env, , cwd]) => hookAsync("guard.mjs", event, env, cwd || process.cwd()));
+  for (const [i, [name, , , expected]] of cases.entries()) {
+    const r = guardRuns[i];
     const got = decisionOf(r);
     check(`guard · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code : ""}`);
   }
@@ -419,8 +452,9 @@ try {
     ["night: a named code server, a path outside the repository", mcp("mcp__serena__create_text_file", { relative_path: "../elsewhere/x.ts" }), { ...night, ADOPTION_CONFIG: withMcp }, "deny"],
     ["night: a named code server, a server name written with a dot", mcp("mcp__mail_example__send_message", { text: "y" }), { ...night, ADOPTION_CONFIG: withDotted }, "none"],
   ];
-  for (const [name, event, env, expected] of fileCases) {
-    const r = hook("protect.mjs", event, env);
+  const fileRuns = await pooled(fileCases, ([, event, env]) => hookAsync("protect.mjs", event, env));
+  for (const [i, [name, , , expected]] of fileCases.entries()) {
+    const r = fileRuns[i];
     const got = decisionOf(r);
     check(`protect · ${name}`, r.code === 0 && got === expected, `expected ${expected}, got ${got}${r.code !== 0 ? ", exit " + r.code + " " + oneLine(r.stderr) : ""}`);
   }

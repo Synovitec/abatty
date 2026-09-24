@@ -227,6 +227,11 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The harness self-test runs its guard cases a few at a time: doctor takes about a third less
+  time.** Its two hundred guard and file-guard cases each start a process, which costs about a
+  tenth of a second on Windows. Run one after another they were most of doctor's time (27.6 s
+  here). They now run as many at once as the machine has cores, and are reported in the order
+  they are written: 18.6 s here. `abatty update` installs it.
 - **`abatty ci --check` names a pipeline that judges a new branch by its last commit.** A push
   that opens a branch carries no `before`. A hand-written fallback to `HEAD~1` then judges one
   commit of however many the branch holds. A pipeline that reads the push's `before` and falls
