@@ -78,7 +78,22 @@ export function writeBaseline(o) {
   /** Kept from the previous write: an entry explains ITS metric, not the day it was written. */
   const entries = { .../** @type {Record<string, BaselineEntry>} */ (previous?.entries || {}) };
   for (const m of measurements) {
-    if (m.skipped) continue;
+    if (m.skipped) {
+      // A probe that could not run on this read (a rule about a push, read without a range)
+      // keeps what the last write recorded: dropping it lost its floor and its debt, and the
+      // next run read NO FLOOR.
+      const kept = previous?.metrics?.[m.metric];
+      if (typeof kept === "number") {
+        metrics[m.metric] = kept;
+        const v = previous?.versions?.[m.metric];
+        if (typeof v === "number") versions[m.metric] = v;
+        const s = previous?.scanned?.[m.metric];
+        if (typeof s === "number") scanned[m.metric] = s;
+        const d = previous?.debt?.[m.metric];
+        if (d) debt[m.metric] = d;
+      }
+      continue;
+    }
     const forcedRatchet = config.ratchet.includes(m.metric);
     // A probe on probation never blocks: not promoted to HARD at zero, so a finding later cannot
     // refuse this write and with it the locking of every other floor.
@@ -198,7 +213,21 @@ function fileRises(before, now) {
  */
 export function lockEarned(o) {
   const failing = o.verdicts.filter((v) => failed([v]));
-  if (!failing.length || !o.previous || failing.some((v) => v.status !== "improved"))
+  // A probe on probation never fails a run, so its rise is not among the failures; written here,
+  // it would become the floor, unannounced, the day it leaves probation.
+  const before = o.previous?.metrics || {};
+  const risenOnProbation = o.verdicts.some(
+    (v) =>
+      v.status === "probation" &&
+      typeof before[v.metric] === "number" &&
+      v.value > Number(before[v.metric]),
+  );
+  if (
+    !failing.length ||
+    !o.previous ||
+    risenOnProbation ||
+    failing.some((v) => v.status !== "improved")
+  )
     return { locked: [] };
   const r = writeBaseline({ ...o });
   return { locked: r.ok ? failing.map((v) => `${v.metric} ${v.floor} → ${v.value}`) : [] };

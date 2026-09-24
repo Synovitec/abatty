@@ -272,7 +272,9 @@ under Unreleased in the same commit.
   removing them. When every failure of a run is such a floor, a run outside CI now writes the
   lowered floors itself and says to commit the baseline with the change; the run still fails
   until it is committed, since a hook cannot add a commit to the push it judges. CI never writes,
-  and a run with anything else failing writes nothing.
+  a run with anything else failing writes nothing, and neither does one where a probe on
+  probation rose (it would become the floor unannounced). A metric the run could not read, such as
+  a rule about a push read without a range, keeps the floor it had.
 - **The context-file template asks for what helps an agent, and a wrapped placeholder is still
   named.** Studies of context files found descriptive overviews the one kind of content that does
   not help, workflow hints the one that measurably shortens a run, and security and performance
