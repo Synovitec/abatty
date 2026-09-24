@@ -150,7 +150,7 @@ export const rules = [
     phase: "0",
     stages: ["build", "run"],
     why: "One command that says green or red is what a hook, a CI step, an agent's stop and a human all run; two lists of checks drift apart.",
-    next: "Add a gate.mjs under scripts/ci and a .githooks/pre-push calling it (npm run hooks:install), committed executable (git update-index --chmod=+x)",
+    next: "Add a gate.mjs under scripts/ci and a .githooks/pre-push calling it (npm run hooks:install), committed executable where git runs it directly (abatty hooks stages the bit)",
     check: (c) => {
       const gate = c.script(/^gate$|^gate:fast$|scripts\/ci\/gate/);
       const hook = c.firstFile(
@@ -159,7 +159,10 @@ export const rules = [
       const hooksPath = c.git("config", "core.hooksPath");
       // A hook git records as 100644 runs on the machine that wrote it and nowhere else: an
       // adopter's three hooks were committed that way, and nothing said so.
-      const entry = hook ? c.git("ls-files", "-s", "--", hook) : "";
+      // Only where git runs the file itself: `lefthook.yml` is a config, and husky runs its hooks
+      // through `sh`, so both are 100644 by design and read inert for nothing.
+      const direct = Boolean(hook) && /^(\.githooks|scripts\/hooks)\//.test(String(hook));
+      const entry = direct ? c.git("ls-files", "-s", "--", String(hook)) : "";
       const inert = Boolean(entry) && !entry.startsWith("100755 ");
       return {
         status: gate && hook && !inert ? "present" : gate || hook ? "partial" : "missing",

@@ -37,6 +37,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Setting a hook's executable bit stages the mode alone.** `abatty hooks` and `init`/`update`
+  used `git update-index --chmod=+x`, which also stages the file's working-tree content, so an
+  edit in progress to a hook went into the index with the bit. The mode is now set on the entry
+  git already holds, and `abatty hooks` says so, or fails, rather than reporting a change it did
+  not make. Only files git runs as hooks are checked: a README or a sourced helper under
+  `.githooks/` is not failed for its mode, and INST-GATE reads the mode only where git runs the
+  hook itself, not a husky hook or a lefthook config, which are 100644 by design. `update` treats
+  a hook whose comments are the repository's own as edited, and puts its version beside it.
 - **The guard reads every destination of a push, and more of the shapes a push hides in.** A
   review of this release found the worktree fix had narrowed the night's rule: a push naming
   several refspecs was judged by the last, so `git push origin main adopt/x` passed a night that

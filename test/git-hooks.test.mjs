@@ -52,7 +52,21 @@ test("a hook the repository edited is kept, with the new version beside it; no .
 });
 
 test("the forms earlier versions wrote are recognised, and a hook with a command of its own is not", () => {
-  assert.equal(writtenByInit(".githooks/pre-push", "#!/bin/sh\n# old\nnpm run -s gate\n"), true);
+  assert.equal(
+    writtenByInit(
+      ".githooks/pre-push",
+      "#!/bin/sh\n# One implementation, two callers: this hook and `npm run gate`.\nnpm run -s gate\n",
+    ),
+    true,
+  );
+  assert.equal(
+    writtenByInit(
+      ".githooks/pre-push",
+      "#!/bin/sh\n# ours: the gate before a push\nnpm run -s gate\n",
+    ),
+    false,
+    "a comment of the repository's own is an edit",
+  );
   assert.equal(writtenByInit(".githooks/pre-push", "bun run --silent gate --refs\n"), true);
   assert.equal(writtenByInit(".githooks/pre-push", "npm run -s gate\nnpm run lint\n"), false);
   assert.equal(writtenByInit(".githooks/pre-push", "#!/bin/sh\n"), false, "an empty hook");
@@ -82,8 +96,15 @@ test("doctor fails a hook git records as not executable, whatever the disk says"
 test("abatty hooks stages the executable bit for a hook git tracks without it", () => {
   const dir = installed("hooks-stage-mode");
   git(dir, "update-index", "--chmod=-x", "--", ".githooks/pre-push");
+  writeFileSync(join(dir, ".githooks/README.md"), "How the hooks work.\n");
+  git(dir, "add", "--", ".githooks/README.md");
   git(dir, "commit", "-q", "-m", "chore: committed without modes");
+  // An edit in progress must stay the author's: only the mode goes into the index.
+  writeFileSync(join(dir, ".githooks/pre-push"), `${read(dir, ".githooks/pre-push")}# wip\n`);
   const r = cli(["hooks", dir], dir);
-  assert.match(r.out, /committed as not executable; the mode is staged now/);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /committed as not executable; the mode alone is staged now/);
   assert.match(git(dir, "ls-files", "-s", "--", ".githooks/pre-push"), /^100755 /);
+  assert.doesNotMatch(git(dir, "diff", "--cached", "--", ".githooks/pre-push"), /# wip/);
+  assert.match(git(dir, "ls-files", "-s", "--", ".githooks/README.md"), /^100644 /, "not a hook");
 });

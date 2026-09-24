@@ -7,6 +7,7 @@
  * hook from before `--refs` (the gate judging the checkout rather than the push) and `npm run` on
  * a pnpm repository, while `doctor` reported no drift at all.
  */
+import { spawnSync } from "node:child_process";
 import { git } from "./repo.mjs";
 
 /**
@@ -40,19 +41,28 @@ const EARLIER = /** @type {Record<string, RegExp>} */ ({
 });
 
 /**
- * Whether a hook is one an earlier version wrote and nobody edited since: its commands, comments
- * and blank lines aside, are exactly ones `init` has written. Such a hook is refreshed; any other
- * is the repository's own, and gets the new version beside it instead.
+ * Whether a hook is one an earlier version wrote and nobody edited since: its commands are exactly
+ * ones `init` has written, and every comment is one of `init`'s. Such a hook is refreshed; any
+ * other is the repository's own, and gets the new version beside it instead. A comment of the
+ * repository's own is read as an edit: this package's hooks, which explain themselves in their
+ * own words, were rewritten by an update that ignored comments.
  * @param {string} rel @param {string} text
  */
 export function writtenByInit(rel, text) {
   const re = EARLIER[rel];
-  const commands = text
+  const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith("#"));
+    .filter(Boolean);
+  if (lines.some((l) => l.startsWith("#") && !l.startsWith("#!") && !OUR_COMMENT.test(l)))
+    return false;
+  const commands = lines.filter((l) => !l.startsWith("#"));
   return commands.length > 0 && commands.every((c) => Boolean(re?.test(c)));
 }
+
+/** The comment lines `init` has written into the hooks, in every version. */
+const OUR_COMMENT =
+  /^# (One implementation, two callers|The secret scan over the staged files|Refuses a commit message|source commit whose changelog line)/;
 
 /**
  * The hooks git records as not executable, from the index rather than the disk: a hook committed
@@ -67,5 +77,49 @@ export function hooksNotExecutable(repoDir) {
     .filter(Boolean)
     .filter((l) => !l.startsWith("100755 "))
     .map((l) => l.split("\t")[1] || "")
-    .filter(Boolean);
+    .filter((f) => HOOK_NAMES.has(f.replace(/^\.githooks\//, "")));
+}
+
+/** The names git runs as hooks: a README, a sourced helper or a left-over copy beside them is not one. */
+const HOOK_NAMES = new Set([
+  "pre-commit",
+  "prepare-commit-msg",
+  "commit-msg",
+  "post-commit",
+  "pre-rebase",
+  "post-checkout",
+  "post-merge",
+  "pre-push",
+  "pre-auto-gc",
+  "post-rewrite",
+  "pre-merge-commit",
+  "applypatch-msg",
+  "pre-applypatch",
+  "post-applypatch",
+  "push-to-checkout",
+  "reference-transaction",
+]);
+
+/**
+ * Give tracked files the executable mode in the index, and nothing else. `git update-index
+ * --chmod=+x` also stages the file's working-tree content, so an unstaged edit to a hook went
+ * into the index with the bit, a change nobody asked to commit. The entry is rewritten with its
+ * own blob and the new mode. An untracked file is left alone.
+ * @param {string} cwd a folder inside the repository @param {string[]} paths relative to `cwd`
+ * @returns {string[]} the paths whose mode was set
+ */
+export function indexExecutable(cwd, paths) {
+  const top = git(cwd, "rev-parse", "--show-toplevel");
+  /** @type {string[]} */
+  const done = [];
+  for (const path of paths) {
+    const entry = git(cwd, "ls-files", "-s", "--full-name", "--", path);
+    const m = /^(\d{6}) ([0-9a-f]{40,64}) 0\t(.+)$/.exec(entry);
+    if (!top || !m || m[1] === "100755") continue;
+    const r = spawnSync("git", ["update-index", "--cacheinfo", `100755,${m[2]},${m[3]}`], {
+      cwd: top,
+    });
+    if (r.status === 0) done.push(path);
+  }
+  return done;
 }

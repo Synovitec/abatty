@@ -263,3 +263,15 @@ test("INST-GATE reads a pre-push hook git records as not executable as partial",
   assert.equal(v.status, "partial");
   assert.match(v.evidence, /committed as not executable/);
 });
+
+test("INST-GATE does not read a husky hook or a lefthook config as an inert hook", () => {
+  const rule = RULES.find((r) => r.id === "INST-GATE");
+  assert.ok(rule);
+  for (const hook of [".husky/pre-push", "lefthook.yml"]) {
+    const dir = tempRepo("inst-gate-other", {
+      "package.json": JSON.stringify({ scripts: { gate: "abatty gate" } }),
+      [hook]: "npm run gate\n",
+    });
+    assert.equal(rule.check(buildContext(dir)).status, "present", hook);
+  }
+});
