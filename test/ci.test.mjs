@@ -191,7 +191,8 @@ test("the generated pipeline signs the conformance statement with the run's iden
   );
   assert.match(release, /npm publish --provenance/);
   assert.match(release, /attest --out abatty-conformance\.json/);
-  assert.match(release, /uses: actions\/attest@v2/);
+  // Pinned to a commit, with the version it is in a comment: a tag can be moved under the release.
+  assert.match(release, /uses: actions\/attest@[0-9a-f]{40} # v2\./);
   assert.match(release, /attestations: write/);
 });
 
