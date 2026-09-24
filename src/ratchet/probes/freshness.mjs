@@ -10,31 +10,28 @@ import { frontMatter } from "./lib.mjs";
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
 
-/** A diff line that only moves a verification date. */
+/** A diff line of a document that only moves a verification date. */
 const DATE_LINE = /^[+-]\s*(last_verified|last_reviewed|updated)\s*:/;
-/** A commit message line that records a re-read which changed nothing: the date move it carries counts. */
-const VERIFIED = /^\s*docs-verified:\s*\S/im;
 
 /**
- * The newest commit that changed `path` beyond its verification date, as a sha, or "" when git
- * has none within reach (a shallow clone, a file never committed). A commit whose only change to
- * the path is a `last_verified` line is passed over: bumping the date re-read nothing, and a
- * source doc whose date alone moved has not moved. With `verified`, such a commit counts when
- * its message carries a `docs-verified: <reason>` line, which is a re-read put on the record.
+ * The newest commit that changed `path` beyond a document's verification date, as a sha, or ""
+ * when git has none within reach (a file never committed). A commit whose only change to a
+ * DOCUMENT under the path is a date line is passed over: bumping the date re-read nothing, and a
+ * source doc whose date alone moved has not moved. In any other file a date line is content: a
+ * config whose `updated:` changed has moved. A re-read with no edit is not read here but from a
+ * `docs-verified:` line naming the document (see `readOf`), one rule for both.
  * @param {import("../../rules/context.mjs").RepoContext} c @param {string} path
- * @param {boolean} [verified]
  */
-function lastChange(c, path, verified = false) {
-  const log = c.git("log", "-50", "--format=%H%x1f%B%x1e", "--", path);
-  for (const record of log.split("\x1e")) {
-    const [sha = "", body = ""] = record.trim().split("\x1f");
-    if (!sha) continue;
-    if (verified && VERIFIED.test(body)) return sha;
-    const lines = c
-      .git("show", "--format=", "-U0", sha, "--", path)
-      .split("\n")
-      .filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)\s/.test(l));
-    if (lines.some((l) => !DATE_LINE.test(l))) return sha;
+function lastChange(c, path) {
+  const log = c.git("log", "-50", "--format=%H", "--", path);
+  for (const sha of log.split("\n").filter(Boolean)) {
+    let file = "";
+    for (const l of c.git("show", "--format=", "-U0", sha, "--", path).split("\n")) {
+      if (l.startsWith("+++ ")) file = l.slice(4).replace(/^b\//, "");
+      if (/^(\+\+\+|---)\s/.test(l) || !/^[+-]/.test(l)) continue;
+      if (file.endsWith(".md") && DATE_LINE.test(l)) continue;
+      return sha;
+    }
   }
   return "";
 }
@@ -68,8 +65,19 @@ export const probes = [
     axis: "docs-freshness",
     lossAt: 20,
     approximates:
-      "whether a document is still true. It counts one observable fact instead: a commit changed a cited path after the last commit that changed the document itself, a commit that only moves a verification date counting for neither side unless its message carries `docs-verified: <reason>`; a `docs-verified:` line naming a document's path counts as a re-read of it at that commit, with no edit. Without history for the document (a shallow clone) it falls back to the typed last_verified date. It is wrong in both directions - an unrelated edit to the document counts as a re-read, a change to a part of the source the document never described counts as a move, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
+      "whether a document is still true. It counts one observable fact instead: a commit changed a cited path after the last commit that changed the document itself, a commit that only moves a document's verification date counting for neither side; a `docs-verified:` line naming a document's path counts as a re-read of it at that commit, and names only the documents it lists. A document never committed falls back to its typed last_verified date; a shallow clone is not judged at all. It is wrong in both directions - an unrelated edit to the document counts as a re-read, a change to a part of the source the document never described counts as a move, and a document that went stale because code it does NOT cite changed counts as fresh. Read a finding as a prompt to re-read, never as a verdict that the document is wrong.",
     scan: (c) => {
+      // A shallow clone's oldest commit adds every file at once, so it read as the last change of
+      // every document and every source, and every document read fresh: a floor above zero then
+      // failed as unlocked in a pipeline that checks out one commit. There is no history to judge
+      // by, and saying so is the honest verdict.
+      if (c.git("rev-parse", "--is-shallow-repository") === "true")
+        return {
+          scanned: 0,
+          findings: [],
+          skipped:
+            "a shallow clone has no history to judge freshness by; fetch the full history (fetch-depth: 0) where this metric must hold",
+        };
       const findings = [];
       let scanned = 0;
       // Newest first: a smaller index is a later commit on this branch's history.
@@ -100,7 +108,7 @@ export const probes = [
         }));
       /** The newest re-read of a document: its own last real change, or a message naming it. */
       const readOf = (/** @type {string} */ doc) => {
-        const own = lastChange(c, doc, true);
+        const own = lastChange(c, doc);
         const named = namedIn.find((v) => v.paths.some((p) => p === doc || doc.endsWith(`/${p}`)));
         if (!named) return own;
         return !own || at(named.sha) < at(own) ? named.sha : own;
@@ -235,6 +243,30 @@ export const probes = [
           },
         ],
         expect: 1,
+      },
+      {
+        // One meaning for the line: a date bumped on two documents re-reads only the one it names,
+        // and a config's `updated:` line is content, not a document's date.
+        name: "a docs-verified line re-reads the documents it names only, and a config's date is a move",
+        files: {
+          "docs/a.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
+          "docs/b.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
+          "docs/c.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "config/app.yml"\n`),
+          "src/x.ts": "export {};\n",
+          "config/app.yml": "updated: 1\n",
+        },
+        commits: [
+          { files: { "src/x.ts": "export const later = 1;\n" }, message: "feat: later" },
+          {
+            files: {
+              "docs/a.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
+              "docs/b.md": FM(`last_verified: "2099-01-01"\nsource_truth:\n  - "src/x.ts"\n`),
+            },
+            message: "docs: dates\n\ndocs-verified: docs/a.md, still describes x.ts",
+          },
+          { files: { "config/app.yml": "updated: 2\n" }, message: "chore: config" },
+        ],
+        expect: 2,
       },
     ],
   },

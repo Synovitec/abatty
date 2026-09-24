@@ -767,8 +767,9 @@ audit` runs in CI on the shipped tree, `npm audit signatures` beside it (a CVE l
   as its source is fresh. A commit that only moves a `last_verified` date counts for neither side:
   bumping the date re-read nothing, and a source document whose date alone moved has not moved.
   A re-read that found nothing to change is put on the record instead, as a `docs-verified:` line
-  in a commit message naming the documents read. The typed date is the fallback only where the
-  history is out of reach. A dangling `source_truth` entry is a hard failure, not a warning: it is
+  in a commit message naming the documents read, and it re-reads those alone. The typed date is
+  the fallback for a document never committed; a shallow clone is not judged, since its one
+  commit reads as the last change of everything. A dangling `source_truth` entry is a hard failure, not a warning: it is
   the doc's update trigger switched off. **Recording a re-read without re-reading the doc against
   the code is the lie the metric exists to prevent** - if you cannot verify it, leave it stale.
 - **CHANGE.1 (MUST) - A push that touches source, migrations, tests, CI or scripts touches

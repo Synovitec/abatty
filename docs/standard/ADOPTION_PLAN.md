@@ -261,8 +261,9 @@ when the code has stopped moving. Docs and JSDoc are independent and run alongsi
   count is a scope decision, not more tests; the standard already exempts them.
 - **Phase 11 - touching `package.json`, the CI file or `CLAUDE.md` stales ten docs at once**,
   because they are the most-cited `source_truth` entries. That is the check working; budget
-  for it. A green freshness run before the commit used to prove nothing because it read
-  committed history only; an uncommitted `source_truth` edit now counts as today.
+  for it. Freshness is judged by commits, so a green run before the commit says nothing about
+  the change being made: re-read the documents that cite what the diff touches, and record a
+  re-read that changed nothing as a `docs-verified:` line naming each document.
 - **Parallel bursts:** several agents splitting on one checkout share one git index. The
   whole-tree ratchet is meaningless while any agent is mid-split; the integrator measures on a
   clean tree, each agent beats the committed ORIGINAL's function-shape count for its territory,

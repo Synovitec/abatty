@@ -142,8 +142,10 @@ under Unreleased in the same commit.
   commit that only moves `last_verified` counts for neither side: bumping the date re-read
   nothing, so the rule no longer trains date-bump commits, and a source document whose date alone
   moved no longer cascades to the documents that cite it. A re-read that found nothing to change
-  is recorded as a `docs-verified: <paths>` line in a commit message naming the documents read.
-  Without history for a document (a shallow clone) the typed date is still the fallback. The
+  is recorded as a `docs-verified: <paths>` line in a commit message naming the documents read,
+  and re-reads those documents only. A date line is ignored in documents alone: a config whose
+  `updated:` changed has moved. A document never committed falls back to its typed date, and a
+  shallow clone, whose one commit adds every file, is not judged at all and says so. The
   probe's definition is now 2, so an existing floor reads as redefined, with how to re-read and
   record it, rather than as a regression nobody caused. This repository's own `DOGFOOD.md` is the
   first case: it had called a bug fixed in 0.5.0 "not fixed" for two releases, behind a date that
