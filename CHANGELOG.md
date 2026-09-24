@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-24
+
 ### Added
 
 - **`types.nonNull`, an opt-in probe that counts non-null assertions.** To pass a coverage gate an

@@ -1,5 +1,5 @@
 {
-  "abatty": "0.5.1",
+  "abatty": "0.5.2",
   "installedAt": "2026-09-24",
   "files": {
     ".claude/hooks/check-direction.mjs": "32b328881f2f272c089dafc5d90694ad215c736ee9337afa4b5aa5d15000b458",
