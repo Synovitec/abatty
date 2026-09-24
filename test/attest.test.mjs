@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { PREDICATE_TYPE, SCOPE, STATEMENT_TYPE, attestation } from "../src/core/attest.mjs";
 import { buildReport } from "../src/core/report.mjs";
+import { CONTROLS_VERSION, currentControls } from "../src/core/step-controls.mjs";
 
 /** A repository with a waiver, a control run and a baseline entry: everything the record carries. */
 async function furnished() {
@@ -26,6 +27,7 @@ async function furnished() {
     join(dir, ".abatty/controls.json"),
     JSON.stringify({
       at: "2026-09-19T00:00:00.000Z",
+      abatty: CONTROLS_VERSION,
       steps: [
         { label: "lint (CODE.4)", outcome: "red", detail: "went red" },
         { label: "typecheck (CODE.3)", outcome: "green", detail: "stayed GREEN" },
@@ -119,4 +121,10 @@ test("a record whose gate was never proved capable of failing says so, and the c
   const p = JSON.parse(written.out).predicate;
   assert.equal(p.controls.ran, false);
   assert.match(p.controls.note, /abatty doctor --controls/);
+});
+
+test("a control run from before the version stamp is not read as proof, by any reader", () => {
+  assert.equal(currentControls({ at: "x", steps: [], absent: [] }), null);
+  assert.equal(currentControls({ abatty: "0.4.0", steps: [] }), null);
+  assert.ok(currentControls({ abatty: CONTROLS_VERSION, steps: [] }));
 });

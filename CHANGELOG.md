@@ -37,6 +37,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **An outdated controls run is not proof anywhere.** Only the reading of a finding ignored a
+  controls run an older abatty had planted; the night's precondition, the attestation and
+  INST-CONTROLS still accepted it, so a night could be cleared by a proof the changelog above calls
+  no longer evidence. All four now read it the same way, and each says the run is outdated and to
+  run `abatty doctor --controls` again.
 - **Setting a hook's executable bit stages the mode alone.** `abatty hooks` and `init`/`update`
   used `git update-index --chmod=+x`, which also stages the file's working-tree content, so an
   edit in progress to a hook went into the index with the bit. The mode is now set on the entry

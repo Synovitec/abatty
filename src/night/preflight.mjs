@@ -16,7 +16,7 @@ import {
   readAdoption,
   readJsonFile,
 } from "../core/repo.mjs";
-import { CONTROLS_FILE } from "../core/step-controls.mjs";
+import { CONTROLS_FILE, currentControls } from "../core/step-controls.mjs";
 import { buildContext } from "../rules/context.mjs";
 import { describeTrust, scanTrust } from "./trust.mjs";
 import { agentCommand, clock } from "./session.mjs";
@@ -102,10 +102,13 @@ export function preflight(o, c) {
   // The controls are a precondition, not a suggestion. A night is hours of unattended work whose
   // only stop is the gate, and a gate step nobody has watched go red is a step that may be
   // checking nothing. Running the night on it is trusting a guard that has never been tested.
-  const controls = readJsonFile(repoDir, CONTROLS_FILE);
+  const recorded = readJsonFile(repoDir, CONTROLS_FILE);
+  const controls = currentControls(recorded);
   if (!controls)
     return refuse(
-      `the gate steps have never been watched failing: run \`abatty doctor --controls\` once, on this machine, before the first night. A step that has never gone red may be checking nothing, and the night has no other stop.`,
+      recorded
+        ? "the last controls run is from an older abatty, which planted where this one does not: run `abatty doctor --controls` again before a night."
+        : `the gate steps have never been watched failing: run \`abatty doctor --controls\` once, on this machine, before the first night. A step that has never gone red may be checking nothing, and the night has no other stop.`,
       2,
     );
   const absent = Array.isArray(controls.absent) ? controls.absent.map(String) : [];

@@ -3,6 +3,8 @@
  * gate, the pre-commit hook, CI and its steps. Standard §2.2-2.4, P.1, P.2, SEC.1.
  */
 
+import { currentControls } from "../../core/step-controls.mjs";
+
 /**
  * The package scripts a pipeline's text invokes (`npm run x`, `pnpm run x`, `yarn x`, `bun run
  * x`, with or without `-s`/`--silent`), and which of them the package does not have. A pipeline
@@ -122,21 +124,23 @@ export const rules = [
     phase: "0",
     stages: ["build", "run"],
     why: "A probe that has never reported a planted violation may be reporting nothing, and a gate step that never went red may be checking nothing; a check with no failing control is not a check.",
-    next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), then `abatty doctor --controls`: it plants a violation per gate step and reports a step that stays green as absent",
+    next: "Run the ratchet from the package (its probes carry their controls; `abatty ratchet --controls` runs them), then `abatty doctor --controls`: it plants a violation per gate step and reports a step that stays green as absent; a run from an older minor version of abatty does not count",
     check: (c) => {
       const t = c.firstFile(/standards-probe\.test\.|check-standards\.test\.|check-limits\.test\./);
       const packaged = c.script(/abatty(\.mjs"?)? ratchet/);
       const probes = t || (packaged ? "the package's probes, each with controls both ways" : "");
       if (!probes) return { status: "missing", evidence: "none" };
       // The gate steps: the last `doctor --controls` run, a step that stayed green is absent.
-      const last = c.readJson(".abatty/controls.json");
+      // A run an older abatty planted is not evidence about the steps today (step-controls.mjs).
+      const recorded = c.readJson(".abatty/controls.json");
+      const last = currentControls(recorded);
       const absent = Array.isArray(last?.absent) ? last.absent.map(String) : [];
       const ran = Array.isArray(last?.steps)
         ? last.steps.filter((/** @type {any} */ s) => s.outcome === "red").length
         : 0;
       return {
         status: !last ? "partial" : absent.length ? "partial" : "present",
-        evidence: `${probes}; gate steps: ${!last ? "controls not run yet (abatty doctor --controls)" : absent.length ? `${absent.join(", ")} stayed green on a planted violation (absent)` : `${ran} step(s) went red on a planted violation (${String(last.at).slice(0, 10)})`}`,
+        evidence: `${probes}; gate steps: ${!last ? (recorded ? "the controls on record are from an older abatty (abatty doctor --controls)" : "controls not run yet (abatty doctor --controls)") : absent.length ? `${absent.join(", ")} stayed green on a planted violation (absent)` : `${ran} step(s) went red on a planted violation (${String(last.at).slice(0, 10)})`}`,
       };
     },
   },

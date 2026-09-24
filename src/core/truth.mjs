@@ -9,7 +9,7 @@
  * confirm is marked proven. The rest are present and unproven, and the summary says how many.
  */
 import { readJsonFile } from "./repo.mjs";
-import { CONTROLS_FILE, CONTROLS_VERSION } from "./step-controls.mjs";
+import { CONTROLS_FILE, currentControls } from "./step-controls.mjs";
 import { prerequisites } from "./prereqs.mjs";
 
 /**
@@ -36,25 +36,6 @@ const STEP_RULES = /** @type {Record<string, string[]>} */ ({
 /** @param {string} label */
 const stem = (label) => label.replace(/\s*\(.*$/, "").trim();
 
-/** The major and minor of a version, as one comparable number. @param {unknown} v */
-const minorOf = (v) => {
-  const [major = 0, minor = 0] = String(v || "0.0")
-    .split(".")
-    .map(Number);
-  return major * 1000 + minor;
-};
-
-/**
- * The last controls run, when this version of abatty can still read it as evidence: one written
- * by an older minor version, or by one that did not record its version, planted where that
- * version planted, and read as today's proof it once dropped three steps a monorepo had watched
- * fail by hand. Such a run is left unread, so the steps read unproven rather than contradicted.
- * @param {any} controls
- */
-function current(controls) {
-  return controls && minorOf(controls.abatty) >= minorOf(CONTROLS_VERSION) ? controls : null;
-}
-
 /**
  * Mark each present finding a gate step backs: proven, contradicted (and dropped to partial) or
  * left unproven. Returns new findings; the input is not changed.
@@ -69,7 +50,7 @@ export function applyTruth(findings, repoDir, preset) {
   const against = new Map();
   /** @type {Set<string>} */
   const proven = new Set();
-  const controls = current(readJsonFile(repoDir, CONTROLS_FILE));
+  const controls = currentControls(readJsonFile(repoDir, CONTROLS_FILE));
   const outcomes = new Map(
     (Array.isArray(controls?.steps) ? controls.steps : []).map((/** @type {any} */ s) => [
       stem(String(s.label)),
