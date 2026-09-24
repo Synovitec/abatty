@@ -40,7 +40,9 @@ export function narrowFallbacks(repoDir) {
   const found = [];
   for (const file of files) {
     const text = readFileSync(join(repoDir, file), "utf8");
-    if (!/\bbefore\b|CI_COMMIT_BEFORE_SHA|CI_PREV_COMMIT_SHA/i.test(text)) continue;
+    // The event's own field, not the English word: a step named "lint before build" is no push.
+    if (!/event\.before\b|\bBEFORE_SHA\b|CI_COMMIT_BEFORE_SHA|CI_PREV_COMMIT_SHA/.test(text))
+      continue;
     text.split("\n").forEach((l, i) => {
       if (!/^\s*#/.test(l) && LAST_COMMIT.test(l))
         found.push({ file, line: i + 1, text: l.trim() });

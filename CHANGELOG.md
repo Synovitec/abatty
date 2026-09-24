@@ -270,12 +270,13 @@ under Unreleased in the same commit.
   that opens a branch carries no `before`. A hand-written fallback to `HEAD~1` then judges one
   commit of however many the branch holds. A pipeline that reads the push's `before` and falls
   back to the last commit is now listed with its line, and the check exits 3. `--range auto` (the
-  fork from the base) judges the branch. A `HEAD~1` in a pipeline that never reads `before` is
-  left alone.
+  fork from the base) judges the branch. A `HEAD~1` in a pipeline that never reads the event's
+  `before` field is left alone, whatever its steps are named.
 - **The gate says when a range given by hand is narrower than the branch.** A CI run on a new
   branch has no `before` to diff from, and a hand-written fallback to `HEAD~1` judged one commit
-  of four and printed green. On a branch other than the base, `--range` now prints how many of the
-  branch's commits it holds, and the range from the fork that holds them all. It is a notice, not
+  of four and printed green. Off the base, a `--range` counted back from HEAD (the shape of that
+  fallback) now prints how many of the branch's commits it holds, and the range from the fork that
+  holds them all; a range from the push's own `before` is the push and is left alone. It is a notice, not
   a refusal: a narrower range may be what was meant.
 - **A floor a change lowered is written for it.** A floor left above today's count fails the run,
   and locking it took a separate `abatty baseline`, which made leaving findings in easier than

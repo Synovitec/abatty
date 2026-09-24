@@ -59,3 +59,11 @@ test("on the base branch a narrow range is the push, and nothing is said", () =>
   git(dir, "merge", "-q", "--ff-only", "feat/three");
   assert.doesNotMatch(lines(dir, "HEAD~1..HEAD"), /judges \d+ of the/);
 });
+
+test("a range from the push's own before is the push; a HEAD~1 fallback on a detached checkout is named", () => {
+  const dir = branch();
+  const before = git(dir, "rev-parse", "HEAD~1");
+  assert.doesNotMatch(lines(dir, `${before}..HEAD`), /judges \d+ of the/, "an incremental push");
+  git(dir, "checkout", "-q", "--detach");
+  assert.match(lines(dir, "HEAD~1..HEAD"), /judges 1 of the 3 commit\(s\)/);
+});

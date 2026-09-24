@@ -339,7 +339,8 @@ test("ci --check names a pipeline that judges a new branch by its last commit", 
   // The same HEAD~1 in a pipeline that never reads the push's before is some other use.
   writeFileSync(
     join(dir, ".github/workflows/push.yml"),
-    "on: push\njobs:\n  a:\n    steps:\n      - run: git show HEAD~1\n",
+    // "before" as a word in a step's name is not the push's before field
+    "on: push\njobs:\n  a:\n    steps:\n      - name: lint before build\n        run: git show HEAD~1\n",
   );
   assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0);
 });
