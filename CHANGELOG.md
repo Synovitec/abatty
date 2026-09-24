@@ -67,6 +67,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A reformat or a reworded comment no longer makes a document behind.** `docs.behindCode` read
+  any commit to a cited file as a move, so a formatting pass or a comment edit flagged every
+  document that cited the file, and the only way out was a re-read that found nothing. A commit
+  whose change to a cited file is whitespace, or comment lines in the file's own spelling, now
+  counts as no move. A JavaScript private field's `#` is code, not a comment.
 - **An escape or an env read quoted in a string is text, not code.** `types.escapes` read the raw
   file, so a message warning against `as any` counted as one, and `valid.rawEnv` counted a
   `process.env` quoted in a rule's advice or a comment. Escapes are now read with strings blanked
