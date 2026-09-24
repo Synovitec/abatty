@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A raise in a repository that pushes to its base directly has a way to be recorded.** A raise
+  lands through a pull request approved by somebody other than its author, and a repository that
+  delivers straight to `main` by policy never opens one, so an adopter's raise could be written
+  down and never recorded as anything. There, `abatty raises` now reads a line the pushed range
+  adds to the decisions file naming each loosened metric, and says plainly that this is the
+  decision on record, not a second person's approval. A repository that takes pull requests still
+  needs the approval.
 - **The gate names an inherited `NODE_ENV`.** An adopter built for production and pushed in the
   same shell: the gate ran under `NODE_ENV=production`, thirteen unit tests went red and the
   database scripts loaded the production env file, and it read as broken infrastructure. A

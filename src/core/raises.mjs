@@ -154,3 +154,22 @@ export function reviewApproval(pr, gh = ghCli) {
       : `no approval of the head commit by anybody but ${author || "the author"}`,
   };
 }
+
+/**
+ * The decision that records a raise where no pull request exists to approve it: a line the pushed
+ * range added to the decisions file, naming the metric. A repository that delivers straight to its
+ * base by policy (`directPushToBase: true`) never opens the pull request a second approver would
+ * read, so an adopter's raise could be written down and never recorded as anything. The record is
+ * not a second person's approval, and the command says so; it is the decision, on file, dated by
+ * its commit. "" when the range adds no such line.
+ * @param {string} repoDir @param {string} base @param {string} metric
+ * @returns {string}
+ */
+export function recordedDecision(repoDir, base, metric) {
+  const file = String(readAdoption(repoDir)?.files?.decisions || "docs/ADOPTION_DECISIONS.md");
+  const added = git(repoDir, "diff", "--no-color", "-U0", `${base}...HEAD`, "--", file)
+    .split("\n")
+    .filter((l) => l.startsWith("+") && !l.startsWith("+++"))
+    .map((l) => l.slice(1).trim());
+  return added.find((l) => l.includes(metric)) || "";
+}

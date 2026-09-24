@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { cli, tempRepo } from "./helpers.mjs";
+import { cli, git, tempRepo } from "./helpers.mjs";
 import { floorRises, reviewApproval } from "../src/core/raises.mjs";
 
 const REL = "scripts/ci/standards-baseline.json";
@@ -156,4 +156,33 @@ test("debt moved into a file, or a floor loosened through the config, is a raise
     "abatty.config.json": JSON.stringify(cfg),
   });
   assert.deepEqual(floorRises(same, "main").loosened, []);
+});
+
+test("where the base takes direct pushes, a raise is recorded by a decision naming the metric, and said to be only that", () => {
+  const dir = tempRepo("raises-direct", {
+    [REL]: JSON.stringify(BASE),
+    "abatty.config.json": JSON.stringify({ directPushToBase: true }),
+    "docs/ADOPTION_DECISIONS.md": "# Decisions\n",
+  });
+  git(dir, "checkout", "-q", "-b", "work");
+  writeFileSync(
+    join(dir, REL),
+    JSON.stringify({ ...BASE, metrics: { ...BASE.metrics, "size.overBudget": 4 } }),
+  );
+  git(dir, "commit", "-qam", "chore: raise");
+  const bare = cli(["raises", dir, "--base", "main"], dir);
+  assert.equal(bare.code, 3, bare.out);
+  assert.match(bare.out, /no decision in the range names it/);
+  writeFileSync(
+    join(dir, "docs/ADOPTION_DECISIONS.md"),
+    "# Decisions\n\n- 2026-09-24 · size.overBudget 3 → 4 · a vendored file, split next week · owner: A. Person\n",
+  );
+  git(dir, "commit", "-qam", "docs: the decision");
+  const recorded = cli(["raises", dir, "--base", "main"], dir);
+  assert.equal(recorded.code, 0, recorded.out);
+  assert.match(recorded.out, /the record is the decision, not a second person's approval/);
+  // A repository that takes pull requests still needs the approval, not a line in a file.
+  writeFileSync(join(dir, "abatty.config.json"), JSON.stringify({ directPushToBase: false }));
+  git(dir, "commit", "-qam", "chore: pull requests");
+  assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 3);
 });

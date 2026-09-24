@@ -117,7 +117,9 @@ green forever.
 The owner is a name the raiser typed, and an agent can type one as easily as a person can. So a
 raise lands only through a pull request approved at its head by somebody other than its author.
 `abatty raises --require-review <number>` reads that review in the pipeline that `abatty ci`
-generates. It counts as a rise anything else that loosens a floor: a floor that vanished, a hard
+generates. A repository that pushes to its base directly by policy has no pull request to approve,
+so there a raise needs a line the pushed range adds to the decisions file naming the metric, and
+the command says that is a record, not a second person's approval. It counts as a rise anything else that loosens a floor: a floor that vanished, a hard
 metric demoted, a file whose debt grew while the total held, or the same done through the config
 (a metric excluded, a path exempted, a probe switched off, a cap or a budget raised).
 
