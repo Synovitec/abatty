@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The command's path is written as the registry reads it.** Publishing 0.6.0 printed a warning
+  that `bin/abatty.mjs` was invalid and removed. The registry kept the command, which ran, but
+  the warning read as a broken release. `bin` now names `bin/abatty.mjs` without the leading `./`,
+  the form npm normalises to.
 - **The guard reads a package script as the commands it runs.** An adopter's `pnpm db:setup`,
   whose script was `prisma db push --force-reset --accept-data-loss` against the live database,
   passed by day and at night: the guard read the line typed, not the script it ran. A

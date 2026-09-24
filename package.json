@@ -29,7 +29,7 @@
     "node": ">=20"
   },
   "bin": {
-    "abatty": "./bin/abatty.mjs"
+    "abatty": "bin/abatty.mjs"
   },
   "exports": {
     ".": {
