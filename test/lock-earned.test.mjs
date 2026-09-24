@@ -93,3 +93,14 @@ test("a rise on probation is not locked in with the floors that fell, and a skip
     "a metric this read skipped keeps its floor",
   );
 });
+
+test("a help flag never writes: baseline --help prints usage and leaves the floor alone", () => {
+  const dir = withFloor();
+  writeFileSync(join(dir, "src/a.ts"), LONG(350));
+  const r = cli(["baseline", dir, "--help"], dir);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /abatty/);
+  assert.equal(floorOf(dir), 100, "the floor is what it was");
+  assert.equal(cli(["ratchet", dir, "-h"], dir, { CI: "" }).code, 0);
+  assert.equal(floorOf(dir), 100, "and ratchet -h locks nothing either");
+});

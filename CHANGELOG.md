@@ -161,6 +161,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A help flag never acts.** `abatty baseline --help` rewrote the baseline, because only the
+  bare `help` command was read as a request for help. `--help` or `-h` on any command now prints
+  that command's usage and exits 0 without doing anything. Reported by an adopter.
 - **A narrowed secret-read deny is caught, by what it matches rather than by its words.** An
   adopter narrowed the template's `Read(./.env.*)` to eight named files so an allow for
   `.env.example` could work. Every daytime check stayed green while `.env.staging`, `.env.prod`

@@ -173,6 +173,20 @@ function openFile(file) {
 /** What every command screen is handed: the repository, the flags, the two streams, the version. */
 const ctx = { dir, opt, flag, out, err, VERSION };
 
+// A help flag asks and never acts: `abatty baseline --help` rewrote the baseline, because only
+// the bare `help` command was read as one. Every command answers it with its own usage lines.
+if (flag("--help") || flag("-h")) {
+  const { presets } = await import("../src/presets/index.mjs");
+  const { renderHelp } = await import("../src/ui/help.mjs");
+  const all = renderHelp({ version: VERSION, presets });
+  const plain = (/** @type {string} */ l) => l.replace(/\x1b\[[0-9;]*m/g, "");
+  const mine = named
+    ? all.split("\n").filter((l) => new RegExp(`^\\s*abatty ${command}\\b`).test(plain(l)))
+    : [];
+  out(mine.length ? `\n${mine.join("\n")}\n\n` : all);
+  process.exit(0);
+}
+
 switch (command) {
   case "status": {
     const { statusCommand } = await import("../src/cli/status.mjs");
