@@ -260,6 +260,13 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `obs.catchOnlyLogs`       | Caught errors, `catch` blocks or `.catch()` handlers, whose only act is a `console.*` line         |                |
 | `sec.weakRandom`          | `Math.random` where the names around it say a password, a token, a secret or a one-time code       |                |
 
+A new or heuristic probe ships **on probation**: it is measured and its findings are listed under
+a yellow `PROBATION`, and a verdict that would fail says which one it would have been, but the run
+stays green. A blocking check lives on its false positives, so a probe leaves probation only once
+a named repository has run it clean, the rule the presets follow. `docs.frontMatterSyntax`, front
+matter a YAML reader refuses, runs everywhere on probation; the opt-in probes above added in the
+same release are on probation too.
+
 A probe that is not enabled does not reserve its name, so a repository that wrote its own version
 keeps it until it enables the package's. `abatty ratchet --controls` proves every shipped probe,
 enabled or not. A multi-tenant repository whose tenant column is not `tenant_id` names it in

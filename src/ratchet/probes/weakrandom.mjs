@@ -54,6 +54,7 @@ export const probes = [
     metric: "sec.weakRandom",
     kind: "ratchet",
     optIn: true,
+    probation: true,
     standard: ["SEC.1"],
     title: "Secrets drawn from Math.random",
     why: "Math.random is fast and predictable: an attacker who sees a few of its outputs can compute the next, so a password, a token or a one-time code drawn from it is a guessable secret. Draw them from the platform's cryptographic generator (`crypto.getRandomValues`, `crypto.randomBytes`, `crypto.randomUUID`); an id or a shuffle may keep Math.random.",

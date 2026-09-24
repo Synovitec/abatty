@@ -8,3 +8,5 @@ export function frontMatterFaults(text: string): {
     line: number;
     fault: string;
 }[];
+/** @type {import("../index.mjs").Probe[]} */
+export const probes: import("../index.mjs").Probe[];

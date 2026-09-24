@@ -3,7 +3,6 @@
  * resolve. Freshness against the diff (DOC.5) is in freshness.mjs.
  */
 import { dirname, posix } from "node:path";
-import { frontMatterFaults } from "./frontmatter.mjs";
 import { frontMatter, matchesAny, regexes } from "./lib.mjs";
 
 const CITATION =
@@ -18,34 +17,22 @@ const FM = (extra = "") =>
 export const probes = [
   {
     metric: "docs.frontMatter",
-    // 2: a document also counts when a YAML reader would refuse its front matter or read it as
-    // another structure (a duplicate key, a key indented under a scalar, a quote left open).
-    version: 2,
     kind: "ratchet",
     standard: ["DOC.2"],
-    title:
-      "Documents without title, description and status in their front matter, or with front matter a YAML reader refuses",
-    why: "The front matter is what lets a machine list, date and index the documents; without it every doc check is a guess. A block a YAML reader refuses is no front matter to a site generator or a content schema, even when a hand reading finds its keys.",
+    title: "Documents without title, description and status in their front matter",
+    why: "The front matter is what lets a machine list, date and index the documents; without it every doc check is a guess.",
     axis: "docs-freshness",
     lossAt: 30,
     scan: (c) => {
       const findings = [];
       for (const f of c.docFiles) {
-        const text = c.read(f);
-        const fm = frontMatter(text);
+        const fm = frontMatter(c.read(f));
         const missing = ["title", "description", "status"].filter(
           (k) => !fm || !fm[k] || !String(fm[k]).length,
         );
-        const [fault, ...more] = frontMatterFaults(text);
         if (!fm) findings.push({ path: f, line: 1, detail: "no front matter" });
         else if (missing.length)
           findings.push({ path: f, line: 1, detail: `front matter without ${missing.join(", ")}` });
-        else if (fault)
-          findings.push({
-            path: f,
-            line: fault.line,
-            detail: `front matter a YAML reader refuses: ${fault.fault}${more.length ? ` (and ${more.length} more)` : ""}`,
-          });
       }
       return { scanned: c.docFiles.length, findings };
     },
@@ -60,25 +47,7 @@ export const probes = [
         files: { "docs/a.md": '---\ntitle: "A"\ndescription: "D"\n---\n# A\n' },
         expect: 1,
       },
-      {
-        name: "a duplicate key, a key indented under a scalar and an open quote each count",
-        files: {
-          "docs/a.md": FM("status: stable\n"),
-          "docs/b.md": FM('owner: "platform"\n  reviewed: yes\n'),
-          "docs/c.md": FM('tags: ["x"\n'),
-          "docs/d.md": FM('summary: "open\n'),
-        },
-        expect: 4,
-      },
-      {
-        name: "the three keys present hold, with a list, a block scalar and a quoted colon",
-        files: {
-          "docs/a.md": FM(),
-          "docs/b.md": FM('tags:\n- a\n- b\nnotes: |\n  due: soon\nrelated: ["./a.md"] # c\n'),
-          "docs/c.md": FM('owner: "Issue #4: platform"\nlast_verified: 2026-09-24\n'),
-        },
-        expect: 0,
-      },
+      { name: "the three keys present hold", files: { "docs/a.md": FM() }, expect: 0 },
     ],
   },
   {

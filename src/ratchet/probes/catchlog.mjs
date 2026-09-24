@@ -51,6 +51,7 @@ export const probes = [
     metric: "obs.catchOnlyLogs",
     kind: "ratchet",
     optIn: true,
+    probation: true,
     standard: ["OBS.1"],
     title: "Caught errors whose only handling is a console line",
     why: "A catch that writes to the console and carries on turns a failure into a success the user believes: the form looks saved, the error tracker receives nothing, and the console is read by nobody in production. Handle it (a state the user sees, a fallback, a retry), rethrow it, or report it through the logger the error tracker reads.",

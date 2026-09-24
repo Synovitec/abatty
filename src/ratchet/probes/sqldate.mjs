@@ -34,6 +34,7 @@ export const probes = [
     metric: "valid.sqlCurrentDate",
     kind: "ratchet",
     optIn: true,
+    probation: true,
     standard: ["VALID.5"],
     title: "Calendar days the database takes in its session's time zone",
     why: "A query that asks the database for today gets the session's today, UTC unless the connection says otherwise, which is yesterday for the length of the offset every night east of Greenwich. It is the same defect valid.utcDay counts in the code, where that metric cannot see it, so a zero there was read as the problem closed. Take the day in the zone the product lives in (`(now() AT TIME ZONE 'Europe/Brussels')::date`) or pass it from the one function the code already uses.",

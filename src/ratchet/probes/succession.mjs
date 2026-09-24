@@ -54,6 +54,7 @@ export const probes = [
     metric: "docs.supersededChain",
     kind: "ratchet",
     optIn: true,
+    probation: true,
     standard: ["DOC.2"],
     title: "Documents replaced by a newer one that do not name it",
     why: "A dated reading that does not name its successor reads as the current one: an agent that lands on the older gap analysis quotes its score as today's. The front matter's superseded_by is the one link from the old reading to the new, and an archived document without one leaves its reader nowhere.",

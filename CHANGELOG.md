@@ -7,6 +7,20 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A probe can be on probation: counted and shown, never failing a run.** A blocking check lives
+  on its false positives, and one wrong red is a reason to reach for the bypass. A new or
+  heuristic probe now ships marked `probation`: its findings are listed under a yellow
+  `PROBATION`, a verdict that would have failed says which one it would have been, and the run
+  stays green. A probe leaves probation in a release once a named repository has run it clean,
+  the rule presets already follow. The five probes added in this release start there.
+- **`docs.frontMatterSyntax`, on probation, counts front matter a YAML reader refuses.** The
+  probes read front matter by hand, and that reading forgave what a site generator or a content
+  schema does not: an adopter's documents passed every docs probe with a block a YAML parser
+  rejects. The new metric counts a document with a duplicate key, a key or a list item indented
+  under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an
+  unquoted value, or a reserved first character, each on its line. No dependency: the reading was
+  checked against a YAML parser on 642 real documents and agrees on every one. An unquoted date is
+  not counted, since a reader accepts it. `docs.frontMatter` keeps its definition.
 - **`obs.catchOnlyLogs` and `sec.weakRandom`, two opt-in probes for bugs no metric counted.**
   Documentation written by an adopter's sessions found a "cryptographic" temporary password drawn
   from `Math.random` and forms whose failed save was caught, written to the console and dropped,
@@ -41,15 +55,6 @@ under Unreleased in the same commit.
   each file's floor and its recorded exception to the new path, and `abatty raises` carries the
   base's floors the same way. A moved file whose debt rose is still a rise against its own floor,
   and debt in a file git does not see as a move still counts from zero.
-- **`docs.frontMatter` counts front matter a YAML reader refuses.** The probes read front matter by
-  hand, and that reading forgave what a site generator or a content schema does not: an adopter's
-  documents passed every docs probe with a block a YAML parser rejects. A document now also counts
-  for a duplicate key, a key indented under a scalar, a list item under a scalar, a tab in the
-  indentation, a quote, list or map left open, a `: ` inside an unquoted value, or a reserved
-  first character, each reported on its line. Still no dependency: the reading was checked
-  against a YAML parser on 642 real documents and agrees on every one. An unquoted date is not
-  counted: a reader accepts it. The metric's definition moved to 2, so the ratchet reads it
-  as redefined until `abatty baseline` records today's number.
 - **A file's floor that rises is refused and recorded, even when the metric's total fell.** An
   adopter's baseline write took `size.excessCode` from 30109 to 30072 while ten files' floors rose,
   and the tool's record said nothing: a fall anywhere could hide a rise anywhere else, although the

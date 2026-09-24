@@ -76,3 +76,57 @@ function valueFault(raw) {
   if (/:\s/.test(v) || v.endsWith(":")) return "a `: ` inside an unquoted value";
   return "";
 }
+
+const FM = (extra = "") =>
+  `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
+
+/** @type {import("../index.mjs").Probe[]} */
+export const probes = [
+  {
+    metric: "docs.frontMatterSyntax",
+    kind: "ratchet",
+    probation: true,
+    standard: ["DOC.2"],
+    title: "Documents whose front matter a YAML reader refuses",
+    why: "A block a YAML reader refuses is no front matter to a site generator or a content schema, even when a hand reading finds its keys: the document drops out of every list built from it. Fix the line named: a key written once, at the left margin, a quote closed, a value with a `: ` in it quoted.",
+    approximates:
+      "stands in for a YAML parser, which would be a dependency: a hand reading of the faults a reader refuses or reads as another structure (a duplicate key, a key or a list item indented under a scalar, a tab in the indentation, a quote, list or map left open, a `: ` inside an unquoted value, a reserved first character), checked against a parser on 642 real documents; an unquoted date is not counted, since a reader accepts it",
+    axis: "docs-freshness",
+    lossAt: 30,
+    scan: (c) => {
+      const findings = [];
+      for (const f of c.docFiles) {
+        const [fault, ...more] = frontMatterFaults(c.read(f));
+        if (fault)
+          findings.push({
+            path: f,
+            line: fault.line,
+            detail: `${fault.fault}${more.length ? ` (and ${more.length} more)` : ""}`,
+          });
+      }
+      return { scanned: c.docFiles.length, findings };
+    },
+    controls: [
+      {
+        name: "a duplicate key, a key indented under a scalar, an open list and an open quote",
+        files: {
+          "docs/a.md": FM("status: stable\n"),
+          "docs/b.md": FM('owner: "platform"\n  reviewed: yes\n'),
+          "docs/c.md": FM('tags: ["x"\n'),
+          "docs/d.md": FM('summary: "open\n'),
+        },
+        expect: 4,
+      },
+      {
+        name: "a list, a block scalar, a quoted colon, an unquoted date and no front matter hold",
+        files: {
+          "docs/a.md": FM(),
+          "docs/b.md": FM('tags:\n- a\n- b\nnotes: |\n  due: soon\nrelated: ["./a.md"] # c\n'),
+          "docs/c.md": FM('owner: "Issue #4: platform"\nlast_verified: 2026-09-24\n'),
+          "docs/d.md": "# D\n\ntitle: A: B\n",
+        },
+        expect: 0,
+      },
+    ],
+  },
+];

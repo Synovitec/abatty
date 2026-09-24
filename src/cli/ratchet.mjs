@@ -96,7 +96,13 @@ export async function ratchetCommand(command, c) {
       );
       // `improved` reads as a failure now: an unlocked floor is slack the gate still accepts.
       const mark = (/** @type {string} */ s) =>
-        s === "ok" ? t.glyph.ok : s === "skipped" ? t.glyph.skip : t.glyph.fail;
+        s === "ok"
+          ? t.glyph.ok
+          : s === "skipped"
+            ? t.glyph.skip
+            : s === "probation"
+              ? t.glyph.warn
+              : t.glyph.fail;
       for (const v of verdicts) {
         const word =
           v.status === "regressed"
@@ -111,9 +117,11 @@ export async function ratchetCommand(command, c) {
                     ? t.red("FLOOR UNLOCKED")
                     : v.status === "redefined"
                       ? t.red("REDEFINED")
-                      : v.status === "skipped"
-                        ? t.gray("skipped")
-                        : t.green("ok");
+                      : v.status === "probation"
+                        ? t.yellow("PROBATION")
+                        : v.status === "skipped"
+                          ? t.gray("skipped")
+                          : t.green("ok");
         out(
           `  ${mark(v.status)} ${t.bold(v.metric.padEnd(24))} ${String(v.value).padStart(5)}${v.floor !== null ? t.gray(` / ${v.floor}`) : t.gray("      ")}  ${t.gray(v.kind.padEnd(7))} ${word}${v.scanned ? t.gray(`  · ${v.scanned} scanned`) : ""}\n`,
         );

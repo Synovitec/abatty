@@ -102,6 +102,8 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   approximates?: string,
  *   emptyScanOk?: boolean,
  *   optIn?: boolean,
+ *   probation?: boolean,
+ *   proven?: string,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
  *   source?: string,
@@ -137,7 +139,7 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   conventions; switched on for every repository, an update would turn each one red on a
  *   metric it never asked for. The keys after it configure those probes.
  * @typedef {{ metric: string, kind: Kind, value: number, scanned: number, findings: Finding[], debt: Record<string, number>, skipped?: string, probe: Probe }} Measurement
- * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped"} VerdictStatus
+ * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "probation" | "skipped"} VerdictStatus
  * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
  * @typedef {{ at: string, was: number, now: number, reason: string, owner: string }} BaselineEntry
  * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
@@ -186,6 +188,8 @@ export type Probe = {
     approximates?: string;
     emptyScanOk?: boolean;
     optIn?: boolean;
+    probation?: boolean;
+    proven?: string;
     scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult;
     controls: Control[];
     source?: string;
@@ -239,7 +243,7 @@ export type Measurement = {
     skipped?: string;
     probe: Probe;
 };
-export type VerdictStatus = "ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "skipped";
+export type VerdictStatus = "ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "probation" | "skipped";
 export type Verdict = {
     metric: string;
     kind: Kind;
