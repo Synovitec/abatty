@@ -43,6 +43,12 @@ export const DEFAULT_KINDS = [
  * code, migrations, seeders, vendored UI, config files, constant tables, and the CLI scripts,
  * hooks and tests where a sequential procedure is the point. Regex sources on the relative path.
  */
+/**
+ * A test folder at any depth, as a regex source. One definition: the exempt list below and the
+ * probes of what ships (probes/lib.mjs) both read it, and two copies were one edit from drifting.
+ */
+export const TEST_FOLDERS = "(^|/)(tests?|__tests__|e2e)/";
+
 export const DEFAULT_EXEMPT = [
   "(^|/)(generated|__generated__|vendor|vendored)/",
   "(^|/)(migrations|seeders|seeds)/",
@@ -53,7 +59,7 @@ export const DEFAULT_EXEMPT = [
   "^\\.claude/hooks/",
   // At any depth: a monorepo keeps its tests under apps/<app>/tests/, and a root-only pattern
   // held those to the test budget while the same folder at the root was exempt.
-  "(^|/)(tests?|__tests__|e2e)/",
+  TEST_FOLDERS,
 ];
 
 /** @type {RatchetConfig} */

@@ -44,7 +44,7 @@ export function baselineCommit(repoDir, rel) {
  * The baseline with every per-file floor and per-file entry of a renamed file moved to the new
  * path. A key the new path already holds is left alone: a baseline written after the move has
  * the floor where it belongs.
- * @template {{ debt?: Record<string, Record<string, number>>, entries?: Record<string, any> }} B
+ * @template {{ debt?: Record<string, Record<string, number>>, entries?: Record<string, import("./index.mjs").BaselineEntry> }} B
  * @param {B} baseline @param {Map<string, string>} moved
  * @returns {B}
  */
@@ -61,15 +61,15 @@ export function carryRenames(baseline, moved) {
       }
     debt[metric] = next;
   }
-  /** @type {Record<string, any>} */
+  /** @type {Record<string, import("./index.mjs").BaselineEntry>} */
   const entries = { ...(baseline.entries || {}) };
-  for (const key of Object.keys(entries)) {
+  for (const [key, entry] of Object.entries(entries)) {
     const cut = key.indexOf(" ");
     if (cut < 0) continue;
     const file = key.slice(cut + 1);
     const to = [...moved].find(([, from]) => from === file)?.[0];
     if (to && !(`${key.slice(0, cut)} ${to}` in entries)) {
-      entries[`${key.slice(0, cut)} ${to}`] = entries[key];
+      entries[`${key.slice(0, cut)} ${to}`] = entry;
       delete entries[key];
     }
   }

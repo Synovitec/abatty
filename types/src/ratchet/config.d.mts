@@ -30,6 +30,11 @@ export const DEFAULT_KINDS: KindBudget[];
  * code, migrations, seeders, vendored UI, config files, constant tables, and the CLI scripts,
  * hooks and tests where a sequential procedure is the point. Regex sources on the relative path.
  */
+/**
+ * A test folder at any depth, as a regex source. One definition: the exempt list below and the
+ * probes of what ships (probes/lib.mjs) both read it, and two copies were one edit from drifting.
+ */
+export const TEST_FOLDERS: "(^|/)(tests?|__tests__|e2e)/";
 export const DEFAULT_EXEMPT: string[];
 /** @type {RatchetConfig} */
 export const DEFAULT_CONFIG: RatchetConfig;

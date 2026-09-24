@@ -103,7 +103,6 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   emptyScanOk?: boolean,
  *   optIn?: boolean,
  *   probation?: boolean,
- *   proven?: string,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
  *   source?: string,
@@ -189,7 +188,6 @@ export type Probe = {
     emptyScanOk?: boolean;
     optIn?: boolean;
     probation?: boolean;
-    proven?: string;
     scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult;
     controls: Control[];
     source?: string;

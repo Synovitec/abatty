@@ -15,11 +15,11 @@ export function baselineCommit(repoDir: string, rel: string): string;
  * The baseline with every per-file floor and per-file entry of a renamed file moved to the new
  * path. A key the new path already holds is left alone: a baseline written after the move has
  * the floor where it belongs.
- * @template {{ debt?: Record<string, Record<string, number>>, entries?: Record<string, any> }} B
+ * @template {{ debt?: Record<string, Record<string, number>>, entries?: Record<string, import("./index.mjs").BaselineEntry> }} B
  * @param {B} baseline @param {Map<string, string>} moved
  * @returns {B}
  */
 export function carryRenames<B extends {
     debt?: Record<string, Record<string, number>>;
-    entries?: Record<string, any>;
+    entries?: Record<string, import("./index.mjs").BaselineEntry>;
 }>(baseline: B, moved: Map<string, string>): B;

@@ -1,7 +1,3 @@
-/**
- * What every probe shares: the exempt test, the kind budget of a path, a regex list compiled
- * once, the front matter of a document.
- */
 /** Compile regex sources once per call site. @param {string[]} sources */
 export function regexes(sources: string[]): RegExp[];
 /** True when a path matches any of the sources. @param {string} path @param {RegExp[]} list */

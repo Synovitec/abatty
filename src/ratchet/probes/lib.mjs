@@ -2,6 +2,7 @@
  * What every probe shares: the exempt test, the kind budget of a path, a regex list compiled
  * once, the front matter of a document.
  */
+import { TEST_FOLDERS } from "../config.mjs";
 
 /** Compile regex sources once per call site. @param {string[]} sources */
 export function regexes(sources) {
@@ -70,8 +71,11 @@ function unquote(s) {
   return s.replace(/^["']|["']$/g, "");
 }
 
-/** A test folder at any depth: the default exempt list skips a root `tests/` only. */
-const TEST_DIR = /(^|\/)(tests?|__tests__|e2e)\//;
+/**
+ * A test folder at any depth, read here as well as through the exempt list: a repository with its
+ * own list may not name one, and a probe of what ships never reads a test's setup.
+ */
+const TEST_DIR = new RegExp(TEST_FOLDERS);
 
 /**
  * The JavaScript and TypeScript sources a probe of what ships reads: outside the exempt list and

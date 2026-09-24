@@ -63,7 +63,6 @@ import { probeVersion } from "./baseline.mjs";
  *   emptyScanOk?: boolean,
  *   optIn?: boolean,
  *   probation?: boolean,
- *   proven?: string,
  *   scan: (ctx: RepoContext, o: ProbeOptions) => ProbeResult,
  *   controls: Control[],
  *   source?: string,
@@ -290,13 +289,16 @@ function onProbation(m, verdict) {
   };
 }
 
-/** One measurement judged against the baseline, as `compare` describes. @param {Measurement} m @param {Baseline | null} baseline @param {RatchetConfig} config @returns {Verdict} */
-function judgeOne(m, baseline, config) {
+/**
+ * The verdict of one measurement for a status, carrying what every verdict carries: the proxy's
+ * own words, and who raised the floor and why.
+ * @param {Measurement} m @param {Baseline | null} baseline
+ */
+function verdictMaker(m, baseline) {
   const floor = baseline?.metrics?.[m.metric];
-  const lastScanned = baseline?.scanned?.[m.metric] ?? 0;
   const entry = baseline?.entries?.[m.metric];
-  /** @param {VerdictStatus} status @param {string[]} messages */
-  const v = (status, messages) => ({
+  /** @param {VerdictStatus} status @param {string[]} messages @returns {Verdict} */
+  return (status, messages) => ({
     metric: m.metric,
     kind: m.kind,
     status,
@@ -314,6 +316,33 @@ function judgeOne(m, baseline, config) {
         }
       : {}),
   });
+}
+
+/**
+ * Each file whose debt rose above its floor, with every finding it carries: a count cannot say
+ * which one is new, and a list that shows three of twelve reads as "you introduced these three"
+ * when it knows no such thing. The whole file is what the reader has to look at.
+ * @param {Measurement} m @param {Record<string, number>} known
+ */
+function worsenedFiles(m, known) {
+  /** @type {string[]} */
+  const lines = [];
+  for (const [path, n] of Object.entries(m.debt)) {
+    const was = known[path] ?? 0;
+    if (n <= was) continue;
+    lines.push(
+      `per file: ${path} ${was} → ${n}${was === 0 ? " (a file not on the list carries none)" : ""}`,
+    );
+    for (const f of m.findings) if (f.path === path) lines.push(`  ${where(f)}`);
+  }
+  return lines;
+}
+
+/** One measurement judged against the baseline, as `compare` describes. @param {Measurement} m @param {Baseline | null} baseline @param {RatchetConfig} config @returns {Verdict} */
+function judgeOne(m, baseline, config) {
+  const floor = baseline?.metrics?.[m.metric];
+  const lastScanned = baseline?.scanned?.[m.metric] ?? 0;
+  const v = verdictMaker(m, baseline);
   if (m.skipped) return v("skipped", [m.skipped]);
   // A floor is only comparable to a number counted the same way. A baseline that records no
   // version at all predates the field and is taken at its word; one that records a different
@@ -349,20 +378,7 @@ function judgeOne(m, baseline, config) {
       ]);
     return v("ok", []);
   }
-  /** @type {string[]} */
-  const perFile = [];
-  const known = baseline?.debt?.[m.metric] || {};
-  for (const [path, n] of Object.entries(m.debt)) {
-    const was = known[path] ?? 0;
-    if (n <= was) continue;
-    perFile.push(
-      `per file: ${path} ${was} → ${n}${was === 0 ? " (a file not on the list carries none)" : ""}`,
-    );
-    // Every finding in that file, not the first few: a count cannot say which one is new, and a
-    // list that shows three of twelve reads as "you introduced these three" when it knows no such
-    // thing. The whole file is what the reader has to look at.
-    for (const f of m.findings) if (f.path === path) perFile.push(`  ${where(f)}`);
-  }
+  const perFile = worsenedFiles(m, baseline?.debt?.[m.metric] || {});
   if (m.value > floor || perFile.length)
     return v("regressed", [
       m.value > floor
