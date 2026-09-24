@@ -92,3 +92,16 @@ test("a list the formatter wrapped is read, under an empty key or opened on the 
   assert.deepEqual(fm?.related, ["./x.md", "./y.md"]);
   assert.equal(fm?.status, "living");
 });
+
+test("an unclosed wrapped list ends at the next key, and a comment after the bracket closes it", () => {
+  assert.deepEqual(
+    frontMatter(
+      '---\ntitle: x\nrelated: [\n  "./x.md",\nstatus: living\nsource_truth: ["../a.mjs"]\n---\n',
+    ),
+    { title: "x", related: ["./x.md"], status: "living", source_truth: ["../a.mjs"] },
+  );
+  assert.deepEqual(
+    frontMatter('---\nrelated:\n  [\n    "./x.md",\n    "./y.md"] # note\nstatus: living\n---\n'),
+    { related: ["./x.md", "./y.md"], status: "living" },
+  );
+});

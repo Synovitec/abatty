@@ -51,8 +51,14 @@ export function frontMatter(text) {
   /** @type {string | null} */
   let flow = null;
   for (const line of body) {
+    // A key at the margin ends a list that never closed: read as the list's text, it swallowed
+    // every key after it, `status` and `source_truth` included. What it held so far is kept.
+    if (flow !== null && /^[A-Za-z_][\w-]*:/.test(line))
+      [out[key], flow] = [listOf(`${flow}]`), null];
     if (flow !== null) {
-      flow += " " + line.trim();
+      // A comment on a continuation line is not an item, and one after the closing bracket
+      // left the list open to the end of the block.
+      flow += " " + line.replace(/\s+#.*$/, "").trim();
       if (flow.endsWith("]")) [out[key], flow] = [listOf(flow), null];
       continue;
     }
