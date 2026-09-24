@@ -48,6 +48,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The git shim refuses the hooks pointed away too.** The shim on `PATH` refuses the force push
+  and the bypass flag in every shell the guard never sees; it now refuses `core.hooksPath` pointed
+  elsewhere or unset in the same shells, by argument (`-c`, `--config-env`, a `git config` write)
+  or by the environment it is called in, which it reads directly rather than from the command's
+  text. Reading the key, and a message that names it, pass.
 - **The guard refuses switching the hooks off by configuration.** Git runs its hooks from
   `core.hooksPath`, so pointing it elsewhere or unsetting it skips the gate exactly as the bypass
   flag does, and an adopter replayed five such spellings against the last release: every one

@@ -206,7 +206,9 @@ The guard denies a daytime push to the base branch only when the root config say
 is PR-only (`directPushToBase: false`), and it reads the push for what it targets: a
 redirection behind it does not hide the branch, and the forge's API moving the base's ref or
 merging into it is the same act by another door. Force push and `--no-verify` are denied
-everywhere; at night every push goes to the adoption branch or nowhere, and no pull request is
+everywhere, and so is the flag's spelling as configuration: `core.hooksPath` pointed elsewhere or
+unset, by `-c`, by `git config` or by the `GIT_CONFIG_*` environment, in the guard and in the git
+shim alike; at night `.githooks/` and `.husky/` are harness. At night every push goes to the adoption branch or nowhere, and no pull request is
 merged: landing one is the morning's act, after reading the branch.
 
 ### 5.1 The layer outside the agent

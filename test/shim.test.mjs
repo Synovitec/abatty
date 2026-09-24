@@ -133,3 +133,39 @@ test("the shim goes on PATH in front, and a repository without one keeps its PAT
     "never behind the real git",
   );
 });
+
+// The same bypass by its effect, in every shell: the hooks run from core.hooksPath.
+const HOOKS = ["core", "hooksPath"].join(".");
+
+test("the shim refuses pointing the hooks away, by argument or by environment, and lets a read through", () => {
+  const away = (/** @type {string[]} */ args, env = {}) => shimVerdict(args, env)?.id ?? null;
+  assert.equal(away(["-c", `${HOOKS}=/dev/null`, "commit", "-m", "x"]), "hooks-path");
+  assert.equal(away(["config", HOOKS, "/dev/null"]), "hooks-path");
+  assert.equal(away(["config", "--unset", HOOKS]), "hooks-path");
+  assert.equal(
+    away(["commit", "-m", "x"], {
+      GIT_CONFIG_COUNT: "1",
+      GIT_CONFIG_KEY_0: HOOKS,
+      GIT_CONFIG_VALUE_0: "/dev/null",
+    }),
+    "hooks-path",
+  );
+  assert.equal(away(["config", "--get", HOOKS]), null);
+  assert.equal(away(["config", HOOKS]), null);
+  assert.equal(
+    away(["-c", "user.name=A", "commit", "-m", HOOKS]),
+    null,
+    "a message naming the key",
+  );
+});
+
+test("the shim refuses the environment spelling as a process, before the real git runs", () => {
+  const r = run(["commit", "-m", "x"], {
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: HOOKS,
+    GIT_CONFIG_VALUE_0: "/dev/null",
+  });
+  assert.notEqual(r.code, 0);
+  assert.doesNotMatch(r.out, /real git/);
+  assert.equal(run(["status"]).code, 0);
+});
