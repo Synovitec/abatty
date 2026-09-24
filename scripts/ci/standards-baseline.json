@@ -25,7 +25,7 @@
     "change.coupledMissing": 0,
     "change.refactorTests": 0,
     "code.barrels": 0,
-    "code.clones": 22,
+    "code.clones": 21,
     "code.undocumentedExports": 0,
     "context.overCap": 0,
     "context.unsourcedGrowth": 0,
@@ -43,8 +43,8 @@
     "size.overBudget": 0,
     "size.overRaw": 0,
     "startup.eagerModules": 3,
-    "types.escapes": 3,
-    "valid.rawEnv": 4,
+    "types.escapes": 1,
+    "valid.rawEnv": 3,
     "valid.utcDay": 0,
     "valid.wholeEnv": 6
   },
@@ -78,7 +78,6 @@
       "src/presets/next.mjs": 2,
       "src/presets/node.mjs": 3,
       "src/ratchet/probes/change.mjs": 1,
-      "src/ratchet/probes/code.mjs": 1,
       "src/ratchet/probes/size.mjs": 1,
       "src/rules/families/code-structure.mjs": 1
     },
@@ -88,10 +87,9 @@
       "src/ui/term.mjs": 1
     },
     "types.escapes": {
-      "src/rules/families/types.mjs": 3
+      "src/rules/families/types.mjs": 1
     },
     "valid.rawEnv": {
-      "src/rules/families/tests.mjs": 1,
       "src/ui/term.mjs": 3
     },
     "valid.wholeEnv": {

@@ -3,6 +3,7 @@
  * outside the env module (VALID.3), a calendar day taken off a UTC instant (VALID.5), wide
  * barrels (CODE.5).
  */
+import { codeOnly } from "./lex.mjs";
 import { lines, matchesAny, regexes } from "./lib.mjs";
 
 // The directive prefix and the environment object, assembled from parts so this file is not an
@@ -93,7 +94,10 @@ export const probes = [
       // The total and the per-file debt are identical either way - the ratchet sums the weights -
       // so the floor does not move, and a reviewer gets the finding on the line that caused it.
       for (const f of files) {
-        const text = c.read(f);
+        // Strings blanked, comments kept: an escape quoted in a message is text, and the ignore
+        // directive lives in a comment. Read raw, a rule that quoted the escapes it looks for
+        // counted three of this repository's seven.
+        const text = codeOnly(c.read(f), { comments: "keep" });
         const isTs = /\.tsx?$/.test(f);
         for (const m of text.matchAll(ESCAPE)) {
           if (!isTs && !m[0].startsWith("@ts-")) continue;
@@ -120,6 +124,11 @@ export const probes = [
         files: { "src/a.js": "export const anyone = 1; export const company: any = 2;\n" },
         expect: 0,
       },
+      {
+        name: "an escape quoted in a string is text, not an escape",
+        files: { "src/a.ts": `export const advice = "never write x as any or ${TS}ignore";\n` },
+        expect: 0,
+      },
     ],
   },
   {
@@ -136,7 +145,8 @@ export const probes = [
       const files = c.sourceFiles.filter((f) => !matchesAny(f, exempt) && !env.test(f));
       const findings = [];
       for (const f of files) {
-        const text = c.read(f);
+        // A read is code: `process.env.CI` quoted in a rule's advice or a comment reads nothing.
+        const text = codeOnly(c.read(f));
         for (const m of text.matchAll(RAW_ENV))
           findings.push({
             path: f,
@@ -160,6 +170,13 @@ export const probes = [
       {
         name: "a script is exempt",
         files: { "scripts/x.mjs": `console.log(${ENV}.HOME);\n` },
+        expect: 0,
+      },
+      {
+        name: "a read quoted in advice or a comment reads nothing",
+        files: {
+          "src/rule.ts": `// ${ENV}.KEY is read in the env module\nexport const next = "Set retries: ${ENV}.CI ? 2 : 0";\n`,
+        },
         expect: 0,
       },
     ],

@@ -6,6 +6,7 @@
 
 import { JS_SOURCES, SOURCES } from "../applies.mjs";
 import { perPack } from "../../packs/rules.mjs";
+import { codeOnly } from "../../ratchet/probes/lex.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -103,16 +104,19 @@ export const rules = [
     phase: "1 / 9",
     ...JS_SOURCES,
     why: "Every any is a place the compiler was told to look away; the count is the honest measure of how strict the types are.",
-    next: "Ban any with no-explicit-any; ratchet the count",
+    next: "Ban any with no-explicit-any; ratchet the count with types.escapes, which counts code and not what a message or a string quotes",
     check: (c) => {
       if (!c.isTs)
         return { status: "n/a", evidence: "a JavaScript repository (TYPES-CHECKJS applies)" };
       const typed = c.sourceFiles.filter((f) => !/\.d\.ts$/.test(f));
+      // Strings blanked and comments kept, as types.escapes reads them: an escape quoted in a
+      // message is text, and a directive lives in a comment.
+      const code = (/** @type {string} */ f) => codeOnly(c.read(f), { comments: "keep" });
       const anyCount = typed.reduce(
-        (n, f) => n + (c.read(f).match(/:\s*any\b|as any\b/g) || []).length,
+        (n, f) => n + (code(f).match(/:\s*any\b|as any\b/g) || []).length,
         0,
       );
-      const tsIgnore = typed.reduce((n, f) => n + (c.read(f).match(/@ts-ignore/g) || []).length, 0);
+      const tsIgnore = typed.reduce((n, f) => n + (code(f).match(/@ts-ignore/g) || []).length, 0);
       return {
         status:
           anyCount + tsIgnore === 0 ? "present" : anyCount + tsIgnore < 20 ? "partial" : "missing",

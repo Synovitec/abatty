@@ -67,6 +67,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **An escape or an env read quoted in a string is text, not code.** `types.escapes` read the raw
+  file, so a message warning against `as any` counted as one, and `valid.rawEnv` counted a
+  `process.env` quoted in a rule's advice or a comment. Escapes are now read with strings blanked
+  and comments kept, where the ignore directives live, and env reads with both blanked; the
+  TYPES-ESCAPES rule reads code the same way. A count can only fall from this, and a local run
+  locks the lower floor itself.
 - **TEST-COVERAGE credits the gate's own `coverage:changed` step.** The rule looked for a gate on
   the changed lines in a coverage tool's spelling only, so a repository that wrote the
   `coverage:changed` script the gate itself runs was told it had no gate on the change. Its next
