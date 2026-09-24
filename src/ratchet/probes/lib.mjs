@@ -44,7 +44,25 @@ export function frontMatter(text) {
   /** @type {Record<string, string | string[]>} */
   const out = {};
   let key = "";
+  // A `[...]` list the formatter wrapped: opened on the key's line or on the indented line below
+  // an empty key, closed lines later. Read as nothing, a wrapped `source_truth` switched the
+  // freshness check off for its document without a word, and Prettier wraps any list past its
+  // print width.
+  /** @type {string | null} */
+  let flow = null;
   for (const line of body) {
+    if (flow !== null) {
+      flow += " " + line.trim();
+      if (flow.endsWith("]")) [out[key], flow] = [listOf(flow), null];
+      continue;
+    }
+    const current = out[key];
+    const opens = key && /^\s+\[/.test(line) && Array.isArray(current) && !current.length;
+    if (opens) {
+      flow = line.replace(/\s+#.*$/, "").trim();
+      if (flow.endsWith("]")) [out[key], flow] = [listOf(flow), null];
+      continue;
+    }
     const item = line.match(/^\s+-\s+(.*)$/);
     if (item && key) {
       const prev = out[key];
@@ -55,15 +73,20 @@ export function frontMatter(text) {
     if (!kv) continue;
     key = kv[1] || "";
     const raw = (kv[2] || "").replace(/\s+#.*$/, "").trim();
-    if (raw.startsWith("[") && raw.endsWith("]"))
-      out[key] = raw
-        .slice(1, -1)
-        .split(",")
-        .map((s) => unquote(s.trim()))
-        .filter(Boolean);
+    if (raw.startsWith("[") && raw.endsWith("]")) out[key] = listOf(raw);
+    else if (raw.startsWith("[")) [out[key], flow] = [[], raw];
     else out[key] = raw === "" ? [] : unquote(raw);
   }
   return out;
+}
+
+/** The items of a `[...]` list, unquoted. @param {string} raw */
+function listOf(raw) {
+  return raw
+    .slice(1, -1)
+    .split(",")
+    .map((s) => unquote(s.trim()))
+    .filter(Boolean);
 }
 
 /** @param {string} s */

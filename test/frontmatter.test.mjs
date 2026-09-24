@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { frontMatterFaults } from "../src/ratchet/probes/frontmatter.mjs";
+import { frontMatter } from "../src/ratchet/probes/lib.mjs";
 
 // An adopter's docs passed every docs probe with front matter a YAML reader refuses. Each case
 // below was read by a YAML parser when this reading was written: the refused ones are faults, the
@@ -80,4 +81,14 @@ test("a list that opens and never closes is a fault on the line that opened it",
   assert.deepEqual(faults('title: "open\nstatus: living'), [
     "2 `title`: a quote that does not close",
   ]);
+});
+
+test("a list the formatter wrapped is read, under an empty key or opened on the key's line", () => {
+  // Read as nothing, a wrapped source_truth switched the freshness check off for its document.
+  const fm = frontMatter(
+    '---\nsource_truth:\n  ["../src/a.mjs", "../src/b.mjs"]\nrelated: [\n  "./x.md",\n  "./y.md"]\nstatus: living\n---\n',
+  );
+  assert.deepEqual(fm?.source_truth, ["../src/a.mjs", "../src/b.mjs"]);
+  assert.deepEqual(fm?.related, ["./x.md", "./y.md"]);
+  assert.equal(fm?.status, "living");
 });

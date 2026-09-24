@@ -53,6 +53,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A front-matter list the formatter wrapped is read.** Prettier wraps a `[...]` list that passes
+  its print width onto the line below the key, and the docs probes read that as an empty list: a
+  wrapped `source_truth` switched `docs.behindCode` and `docs.danglingSource` off for its document
+  without a word, and seven of this repository's own documents had lost their `related` list this
+  way. A list opened under an empty key, or on the key's line and closed lines later, is read now.
 - **The git shim refuses the hooks pointed away too.** The shim on `PATH` refuses the force push
   and the bypass flag in every shell the guard never sees; it now refuses `core.hooksPath` pointed
   elsewhere or unset in the same shells, by argument (`-c`, `--config-env`, a `git config` write)
