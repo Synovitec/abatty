@@ -162,6 +162,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The direction check tells a tightened config from a loosened one, and names the file.**
+  Enabling a probe in `abatty.config.json` was reported as a loosening of "1 file(s) under
+  .claude/", with a command to restore the looser file. The root config is now judged as itself.
+  By day, a probe enabled, a metric made HARD or a metric no longer held as a ratchet is a
+  tightening and says nothing; any other change is named key by key. At night the root config
+  stays read-only whatever the change, and the finding says that. Reported by an adopter.
 - **A help flag never acts.** `abatty baseline --help` rewrote the baseline, because only the
   bare `help` command was read as a request for help. `--help` or `-h` on any command now prints
   that command's usage and exits 0 without doing anything. Reported by an adopter.
