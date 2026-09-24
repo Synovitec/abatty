@@ -48,6 +48,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A file over its floor lists every finding it carries, and the two ways out.** The ratchet
+  printed at most twelve lines, so a file that worsened by one showed a few of its findings and
+  read as "these are the ones you introduced", which a count cannot know. Each file over its
+  floor now lists all of its findings for that metric, and the verdict ends with the two ways
+  out: fix findings until the count is back at the floor, or record the rise with
+  `abatty baseline --reason --owner`.
 - **A renamed file keeps its floor.** Per-file floors are keyed by path, so a `git mv` of a file
   carrying debt read as a new file rising from zero: the ratchet failed a change that moved no
   debt, and `abatty baseline`, now that a file's rise needs a reason, would have refused it

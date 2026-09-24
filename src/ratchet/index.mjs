@@ -354,18 +354,23 @@ function judgeOne(m, baseline, config) {
   const known = baseline?.debt?.[m.metric] || {};
   for (const [path, n] of Object.entries(m.debt)) {
     const was = known[path] ?? 0;
-    if (n > was)
-      perFile.push(
-        `${path} ${was} → ${n}${was === 0 ? " (a file not on the list carries none)" : ""}`,
-      );
+    if (n <= was) continue;
+    perFile.push(
+      `per file: ${path} ${was} → ${n}${was === 0 ? " (a file not on the list carries none)" : ""}`,
+    );
+    // Every finding in that file, not the first few: a count cannot say which one is new, and a
+    // list that shows three of twelve reads as "you introduced these three" when it knows no such
+    // thing. The whole file is what the reader has to look at.
+    for (const f of m.findings) if (f.path === path) perFile.push(`  ${where(f)}`);
   }
   if (m.value > floor || perFile.length)
     return v("regressed", [
       m.value > floor
         ? `total ${floor} → ${m.value}`
         : `total ${m.value} within the floor ${floor}, but a file worsened`,
-      ...perFile.slice(0, 12).map((s) => "per file: " + s),
+      ...perFile,
       ...(m.value > floor && !perFile.length ? list : []),
+      "two ways out: bring the count back to the floor by fixing findings above, or record the rise with `abatty baseline --reason <why> --owner <who>`",
     ]);
   // Bidirectional: a floor ABOVE the current value is a finding, not a silent pass. Left
   // unlocked it is slack the gate keeps accepting - findings that no longer exist may come
