@@ -81,6 +81,18 @@ export async function reportCommand(cx) {
       out(
         `  ${t.glyph.warn} ${t.yellow("disputed as false positives:")} ${disputes.map(([m, n]) => `${m} ${n}`).join(", ")} ${t.gray("· worth an issue on the package, with the case")}\n`,
       );
+    // Each check on probation, and whether this repository votes to promote it: it runs here,
+    // reads 0 and was never disputed. A report from before the reading carries none.
+    const clean = (r.probation || []).filter((p) => p.clean).map((p) => p.metric);
+    const reading = (r.probation || []).filter((p) => p.runs && !p.clean && p.reads !== null);
+    if (clean.length)
+      out(
+        `  ${t.glyph.ok} ${t.green("on probation, clean here:")} ${clean.join(", ")} ${t.gray("· one repository's vote to promote each")}\n`,
+      );
+    if (reading.length)
+      out(
+        `  ${t.glyph.skip} ${t.gray("on probation, reading here:")} ${reading.map((p) => `${p.metric} ${p.reads ?? "?"}${p.disputes ? ` (${p.disputes} disputed)` : ""}`).join(", ")}\n`,
+      );
   }
   return;
 }

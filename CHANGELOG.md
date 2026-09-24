@@ -5,6 +5,11 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Upgrading
+
+- **The JSON report gains a `probation` key** (an array, one entry per check on probation). A
+  reader that ignores unknown keys is unaffected.
+
 ### Changed
 
 - **`abatty update` migrates a redefined check's floor itself.** When a check's definition
@@ -20,6 +25,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **Each check on probation is shown with the evidence to promote it.** A check on probation is
+  shown and never fails a run until a named repository has run it clean. Nothing recorded that
+  evidence, so no check had left probation. `abatty report` now lists each one:
+  - whether it runs here;
+  - what it reads;
+  - how often it was disputed here;
+  - "clean here" when it runs, reads 0 and was never disputed: this repository's vote to promote
+    it.
+
+  The package gathers these votes from its adopters' reports.
 - **Every adopter report is a permanent case.** The misses adopters found this week are now one
   test file, run against synthetic repositories shaped like theirs: a Next + Prisma product with
   a browser suite, and a repository of domain documents citing each other. No adopter's code is

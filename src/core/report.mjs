@@ -18,6 +18,7 @@ import { changelogPairs, commitsOf, coupledFindings } from "./coupled.mjs";
 import { pushRange } from "./range.mjs";
 import { baselinePath, resolveConfig } from "../ratchet/config.mjs";
 import { readBaseline } from "../ratchet/baseline.mjs";
+import { probationReadings } from "./probation.mjs";
 
 /**
  * @typedef {{
@@ -41,6 +42,7 @@ import { readBaseline } from "../ratchet/baseline.mjs";
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  *   floors: { raised: FloorRaise[], disputes: Record<string, number> },
+ *   probation: import("./probation.mjs").ProbationReading[],
  * }} Report
  * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false, disputed: boolean }} FloorRaise
  */
@@ -224,6 +226,9 @@ export async function buildReport(repoDir, o = {}) {
     // The floors raised, by whom, unverified: the row a team lead reads first, and the one the
     // trial's reviewer assembled by hand from commit messages for two days.
     floors: { raised, disputes: disputesOf(raised) },
+    // The checks on probation with their reading here and their disputes: this repository's
+    // evidence toward promoting each (src/core/probation.mjs).
+    probation: probationReadings(repoDir, disputesOf(raised)),
   };
   if (key) writeCache(repoDir, key, report);
   if (o.write !== false) {

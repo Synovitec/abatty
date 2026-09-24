@@ -34,6 +34,7 @@ export function allReports(repoDir: string): Report[];
  *   night: { state: unknown | null, decisions: number, lastReport: string | null, lastRun: unknown | null },
  *   bypass: { commits: number, bypassed: number, reasoned: number, rate: number },
  *   floors: { raised: FloorRaise[], disputes: Record<string, number> },
+ *   probation: import("./probation.mjs").ProbationReading[],
  * }} Report
  * @typedef {{ metric: string, file: string, at: string, was: number, now: number, reason: string, owner: string, verified: false, disputed: boolean }} FloorRaise
  */
@@ -109,6 +110,7 @@ export type Report = {
         raised: FloorRaise[];
         disputes: Record<string, number>;
     };
+    probation: import("./probation.mjs").ProbationReading[];
 };
 export type FloorRaise = {
     metric: string;

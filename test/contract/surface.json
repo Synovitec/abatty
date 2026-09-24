@@ -342,6 +342,7 @@
     "night": "object",
     "phase": "object",
     "plan": "array",
+    "probation": "array",
     "problems": "array",
     "profiles": "array",
     "repo": "string",

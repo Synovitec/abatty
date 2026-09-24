@@ -28,24 +28,23 @@ export function offProbes(repoDir) {
   );
   if (!off.length) return [];
   const ctx = buildContext(repoDir, { tracked: true });
-  return off.map((p) => {
-    try {
-      const r = p.scan(ctx, { config, range: "" });
-      return r.skipped
-        ? { metric: p.metric, title: p.title, reads: null, why: String(r.skipped) }
-        : {
-            metric: p.metric,
-            title: p.title,
-            // The total the ratchet would record: the sum of the weights, a finding weighing one
-            // unless it says otherwise. Counting findings read an exclude list of nine as one.
-            reads: r.findings.reduce(
-              (n, f) => n + (typeof f.weight === "number" ? f.weight : 1),
-              0,
-            ),
-            why: "",
-          };
-    } catch (e) {
-      return { metric: p.metric, title: p.title, reads: null, why: `could not read: ${String(e)}` };
-    }
-  });
+  return off.map((p) => readingOf(p, ctx, config));
+}
+
+/**
+ * What one probe reads in a repository, the way the ratchet would record it: the sum of the
+ * weights (a finding weighs one unless it says otherwise; counting findings read an exclude list
+ * of nine as one), or null with the reason when the probe cannot read this way or failed to.
+ * @param {import("../ratchet/index.mjs").Probe} p @param {import("../rules/context.mjs").RepoContext} ctx
+ * @param {import("../ratchet/index.mjs").RatchetConfig} config @returns {OffProbe}
+ */
+export function readingOf(p, ctx, config) {
+  try {
+    const r = p.scan(ctx, { config, range: "" });
+    if (r.skipped) return { metric: p.metric, title: p.title, reads: null, why: String(r.skipped) };
+    const reads = r.findings.reduce((n, f) => n + (typeof f.weight === "number" ? f.weight : 1), 0);
+    return { metric: p.metric, title: p.title, reads, why: "" };
+  } catch (e) {
+    return { metric: p.metric, title: p.title, reads: null, why: `could not read: ${String(e)}` };
+  }
 }
