@@ -12,7 +12,9 @@ under Unreleased in the same commit.
   heuristic probe now ships marked `probation`: its findings are listed under a yellow
   `PROBATION`, a verdict that would have failed says which one it would have been, and the run
   stays green. A probe leaves probation in a release once a named repository has run it clean,
-  the rule presets already follow. The five probes added in this release start there.
+  the rule presets already follow. A probe on probation is never promoted to HARD, so its findings
+  cannot refuse `abatty baseline`, and SARIF reports them as notes. The five probes added in this
+  release start there.
 - **`docs.frontMatterSyntax`, on probation, counts front matter a YAML reader refuses.** The
   probes read front matter by hand, and that reading forgave what a site generator or a content
   schema does not: an adopter's documents passed every docs probe with a block a YAML parser
@@ -95,7 +97,8 @@ under Unreleased in the same commit.
   standard holds every number to "only falls, by its total and per file". `abatty baseline` now
   refuses a per-file rise, a file newly carrying debt included, without `--reason` and `--owner`,
   records it under `metric file` in the baseline's entries, and drops the entry when that file's
-  debt falls back. The report lists each such raise with its file.
+  debt falls back. The report lists each such raise with its file. The write that records a
+  redefined metric under its new definition is not a rise, since the old floor counted another thing.
 - **A raise in a repository that pushes to its base directly has a way to be recorded.** A raise
   lands through a pull request approved by somebody other than its author, and a repository that
   delivers straight to `main` by policy never opens one, so an adopter's raise could be written

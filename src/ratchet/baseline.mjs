@@ -80,10 +80,14 @@ export function writeBaseline(o) {
   for (const m of measurements) {
     if (m.skipped) continue;
     const forcedRatchet = config.ratchet.includes(m.metric);
+    // A probe on probation never blocks: not promoted to HARD at zero, so a finding later cannot
+    // refuse this write and with it the locking of every other floor.
+    const onProbation = Boolean(m.probe.probation);
     const isHard =
-      config.hard.includes(m.metric) ||
-      hard.has(m.metric) ||
-      (m.probe.kind === "hard" && !forcedRatchet);
+      !onProbation &&
+      (config.hard.includes(m.metric) ||
+        hard.has(m.metric) ||
+        (m.probe.kind === "hard" && !forcedRatchet));
     if (isHard && m.value > 0) {
       refusals.push(
         `${m.metric} is HARD and reads ${m.value}; a HARD metric is never recorded above zero - fix the findings, or hold it as a ratchet through \`ratchet.ratchet\` in the adoption config with the reason in the decisions file`,
@@ -91,10 +95,17 @@ export function writeBaseline(o) {
       continue;
     }
     const was = previous?.metrics?.[m.metric];
-    if (typeof was === "number" && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
+    // A rise is only a rise against a floor counted the same way: after a redefinition the old
+    // floor answers another question, and the write that records the new one is not a raise.
+    const wroteUnder = previous?.versions?.[m.metric];
+    const comparable =
+      typeof was === "number" &&
+      !onProbation &&
+      (typeof wroteUnder !== "number" || wroteUnder === probeVersion(m));
+    if (comparable && m.value > was) rises.push(`${m.metric} ${was} → ${m.value}`);
     // Per file as well as in total: a total that fell carried ten files whose floors rose, with
     // nothing in the record, so a fall anywhere could hide a rise anywhere else.
-    if (typeof was === "number")
+    if (comparable)
       for (const [file, now, before] of fileRises(previous?.debt?.[m.metric], m.debt)) {
         rises.push(`${m.metric} ${file} ${before} → ${now}`);
         fileRisen.push({ metric: m.metric, file, was: before, now });
@@ -102,7 +113,7 @@ export function writeBaseline(o) {
     metrics[m.metric] = m.value;
     versions[m.metric] = probeVersion(m);
     if (!m.probe.emptyScanOk) scanned[m.metric] = m.scanned;
-    if (m.value === 0 && !forcedRatchet) {
+    if (m.value === 0 && !forcedRatchet && !onProbation) {
       if (!hard.has(m.metric) && m.probe.kind !== "hard") promoted.push(m.metric);
       hard.add(m.metric);
     } else {

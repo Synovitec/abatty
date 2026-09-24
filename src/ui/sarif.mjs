@@ -147,11 +147,13 @@ export function sarifOfVerdicts(o) {
     if (!v.findings.length) continue;
     const probe = byMetric.get(v.metric);
     const rising = v.status === "regressed" || v.status === "hard-fail";
+    // A probe on probation fails nothing, so it is never an error a forge fails a check on.
+    const level = v.status === "probation" ? "note" : sarifLevel(v.kind, rising);
     rules.push({
       id: v.metric,
       shortDescription: { text: probe?.title || v.metric },
       fullDescription: { text: probe?.why || probe?.title || v.metric },
-      defaultConfiguration: { level: sarifLevel(v.kind, rising) },
+      defaultConfiguration: { level },
       properties: { kind: v.kind, standard: probe?.standard || [], axis: probe?.axis },
     });
     // The ordinal of this finding among the ones this metric reports for this file. A probe that
@@ -167,7 +169,7 @@ export function sarifOfVerdicts(o) {
       seen.set(key, nth);
       results.push({
         ruleId: v.metric,
-        level: sarifLevel(v.kind, rising),
+        level,
         message: {
           text: `${f.detail || v.metric}${v.floor === null ? "" : ` · floor ${v.floor}, now ${v.value}`}`,
         },
