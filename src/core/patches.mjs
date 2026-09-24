@@ -10,7 +10,21 @@ import { join } from "node:path";
 import { readPackage } from "./repo.mjs";
 
 /** A patch key or file name that patches abatty, and the version it was written against. */
-const PATCHED = /^abatty[@+](\d+\.\d+\.\d+[\w.-]*?)(?:\.patch)?$/;
+const PATCHED = /^abatty(?:[@+]([^+]+?))?(?:\+\d+\+[^/]*?)?(?:\.patch)?$/;
+
+/**
+ * The line `doctor` and `update` print for a stale patch, in one place so the two cannot drift.
+ * A patch with no version or with a range applies to every version, which is the case this
+ * exists for, so it is named whatever the version running.
+ * @param {{ where: string, patched: string }} p @param {string} version
+ * @returns {{ says: string, fix: string }}
+ */
+export function stalePatchNote(p, version) {
+  return {
+    says: `a patch of abatty ${p.patched} is still declared (${p.where}), and this is ${version}`,
+    fix: "remove it once the upgrade carries its fix, or it applies to code it was not written for",
+  };
+}
 
 /**
  * The patches of abatty this repository carries for a version other than `version`, each with
@@ -30,13 +44,16 @@ export function stalePatches(repoDir, version) {
   for (const key of Object.keys(declared)) {
     const m = PATCHED.exec(key);
     if (m)
-      found.push({ where: `package.json patchedDependencies "${key}"`, patched: String(m[1]) });
+      found.push({
+        where: `package.json patchedDependencies "${key}"`,
+        patched: m[1] || "(any version)",
+      });
   }
   const dir = join(repoDir, "patches");
   if (existsSync(dir))
     for (const name of readdirSync(dir)) {
       const m = PATCHED.exec(name);
-      if (m) found.push({ where: `patches/${name}`, patched: String(m[1]) });
+      if (m) found.push({ where: `patches/${name}`, patched: m[1] || "(any version)" });
     }
   return found.filter((p) => p.patched !== version);
 }

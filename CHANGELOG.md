@@ -37,6 +37,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`types.nonNull` and the stale-patch notice read more of what they are for.** The probe now
+  counts an assertion before a call, a cast, a closing brace and a spaced comparison, and no
+  longer counts a class field's definite assignment (`name!: string`) or a `!` ending a line of
+  JSX text. The stale-patch notice also names a patch declared with no version or with a range,
+  which applies to every version, and patch-package's numbered file names.
 - **The review's fixes to this release's new pieces.** A source folder that shares the fragments
   folder's name (`src/features/changes/`) no longer counts as a changelog entry.
   `changelog --release` refuses a version already released and a changelog without
