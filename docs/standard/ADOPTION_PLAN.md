@@ -142,13 +142,19 @@ the narrative is docs/README.md.
 
 ## 3. Boundary map <one row per module: responsibility, what to read first>
 
-## 4. Known gaps between docs and code <the register; empty is a valid state>
+## 4. Conventions that surprise <what a competent newcomer would get wrong>
 
-## 5. Conventions that surprise <what a competent newcomer would get wrong>
+## 5. Secrets and configuration <precedence, what beats what, invalidation delay; the security frontiers>
 
-## 6. Secrets and configuration <precedence, what beats what, invalidation delay; the security frontiers>
+## 6. Size, shape and quality limits <the budgets, and what must not get slower, where it is measured>
 
-## 7. Size and performance <the budgets, and what must not get slower, where it is measured>
+## 7. Delivery rules <the changelog, the coupled paths, versioning, commits, branches>
+
+## 8. Skills and agents <what each is for, and what it must not do>
+
+## 9. Autonomy contract <the defaults an unattended run takes instead of asking>
+
+## 10. Known gaps between docs and code <the register; empty is a valid state>
 ```
 
 ### A.3 Baseline shape
