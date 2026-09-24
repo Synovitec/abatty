@@ -8,3 +8,13 @@
  * @param {import("../../rules/context.mjs").RepoContext} c @param {string} path
  */
 export function lastChange(c: import("../../rules/context.mjs").RepoContext, path: string): string;
+/**
+ * The re-reads that changed nothing, named in commit messages, newest first: a
+ * `docs-verified: <paths>` line records which documents were read, with no edit to invent.
+ * @param {import("../../rules/context.mjs").RepoContext} c
+ * @returns {{ sha: string, paths: string[] }[]}
+ */
+export function verifiedIn(c: import("../../rules/context.mjs").RepoContext): {
+    sha: string;
+    paths: string[];
+}[];

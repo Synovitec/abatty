@@ -20,8 +20,12 @@ export function pushRangeInfo(repoDir: string, base?: string, explicit?: string)
  * What a range given by hand leaves out: the commits the branch carries since it left the base
  * that the range does not hold. A CI run on a new branch has no `before` to diff from, and a
  * hand-written fallback of `HEAD~1` judged one commit of four and printed green, which read as
- * the branch being judged. Null on the base itself, with no base to fork from, or when the range
- * already holds the branch. Said, not refused: a narrower range may be exactly what was meant.
+ * the branch being judged. Only a range counted back from HEAD is a guess of that kind: a range
+ * from the push's own `before` is the push, however few of the branch's commits it holds, and
+ * saying otherwise on every incremental push taught the reader to ignore the notice. A detached
+ * checkout (a pull request's merge ref, most CI) is read too, since that is where the fallback
+ * runs. Null on the base itself, with no base to fork from, or when the range already holds the
+ * branch. Said, not refused: a narrower range may be exactly what was meant.
  * @param {string} repoDir @param {string} base @param {RangeInfo} info
  * @returns {{ commits: number, fork: string } | null}
  */
