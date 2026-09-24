@@ -50,6 +50,7 @@ export const next = {
         "api.unboundedList",
         "api.rowReturn",
         "api.floatMoney",
+        "test.unvisitedRoutes",
         ...COMMON_PROBES,
       ],
     },

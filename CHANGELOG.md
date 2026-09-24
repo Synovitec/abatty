@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`test.unvisitedRoutes`, opt-in and on probation: the pages no browser test opens.** An adopter
+  had every metric green, with library coverage near ninety-nine, while two forms on one screen
+  saved nothing in production. Nothing measured which pages the browser suite drives.
+  - The probe reads the page routes Next declares by file (`app/**/page` and `pages/**`, API and
+    special files left out).
+  - It counts each route that no path-shaped string in the browser suite, specs and helpers
+    alike, would open. A template placeholder stands for any one segment.
+  - On that adopter's tree it names 22 of 59 pages, their dish edit forms among them.
+  - New Next repositories get it enabled. Opening a page is not submitting its form, which is
+    written in what the probe approximates.
 - **`TEST-E2E-ERRORS`: a browser test fails when its page throws or does not hydrate.** The
   browser runner passes a page that threw an uncaught error or logged a hydration mismatch unless
   a test listens. An adopter shipped a hydration mismatch through sixty-two green browser tests,

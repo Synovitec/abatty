@@ -276,6 +276,7 @@ noise, or a surprise red after an update, anywhere else. A repository switches t
 | `obs.catchOnlyLogs`        | Caught errors, `catch` blocks or `.catch()` handlers, whose only act is a `console.*` line         |                |
 | `sec.weakRandom`           | `Math.random` where the names around it say a password, a token, a secret or a one-time code       |                |
 | `code.undocumentedExports` | Exported declarations with no doc comment above them (presence only, not whether it says why)      |                |
+| `test.unvisitedRoutes`     | Page routes (Next `app/` and `pages/`) that no path the browser suite names would open             |                |
 
 A new or heuristic probe ships **on probation**: it is measured and its findings are listed under
 a yellow `PROBATION`, and a verdict that would fail says which one it would have been, but the run

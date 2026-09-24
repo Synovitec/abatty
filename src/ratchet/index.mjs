@@ -26,6 +26,7 @@ import { probes as weakRandomProbes } from "./probes/weakrandom.mjs";
 import { probes as jsdocProbes } from "./probes/jsdoc.mjs";
 import { probes as refsProbes } from "./probes/refs.mjs";
 import { probes as tamperProbes } from "./probes/tamper.mjs";
+import { probes as journeyProbes } from "./probes/journeys.mjs";
 import { probes as codeProbes } from "./probes/code.mjs";
 import { probes as changeProbes } from "./probes/change.mjs";
 import { probes as startupProbes } from "./probes/startup.mjs";
@@ -130,6 +131,7 @@ export const BUILTIN_PROBES = [
   ...jsdocProbes,
   ...refsProbes,
   ...tamperProbes,
+  ...journeyProbes,
 ].map((p) => ({ ...p, source: "abatty" }));
 
 /**
