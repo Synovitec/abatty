@@ -52,7 +52,7 @@ export const rules = [
     phase: "3",
     ...BROWSER,
     why: "The browser runner passes a page that threw an uncaught error or logged a hydration mismatch unless a test listens for it, so a suite can be green over a page that is broken for every user. One shared fixture that listens, and every spec taking `test` from it, closes that for the whole suite at once.",
-    next: "Add a fixture that fails the test on `pageerror` and on a hydration console error, and import `test` from it in every spec (`abatty fix --phase 3` writes e2e/fixtures.ts)",
+    next: "Add a fixture that fails the test on `pageerror` and on a hydration console error, and import `test` from it in every spec (`abatty fix --phase 3` writes e2e/fixtures.ts); read in a Playwright suite, another browser runner not yet",
     check: (c) => {
       if (!c.has("@playwright/test"))
         return {

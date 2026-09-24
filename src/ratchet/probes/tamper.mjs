@@ -7,6 +7,8 @@
  * did. A reviewer decides whether it was the right change; the probe makes sure one is asked.
  */
 
+import { contentLines } from "./diff.mjs";
+
 /** @typedef {import("../index.mjs").Probe} Probe */
 
 const TEST_FILE =
@@ -65,24 +67,7 @@ const REASON = /^tests-changed:\s*\S/m;
 function waysOut(subject, body, diff) {
   /** @type {Map<string, { cases: number, parked: number, silenced: number, snapshot: boolean, lowered: string[], removed: Map<string, number> }>} */
   const files = new Map();
-  let file = "";
-  // A header is only read as one between `diff --git` and the first hunk: under -U0 a removed
-  // content line that starts with `-- ` (an SQL comment) would otherwise be taken for a path.
-  let header = false;
-  for (const l of diff.split("\n")) {
-    if (l.startsWith("diff --git ")) header = true;
-    if (l.startsWith("@@")) header = false;
-    if (header) {
-      if (l.startsWith("+++ ") || l.startsWith("--- ")) {
-        const p = l
-          .slice(4)
-          .replace(/^"(.*)"$/, "$1")
-          .replace(/^[ab]\//, "");
-        if (p !== "/dev/null") file = p;
-      }
-      continue;
-    }
-    if (!file || !/^[+-]/.test(l)) continue;
+  for (const [file, l] of contentLines(diff)) {
     const f = files.get(file) || {
       cases: 0,
       parked: 0,

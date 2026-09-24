@@ -16,13 +16,14 @@ const EXPORT =
  * @param {string} text the file with strings blanked and comments kept @param {number} at
  */
 function documented(text, at) {
-  const above = text.slice(0, at).replace(/(\s*@[\w.]+(\([^)]*\))?)*\s*$/, "");
-  if (!above.endsWith("*/")) return false;
-  const open = above.lastIndexOf("/*");
-  if (open < 0 || !above.startsWith("/**", open)) return false;
+  // Decorators and line comments (a linter directive, a note) may sit between the block and
+  // the export without taking the block away from it.
+  const above = text.slice(0, at).replace(/(\s*(@[\w.]+(\([^)]*\))?|\/\/[^\n]*))*\s*$/, "");
+  // The block that ends here, opened by its own `/**`: a `/*` in its prose (`/api/*`) is text.
+  const block = /\/\*\*((?:(?!\*\/)[\s\S])*)\*\/$/.exec(above);
+  if (!block) return false;
   // A block of `@typedef`s documents types, not the export that happens to follow it.
-  const lines = above
-    .slice(open + 3, -2)
+  const lines = String(block[1])
     .split("\n")
     .map((l) => l.replace(/^\s*\*?\s?/, "").trim())
     .filter(Boolean);
@@ -52,8 +53,12 @@ export const probes = [
       const findings = [];
       for (const f of files) {
         const text = codeOnly(c.read(f), { comments: "keep" });
+        // A TypeScript overload repeats the name; the first declaration is the one documented.
+        const seen = new Set();
         for (const m of text.matchAll(EXPORT)) {
           const at = m.index ?? 0;
+          if (seen.has(m[1])) continue;
+          seen.add(m[1]);
           if (!documented(text, at))
             findings.push({
               path: f,
@@ -97,6 +102,14 @@ export const probes = [
             "export class Service {}",
             'export { load as fetch } from "./b";',
             'const note = "export function hidden() {}";',
+            // a directive between the block and the export, a /* in the block's prose, overloads
+            "/** Routes matching /api/* go to the proxy. */",
+            "// lint-directive-next-line some-rule",
+            "export function route(a) { return a; }",
+            "/** One name, two signatures. */",
+            "export function pick(a: string): string;",
+            "export function pick(a: number): number;",
+            "export function pick(a: unknown) { return a; }",
             "",
           ].join("\n"),
           "src/__tests__/a.ts": "export function helper() {}\n",

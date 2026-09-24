@@ -179,7 +179,10 @@ under Unreleased in the same commit.
   any commit to a cited file as a move, so a formatting pass or a comment edit flagged every
   document that cited the file, and the only way out was a re-read that found nothing. A commit
   whose change to a cited file is whitespace, or comment lines in the file's own spelling, now
-  counts as no move. A JavaScript private field's `#` is code, not a comment.
+  counts as no move. A JavaScript private field's `#` is code, not a comment, and in Python and
+  YAML, where indentation is meaning, a reindent is a move. The count changed, so the metric's
+  definition is 3: a floor written under 2 reads as redefined and is rewritten by `abatty
+  baseline`, not compared.
 - **An escape or an env read quoted in a string is text, not code.** `types.escapes` read the raw
   file, so a message warning against `as any` counted as one, and `valid.rawEnv` counted a
   `process.env` quoted in a rule's advice or a comment. Escapes are now read with strings blanked
