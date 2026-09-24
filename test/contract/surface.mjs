@@ -16,17 +16,25 @@ import { cli, tempRepo } from "../helpers.mjs";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
-/** The keys of an object, sorted; nested one level for the objects among them. @param {any} o */
-function shape(o) {
-  if (!o || typeof o !== "object" || Array.isArray(o)) return typeof o;
+/**
+ * The shape of a value, three levels deep: an object's keys sorted with the shape of each, an
+ * array as the shape of its first element (or "array" when empty), anything else its type. A
+ * renamed nested field changes it; a value does not.
+ * @param {unknown} o @param {number} [depth] @returns {unknown}
+ */
+function shape(o, depth = 3) {
+  if (Array.isArray(o)) return o.length && depth > 0 ? [shape(o[0], depth - 1)] : "array";
+  if (!o || typeof o !== "object") return o === null ? "null" : typeof o;
+  if (depth <= 0) return "object";
+  const obj = /** @type {Record<string, unknown>} */ (o);
   return Object.fromEntries(
-    Object.keys(o)
+    Object.keys(obj)
       .sort()
-      .map((k) => [k, Array.isArray(o[k]) ? "array" : typeof o[k]]),
+      .map((k) => [k, shape(obj[k], depth - 1)]),
   );
 }
 
-/** The schema's keys and their declared types, nested objects one level down. @param {any} props */
+/** The schema's keys and their declared types, nested objects one level down. @param {Record<string, { type?: string | string[], properties?: object }>} props */
 function schemaShape(props) {
   return Object.fromEntries(
     Object.keys(props)
@@ -37,6 +45,16 @@ function schemaShape(props) {
         return [k, p.properties ? { type, keys: Object.keys(p.properties).sort() } : type];
       }),
   );
+}
+
+/** A preset's generated pipeline: its step names and the actions it pins. @param {string} id */
+function pipeline(id) {
+  const preset = presetById(id);
+  const ci = preset ? renderGithubActions(preset, { base: "main" }) : "";
+  return {
+    steps: [...ci.matchAll(/^\s+- name: (.+)$/gm)].map((m) => String(m[1])),
+    uses: [...ci.matchAll(/uses: (\S+)/g)].map((m) => String(m[1])),
+  };
 }
 
 /** Every surface, computed now. */
@@ -53,8 +71,6 @@ export async function surface() {
   const report = await buildReport(dir, { write: false, cache: false });
   const ratchet = JSON.parse(cli(["ratchet", dir, "--json"], dir).out);
   const sarif = JSON.parse(cli(["ratchet", dir, "--sarif"], dir).out);
-  const next = presetById("next");
-  const ci = next ? renderGithubActions(next, { base: "main" }) : "";
 
   return {
     commands,
@@ -72,15 +88,8 @@ export async function surface() {
       ),
     ),
     report: shape(report),
-    ratchetJson: { top: shape(ratchet), verdict: shape(ratchet.verdicts?.[0]) },
-    sarif: {
-      top: shape(sarif),
-      run: shape(sarif.runs?.[0]),
-      driver: shape(sarif.runs?.[0]?.tool?.driver),
-    },
-    generatedPipeline: {
-      steps: [...ci.matchAll(/^\s+- name: (.+)$/gm)].map((m) => String(m[1])),
-      uses: [...ci.matchAll(/uses: (\S+)/g)].map((m) => String(m[1])),
-    },
+    ratchetJson: shape(ratchet),
+    sarif: shape(sarif, 5),
+    generatedPipeline: { next: pipeline("next"), node: pipeline("node") },
   };
 }

@@ -15,10 +15,12 @@ const SNAPSHOT = fileURLToPath(new URL("./contract/surface.json", import.meta.ur
 
 test("the machine surfaces are the committed contract, or the change to them is deliberate", async () => {
   const now = await surface();
-  if (process.env.UPDATE_CONTRACT === "1" || !existsSync(SNAPSHOT)) {
+  if (process.env.UPDATE_CONTRACT === "1") {
     writeFileSync(SNAPSHOT, JSON.stringify(now, null, 2) + "\n");
     return;
   }
+  // A missing snapshot is a contract gone, not one to write afresh and call green.
+  assert.ok(existsSync(SNAPSHOT), "test/contract/surface.json is missing: restore it from git");
   const committed = JSON.parse(readFileSync(SNAPSHOT, "utf8"));
   for (const key of Object.keys({ ...committed, ...now }))
     assert.deepEqual(

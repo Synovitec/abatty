@@ -330,105 +330,232 @@
     "applicable": "number",
     "at": "string",
     "branch": "string",
-    "bypass": "object",
+    "bypass": {
+      "bypassed": "number",
+      "commits": "number",
+      "rate": "number",
+      "reasoned": "number"
+    },
     "commit": "string",
     "date": "string",
-    "enforced": "object",
-    "families": "array",
-    "findings": "array",
-    "floors": "object",
-    "harness": "object",
+    "enforced": {
+      "atCeiling": "array",
+      "hard": "number",
+      "promotable": "array",
+      "prose": "number",
+      "ratchet": "number",
+      "review": "number",
+      "share": "number",
+      "total": "number"
+    },
+    "families": [
+      {
+        "missing": "number",
+        "na": "number",
+        "name": "string",
+        "partial": "number",
+        "present": "number",
+        "waived": "number"
+      }
+    ],
+    "findings": [
+      {
+        "enforcement": "string",
+        "evidence": "string",
+        "family": "string",
+        "id": "string",
+        "level": "string",
+        "next": "string",
+        "phase": "string",
+        "rule": "string",
+        "stages": "array",
+        "standard": "array",
+        "status": "string",
+        "when": "string",
+        "where": "object"
+      }
+    ],
+    "floors": {
+      "disputes": {},
+      "raised": "array"
+    },
+    "harness": {
+      "drift": "number",
+      "missing": "number",
+      "present": "boolean"
+    },
     "name": "string",
-    "night": "object",
-    "phase": "object",
-    "plan": "array",
-    "probation": "array",
+    "night": {
+      "decisions": "number",
+      "lastReport": "null",
+      "lastRun": "null",
+      "state": "null"
+    },
+    "phase": {
+      "applicable": "number",
+      "held": "number",
+      "id": "string",
+      "title": "string"
+    },
+    "plan": [
+      {
+        "applicable": "number",
+        "held": "number",
+        "id": "string",
+        "title": "string"
+      }
+    ],
+    "probation": [
+      {
+        "clean": "boolean",
+        "disputes": "number",
+        "metric": "string",
+        "reads": "null",
+        "runs": "boolean",
+        "scanned": "number",
+        "why": "string"
+      }
+    ],
     "problems": "array",
-    "profiles": "array",
+    "profiles": [
+      "string"
+    ],
     "repo": "string",
     "score": "number",
-    "scrub": "object",
+    "scrub": {
+      "enabled": "boolean",
+      "lines": "number"
+    },
     "stage": "string",
     "stageFrom": "string",
-    "truth": "object",
+    "truth": {
+      "contradicted": "number",
+      "proven": "number",
+      "unproven": "number"
+    },
     "version": "number",
     "waived": "number",
-    "waivers": "object",
+    "waivers": {
+      "considered": "number",
+      "expired": "array",
+      "rate": "number",
+      "waived": "array"
+    },
     "workspaces": "array"
   },
   "ratchetJson": {
-    "top": {
-      "axes": "object",
-      "baseline": "object",
-      "range": "string",
-      "repo": "string",
-      "score": "number",
-      "verdicts": "array"
+    "axes": {
+      "boundary-clarity": "number",
+      "docs-freshness": "number",
+      "navigability": "number",
+      "type-safety": "number"
     },
-    "verdict": {
-      "findings": "array",
-      "floor": "object",
-      "kind": "string",
-      "messages": "array",
-      "metric": "string",
-      "scanned": "number",
-      "status": "string",
-      "value": "number"
-    }
+    "baseline": "null",
+    "range": "string",
+    "repo": "string",
+    "score": "number",
+    "verdicts": [
+      {
+        "findings": "array",
+        "floor": "null",
+        "kind": "string",
+        "messages": "array",
+        "metric": "string",
+        "scanned": "number",
+        "status": "string",
+        "value": "number"
+      }
+    ]
   },
   "sarif": {
-    "top": {
-      "$schema": "string",
-      "runs": "array",
-      "version": "string"
-    },
-    "run": {
-      "results": "array",
-      "tool": "object"
-    },
-    "driver": {
-      "informationUri": "string",
-      "name": "string",
-      "rules": "array",
-      "version": "string"
-    }
+    "$schema": "string",
+    "runs": [
+      {
+        "results": "array",
+        "tool": {
+          "driver": {
+            "informationUri": "string",
+            "name": "string",
+            "rules": "array",
+            "version": "string"
+          }
+        }
+      }
+    ],
+    "version": "string"
   },
   "generatedPipeline": {
-    "steps": [
-      "format",
-      "lint (CODE.4)",
-      "typecheck (CODE.3)",
-      "import graph (CODE.5)",
-      "dead code (CODE.6)",
-      "unit tests (TEST.1)",
-      "coverage of the changed lines (TEST.4)",
-      "abatty ratchet + changelog range (CHANGE.2)",
-      "secret scan (SEC.1)",
-      "audit (SEC.1)",
-      "no trace of the tools (scrub)",
-      "publish the report to the dashboard",
-      "the bypass rate of this push",
-      "findings as SARIF",
-      "upload the findings",
-      "the conformance statement",
-      "sign it with this run's identity",
-      "a loosened floor needs a second person's approval",
-      "\"integration suite against a real Postgres · database suite + coverage (DATA.4, TEST.4)\"",
-      "\"coverage gate (TEST.4) · database suite + coverage (DATA.4, TEST.4)\"",
-      "\"build (the browser suite serves the production output) · build + browser suite + axe (TEST.3, A11Y.1)\"",
-      "\"E2E + axe · build + browser suite + axe (TEST.3, A11Y.1)\""
-    ],
-    "uses": [
-      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
-      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
-      "github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52",
-      "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
-      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
-      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
-      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
-      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
-      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
-      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
-    ]
+    "next": {
+      "steps": [
+        "format",
+        "lint (CODE.4)",
+        "typecheck (CODE.3)",
+        "import graph (CODE.5)",
+        "dead code (CODE.6)",
+        "unit tests (TEST.1)",
+        "coverage of the changed lines (TEST.4)",
+        "abatty ratchet + changelog range (CHANGE.2)",
+        "secret scan (SEC.1)",
+        "audit (SEC.1)",
+        "no trace of the tools (scrub)",
+        "publish the report to the dashboard",
+        "the bypass rate of this push",
+        "findings as SARIF",
+        "upload the findings",
+        "the conformance statement",
+        "sign it with this run's identity",
+        "a loosened floor needs a second person's approval",
+        "\"integration suite against a real Postgres · database suite + coverage (DATA.4, TEST.4)\"",
+        "\"coverage gate (TEST.4) · database suite + coverage (DATA.4, TEST.4)\"",
+        "\"build (the browser suite serves the production output) · build + browser suite + axe (TEST.3, A11Y.1)\"",
+        "\"E2E + axe · build + browser suite + axe (TEST.3, A11Y.1)\""
+      ],
+      "uses": [
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52",
+        "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+      ]
+    },
+    "node": {
+      "steps": [
+        "format",
+        "lint (CODE.4)",
+        "typecheck (CODE.3)",
+        "import graph (CODE.5)",
+        "dead code (CODE.6)",
+        "unit tests (TEST.1)",
+        "coverage of the changed lines (TEST.4)",
+        "abatty ratchet + changelog range (CHANGE.2)",
+        "secret scan (SEC.1)",
+        "audit (SEC.1)",
+        "no trace of the tools (scrub)",
+        "publish the report to the dashboard",
+        "the bypass rate of this push",
+        "findings as SARIF",
+        "upload the findings",
+        "the conformance statement",
+        "sign it with this run's identity",
+        "a loosened floor needs a second person's approval",
+        "\"integration suite against a real database · database suite + coverage (DATA.4, TEST.4)\"",
+        "\"coverage gate (TEST.4) · database suite + coverage (DATA.4, TEST.4)\""
+      ],
+      "uses": [
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "github/codeql-action/upload-sarif@1190a975f95ce23525efb6a3fc21ea29567c1b52",
+        "actions/attest@ce27ba3b4a9a139d9a20a4a07d69fabb52f1e5bc",
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+      ]
+    }
   }
 }

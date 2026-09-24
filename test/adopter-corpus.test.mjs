@@ -16,6 +16,10 @@ import { offProbes } from "../src/core/opt-in.mjs";
 import { RULES } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { BUILTIN_PROBES } from "../src/ratchet/index.mjs";
+import { resolveConfig } from "../src/ratchet/config.mjs";
+
+/** What the ratchet hands a probe with the default config and no range. */
+const SCAN = { config: resolveConfig({}), range: "" };
 
 // Every report an adopter sent, as a case against a repository shaped like theirs (never their
 // code: test/adopters/fixtures.mjs). A case names the report, the claim, and what holds now; the
@@ -130,10 +134,7 @@ const CASES = [
     claim: "a page reached through a helper's templated path is opened; one no test names is not",
     run: () => {
       const probe = BUILTIN_PROBES.find((p) => p.metric === "test.unvisitedRoutes");
-      const r = probe?.scan(
-        buildContext(productAdopter(), { tracked: true }),
-        /** @type {any} */ ({}),
-      );
+      const r = probe?.scan(buildContext(productAdopter(), { tracked: true }), SCAN);
       const unopened = (r?.findings || []).map((f) => String(f.detail));
       assert.ok(!unopened.some((d) => d.startsWith("/admin/login")), "opened by the helper");
       assert.ok(
@@ -165,7 +166,7 @@ const CASES = [
       git(dir, "add", "-A");
       git(dir, "commit", "-q", "-m", "refactor: split shifts");
       const probe = BUILTIN_PROBES.find((p) => p.metric === "docs.behindCode");
-      const r = probe?.scan(buildContext(dir, { tracked: true }), /** @type {any} */ ({}));
+      const r = probe?.scan(buildContext(dir, { tracked: true }), SCAN);
       const behind = (r?.findings || []).map((f) => f.path);
       assert.equal(behind.includes("docs/product/module.md"), false, behind.join(","));
     },
