@@ -5,6 +5,24 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-24
+
+### Upgrading
+
+Several changes here can turn a run that was green red, which is why this is a minor release.
+Each is named, with what to do:
+
+- **`docs.behindCode` is redefined (definition 3).** Its floor reads as redefined once; run
+  `abatty baseline` to write it under the new definition. Nothing is raised.
+- **`abatty ci --check` exits 3** on a pipeline generated before this release (the generated one
+  is now pinned to commits and fails on a crash), and on a hand-written one that falls back to
+  `HEAD~1` when a push has no `before`. Run `abatty ci` to regenerate.
+- **`abatty doctor` fails, and `SEC-AGENT-PERMISSIONS` is partial,** when the settings let the
+  agent read an env file (a `Read(./.env.*)` deny narrowed to named files). Restore the wildcard
+  and name the example file `env.example`.
+- **`TEST-E2E-ERRORS` is a new must-level rule** for a repository with a Playwright suite:
+  `abatty fix --phase 3 --write` writes the fixture that holds it.
+
 ### Added
 
 - **Doctor names the opt-in probes a repository left off, with what each would read today.** An
