@@ -29,6 +29,13 @@ monorepo.
 
 ### Fixed
 
+- **An update stops calling an edited git hook a conflict on every run.** A hook the repository
+  edited was offered the package's version beside it as `.abatty-new` and `update` exited 3, then
+  again on the next update although the package had not changed the hook in two versions: the
+  lock never recorded what it had offered. It now does, as it does for the other files, and an
+  unchanged hook is kept and said to be. `doctor` no longer promises a merge for a hook, which
+  `update` has no installed copy to merge from. A dry run says "would update", not "updated".
+
 - **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
   planted the integration suite's failing test by the script's words alone; a script like
   `node scripts/ci/integration.mjs` names no test, so the plant went to the source folder, the

@@ -94,8 +94,15 @@ export async function updateCommand(cx, preset) {
           : e.action === "merged"
             ? t.glyph.warn
             : t.glyph.ok;
+    // A dry run writes nothing, and says so per file as the migration's lines do: "updated" on a
+    // dry run read as a file changed.
+    const verb = { added: "add", updated: "update", overwritten: "overwrite", merged: "merge" };
+    const action =
+      flag("--dry-run") && e.action in verb
+        ? `would ${verb[/** @type {keyof typeof verb} */ (e.action)]}`
+        : e.action;
     out(
-      `  ${g} ${t.gray(e.action.padEnd(11))} ${e.file}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
+      `  ${g} ${t.gray(action.padEnd(11))} ${e.file}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
     );
   }
   for (const p of stalePatches(dir, VERSION))

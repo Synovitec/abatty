@@ -177,7 +177,7 @@ export async function doctorCommand(cx, preset) {
   for (const d of r.drift)
     if (d.state !== "in step") out(`  ${t.glyph.warn} ${t.status(d.state)}  ${d.file}\n`);
   out(
-    `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits; or keep yours and say why in the decisions file") : ""}\n`,
+    `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits where it has the installed copy to merge from, and puts it beside yours as .abatty-new where it has not (a git hook you edited); or keep yours and say why in the decisions file") : ""}\n`,
   );
   if (r.notExecutable.length)
     out(

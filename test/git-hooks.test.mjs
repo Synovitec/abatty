@@ -45,6 +45,23 @@ test("a hook the repository edited is kept, with the new version beside it; no .
   assert.match(r.out, /conflict\s+\.githooks\/pre-push/);
   assert.equal(read(dir, ".githooks/pre-push"), ours, "the repository's hook is not replaced");
   assert.match(read(dir, ".githooks/pre-push.abatty-new"), /pnpm run -s gate --refs/);
+  // Offered once: the next update that brings the same hook keeps yours and says so, where a
+  // replay of 0.7.0-rc.1 met the same conflict on every update.
+  rmSync(join(dir, ".githooks/pre-push.abatty-new"));
+  const again = cli(["update", dir], dir);
+  assert.equal(again.code, 0, again.out);
+  assert.match(again.out, /kept\s+\.githooks\/pre-push\s+· yours; the hook this version writes/);
+  assert.equal(existsSync(join(dir, ".githooks/pre-push.abatty-new")), false);
+  // A pre-push of the repository's own that init kept is offered the package's on the first
+  // update, not silently kept: the lock init wrote had offered it nothing.
+  const own = tempRepo("hooks-own", {
+    "package.json": NEXT_PKG,
+    "pnpm-lock.yaml": "lockfileVersion: 9\n",
+    ".githooks/pre-push": "#!/bin/sh\necho no gate here\n",
+  });
+  cli(["init", own, "--stack", "next"], own);
+  assert.match(cli(["update", own], own).out, /conflict\s+\.githooks\/pre-push/);
+  assert.match(read(own, ".githooks/pre-push.abatty-new"), /gate --refs/);
   const husky = installed("hooks-elsewhere");
   rmSync(join(husky, ".githooks"), { recursive: true });
   cli(["update", husky], husky);
