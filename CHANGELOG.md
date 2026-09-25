@@ -50,6 +50,11 @@ monorepo.
   `update` has no installed copy to merge from. A dry run says "would update", not "updated".
 - **A redefined check lists its findings in the ratchet's output**, as a failure does: they were
   only in `--json`, which a person reading why `update` left the gate red did not open.
+- **A red test step under bun or behind turbo says whose failure it is.** Bun's reporter (a file
+  line, then `(fail)` lines under it) was unread, and so was turbo's `<package>:<task>: ` prefix,
+  whose paths are relative to the workspace it names; the gate went red with no attribution and
+  no word of why. Both are read now, Windows paths included, and a red test step whose output
+  names no test file says it could not read one.
 
 - **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
   planted the integration suite's failing test by the script's words alone; a script like
