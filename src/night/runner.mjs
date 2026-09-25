@@ -26,6 +26,7 @@ import { deadlineOf, runSession } from "./session.mjs";
 import { describeSpent, exhausted } from "./allowance.mjs";
 import { shimmedPath } from "../core/shim.mjs";
 import { DEFAULT_MAX_DIFF_LINES, changedLineCount } from "./bounds.mjs";
+import { EXIT } from "../cli/exit.mjs";
 
 /**
  * @typedef {{
@@ -50,8 +51,13 @@ import { DEFAULT_MAX_DIFF_LINES, changedLineCount } from "./bounds.mjs";
  */
 
 /**
- * Run a night. Never throws for a refused night: the result carries the reason and the exit
- * code the shell runners used (1 refused, 2 aborted, 3 auto mode unavailable).
+ * Run a night. Never throws for a refused night: the result carries the reason and an exit code
+ * from the one table (src/cli/exit.mjs): 2 it cannot start as configured (no agent), 3 the
+ * pre-flight found the repository unfit for a night (a dirty tree, a red gate, a step that
+ * stayed green on its control), 4 the harness did not hold here (the canary) or the night
+ * aborted once running (the harness moved, the agent crashed twice, auto mode did not take).
+ * The shell runners' own 1, 2 and 3 meant other things, and an adopter's script could not tell
+ * a dirty tree from an abort.
  * @param {NightOptions} o
  * @returns {NightResult}
  */
@@ -62,7 +68,7 @@ export function runNight(o) {
   const maxCost = o.maxCostUsd ?? 60;
   const mode = o.mode || "auto";
   /** @param {string} why @param {number} [code] */
-  const refuse = (why, code = 1) => {
+  const refuse = (why, code = EXIT.findings) => {
     log(why);
     return {
       ok: false,
@@ -116,8 +122,8 @@ export function runNight(o) {
     const run = readJson(runFile);
     writeJson(runFile, { ...run, status, spent, counters, updatedAt: new Date().toISOString() });
   };
-  /** @param {string} why */
-  const failed = (why, code = 1) => {
+  /** @param {string} why @param {number} [code] */
+  const failed = (why, code = EXIT.findings) => {
     saveRun("aborted");
     return {
       ok: false,
@@ -143,7 +149,7 @@ export function runNight(o) {
       );
       for (const f of c.failed) log(`- ${f}`);
       log(`read ${c.json} and ${c.stderr}`);
-      return failed("canary failed");
+      return failed("canary failed", EXIT.error);
     }
     log(
       `  canary ok: a command ran without a prompt, the guard refused --no-verify, the Stop hook allowed the stop reading adoption.json from ${base}, MCP servers declared: ${mcpServers.join(" ") || "none"} (${c.cost.toFixed(2)} USD)`,
@@ -180,7 +186,7 @@ export function runNight(o) {
     });
     const back = readJson(statePath);
     if (!Array.isArray(back.phases) || !back.phases.length || !back.startedAt)
-      return failed("state file: phases must be a non-empty array with startedAt");
+      return failed("state file: phases must be a non-empty array with startedAt", EXIT.input);
     git(repoDir, "add", stateFile);
     git(repoDir, "commit", "-q", "-m", `chore(standards): open the adoption state for ${date}`);
   }
@@ -255,7 +261,6 @@ export function runNight(o) {
   const deadline = deadlineOf(until);
   let crashes = 0;
   let abort = "";
-  let code = 2;
   let out = "";
   while (Date.now() < deadline && !(out = exhausted(caps, spent))) {
     const next = phases.find((id) => ["pending", "in_progress"].includes(statusOf(id)));
@@ -288,7 +293,6 @@ export function runNight(o) {
     }
     if (r.kind === "denials") {
       abort = `phase ${next}: ${r.denials} permission denials - auto mode is probably unavailable to headless sessions here; rerun with mode dontAsk and explicit allow rules`;
-      code = 3;
       break;
     }
     crashes = 0;
@@ -350,7 +354,7 @@ export function runNight(o) {
   log(git(repoDir, "log", "--oneline", `${base}..${branch}`));
   return {
     ok: !abort,
-    code: abort ? code : 0,
+    code: abort ? EXIT.error : EXIT.clean,
     abort,
     spent: spent.usd,
     sessions: spent.sessions,

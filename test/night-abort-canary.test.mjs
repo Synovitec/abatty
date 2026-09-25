@@ -8,14 +8,14 @@ test("the canary aborts when the guard did not run", () => {
     "night-skip-guard",
     { STUB_CANARY_SKIP_GUARD: "1" },
     /the PreToolUse guard did NOT run/,
-    1,
+    4,
   );
 });
 
 test("the canary aborts when the Stop hook left no receipt", () => {
-  abortCase("night-skip-stop", { STUB_CANARY_SKIP_STOP: "1" }, /the Stop hook left no receipt/, 1);
+  abortCase("night-skip-stop", { STUB_CANARY_SKIP_STOP: "1" }, /the Stop hook left no receipt/, 4);
 });
 
 test("the canary aborts when the strict MCP configuration did not take", () => {
-  abortCase("night-mcp", { STUB_CANARY_MCP: "1" }, /--strict-mcp-config did not take/, 1);
+  abortCase("night-mcp", { STUB_CANARY_MCP: "1" }, /--strict-mcp-config did not take/, 4);
 });

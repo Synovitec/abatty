@@ -10,7 +10,7 @@ test("a harness moved during the night aborts it, the runner's own check alone",
     "night-tamper",
     { STUB_TAMPER: "1" },
     /harness moved before the wrap-up|harness moved before phase/,
-    2,
+    4,
     {
       sandbox: "off",
     },
@@ -18,13 +18,13 @@ test("a harness moved during the night aborts it, the runner's own check alone",
 });
 
 test("an agent that fails to run twice in a row ends the night", () => {
-  abortCase("night-crash", { STUB_CRASH: "1" }, /failed to run twice in a row/, 2, {
+  abortCase("night-crash", { STUB_CRASH: "1" }, /failed to run twice in a row/, 4, {
     skipCanary: true,
   });
 });
 
 test("a storm of permission denials ends the night", () => {
-  abortCase("night-denials", { STUB_DENIALS: "20" }, /20 permission denials/, 3, {
+  abortCase("night-denials", { STUB_DENIALS: "20" }, /20 permission denials/, 4, {
     skipCanary: true,
   });
 });

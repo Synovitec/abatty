@@ -13,6 +13,12 @@ monorepo.
 - **A new config key, `controls`**: the folder a step's planted violation goes in, by the step's
   script, for the scripts `doctor --controls` cannot follow. Optional; a repository that leaves
   it out plants as before.
+- **`abatty night` exits with the one table's codes.** 2 it cannot start as configured (no agent,
+  an unknown or hookless agent adapter, a malformed state file), 3 its pre-flight found the
+  repository unfit for a night (a dirty tree, a red gate, controls missing, stale or with a step
+  that stayed green, instruction-shaped lines in the tree), 4 the canary or the run aborted. It
+  used to exit 1, 2 or 3 with meanings of its own that nothing documented, so a script could not
+  tell a dirty tree from an abort.
 - **`abatty update` exits 3 when it leaves the gate red**: a redefined HARD check that now counts
   above zero is named, the line says the gate is red from there, and the exit says so too, a
   `--dry-run` included. It used to exit 0, and the next push went red with nothing having warned.

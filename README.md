@@ -103,7 +103,10 @@ Exit codes are a contract:
 | 130  | Interrupted                                  |
 
 Three is the one that matters. A gate that found something did not fail; it worked. Four says the
-instrument broke, which is a different problem from bad work.
+instrument broke, which is a different problem from bad work. `abatty night` reads the same
+table: 2 it cannot start as configured (no agent), 3 its pre-flight found the repository unfit for
+a night (a dirty tree, a red gate, a step that stayed green on its control), 4 the canary or the
+run itself aborted.
 
 ### The ratchet
 

@@ -25,6 +25,7 @@ import { prepareSandbox } from "./sandbox.mjs";
 import { capsOf, describeCaps, nothingSpent, spentOf } from "./allowance.mjs";
 import { localToday } from "../core/today.mjs";
 import { openNightWork } from "./bounds.mjs";
+import { EXIT } from "../cli/exit.mjs";
 
 /** The files a night refuses to start without: the harness the worker is constrained by, committed on the base before any night runs. */
 export const HARNESS_FILES = [
@@ -80,7 +81,7 @@ export function preflight(o, c) {
   if (!agent)
     return refuse(
       "no agent command: pass --agent, set ABATTY_AGENT or agent.command in ~/.abatty/config.json",
-      2,
+      EXIT.input,
     );
   const dirty = git(repoDir, "status", "--porcelain");
   if (dirty) return refuse(`dirty tree; commit or stash first:\n${dirty}`);
@@ -93,12 +94,14 @@ export function preflight(o, c) {
   if (unknown.length)
     return refuse(
       `unknown agent adapter(s) in the config: ${unknown.join(", ")} (abatty agents lists them)`,
+      EXIT.input,
     );
   const adapter = adapters.find((a) => a.guarantees.night);
   if (!adapter) {
     const first = adapters[0];
     return refuse(
       `no night for ${adapters.map((a) => a.id).join(", ")}: an adapter without a hook protocol loses ${first ? lostGuarantees(first).join("; ") : "every hook"}. Name an adapter with hooks in agents, or run the gate and CI by day.`,
+      EXIT.input,
     );
   }
   // The controls are a precondition, not a suggestion. A night is hours of unattended work whose
@@ -111,13 +114,11 @@ export function preflight(o, c) {
       recorded
         ? "the last controls run is from an older abatty, which planted where this one does not: run `abatty doctor --controls` again before a night."
         : `the gate steps have never been watched failing: run \`abatty doctor --controls\` once, on this machine, before the first night. A step that has never gone red may be checking nothing, and the night has no other stop.`,
-      2,
     );
   const absent = Array.isArray(controls.absent) ? controls.absent.map(String) : [];
   if (absent.length)
     return refuse(
       `${absent.join(", ")} stayed green on a planted violation: the step is absent, not passing. Fix the step or remove it, then run \`abatty doctor --controls\` again.`,
-      2,
     );
   log(
     `controls: every gate step went red on a planted violation (${String(controls.at).slice(0, 10)})`,
@@ -131,7 +132,6 @@ export function preflight(o, c) {
   if (untrusted.length)
     return refuse(
       `the repository carries ${untrusted.length} instruction-shaped line(s) an agent would read as an instruction:\n  ${describeTrust(untrusted).slice(0, 10).join("\n  ")}${untrusted.length > 10 ? `\n  ... and ${untrusted.length - 10} more` : ""}\nA night reads the tree. Remove them, or allow them deliberately, before pointing a model at it.`,
-      2,
     );
   log("trust: nothing in the tree reads as an instruction to a model");
 
