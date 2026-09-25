@@ -5,6 +5,7 @@
  * documents against it, because reading git history is one job and judging a document another.
  */
 import { contentLines } from "./diff.mjs";
+import { baselinePath } from "../config.mjs";
 
 /** A diff line of a document that only moves a verification date. */
 const DATE_LINE = /^[+-]\s*(last_verified|last_reviewed|updated)\s*:/;
@@ -30,20 +31,29 @@ function commentLine(file, line) {
  * With `bodyOnly`, for a path judged as a SOURCE: a Markdown document moves only when its body
  * does. Its front matter is where a split rewrites the `source_truth` globs, and read as a move it
  * put every document citing it behind, with nothing to re-read (an adopter raised a floor for it).
- * A document's own re-read is not judged this way.
+ * A document's own re-read is not judged this way. Nor does a source move by what abatty writes as
+ * its own record (`abatty update` moving the version pin, `abatty baseline` rewriting the floors):
+ * read as moves, an upgrade put the documents citing package.json, the config and the baseline
+ * behind, their re-read moved the progress log, and one adopter took four commits to go green.
  * @param {import("../../rules/context.mjs").RepoContext} c @param {string} path
  * @param {{ bodyOnly?: boolean }} [o]
  */
 export function lastChange(c, path, o = {}) {
   const log = c.git("log", "-50", "--format=%H", "--", path);
   const indented = INDENTED.map((ext) => `:(exclude,glob)**/*.${ext}`);
+  const records = o.bodyOnly ? recordFiles(c) : new Set();
+  /** Abatty's own record, a whole file or the pin line: in source mode only. @param {string} f @param {string} l */
+  const own = (f, l) => records.has(f) || (Boolean(o.bodyOnly) && isPinLine(f, l));
   for (const sha of log.split("\n").filter(Boolean)) {
     // `-w`: a commit that only reindented or reformatted moved nothing a document describes,
     // except where indentation is the meaning (Python, YAML), which is read with it.
     const loose = c.git("show", "--format=", "-U0", "-w", sha, "--", path, ...indented);
     const strict = c.git("show", "--format=", "-U0", sha, "--", path);
     const body = o.bodyOnly ? frontMatterEnds(c, sha) : null;
-    if (moved(loose, () => true, body) || moved(strict, (f) => INDENTED_FILE.test(f), body))
+    if (
+      moved(loose, () => true, body, own) ||
+      moved(strict, (f) => INDENTED_FILE.test(f), body, own)
+    )
       return sha;
   }
   return "";
@@ -100,14 +110,43 @@ function frontMatterEnds(c, sha) {
 }
 
 /**
+ * The version pin `abatty update` moves, in a manifest or the config: `"abatty": "^0.7.0",`. The
+ * value is a version or a range, so `"bin": { "abatty": "bin/abatty.mjs" }` or a script named
+ * `abatty` is content, not a pin.
+ */
+const PIN_LINE = /^[+-]\s*"abatty"\s*:\s*"(?:[\^~]|[<>]=?|=)?\d+\.\d+\.\d+[\w.+-]*",?\s*$/;
+/** The files that carry that pin. */
+const PIN_FILE = /(?:^|\/)(?:package\.json|abatty\.config\.json|adoption\.json)$/;
+/** The lock `abatty update` writes (src/core/update.mjs `LOCK`), a record, never a source. */
+const HARNESS_LOCK = ".claude/harness.lock.json";
+
+/**
+ * The files abatty writes whole as its own record: the baseline the ratchet writes, where the
+ * repository names it, and the harness lock. A floor edited by hand in the baseline cannot be
+ * told from one `abatty baseline` wrote, and moves no document either (the ratchet itself refuses
+ * a raised floor without a reason and an owner).
+ * @param {import("../../rules/context.mjs").RepoContext} c
+ */
+function recordFiles(c) {
+  return new Set([baselinePath(c.adoption).replace(/^\.\//, ""), HARNESS_LOCK]);
+}
+
+/** Whether a diff line is the version pin in a file that carries one. @param {string} file @param {string} line */
+function isPinLine(file, line) {
+  return PIN_FILE.test(file) && PIN_LINE.test(line);
+}
+
+/**
  * Whether a zero-context diff moves anything a document could describe, in the files `keep`
- * accepts; with `body`, a Markdown file's front-matter lines are passed over.
+ * accepts; with `body`, a Markdown file's front-matter lines are passed over; with `own`, the
+ * lines abatty writes as its own record.
  * @param {string} diff @param {(file: string) => boolean} keep
  * @param {((file: string, side: "old" | "new") => number) | null} [body]
+ * @param {(file: string, line: string) => boolean} [own]
  */
-function moved(diff, keep, body = null) {
+function moved(diff, keep, body = null, own = () => false) {
   for (const [file, l, at] of contentLines(diff)) {
-    if (!keep(file)) continue;
+    if (!keep(file) || own(file, l)) continue;
     if (body && file.endsWith(".md") && at <= body(file, l[0] === "+" ? "new" : "old")) continue;
     if (file.endsWith(".md") && DATE_LINE.test(l)) continue;
     // Nor did one that only rewrote a comment in code: the behaviour a document cites is the

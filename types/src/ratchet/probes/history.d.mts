@@ -9,7 +9,10 @@
  * With `bodyOnly`, for a path judged as a SOURCE: a Markdown document moves only when its body
  * does. Its front matter is where a split rewrites the `source_truth` globs, and read as a move it
  * put every document citing it behind, with nothing to re-read (an adopter raised a floor for it).
- * A document's own re-read is not judged this way.
+ * A document's own re-read is not judged this way. Nor does a source move by what abatty writes as
+ * its own record (`abatty update` moving the version pin, `abatty baseline` rewriting the floors):
+ * read as moves, an upgrade put the documents citing package.json, the config and the baseline
+ * behind, their re-read moved the progress log, and one adopter took four commits to go green.
  * @param {import("../../rules/context.mjs").RepoContext} c @param {string} path
  * @param {{ bodyOnly?: boolean }} [o]
  */

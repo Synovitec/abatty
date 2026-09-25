@@ -30,6 +30,15 @@ monorepo.
   size.overBudget, ...` where it said `ratchet red · 21 metric(s)`. A script matching the old red
   line no longer matches it; terminal text is outside the contract (docs/VERSIONING.md), and
   `ratchet --json` carries the same verdicts as data.
+- **`docs.behindCode` reads fewer documents as behind**, without a new definition (a false
+  positive removed, so no floor reads as redefined): what abatty writes as its own record (the
+  `abatty` version pin in package.json and the config, the baseline, the harness lock) no longer
+  moves the documents that cite those files. A floor above the new count locks itself on the next
+  ratchet run outside CI; in CI it reads as unlocked until `abatty baseline` records it. A floor
+  edited by hand in the baseline moves no document either.
+- **Correction to 0.6.1's note on `docs.behindCode` definition 4**, which said its only effect
+  was fewer documents read as behind: a replay from 0.5.2 found two documents newly behind after
+  the upgrade. Read the upgrade's count, not the note.
 
 ### Fixed
 

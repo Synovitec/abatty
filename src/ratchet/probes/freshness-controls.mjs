@@ -188,4 +188,46 @@ export const BEHIND_CODE_CONTROLS = [
     ],
     expect: 3,
   },
+  {
+    // An upgrade moved the version pin in the manifest and the config and rewrote the baseline;
+    // read as moves, every document citing them went behind and their re-read moved the progress
+    // log (two adopters' replays of 0.7.0-rc.1). A script beside the pin still moves the manifest.
+    name: "abatty's own records (the version pin, the baseline, the harness lock) move no source; a script beside the pin, or a bin keyed abatty, does",
+    files: {
+      "docs/pin.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "abatty.config.json"\n`),
+      "docs/log.md": FM(
+        `last_verified: "2020-01-01"\nsource_truth:\n  - "scripts/ci/standards-baseline.json"\n`,
+      ),
+      "docs/pkg.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "package.json"\n`),
+      "docs/lock.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - ".claude/"\n`),
+      "docs/bin.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "tool/package.json"\n`),
+      ".claude/harness.lock.json": '{\n  "abatty": "0.6.1"\n}\n',
+      "tool/package.json": '{\n  "bin": {\n    "abatty": "bin/abatty.mjs"\n  }\n}\n',
+      "abatty.config.json": '{\n  "abatty": "0.6.1",\n  "stack": "node"\n}\n',
+      "scripts/ci/standards-baseline.json": '{\n  "metrics": { "size.overBudget": 3 }\n}\n',
+      "package.json": '{\n  "name": "p",\n  "devDependencies": {\n    "abatty": "^0.6.1"\n  }\n}\n',
+    },
+    commits: [
+      {
+        files: {
+          "abatty.config.json": '{\n  "abatty": "0.7.0",\n  "stack": "node"\n}\n',
+          ".claude/harness.lock.json": '{\n  "abatty": "0.7.0",\n  "files": {}\n}\n',
+          "tool/package.json": '{\n  "bin": {\n    "abatty": "cli/abatty.mjs"\n  }\n}\n',
+          "scripts/ci/standards-baseline.json": '{\n  "metrics": { "size.overBudget": 2 }\n}\n',
+          "package.json":
+            '{\n  "name": "p",\n  "devDependencies": {\n    "abatty": "^0.7.0"\n  }\n}\n',
+        },
+        message: "chore: abatty update, then abatty baseline",
+      },
+      {
+        files: {
+          "package.json":
+            '{\n  "name": "p",\n  "scripts": { "test": "vitest run" },\n  "devDependencies": {\n    "abatty": "^0.7.1"\n  }\n}\n',
+        },
+        message: "chore: a test script, and the pin",
+      },
+    ],
+    // package.json (a script beside the pin) and tool/package.json (a bin keyed abatty)
+    expect: 2,
+  },
 ];
