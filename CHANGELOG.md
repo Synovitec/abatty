@@ -5,6 +5,80 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.1] - 2026-09-24
+
+A release candidate, published under the `next` tag: `npm i -D abatty@next` to replay it before
+0.7.0 goes to `latest` (docs/decisions/0002-the-road-to-1-0.md).
+
+### Upgrading
+
+- **The JSON report gains a `probation` key** (an array, one entry per check on probation). A
+  reader that ignores unknown keys is unaffected.
+
+### Changed
+
+- **`abatty update` migrates a redefined check's floor itself.** When a check's definition
+  changed, its floor read as "redefined" until every adopter ran `abatty baseline` by hand, and
+  each release's notes had to ask for it. `update` now rewrites exactly those floors under the new
+  definition and names each one: a redefinition is not a raise. It touches no other floor. A HARD
+  metric that now counts above zero is named and left for a person. `--dry-run` writes nothing.
+- **A minor release goes out as a candidate first.** A version with a `-` (like `0.7.0-rc.1`) is
+  published under the `next` tag, never `latest`, so adopters can replay it with `abatty@next`
+  before anyone upgrades. A miss they find costs another candidate, not a patch release.
+  CONTRIBUTING.md describes the routine: the candidate, the replay, the reports as corpus cases,
+  and, once a replay finds no must-level miss, one commit on top that only sets the final version.
+
+### Added
+
+- **The road to 1.0 is a written decision** (`docs/decisions/0002-the-road-to-1-0.md`):
+  - a weekly release candidate that the adopting repositories replay;
+  - a scope freeze on new surfaces until 1.0;
+  - a 1.0 that covers the `node` and `next` presets, with `astro`, `python` and `docs`
+    experimental;
+  - the evidence that decides when the promise is made: the contract unchanged across two
+    minors, two clean replays, and every check out of probation or declared optional.
+- **A red test step says whose failure it is.** An adopter's pushes were refused four times in a
+  day, none caused by the pushed change. A test that failed on timing read exactly like one the
+  push broke, and telling them apart meant reading the whole log.
+  - The gate now keeps each step's output, under `.abatty/steps/`, while still showing it as it
+    runs. The step's output is a pipe, so a tool prints its plain form (no colours, a runner's
+    non-interactive reporter); colour is not forced back, since a test matching a CLI's plain
+    text would then fail under the gate only.
+  - After a red step it reads the failing test files: Playwright, vitest, jest, and Node's own
+    runner in both its spec and TAP forms.
+  - Each failing test is named as this push's when the push changed it or anything it imports.
+    One nothing the push changed reaches is named as likely a flake, the environment or a change
+    outside the code, to rerun alone. When the push's range is unknown, nothing is attributed.
+  - A test that fails unreached on more than one commit is recorded in `.abatty/flakes.json` and
+    named as a quarantine candidate, with an owner and a date, never retried away (TEST.6).
+- **Each check on probation is shown with the evidence to promote it.** A check on probation is
+  shown and never fails a run until a named repository has run it clean. Nothing recorded that
+  evidence, so no check had left probation. `abatty report` now lists each one:
+  - whether it runs here;
+  - what it reads;
+  - how often it was disputed here;
+  - "clean here" when it runs, reads 0 and was never disputed: this repository's vote to promote
+    it.
+
+  The package gathers these votes from its adopters' reports.
+- **Every adopter report is a permanent case.** The misses adopters found this week are now one
+  test file, run against synthetic repositories shaped like theirs: a Next + Prisma product with
+  a browser suite, and a repository of domain documents citing each other. No adopter's code is
+  used. Each case names its report and its claim, from the force-resetting `db:setup` script to
+  the front-matter-only change. A new report adds its case before its fix lands, so a miss found
+  once cannot come back unseen.
+- **The contract is a file.** Everything an adopter's run or script depends on is now one
+  committed snapshot, `test/contract/surface.json`:
+  - the commands and the exit codes;
+  - the config's keys;
+  - each probe with its kind and definition version, and each rule with its level;
+  - the shapes of the JSON report, the ratchet's JSON and SARIF;
+  - the pipeline `abatty ci` writes.
+
+  A test fails when any of them changes, so every such change is deliberate and reviewed as one
+  diff. `docs/VERSIONING.md` says how to make one, and that a snapshot which stops changing is
+  what makes 1.0 promisable.
+
 ## [0.6.1] - 2026-09-24
 
 ### Upgrading

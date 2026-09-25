@@ -32,3 +32,12 @@ trusted publishing: no token is stored anywhere (SECURITY.md, "How a release rea
 local `npm publish` runs the gate first (`prepublishOnly`), needs a maintainer's two-factor
 session since the package refuses tokens, and is for the day the workflow cannot. Adopters pin the version through
 `harness.lock.json`, written by `init` and `update`.
+
+**A minor goes out as a candidate first.** Tag `vX.Y.0-rc.1` with the version `X.Y.0-rc.1`: the
+workflow publishes it under the `next` tag, never `latest`. The adopters replay it
+(`npm i -D abatty@next`, read-only for this repository: their reports come back as cases in
+`test/adopter-corpus.test.mjs`); a miss is fixed as `rc.2`. When a candidate goes through a
+replay with no must-level miss, one commit goes on top of it that only sets the version to
+`X.Y.0` and dates the changelog section, and that commit is tagged `vX.Y.0` (the release refuses a
+tag that is not the version): nothing else changes between the candidate adopters replayed and the
+release. A patch that only fixes what a replay found may skip the candidate.

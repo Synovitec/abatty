@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { missingTool } from "./which.mjs";
 import { childEnv, searchFromEnv } from "./env.mjs";
 
@@ -78,21 +79,31 @@ export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
 /**
  * Run an npm script and say how it went; output goes straight to the terminal. `env` is laid
  * over this process's environment: how a suite is given a database of its own.
+ * With `o.log`, the output is also kept in that file (src/core/tee-step.mjs), still shown live.
  * @param {string} repoDir @param {string} script @param {string[]} [extraArgs]
- * @param {Record<string, string>} [env] @returns {RunResult}
+ * @param {Record<string, string>} [env] @param {{ log?: string }} [o] @returns {RunResult}
  */
-export function runScript(repoDir, script, extraArgs = [], env = {}) {
+export function runScript(repoDir, script, extraArgs = [], env = {}, o = {}) {
   const l = launch("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])]);
   const res = resultOf(
-    spawnSync(l.file, l.args, {
-      cwd: repoDir,
-      stdio: "inherit",
-      shell: l.shell,
-      env: childEnv(env),
-    }),
+    o.log
+      ? spawnSync(process.execPath, [TEE, o.log, l.shell ? "1" : "0", l.file, ...l.args], {
+          cwd: repoDir,
+          stdio: "inherit",
+          env: childEnv(env),
+        })
+      : spawnSync(l.file, l.args, {
+          cwd: repoDir,
+          stdio: "inherit",
+          shell: l.shell,
+          env: childEnv(env),
+        }),
   );
   return notInstalled(res, repoDir, script);
 }
+
+/** The step wrapper that shows a step's output and keeps it. */
+const TEE = fileURLToPath(new URL("./tee-step.mjs", import.meta.url));
 
 /**
  * A script that exited 1 on Windows, read again: when its program is found nowhere, cmd.exe's 1

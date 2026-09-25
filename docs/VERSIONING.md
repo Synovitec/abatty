@@ -36,8 +36,8 @@ number, the patch is not.**
 One breaking axis per minor. Several at once is how a tool's biggest upgrade becomes the one
 nobody takes: an adopter who reads one sentence of the notes should learn everything that changed
 for them. The migration ships in the same release as the change, never after it: `abatty update`
-for the harness, the "redefined" verdict and `abatty baseline` for a probe, the changelog for the
-rest, and a migration is tested like any other code.
+for the harness and for a redefined probe (whose floor it rewrites under the new definition,
+touching no other), the changelog for the rest, and a migration is tested like any other code.
 
 ## A patch (0.x.y → 0.x.y+1) cannot turn a green run red
 
@@ -53,6 +53,17 @@ The human-readable terminal output (its words, colours, order and layout), the t
 detail and of a verdict's message, the files under `.abatty/`, and anything not exported from
 `src/`. Scripts that parse the terminal break without notice; the `--json` output is the one to
 read.
+
+## The contract, as data
+
+The surfaces above are held as one file, `test/contract/surface.json`: the commands, the exit
+codes, the config's keys, every probe with its kind and definition version, every rule with its
+level and enforcement, the shapes of the JSON report, the ratchet's JSON and SARIF, and the steps
+and actions of the pipeline `abatty ci` writes. A test fails when any of them changes, so a change
+is made on purpose: rewrite the snapshot (`UPDATE_CONTRACT=1 node --test
+test/contract-surface.test.mjs`), name the change under Upgrading in the changelog, and ship it in
+a minor. When the snapshot goes a stretch of releases without changing, the contract is ready to be
+promised as 1.0.
 
 ## Where the version lives
 
