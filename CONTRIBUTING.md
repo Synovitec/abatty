@@ -34,9 +34,12 @@ session since the package refuses tokens, and is for the day the workflow cannot
 `harness.lock.json`, written by `init` and `update`.
 
 **A minor goes out as a candidate first.** Tag `vX.Y.0-rc.1` with the version `X.Y.0-rc.1`: the
-workflow publishes it under the `next` tag, never `latest`. The adopters replay it
-(`npm i -D abatty@next`, read-only for this repository: their reports come back as cases in
-`test/adopter-corpus.test.mjs`); a miss is fixed as `rc.2`. When a candidate goes through a
+workflow publishes it under the `next` tag, never `latest`. The adopters replay it on a branch,
+with their own package manager (`npm i -D abatty@next`, `pnpm add -D abatty@next`,
+`yarn add -D abatty@next`), then `abatty update .`, then `abatty doctor --controls` when the
+minor moved (a night is refused on controls an older minor planted), then their gate and a
+night. The replay is read-only for this repository: their reports come back as cases in
+`test/adopter-corpus.test.mjs`; a miss is fixed as `rc.2`. When a candidate goes through a
 replay with no must-level miss, one commit goes on top of it that only sets the version to
 `X.Y.0` and dates the changelog section, and that commit is tagged `vX.Y.0` (the release refuses a
 tag that is not the version): nothing else changes between the candidate adopters replayed and the

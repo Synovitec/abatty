@@ -64,3 +64,23 @@ test("a HARD metric that now counts above zero is named and left for a person, n
   assert.match(String(m?.why), /HARD and above zero/);
   assert.equal(read(dir).metrics["size.excessCode"], 7, "the floor is as it was");
 });
+
+test("update says the gate is red and exits with findings when a HARD check it could not migrate reads above zero", () => {
+  const migrated = redefinedFloor();
+  const ok = cli(["update", migrated, "--dry-run"], migrated);
+  assert.equal(ok.code, 0, ok.out);
+  assert.doesNotMatch(ok.out, /the gate is red/);
+  const dir = redefinedFloor();
+  const b = read(dir);
+  b.hard = [...(b.hard || []), "size.excessCode"];
+  writeFileSync(join(dir, REL), JSON.stringify(b, null, 2));
+  const red = cli(["update", dir, "--dry-run"], dir);
+  assert.equal(red.code, 3, red.out);
+  // And the ratchet names the findings where it names the verdict, not only in --json.
+  const ratchet = cli(["ratchet", dir], dir);
+  assert.match(ratchet.out, /REDEFINED[\s\S]*src\/a\.ts/);
+  assert.match(
+    red.out,
+    /the gate is red from here: size\.excessCode redefined, HARD and above zero/,
+  );
+});

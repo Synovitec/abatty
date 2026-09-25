@@ -6,8 +6,9 @@
  * module only knows what to plant and where.
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { readJsonFile } from "./repo.mjs";
+import { testPlantPath } from "./test-plant-path.mjs";
 
 /** The prefix of every file a control plants, so a planted file is never mistaken for the repository's own and is always removed. */
 export const MARK = "abatty-control.__";
@@ -89,30 +90,47 @@ function tsHome(dir) {
   return parts.length === 3 && existsSync(join(ws, "tsconfig.json")) ? ws : dir;
 }
 
-/**
- * The path a failing test has to take for the repository's own test script to run it: the first
- * globbed argument of that script decides both the folder and the name. A script with no glob
- * (`vitest run`) keeps the convention-based path, because the runner's own default finds it.
- * @param {string} script @param {string} fallbackExt @param {string} [root] where a source lives
- */
-function testPlantPath(script, fallbackExt, root = "src") {
-  const tokens = String(script || "")
-    .split(/\s+/)
-    .map((token) => token.replace(/^['"]|['"]$/g, ""));
-  const glob = tokens.find((token) => token.includes("*") && /\.[cm]?[jt]sx?$/.test(token));
-  if (glob) {
-    const parts = glob.split("/");
-    const name = String(parts.pop() || "").replace(/\*+/g, MARK);
-    const dir = parts.filter((part) => !part.includes("*")).join("/");
-    return dir ? `${dir}/${name}` : name;
-  }
-  // A folder handed to the runner (`node --test test/`, the form every Node accepts, where the
-  // glob form needs 21) is searched by the runner's own patterns, which a `.test` name meets.
-  const folder = tokens.find((token) => /^\.?\/?(tests?|__tests__|spec)\/?$/.test(token));
-  if (folder)
-    return `${folder.replace(/^\.?\//, "").replace(/\/$/, "")}/${MARK}.test${fallbackExt}`;
-  return `${root}/${MARK}.test${fallbackExt}`;
+/** The dependencies and test script of a package.json, as a failing test's import reads them. @param {string} dir */
+function runnerOf(dir) {
+  const pkg = readJsonFile(dir, "package.json") || {};
+  const deps = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.devDependencies || {})];
+  return { deps: new Set(deps), script: String(pkg.scripts?.test || "") };
 }
+
+/**
+ * A failing test at `rel`, importing the runner of the package it lands in: a plant deferred into
+ * a workspace reads that workspace's dependencies, not the root's, or a jest workspace gets a
+ * node:test file and goes red on "no tests" rather than on the throw.
+ * @param {string} dir @param {string} rel @param {Set<string>} rootDeps
+ */
+function failingTest(dir, rel, rootDeps) {
+  let at = { deps: rootDeps, script: "" };
+  for (let d = posix.dirname(rel); d && d !== "."; d = posix.dirname(d))
+    if (existsSync(join(dir, d, "package.json"))) {
+      at = runnerOf(join(dir, d));
+      break;
+    }
+  const runner = at.deps.has("vitest")
+    ? 'import { test } from "vitest";\n'
+    : at.deps.has("jest") || /\bjest\b/.test(at.script)
+      ? ""
+      : /\bbun test\b/.test(at.script)
+        ? 'import { test } from "bun:test";\n'
+        : 'import { test } from "node:test";\n';
+  return file(
+    rel,
+    runner +
+      'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
+  );
+}
+
+/** Where a failing test goes for this script to run it (test-plant-path.mjs). @param {string} dir @param {string} script */
+const testPath = (dir, script) =>
+  testPlantPath(dir, script, {
+    extOf: (d) => checkedExt(tsHome(d)),
+    rootOf: plantRoot,
+    mark: MARK,
+  });
 
 /** The planted violation per step, by the script it runs or the built-in it is. @type {Record<string, StepControl>} */
 export const STEP_CONTROLS = {
@@ -154,12 +172,7 @@ export const STEP_CONTROLS = {
             [`tests/test_abatty_control__.py`]:
               'def test_abatty_control():\n    raise Exception("planted")\n',
           }
-        : file(
-            testPlantPath(scripts.test || "", checkedExt(tsHome(dir)), plantRoot(dir)),
-            (deps.has("vitest") ? 'import { test } from "vitest";\n' : "") +
-              (deps.has("vitest") ? "" : 'import { test } from "node:test";\n') +
-              'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
-          ),
+        : failingTest(dir, testPath(dir, scripts.test || ""), deps),
   },
   dead: {
     means: "an unused export in an unreferenced file",
@@ -200,13 +213,7 @@ export const STEP_CONTROLS = {
   "test:integration": {
     means: "an integration test that throws",
     files: ({ deps, dir, scripts }) =>
-      file(
-        testPlantPath(scripts["test:integration"] || "", checkedExt(tsHome(dir)), plantRoot(dir)),
-        (deps.has("vitest")
-          ? 'import { test } from "vitest";\n'
-          : 'import { test } from "node:test";\n') +
-          'test("abatty control: planted to fail", () => {\n  throw new Error("planted");\n});\n',
-      ),
+      failingTest(dir, testPath(dir, scripts["test:integration"] || ""), deps),
   },
   e2e: {
     means: "a browser test that throws",

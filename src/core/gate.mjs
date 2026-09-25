@@ -213,6 +213,11 @@ export function runGate(o) {
         head: git(repoDir, "rev-parse", "HEAD"),
         cwd,
         blind,
+        // A test step by what it holds (a TEST rule) or the preset's own key for a suite, not by
+        // the script the repository runs under it, which it may call anything.
+        tests:
+          /\bTEST\.\d/.test(s.label) ||
+          ["test", "test:integration", "e2e"].includes(s.script || ""),
       }))
         log(line);
     return passed;

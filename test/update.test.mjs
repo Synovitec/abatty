@@ -202,7 +202,7 @@ test("the CLI: update --dry-run writes nothing; --force takes the package's vers
   const dir = installedOld("update-cli");
   const dry = cli(["update", dir, "--dry-run"], dir);
   assert.equal(dry.code, 0, dry.out);
-  assert.match(dry.out, /updated\s+\.claude\/hooks\/session-brief\.mjs/);
+  assert.match(dry.out, /would update\s+\.claude\/hooks\/session-brief\.mjs/);
   assert.equal(readFileSync(join(dir, HOOK), "utf8"), OLD, "nothing written");
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(

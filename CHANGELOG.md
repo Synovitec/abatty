@@ -5,6 +5,88 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.2] - 2026-09-25
+
+The second release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the first replays of 0.7.0-rc.1 found, on a product repository and on a task-runner
+monorepo.
+
+### Upgrading
+
+- **A new config key, `controls`**: the folder a step's planted violation goes in, by the step's
+  script, for the scripts `doctor --controls` cannot follow. Optional; a repository that leaves
+  it out plants as before.
+- **`abatty night` exits with the one table's codes.** 2 it cannot start as configured (no agent,
+  an unknown or hookless agent adapter, a malformed state file), 3 its pre-flight found the
+  repository unfit for a night (a dirty tree, a red gate, controls missing, stale or with a step
+  that stayed green, instruction-shaped lines in the tree), 4 the canary or the run aborted. It
+  used to exit 1, 2 or 3 with meanings of its own that nothing documented, so a script could not
+  tell a dirty tree from an abort.
+- **`abatty update` exits 3 when it leaves the gate red**: a redefined HARD check that now counts
+  above zero is named, the line says the gate is red from there, and the exit says so too, a
+  `--dry-run` included. It used to exit 0, and the next push went red with nothing having warned.
+- **`doctor --controls` may plant a test step's violation somewhere new**: where a script names
+  a runner config or a wrapper, hands its runner a folder, or runs a task over the workspaces.
+  A step recorded absent may read red on the next run, which is the point; one recorded red
+  should stay red, and if it does not, `controls` in the config names its folder.
+- **The ratchet's last line names what failed**: `ratchet red · 3 of 21 metric(s) failing:
+  size.overBudget, ...` where it said `ratchet red · 21 metric(s)`. A script matching the old red
+  line no longer matches it; terminal text is outside the contract (docs/VERSIONING.md), and
+  `ratchet --json` carries the same verdicts as data.
+- **`docs.behindCode` reads fewer documents as behind**, without a new definition (a false
+  positive removed, so no floor reads as redefined): what abatty writes as its own record (the
+  `abatty` version pin in package.json and the config, the baseline, the harness lock) no longer
+  moves the documents that cite those files. A floor above the new count locks itself on the next
+  ratchet run outside CI; in CI it reads as unlocked until `abatty baseline` records it. A floor
+  edited by hand in the baseline moves no document either.
+- **Correction to 0.6.1's note on `docs.behindCode` definition 4**, which said its only effect
+  was fewer documents read as behind: a replay from 0.5.2 found two documents newly behind after
+  the upgrade. Read the upgrade's count, not the note.
+
+### Fixed
+
+- **An update stops calling an edited git hook a conflict on every run.** A hook the repository
+  edited was offered the package's version beside it as `.abatty-new` and `update` exited 3, then
+  again on the next update although the package had not changed the hook in two versions: the
+  lock never recorded what it had offered. It now does, as it does for the other files, and an
+  unchanged hook is kept and said to be. `doctor` no longer promises a merge for a hook, which
+  `update` has no installed copy to merge from. A dry run says "would update", not "updated".
+- **A redefined check lists its findings in the ratchet's output**, as a failure does: they were
+  only in `--json`, which a person reading why `update` left the gate red did not open.
+- **A red test step under bun or behind turbo says whose failure it is.** Bun's reporter (a file
+  line, then `(fail)` lines under it) was unread, and so was turbo's `<package>:<task>: ` prefix,
+  whose paths are relative to the workspace it names; the gate went red with no attribution and
+  no word of why. Both are read now, Windows paths included, and a red test step whose output
+  names no test file says it could not read one.
+- **`--plain` reaches the commands abatty starts**: `gate --plain` ran the ratchet as a child that
+  printed its glyphs into the step's log. It travels as `ABATTY_PLAIN=1`, which a pipeline may
+  also set.
+
+- **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
+  planted the integration suite's failing test by the script's words alone; a script like
+  `node scripts/ci/integration.mjs` names no test, so the plant went to the source folder, the
+  suite never saw it, and a working suite read as absent, which refuses every night. The script's
+  files are now followed two levels (the wrapper, then the runner config it passes) to the first
+  test glob, the config's `include` included.
+- **A monorepo behind a task runner is watched failing in a workspace.** `turbo run test` read
+  the task's name as a `test/` folder at the root, which no workspace runs, so the unit step
+  stayed green on its plant in under a second and every turbo or nx monorepo was refused a night.
+  A task runner (`turbo`, `nx`, `lerna`, or a manager's `-r`, `--filter`, `--workspaces`) now
+  defers to the first workspace whose own script runs the task, and a folder that script hands
+  its runner (`bun test lib/`) is where the plant goes. A subcommand (`bun test`) and a script's
+  name (`npm run test`) are no longer read as folders; a runner's own `run` still hands one over
+  (`vitest run tests/unit`). A `--filter` picks the workspace it names. The planted test imports
+  the runner of the workspace it lands in (jest's globals, `bun:test`, vitest, node:test), not
+  the root's. A config's `exclude` globs are skipped for its `include`, a wrapper's relative
+  names are read from its own folder, and nothing followed may lead outside the repository. What
+  still cannot be followed, a wrapper that changes folder before it runs, `controls` in the
+  config names; a `controls` folder outside the repository (absolute, a drive, UNC, `..`, with
+  either slash) is ignored.
+- **`abatty update` says when the next night will be refused**: controls an older minor planted
+  are no proof to this one, and the notice now comes with the upgrade, not at the night's
+  pre-flight.
+- **The replay routine names every package manager and the controls re-run** (CONTRIBUTING.md).
+
 ## [0.7.0-rc.1] - 2026-09-24
 
 A release candidate, published under the `next` tag: `npm i -D abatty@next` to replay it before

@@ -38,6 +38,47 @@ test("the failing test files are read from each runner's output, colours, TAP an
   );
 });
 
+test("bun's `(fail)` lines under a file header, and a task runner's prefix naming the workspace, are read", () => {
+  const dir = tempRepo("flake-turbo", {
+    "package.json": JSON.stringify({ workspaces: ["apps/*"] }),
+    "apps/web/package.json": JSON.stringify({ name: "@izishift/web" }),
+    "apps/mobile/package.json": JSON.stringify({ name: "@izishift/mobile" }),
+  });
+  const out = [
+    "@izishift/web:test: lib\\proxy\\route-classes.test.ts:",
+    "@izishift/web:test: (pass) routes > classify",
+    "@izishift/web:test: (fail) abatty rc replay plant > fails on purpose",
+    "@izishift/web:test: lib\\ok.test.ts:",
+    "@izishift/web:test: (pass) fine",
+    "@izishift/web:test:  1 fail",
+    "@izishift/mobile:test: FAIL lib/cart.test.ts",
+    "@unknown/pkg:test: FAIL lib/elsewhere.test.ts",
+    "Error: something: happened at lib/x.test.ts",
+  ].join("\n");
+  assert.deepEqual(failingTestFiles(out, { repoDir: dir }), [
+    "apps/mobile/lib/cart.test.ts",
+    "apps/web/lib/proxy/route-classes.test.ts",
+    "lib/elsewhere.test.ts",
+  ]);
+  // Bun without a task runner: the header's path is the step's own.
+  assert.deepEqual(failingTestFiles("src/a.test.ts:\n(fail) a > b\n", { repoDir: dir }), [
+    "src/a.test.ts",
+  ]);
+});
+
+test("a red test step whose output names no test file says so; another step says nothing", () => {
+  const dir = tempRepo("flake-unread", { "package.json": "{}" });
+  mkdirSync(join(dir, ".abatty/steps"), { recursive: true });
+  const log = join(dir, ".abatty/steps/unit.log");
+  writeFileSync(log, "something went wrong\n");
+  const o = { repoDir: dir, log, changed: [], head: "c1" };
+  assert.match(
+    explainFailure({ ...o, tests: true }).join("\n"),
+    /no failing test file could be read from the output \(\.abatty\/steps\/unit\.log\)/,
+  );
+  assert.deepEqual(explainFailure(o), []);
+});
+
 /** A repository where test/price.test.mjs imports src/price.mjs and test/other.test.mjs imports nothing. */
 function withGraph() {
   const dir = tempRepo("flake", {

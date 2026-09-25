@@ -8,7 +8,11 @@ import { night, nightRepo, recordControls, setGate } from "./night-helpers.mjs";
 test("a night is refused on a dirty tree, on a red gate, and on an MCP server the config does not name", () => {
   const dirty = nightRepo("night-dirty");
   writeFileSync(join(dirty, "src-note.txt"), "x");
-  assert.match(night(dirty).out, /dirty tree/);
+  const d = night(dirty);
+  assert.match(d.out, /dirty tree/);
+  // The one table's codes: a repository unfit for a night is 3, a night that cannot start as
+  // configured is 2 (the replay of 0.7.0-rc.1 met a dirty-tree 1 nothing documented).
+  assert.equal(d.code, 3);
   const red = nightRepo("night-red");
   setGate(red, 'node -e "process.exit(1)"');
   git(red, "add", "-A");
@@ -50,6 +54,7 @@ test("a night is refused until the gate steps have been watched failing", () => 
   writeFileSync(file, JSON.stringify(rec));
   const absent = night(dir);
   assert.equal(absent.ok, false);
+  assert.equal(absent.code, 3, "an absent step is a finding, not a configuration error");
   assert.match(absent.out + absent.abort, /dead code \(CODE\.6\).*absent|absent, not passing/s);
 
   // And with every step watched red, the same repository is allowed to start.

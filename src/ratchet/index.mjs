@@ -357,9 +357,12 @@ function judgeOne(m, baseline, config) {
   // version is reported, because comparing it would be arithmetic on two different questions.
   const wroteUnder = baseline?.versions?.[m.metric];
   const now = probeVersion(m);
+  // The findings are listed as a failure lists them: a redefined HARD metric above zero is one
+  // `update` cannot migrate, and naming only the verdict sent a replay to `--json` for them.
   if (typeof wroteUnder === "number" && wroteUnder !== now)
     return v("redefined", [
-      `the floor ${floor ?? "(none)"} was written under definition ${wroteUnder} of this metric and the probe now counts definition ${now}; the two numbers are not the same question. Re-read the probe, then run \`abatty baseline\` to record today's number under the current definition`,
+      `the floor ${floor ?? "(none)"} was written under definition ${wroteUnder} of this metric and the probe now counts definition ${now}; the two numbers are not the same question. \`abatty update\` rewrites the floor under the current definition, unless the metric is HARD and counts above zero: then fix the findings below`,
+      ...m.findings.slice(0, 12).map(where),
     ]);
   if (
     m.scanned === 0 &&

@@ -54,7 +54,10 @@ npx abatty                   # where the repository stands
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
    unattended run's stop check. It refuses the work rather than describing it.
 3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever
-   happened, and marks a step that stayed green as absent.
+   happened, and marks a step that stayed green as absent. The plant goes where the step's
+   script looks: its glob, the runner config or wrapper it hands over, or, behind a task runner
+   (`turbo run test`), the first workspace that runs the task. Where a script cannot be followed,
+   `controls` in the config names the folder (`"test:integration": "apps/web/tests/integration"`).
 4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
    it.
 
@@ -100,7 +103,10 @@ Exit codes are a contract:
 | 130  | Interrupted                                  |
 
 Three is the one that matters. A gate that found something did not fail; it worked. Four says the
-instrument broke, which is a different problem from bad work.
+instrument broke, which is a different problem from bad work. `abatty night` reads the same
+table: 2 it cannot start as configured (no agent), 3 its pre-flight found the repository unfit for
+a night (a dirty tree, a red gate, a step that stayed green on its control), 4 the canary or the
+run itself aborted.
 
 ### The ratchet
 
@@ -181,6 +187,8 @@ by mutation.
 | `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests                         |
 
 Every command accepts `--plain` for ASCII markers and no colour, which is what a log parser wants.
+It reaches the commands abatty starts in turn (the gate's steps) through `ABATTY_PLAIN=1`, which
+a pipeline can also set itself.
 Colour is off automatically outside a terminal and in CI. `measure` and `report` take `--json`.
 
 Run `abatty help` for the full flag list of each.

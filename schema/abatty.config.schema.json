@@ -516,6 +516,13 @@
       },
       "description": "Non-secret environment values the gate's suites run with, as a pipeline's workflow gives them (an auth URL, a placeholder secret the test server needs). Never a real secret: this file is committed."
     },
+    "controls": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Where `abatty doctor --controls` plants a step's violation, by the step's script (`\"test:integration\": \"apps/web/tests/integration\"`): the folder that step's own runner reads. Only for a step whose script abatty cannot follow (a wrapper that changes folder, a runner that builds its list in code); a step left out is planted where its script says."
+    },
     "phases": {
       "type": "array",
       "items": {
