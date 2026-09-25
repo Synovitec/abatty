@@ -289,6 +289,17 @@ test("the CLI: ratchet is red without a floor, baseline writes it, ratchet is gr
   const controls = cli(["ratchet", dir, "--controls"], dir);
   assert.equal(controls.code, 0, controls.out);
   assert.match(controls.out, /every control holds, both directions/);
+  // The verdict counts what failed, by name, out of what was measured: "21 metric(s)" read as 21
+  // failing where 3 were.
+  writeFileSync(join(dir, "src/b.ts"), LONG(310));
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "feat: a second long file");
+  const one = cli(["ratchet", dir], dir);
+  assert.equal(one.code, 3, one.out);
+  assert.match(
+    one.out,
+    /ratchet red · 2 of \d+ metric\(s\) failing: size\.overBudget, size\.excessCode\n/,
+  );
 });
 
 test("the changelog range: a source commit after the last changelog touch fails the ratchet with --range, and the gate passes the push range", () => {

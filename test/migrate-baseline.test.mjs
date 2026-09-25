@@ -76,6 +76,9 @@ test("update says the gate is red and exits with findings when a HARD check it c
   writeFileSync(join(dir, REL), JSON.stringify(b, null, 2));
   const red = cli(["update", dir, "--dry-run"], dir);
   assert.equal(red.code, 3, red.out);
+  // And the ratchet names the findings where it names the verdict, not only in --json.
+  const ratchet = cli(["ratchet", dir], dir);
+  assert.match(ratchet.out, /REDEFINED[\s\S]*src\/a\.ts/);
   assert.match(
     red.out,
     /the gate is red from here: size\.excessCode redefined, HARD and above zero/,

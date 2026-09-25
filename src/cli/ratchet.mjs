@@ -181,8 +181,14 @@ export async function ratchetCommand(command, c) {
             .join(" · "),
         )}\n`,
       );
+      // The count that failed, named, before the count measured: "ratchet red · 21 metric(s)"
+      // read as 21 failing where 3 were, and a replay went looking for 18 problems it did not have.
+      const failing = verdicts.filter((v) => failed([v])).map((v) => v.metric);
+      const tally = failing.length
+        ? `· ${failing.length} of ${verdicts.length} metric(s) failing: ${failing.join(", ")}`
+        : `· ${verdicts.length} metric(s)${problems.length ? `, ${problems.length} probe problem(s) above` : ""}`;
       out(
-        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(`· ${verdicts.length} metric(s)`)}\n\n`,
+        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(tally)}\n\n`,
       );
       process.exit(problems.length ? EXIT.input : red ? EXIT.findings : EXIT.clean);
     }

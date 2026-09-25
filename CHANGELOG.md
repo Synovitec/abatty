@@ -26,6 +26,10 @@ monorepo.
   a runner config or a wrapper, hands its runner a folder, or runs a task over the workspaces.
   A step recorded absent may read red on the next run, which is the point; one recorded red
   should stay red, and if it does not, `controls` in the config names its folder.
+- **The ratchet's last line names what failed**: `ratchet red · 3 of 21 metric(s) failing:
+  size.overBudget, ...` where it said `ratchet red · 21 metric(s)`. A script matching the old red
+  line no longer matches it; terminal text is outside the contract (docs/VERSIONING.md), and
+  `ratchet --json` carries the same verdicts as data.
 
 ### Fixed
 
@@ -35,6 +39,8 @@ monorepo.
   lock never recorded what it had offered. It now does, as it does for the other files, and an
   unchanged hook is kept and said to be. `doctor` no longer promises a merge for a hook, which
   `update` has no installed copy to merge from. A dry run says "would update", not "updated".
+- **A redefined check lists its findings in the ratchet's output**, as a failure does: they were
+  only in `--json`, which a person reading why `update` left the gate red did not open.
 
 - **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
   planted the integration suite's failing test by the script's words alone; a script like
