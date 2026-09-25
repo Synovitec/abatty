@@ -50,6 +50,9 @@ test("bun's `(fail)` lines under a file header, and a task runner's prefix namin
     "@izishift/web:test: (fail) abatty rc replay plant > fails on purpose",
     "@izishift/web:test: lib\\ok.test.ts:",
     "@izishift/web:test: (pass) fine",
+    // bun's closing summary re-lists the failure with no header: not lib/ok.test.ts's
+    "@izishift/web:test: 1 tests failed:",
+    "@izishift/web:test: (fail) abatty rc replay plant > fails on purpose",
     "@izishift/web:test:  1 fail",
     "@izishift/mobile:test: FAIL lib/cart.test.ts",
     "@unknown/pkg:test: FAIL lib/elsewhere.test.ts",
@@ -98,10 +101,13 @@ test("a failing test that imports what the push changed is the push's; one nothi
   const first = explainFailure({ repoDir: dir, log, changed: ["src/price.mjs"], head: "c1" }).join(
     "\n",
   );
-  assert.match(first, /this push changed them or what they import: test\/price\.test\.mjs/);
   assert.match(
     first,
-    /nothing this push changed reaches them through their imports: test\/other\.test\.mjs/,
+    /this change \(the push, or the working tree\) touched them or what they import: test\/price\.test\.mjs/,
+  );
+  assert.match(
+    first,
+    /nothing this change touched reaches them through their imports: test\/other\.test\.mjs/,
   );
   assert.doesNotMatch(
     first,
@@ -184,9 +190,9 @@ test("the gate says a red test that imports the changed module is the push's, an
     log: (l) => lines.push(l),
   });
   assert.equal(r.ok, false);
-  assert.match(lines.join("\n"), /changed them or what they import: test\/a\.test\.mjs/);
+  assert.match(lines.join("\n"), /touched them or what they import: test\/a\.test\.mjs/);
   assert.match(
     lines.join("\n"),
-    /nothing this push changed reaches them through their imports: test\/flaky\.test\.mjs/,
+    /nothing this change touched reaches them through their imports: test\/flaky\.test\.mjs/,
   );
 });

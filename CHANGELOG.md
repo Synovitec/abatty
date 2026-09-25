@@ -5,6 +5,16 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+What the replays of 0.7.0-rc.2 found.
+
+### Fixed
+
+- **Bun's closing summary no longer names a passing test as a flake.** Bun lists every failure
+  again at the end, under no file header; read under the last file printed, a test that had
+  passed was named as failing and unreached. The summary is now read as what it is. The line
+  about the tests a change reaches says "this change (the push, or the working tree)", since an
+  uncommitted edit counts too.
+
 ## [0.7.0-rc.2] - 2026-09-25
 
 The second release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
