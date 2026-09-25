@@ -685,3 +685,27 @@ test("a raise recorded as the probe being wrong is counted per probe in the repo
   assert.equal(json.floors.disputes["size.overBudget"], 1, "one raise, whatever entries it left");
   assert.match(cli(["report", dir], dir).out, /disputed as false positives: .*size\.overBudget 1/);
 });
+
+test("plain output reaches a child: a ratchet the gate starts under --plain prints no glyphs", () => {
+  const dir = tempRepo("ratchet-plain", { "package.json": PKG, "src/a.ts": LONG(5) });
+  cli(["baseline", dir], dir);
+  const child = cli(["ratchet", dir], dir, { ABATTY_PLAIN: "1" });
+  assert.equal(child.code, 0, child.out);
+  assert.match(child.out, /\[ok\] ratchet green/);
+  assert.doesNotMatch(child.out, /[✓✗▶]/);
+  const own = cli(["ratchet", dir], dir, { ABATTY_PLAIN: "" });
+  assert.doesNotMatch(own.out, /\[ok\] ratchet green/, "not asked, not plain");
+});
+
+test("--plain on the parent reaches the steps it starts", () => {
+  const dir = tempRepo("plain-parent", {
+    "package.json": JSON.stringify({
+      name: "p",
+      scripts: { test: "node -e \"console.log('child plain=' + process.env.ABATTY_PLAIN)\"" },
+    }),
+  });
+  const r = cli(["gate", dir, "--stack", "node", "--plain"], dir, { ABATTY_PLAIN: "" });
+  assert.match(r.out, /child plain=1/, r.out);
+  const not = cli(["gate", dir, "--stack", "node"], dir, { ABATTY_PLAIN: "" });
+  assert.match(not.out, /child plain=(?:undefined|)\s/, not.out);
+});

@@ -55,6 +55,9 @@ monorepo.
   whose paths are relative to the workspace it names; the gate went red with no attribution and
   no word of why. Both are read now, Windows paths included, and a red test step whose output
   names no test file says it could not read one.
+- **`--plain` reaches the commands abatty starts**: `gate --plain` ran the ratchet as a child that
+  printed its glyphs into the step's log. It travels as `ABATTY_PLAIN=1`, which a pipeline may
+  also set.
 
 - **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
   planted the integration suite's failing test by the script's words alone; a script like

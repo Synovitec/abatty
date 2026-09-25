@@ -95,7 +95,12 @@ const opt = (/** @type {string} */ name) => {
 };
 // One place, before any screen is drawn: --plain is for whatever is reading the output, so it
 // must reach every command rather than the handful that remembered to look for it.
-if (flag("--plain")) t.setPlain(true);
+// And to every command this one starts: `gate --plain` runs the ratchet as a child, which printed
+// its glyphs into a log a script was matching because the flag stopped at the parent. Read here,
+// not through src/core/env.mjs: this runs before the command is known, where every module
+// loaded is one more parsed on every start (startup.eagerModules).
+if (flag("--plain")) process.env.ABATTY_PLAIN = "1";
+if (process.env.ABATTY_PLAIN === "1") t.setPlain(true);
 const VALUE_FLAGS = [
   "--stack",
   "--out",
