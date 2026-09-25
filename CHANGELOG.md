@@ -5,7 +5,10 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-What the first replays of 0.7.0-rc.1 found, on a product repository and on a task-runner
+## [0.7.0-rc.2] - 2026-09-25
+
+The second release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the first replays of 0.7.0-rc.1 found, on a product repository and on a task-runner
 monorepo.
 
 ### Upgrading
