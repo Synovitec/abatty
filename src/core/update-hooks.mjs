@@ -6,7 +6,6 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { makeExecutable } from "./init.mjs";
 import { gitHooks, writtenByInit } from "./git-hooks.mjs";
 import { managerFor } from "./package-manager.mjs";
 
@@ -14,11 +13,13 @@ import { managerFor } from "./package-manager.mjs";
  * The git hooks brought to this version, as update events. Only init wrote them once, so an
  * adopter who upgraded kept a pre-push hook from before --refs while doctor said no drift; a
  * repository whose hooks live elsewhere (no .githooks folder) is left alone.
- * @param {{ repoDir: string, lock: import("./update.mjs").Lock | null, force: boolean, dryRun: boolean, hash: (text: string) => string }} o
+ * @param {{ repoDir: string, lock: import("./update.mjs").Lock | null, force: boolean, dryRun: boolean, hash: (text: string) => string, makeExecutable: (path: string) => void }} o
  * @returns {import("./update.mjs").UpdateEvent[]}
  */
 export function refreshGitHooks(o) {
-  const { repoDir, lock, force, dryRun, hash } = o;
+  // The hash and the chmod are handed in by update.mjs: importing them from update.mjs or
+  // init.mjs here closed a cycle (update-hooks → init → update → update-hooks).
+  const { repoDir, lock, force, dryRun, hash, makeExecutable } = o;
   /** @type {import("./update.mjs").UpdateEvent[]} */
   const events = [];
   if (!existsSync(join(repoDir, ".githooks"))) return events;

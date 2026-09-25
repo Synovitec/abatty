@@ -332,7 +332,7 @@ export function updateRepo(o) {
   }
 
   // The git hooks: refreshed, kept or offered beside (update-hooks.mjs).
-  events.push(...refreshGitHooks({ repoDir, lock, force, dryRun, hash: hashOf }));
+  events.push(...refreshGitHooks({ repoDir, lock, force, dryRun, hash: hashOf, makeExecutable }));
 
   // The config the hooks trust: keys the template gained are added, values you set are never replaced.
   const adoptionRel = existsSync(join(repoDir, CONFIG_FILE)) ? CONFIG_FILE : LEGACY_CONFIG;
