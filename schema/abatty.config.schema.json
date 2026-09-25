@@ -613,7 +613,7 @@
         },
         "trustAllow": {
           "type": "array",
-          "description": "Paths the trust scan skips, as regular expressions against the repository-relative path, each with the reason it is there. For a repository that keeps injection fixtures of its own. A pattern that does not compile skips nothing.",
+          "description": "Paths the trust scan skips, as regular expressions against the repository-relative path, each with the reason it is there. For a repository that keeps injection fixtures of its own. An install-time script it runs on purpose is allowed alone as `<manifest>#<field>` (`\"^package\\\\.json#postinstall$\"` for `prisma generate`), not by allowing the whole manifest. A pattern that does not compile skips nothing.",
           "items": {
             "oneOf": [
               {

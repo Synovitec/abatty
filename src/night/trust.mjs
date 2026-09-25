@@ -185,10 +185,15 @@ export function scanTrust(c) {
   }
   // Dependency metadata: a manifest that runs code when somebody installs it, and a dependency
   // whose name is a lookalike of one the repository already has.
+  // A lifecycle script the repository runs on purpose (`postinstall: prisma generate`) is allowed
+  // by `<path>#<field>`, that script alone: the manifest's path allows the whole manifest, which
+  // is more than a generated client needs. This loop never read the list, so a product whose
+  // install generates its database client could not start a night at all.
   for (const path of c.files(/(^|\/)package\.json$/)) {
     const pkg = c.readJson(path);
     for (const field of LIFECYCLE) {
       const cmd = pkg?.scripts?.[field];
+      if (allowed(path) || allowed(`${path}#${field}`)) continue;
       if (typeof cmd === "string" && cmd.trim())
         findings.push({
           kind: "dependency",

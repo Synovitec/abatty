@@ -14,6 +14,10 @@ What the replays of 0.7.0-rc.2 found.
   passed was named as failing and unreached. The summary is now read as what it is. The line
   about the tests a change reaches says "this change (the push, or the working tree)", since an
   uncommitted edit counts too.
+- **A night can allow an install script it runs on purpose.** The trust scan's check of install
+  scripts (`postinstall: prisma generate`) never read `preflight.trustAllow`, so a product whose
+  install generates its database client was refused every night. An entry `<manifest>#<field>`
+  allows that one script (`"^package\\.json#postinstall$"`); a manifest's path allows it too.
 
 ## [0.7.0-rc.2] - 2026-09-25
 
