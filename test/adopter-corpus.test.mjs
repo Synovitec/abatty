@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { cli, git } from "./helpers.mjs";
-import { docsAdopter, productAdopter } from "./adopters/fixtures.mjs";
+import { docsAdopter, monorepoAdopter, productAdopter } from "./adopters/fixtures.mjs";
 import { testRunEnv } from "../src/core/env.mjs";
 import { narrowFallbacks } from "../src/ci/fallback.mjs";
 import { unrefusedSecrets } from "../src/core/secret-reads.mjs";
@@ -17,6 +17,8 @@ import { RULES } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { BUILTIN_PROBES } from "../src/ratchet/index.mjs";
 import { resolveConfig } from "../src/ratchet/config.mjs";
+import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
+import { runStepControls } from "../src/core/step-controls.mjs";
 
 /** What the ratchet hands a probe with the default config and no range. */
 const SCAN = { config: resolveConfig({}), range: "" };
@@ -169,6 +171,81 @@ const CASES = [
       const r = probe?.scan(buildContext(dir, { tracked: true }), SCAN);
       const behind = (r?.findings || []).map((f) => f.path);
       assert.equal(behind.includes("docs/product/module.md"), false, behind.join(","));
+    },
+  },
+  {
+    report: "product · 2026-09-25 · rc.1 replay, integration wrapper",
+    claim: "a suite run through a wrapper gets its control where the wrapper's runner config looks",
+    run: () => {
+      const dir = productAdopter();
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      const files = STEP_CONTROLS["test:integration"]?.files({
+        deps: new Set(Object.keys(pkg.devDependencies)),
+        pack: "javascript",
+        dir,
+        scripts: pkg.scripts,
+      });
+      assert.deepEqual(Object.keys(files || {}), ["tests/integration/abatty-control.__.test.ts"]);
+    },
+  },
+  {
+    report: "product · 2026-09-25 · rc.1 replay, controls after an upgrade",
+    claim:
+      "update says the next night is refused until the controls an older minor planted run again",
+    run: () => {
+      const dir = productAdopter();
+      mkdirSync(join(dir, ".abatty"), { recursive: true });
+      const at = new Date().toISOString();
+      writeFileSync(join(dir, ".abatty/controls.json"), JSON.stringify({ abatty: "0.5.2", at }));
+      const old = cli(["update", dir, "--dry-run"], dir);
+      assert.match(old.out, /planted by abatty 0\.5\.2: a night is refused until/, old.out);
+      const now = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+      writeFileSync(
+        join(dir, ".abatty/controls.json"),
+        JSON.stringify({ abatty: now.version, at }),
+      );
+      assert.doesNotMatch(cli(["update", dir, "--dry-run"], dir).out, /a night is refused/);
+    },
+  },
+  {
+    report: "monorepo · 2026-09-25 · rc.1 replay, turbo",
+    claim: "a task runner's test plant goes to a workspace that runs the task, not to a root test/",
+    run: () => {
+      const dir = monorepoAdopter();
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      const files = STEP_CONTROLS.test?.files({
+        deps: new Set(),
+        pack: "javascript",
+        dir,
+        scripts: pkg.scripts,
+      });
+      assert.deepEqual(Object.keys(files || {}), ["apps/mobile/lib/abatty-control.__.test.ts"]);
+      assert.doesNotMatch(
+        Object.values(files || {})[0] || "",
+        /import/,
+        "a jest workspace's plant uses jest's globals, not node:test",
+      );
+    },
+  },
+  {
+    report: "monorepo · 2026-09-25 · rc.1 replay, a wrapper that changes folder",
+    claim: "`controls` in the config names where a step's runner reads, and the plant goes there",
+    run: () => {
+      const dir = monorepoAdopter();
+      const want = "apps/web/tests/integration/abatty-control.__.test.ts";
+      writeFileSync(
+        join(dir, "abatty.config.json"),
+        JSON.stringify({ controls: { test: "apps/web/tests/integration" } }),
+      );
+      // The stub runner goes red only when the plant is where the config said.
+      const r = runStepControls({
+        repoDir: dir,
+        preset: node,
+        run: (_cwd, script) => (script === "test" && existsSync(join(dir, want)) ? 1 : 0),
+      });
+      const step = r.steps.find((s) => s.label.startsWith("unit tests"));
+      assert.equal(step?.outcome, "red", JSON.stringify(r.steps));
+      assert.equal(existsSync(join(dir, want)), false, "and removed after");
     },
   },
 ];

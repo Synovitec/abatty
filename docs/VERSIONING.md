@@ -9,7 +9,7 @@ related: ["../CHANGELOG.md", "../CONTRIBUTING.md", "../SECURITY.md"]
 source_truth:
   ["../src/ratchet/config.mjs", "../schema/abatty.config.schema.json", "../src/cli/exit.mjs"]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-09-25"
 ---
 
 # Versioning
@@ -38,6 +38,10 @@ nobody takes: an adopter who reads one sentence of the notes should learn everyt
 for them. The migration ships in the same release as the change, never after it: `abatty update`
 for the harness and for a redefined probe (whose floor it rewrites under the new definition,
 touching no other), the changelog for the rest, and a migration is tested like any other code.
+What `update` cannot migrate it says, and exits 3 when it leaves the gate red: a redefined HARD
+check that now counts above zero. Every minor also retires the step controls an older one
+planted, so a night is refused until `abatty doctor --controls` runs again (a few minutes); `update`
+says that too.
 
 ## A patch (0.x.y → 0.x.y+1) cannot turn a green run red
 

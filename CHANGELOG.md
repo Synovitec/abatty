@@ -13,6 +13,9 @@ monorepo.
 - **A new config key, `controls`**: the folder a step's planted violation goes in, by the step's
   script, for the scripts `doctor --controls` cannot follow. Optional; a repository that leaves
   it out plants as before.
+- **`abatty update` exits 3 when it leaves the gate red**: a redefined HARD check that now counts
+  above zero is named, the line says the gate is red from there, and the exit says so too, a
+  `--dry-run` included. It used to exit 0, and the next push went red with nothing having warned.
 - **`doctor --controls` may plant a test step's violation somewhere new**: where a script names
   a runner config or a wrapper, hands its runner a folder, or runs a task over the workspaces.
   A step recorded absent may read red on the next run, which is the point; one recorded red
@@ -40,6 +43,10 @@ monorepo.
   still cannot be followed, a wrapper that changes folder before it runs, `controls` in the
   config names; a `controls` folder outside the repository (absolute, a drive, UNC, `..`, with
   either slash) is ignored.
+- **`abatty update` says when the next night will be refused**: controls an older minor planted
+  are no proof to this one, and the notice now comes with the upgrade, not at the night's
+  pre-flight.
+- **The replay routine names every package manager and the controls re-run** (CONTRIBUTING.md).
 
 ## [0.7.0-rc.1] - 2026-09-24
 

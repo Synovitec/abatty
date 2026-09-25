@@ -7,7 +7,7 @@ import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
-import { readAdoption } from "../core/repo.mjs";
+import { readAdoption, readJsonFile } from "../core/repo.mjs";
 import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
@@ -106,7 +106,8 @@ export async function updateCommand(cx, preset) {
   // The floors a new probe definition made incomparable, rewritten under it: the step the
   // release notes used to ask for by hand.
   const { migrateRedefined } = await import("../ratchet/migrate.mjs");
-  for (const m of await migrateRedefined(dir, { dryRun: flag("--dry-run") }))
+  const migrations = await migrateRedefined(dir, { dryRun: flag("--dry-run") });
+  for (const m of migrations)
     out(
       m.written
         ? `  ${t.glyph.ok} ${t.gray((flag("--dry-run") ? "would migrate" : "migrated").padEnd(11))} ${m.metric}  ${t.gray(`· floor ${flag("--dry-run") ? "to be rewritten" : "rewritten"} under definition ${m.version}: ${m.was} → ${m.now} (a redefinition, not a raise)`)}\n`
@@ -116,5 +117,20 @@ export async function updateCommand(cx, preset) {
   out(
     `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
   );
-  process.exit(r.conflicts ? EXIT.findings : EXIT.clean);
+  // Controls an older minor planted are no proof to this one, and the next night is refused until
+  // they run again: said here, where the upgrade happens, not at the night's pre-flight.
+  const { CONTROLS_FILE, currentControls } = await import("../core/step-controls.mjs");
+  const recorded = readJsonFile(dir, CONTROLS_FILE);
+  if (recorded && !currentControls(recorded))
+    out(
+      `  ${t.glyph.warn} ${t.gray("controls".padEnd(11))} ${CONTROLS_FILE}  ${t.gray(`· planted by abatty ${recorded.abatty || "(unrecorded)"}: a night is refused until \`abatty doctor --controls\` runs again`)}\n`,
+    );
+  // A redefined HARD check that now counts above zero turns the gate red on the next push. An
+  // update that said "success" there sent an adopter's replay into a red gate it was not told of.
+  const red = migrations.filter((m) => !m.written).map((m) => m.metric);
+  if (red.length)
+    out(
+      `${t.glyph.fail} ${t.red(`the gate is red from here: ${red.join(", ")} redefined, HARD and above zero`)}${t.gray(" · `abatty ratchet` names the findings; fix them, or decide by hand")}\n\n`,
+    );
+  process.exit(r.conflicts || red.length ? EXIT.findings : EXIT.clean);
 }

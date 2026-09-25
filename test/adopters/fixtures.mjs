@@ -18,8 +18,17 @@ export function productAdopter() {
         "db:push": "prisma db push",
         setup: "pnpm db:setup",
         lint: "eslint .",
+        "test:integration": "node scripts/ci/integration.mjs",
       },
     }),
+    "scripts/ci/integration.mjs":
+      "import { run } from './test-db.mjs';\nprocess.exit(run('pnpm', ['exec', 'vitest', 'run', '-c', 'vitest.integration.config.ts']).status ?? 1);\n",
+    "scripts/ci/test-db.mjs": "export const run = () => ({ status: 0 });\n",
+    "vitest.integration.config.ts":
+      "export default { test: { include: ['tests/integration/**/*.test.ts'], setupFiles: ['tests/integration/setup.ts'] } };\n",
+    "tests/integration/orders.test.ts":
+      'import { test } from "vitest";\ntest("orders", () => {});\n',
+    "lib/orders.ts": "export const orders = 1;\n",
     "prisma/schema.prisma": "model Order { id Int @id }\n",
     ".env.example": "DATABASE_URL=\nNEXTAUTH_SECRET=\nNEXTAUTH_URL=\n",
     "vitest.config.ts":
@@ -49,6 +58,29 @@ export function productAdopter() {
       'import { test, expect } from "@playwright/test";\ntest("home", async ({ page }) => { await page.goto("/"); });\n',
   });
   return dir;
+}
+
+/** A task-runner monorepo whose suites run in each workspace, as the monorepo adopter's do. */
+export function monorepoAdopter() {
+  const pkg = (/** @type {Record<string, string>} */ scripts) => JSON.stringify({ scripts });
+  return tempRepo("adopter-monorepo", {
+    "package.json": JSON.stringify({
+      name: "monorepo",
+      workspaces: ["apps/*", "packages/*"],
+      scripts: {
+        test: "turbo run test",
+        "test:integration": "bun run scripts/run-integration-tests.ts",
+      },
+    }),
+    "scripts/run-integration-tests.ts":
+      "spawnSync('bun', ['test', '--isolate', 'tests/integration/'], { cwd: join(root, 'apps', 'web') });\n",
+    "apps/mobile/package.json": pkg({ test: "jest" }),
+    "apps/mobile/lib/a.ts": "export const a = 1;\n",
+    "apps/web/package.json": pkg({ test: "bun test --isolate lib/ app/" }),
+    "apps/web/lib/b.ts": "export const b = 1;\n",
+    "apps/web/tests/integration/shifts.test.ts": "export {};\n",
+    "packages/zod/package.json": pkg({ test: "echo 'no tests yet' && exit 0" }),
+  });
 }
 
 /** A repository whose domain documents cite each other, as the documentation adopter's do. */
