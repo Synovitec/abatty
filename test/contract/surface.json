@@ -76,6 +76,7 @@
         "typecheck"
       ]
     },
+    "controls": "object",
     "coupled": "array",
     "directPushToBase": "boolean",
     "files": {

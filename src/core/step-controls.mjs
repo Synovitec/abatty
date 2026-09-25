@@ -20,7 +20,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { dockerRunning, launch } from "./spawn.mjs";
-import { git, readPackage, writeJsonFile } from "./repo.mjs";
+import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 import { testRunEnv } from "./env.mjs";
@@ -64,6 +64,24 @@ export function currentControls(controls) {
  */
 
 /**
+ * A control's files moved into the folder the repository named for the step, each keeping its
+ * name, or left where the script put them. @param {Record<string, string>} files @param {unknown} folder
+ */
+export function plantedIn(files, folder) {
+  // Inside the repository only: an absolute, a drive, a UNC or a climbing path is not a folder
+  // of the step's runner, and doctor writes and then deletes there. Backslashes are read as the
+  // separator Windows takes them for, so `..\..` climbs as `../..` does.
+  const into =
+    typeof folder === "string"
+      ? folder.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "")
+      : "";
+  if (!into || /^(?:\/|[A-Za-z]:)/.test(into) || into.split("/").includes("..")) return files;
+  return Object.fromEntries(
+    Object.entries(files).map(([rel, text]) => [`${into}/${rel.split("/").pop()}`, text]),
+  );
+}
+
+/**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
@@ -99,6 +117,8 @@ export function runStepControls(o) {
   ]);
   /** @type {StepOutcome[]} */
   const steps = [];
+  /** Where the repository says a step's plant goes, by its script (`controls` in the config). */
+  const folders = /** @type {Record<string, unknown>} */ (readAdoption(repoDir)?.controls || {});
 
   /** One step: what it runs, or null when it has nothing to run. @param {import("../presets/index.mjs").GateStep} s */
   const runner = (s) => {
@@ -144,7 +164,10 @@ export function runStepControls(o) {
       });
       return;
     }
-    const files = control.files({ deps, pack: preset.pack || "javascript", dir: repoDir, scripts });
+    const files = plantedIn(
+      control.files({ deps, pack: preset.pack || "javascript", dir: repoDir, scripts }),
+      folders[key],
+    );
     const clash = Object.keys(files).find((f) => existsSync(join(repoDir, f)));
     if (clash) {
       steps.push({ label, outcome: "skipped", detail: `${clash} exists already; remove it` });

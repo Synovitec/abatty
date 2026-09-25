@@ -5,6 +5,42 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+What the first replays of 0.7.0-rc.1 found, on a product repository and on a task-runner
+monorepo.
+
+### Upgrading
+
+- **A new config key, `controls`**: the folder a step's planted violation goes in, by the step's
+  script, for the scripts `doctor --controls` cannot follow. Optional; a repository that leaves
+  it out plants as before.
+- **`doctor --controls` may plant a test step's violation somewhere new**: where a script names
+  a runner config or a wrapper, hands its runner a folder, or runs a task over the workspaces.
+  A step recorded absent may read red on the next run, which is the point; one recorded red
+  should stay red, and if it does not, `controls` in the config names its folder.
+
+### Fixed
+
+- **A test suite run through a wrapper is watched failing where it looks.** `doctor --controls`
+  planted the integration suite's failing test by the script's words alone; a script like
+  `node scripts/ci/integration.mjs` names no test, so the plant went to the source folder, the
+  suite never saw it, and a working suite read as absent, which refuses every night. The script's
+  files are now followed two levels (the wrapper, then the runner config it passes) to the first
+  test glob, the config's `include` included.
+- **A monorepo behind a task runner is watched failing in a workspace.** `turbo run test` read
+  the task's name as a `test/` folder at the root, which no workspace runs, so the unit step
+  stayed green on its plant in under a second and every turbo or nx monorepo was refused a night.
+  A task runner (`turbo`, `nx`, `lerna`, or a manager's `-r`, `--filter`, `--workspaces`) now
+  defers to the first workspace whose own script runs the task, and a folder that script hands
+  its runner (`bun test lib/`) is where the plant goes. A subcommand (`bun test`) and a script's
+  name (`npm run test`) are no longer read as folders; a runner's own `run` still hands one over
+  (`vitest run tests/unit`). A `--filter` picks the workspace it names. The planted test imports
+  the runner of the workspace it lands in (jest's globals, `bun:test`, vitest, node:test), not
+  the root's. A config's `exclude` globs are skipped for its `include`, a wrapper's relative
+  names are read from its own folder, and nothing followed may lead outside the repository. What
+  still cannot be followed, a wrapper that changes folder before it runs, `controls` in the
+  config names; a `controls` folder outside the repository (absolute, a drive, UNC, `..`, with
+  either slash) is ignored.
+
 ## [0.7.0-rc.1] - 2026-09-24
 
 A release candidate, published under the `next` tag: `npm i -D abatty@next` to replay it before

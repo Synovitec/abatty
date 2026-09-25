@@ -11,6 +11,11 @@ export function currentControls(controls: any): any;
  * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
  */
 /**
+ * A control's files moved into the folder the repository named for the step, each keeping its
+ * name, or left where the script put them. @param {Record<string, string>} files @param {unknown} folder
+ */
+export function plantedIn(files: Record<string, string>, folder: unknown): Record<string, string>;
+/**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
  * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o

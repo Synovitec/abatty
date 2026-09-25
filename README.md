@@ -54,7 +54,10 @@ npx abatty                   # where the repository stands
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
    unattended run's stop check. It refuses the work rather than describing it.
 3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever
-   happened, and marks a step that stayed green as absent.
+   happened, and marks a step that stayed green as absent. The plant goes where the step's
+   script looks: its glob, the runner config or wrapper it hands over, or, behind a task runner
+   (`turbo run test`), the first workspace that runs the task. Where a script cannot be followed,
+   `controls` in the config names the folder (`"test:integration": "apps/web/tests/integration"`).
 4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
    it.
 
