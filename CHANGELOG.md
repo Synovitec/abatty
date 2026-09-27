@@ -5,7 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-What the replays of 0.7.0-rc.2 found.
+## [0.7.0-rc.3] - 2026-09-27
+
+The third release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the replays of 0.7.0-rc.2 on a product repository and on a Bun monorepo found.
+No config key is renamed and no exit code moves: `preflight.trustAllow` accepts one more form
+(`<manifest>#<field>`), and the new controls logs are under `.abatty/`.
 
 ### Fixed
 
@@ -24,6 +29,13 @@ What the replays of 0.7.0-rc.2 found.
   went red, `<step>.clean.log` under `.abatty/steps/controls/`, and a step that stayed green or
   was red without a plant names the log to read. The secret scan's log says where and what kind,
   never the sample.
+- **A coverage step that measured nothing no longer reads plain green.** A push that touched
+  nothing the coverage tool includes printed `Unknown% ( 0/0 )` and passed exactly like a push
+  whose every changed line was tested. When the tool says in its own words that it had no data
+  (the istanbul summary that vitest, jest, nyc and c8 print; coverage.py; `go test -cover`), the
+  step says "measured nothing" and the gate's verdict carries a warning. It is said, not refused:
+  a push of docs alone measures nothing and is right to. A 0% row is a measurement and is not
+  read as nothing.
 
 ## [0.7.0-rc.2] - 2026-09-25
 

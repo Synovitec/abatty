@@ -1,6 +1,6 @@
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
- * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, empty?: string }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
@@ -30,6 +30,7 @@ export type GateEvent = {
     outcome: GateOutcome;
     detail?: string;
     ms?: number;
+    empty?: string;
 };
 export type GateEventW = {
     label: string;
