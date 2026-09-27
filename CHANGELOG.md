@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`ratchet` and `baseline` say which untracked files they left out.** Both read the tracked
+  tree on purpose, so a floor never moves on a file nobody commits, but they said nothing about
+  it: a baseline written over new sources not yet added recorded a floor without them, and the
+  push that committed them was refused. Untracked, not-ignored sources, tests and documents
+  under `docs/` are now named (the first five and a count). Nothing is measured differently, and
+  the `--json` output is unchanged.
+
 ## [0.7.0-rc.3] - 2026-09-27
 
 The third release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
