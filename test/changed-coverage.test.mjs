@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { git, tempRepo } from "./helpers.mjs";
 import { missingGateScripts, runGate } from "../src/core/gate.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
+import { measuredNothing } from "../src/core/coverage-empty.mjs";
 import { presetById } from "../src/presets/index.mjs";
 
 // A push the local full gate passed went red in CI on the coverage of its changed lines, which
@@ -103,6 +104,57 @@ test("the controls leave the index as they found it, the intent-to-add marks inc
     .join("\n");
   assert.equal(after, before);
   assert.doesNotMatch(git(dir, "ls-files"), /abatty-control/);
+});
+
+test("a coverage tool's own words for no data read as measured nothing; a measurement of zero does not", () => {
+  for (const text of [
+    "Coverage summary\nStatements   : Unknown% ( 0/0 )\nBranches     : Unknown% ( 0/0 )\n",
+    "Lines : Unknown% (0/0)\n",
+    "No data to report.\n",
+    "CoverageWarning: No data was collected. (no-data-collected)\n",
+    "ok  \texample.com/x\t0.01s\tcoverage: [no statements]\n",
+  ])
+    assert.ok(measuredNothing(text), text);
+  for (const text of [
+    "Statements   : 0% ( 0/12 )\n",
+    "All files |       0 |        0 |       0 |       0 |\n",
+    "Statements   : 91.3% ( 21/23 )\n",
+    "coverage: 0.0% of statements\n",
+    "",
+  ])
+    assert.equal(measuredNothing(text), null, text);
+});
+
+test("a green coverage step that measured nothing is said, in its event and in the log; one that measured something is not", () => {
+  /** @param {string} name @param {string} printed */
+  const judge = (name, printed) => {
+    /** @type {string[]} */
+    const lines = [];
+    const r = runGate({
+      repoDir: repo(name, { "coverage:changed": "vitest --coverage" }),
+      preset: node,
+      range: "HEAD~1..HEAD",
+      run: (_d, script, _a, _e, o) => {
+        if (script === "coverage:changed" && o?.log) {
+          mkdirSync(dirname(o.log), { recursive: true });
+          writeFileSync(o.log, printed);
+        }
+        return 0;
+      },
+      audit: () => ({ status: 0, output: "" }),
+      log: (l) => lines.push(l),
+    });
+    return { r, lines, step: r.events.find((e) => /changed lines/.test(e.label)) };
+  };
+  const hollow = judge("changed-empty", "Statements   : Unknown% ( 0/0 )\n");
+  assert.equal(hollow.r.ok, true, "said, not refused");
+  assert.equal(hollow.step?.outcome, "ok");
+  assert.match(hollow.step?.empty || "", /^istanbul: Statements/);
+  assert.match(hollow.step?.detail || "", /^measured nothing/);
+  assert.ok(hollow.lines.some((l) => /passed and measured nothing/.test(l)));
+  const real = judge("changed-real", "Statements   : 100% ( 3/3 )\n");
+  assert.equal(real.step?.empty, undefined);
+  assert.ok(!real.lines.some((l) => /measured nothing/.test(l)));
 });
 
 test("doctor does not call the changed-lines step absent when the gate runs it by its other name", () => {

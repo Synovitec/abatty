@@ -13,7 +13,7 @@
  * preset's steps in its own folder (its own scripts, its suites' paths under its folder); the
  * built-in steps (the secret scan, the audit) and the ratchet run once, at the root.
  */
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
@@ -27,10 +27,11 @@ import { builtinStep } from "./builtins.mjs";
 import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
+import { measuredNothing } from "./coverage-empty.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
- * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number }} GateEvent
+ * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, empty?: string }} GateEvent
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
@@ -136,6 +137,23 @@ export function runGate(o) {
     events.push({ label, outcome: "ok", ms });
     return true;
   };
+  /** A green coverage step whose tool says it measured nothing, marked so the verdict says so. @param {string} file */
+  const hollow = (file) => {
+    let text = "";
+    try {
+      text = readFileSync(file, "utf8");
+    } catch {
+      return; // no log, nothing to read: the step stands as it ran
+    }
+    const none = measuredNothing(text);
+    const last = events[events.length - 1];
+    if (!none || !last) return;
+    last.empty = `${none.tool}: ${none.line}`;
+    last.detail = `measured nothing (${last.empty})`;
+    log(
+      `· ${last.label} passed and measured nothing: ${none.line}. The changed lines lie outside what the step's tool includes, or it ran no test; green here proves nothing about them`,
+    );
+  };
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
     if (s.builtin) return builtinStep(s, { repoDir, log, events, audit: o.audit });
@@ -205,6 +223,8 @@ export function runGate(o) {
       run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog }),
     );
     const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
+    // By the step's own label, not its suite's: "database suite + coverage (TEST.4)" names both.
+    if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) hollow(stepLog);
     if (!passed && !res.errored)
       for (const line of explainFailure({
         repoDir,

@@ -63,6 +63,8 @@ export async function gateCommand(cx, preset) {
   const unrun = r.events.filter(
     (e) => e.outcome === "skipped" && /^no (".*" script|\S+)$/.test(e.detail || ""),
   );
+  // A coverage step that passed over nothing is green in colour only (src/core/coverage-empty.mjs).
+  const empty = r.events.some((e) => e.empty);
   const headline = r.ok
     ? unrun.length
       ? t.yellow(
@@ -76,11 +78,11 @@ export async function gateCommand(cx, preset) {
       ? t.red("gate could not run")
       : t.red("gate red");
   out(
-    `\n${r.ok ? (unrun.length ? t.glyph.warn : t.glyph.ok) : t.glyph.fail} ${headline} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}\n`,
+    `\n${r.ok ? (unrun.length || empty ? t.glyph.warn : t.glyph.ok) : t.glyph.fail} ${headline} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}${empty ? t.yellow(" · a coverage step measured nothing") : ""}\n`,
   );
   for (const e of r.events)
     out(
-      `  ${e.outcome === "ok" ? t.glyph.ok : e.outcome === "failed" ? t.glyph.fail : e.outcome === "errored" ? t.glyph.warn : e.outcome === "deferred" ? t.glyph.defer : t.glyph.skip} ${e.outcome === "skipped" ? t.gray(e.label) : e.label}${e.outcome === "errored" ? t.yellow(" could not run") : ""}${e.ms ? t.gray("  " + t.duration(e.ms)) : ""}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
+      `  ${e.empty ? t.glyph.warn : e.outcome === "ok" ? t.glyph.ok : e.outcome === "failed" ? t.glyph.fail : e.outcome === "errored" ? t.glyph.warn : e.outcome === "deferred" ? t.glyph.defer : t.glyph.skip} ${e.outcome === "skipped" ? t.gray(e.label) : e.label}${e.outcome === "errored" ? t.yellow(" could not run") : ""}${e.ms ? t.gray("  " + t.duration(e.ms)) : ""}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
     );
   out("\n");
   process.exit(r.errored ? EXIT.error : r.ok ? EXIT.clean : EXIT.findings);
