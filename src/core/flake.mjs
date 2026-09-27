@@ -63,6 +63,9 @@ function failuresIn(plain, byName) {
     const line = ws && pre ? String(pre[2]) : raw;
     const head = BUN_HEADER.exec(line.trim());
     if (head) header.set(ws, String(head[1]));
+    // Bun's closing summary lists every failure again with no file header above it: read under
+    // the last file printed, it named a test that had passed as a flake.
+    else if (/^\s*\d+ tests? failed:\s*$/.test(line)) header.delete(ws);
     else if (/^\s*\(fail\)\s/.test(line) && header.has(ws))
       out.push({ file: String(header.get(ws)), ws });
     for (const m of line.matchAll(FAILED)) out.push({ file: String(m[1] || m[2]), ws });
@@ -146,10 +149,12 @@ export function explainFailure(o) {
   const repeat = others.filter((f) => (seen[f] || []).length > 1);
   const lines = [];
   if (ours.length)
-    lines.push(`  failing, and this push changed them or what they import: ${ours.join(", ")}`);
+    lines.push(
+      `  failing, and this change (the push, or the working tree) touched them or what they import: ${ours.join(", ")}`,
+    );
   if (others.length)
     lines.push(
-      `  failing, and nothing this push changed reaches them through their imports: ${others.join(", ")} · a flake, the environment, or a change outside the code (a config, a lockfile); rerun one alone to tell`,
+      `  failing, and nothing this change touched reaches them through their imports: ${others.join(", ")} · a flake, the environment, or a change outside the code (a config, a lockfile); rerun one alone to tell`,
     );
   if (repeat.length)
     lines.push(

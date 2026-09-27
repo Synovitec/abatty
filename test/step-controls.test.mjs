@@ -5,7 +5,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 import { presetById } from "../src/presets/index.mjs";
-import { CONTROLS_FILE, STEP_CONTROLS, runStepControls } from "../src/core/step-controls.mjs";
+import {
+  CONTROLS_FILE,
+  STEP_CONTROLS,
+  controlLog,
+  runStepControls,
+} from "../src/core/step-controls.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 
 const BIN = fileURLToPath(new URL("../bin/abatty.mjs", import.meta.url));
@@ -87,6 +92,21 @@ test("every step has a control that means something; planted, run, removed: a st
     0,
     "the tree as it was",
   );
+  // Both runs keep their output: the planted one explains the verdict, the clean one the proof.
+  const logOf = (/** @type {string} */ label, /** @type {"planted" | "clean"} */ phase) =>
+    join(dir, controlLog(label, phase));
+  const lintLabel = String(by["lint"]?.label);
+  assert.match(readFileSync(logOf(lintLabel, "planted"), "utf8"), /run -s lint[\s\S]*exit 1\n$/);
+  assert.match(readFileSync(logOf(lintLabel, "clean"), "utf8"), /exit 0\n$/);
+  const typecheck = String(by["typecheck"]?.label);
+  assert.match(readFileSync(logOf(typecheck, "planted"), "utf8"), /exit 0\n$/);
+  assert.ok(!existsSync(logOf(typecheck, "clean")), "a green step has no second run");
+  assert.ok(
+    lines.some((l) => l.includes(controlLog(typecheck, "planted"))),
+    "the log is named",
+  );
+  const secrets = readFileSync(logOf(String(by["secret scan"]?.label), "planted"), "utf8");
+  assert.match(secrets, /abatty-control\.__\S*:\d+ /, "where and what kind, not the sample");
   const saved = JSON.parse(readFileSync(join(dir, CONTROLS_FILE), "utf8"));
   assert.deepEqual(saved.absent, ["typecheck (CODE.3)"]);
   assert.ok(lines.some((l) => /planting a debugger statement/.test(l)));

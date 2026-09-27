@@ -5,6 +5,26 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+What the replays of 0.7.0-rc.2 found.
+
+### Fixed
+
+- **Bun's closing summary no longer names a passing test as a flake.** Bun lists every failure
+  again at the end, under no file header; read under the last file printed, a test that had
+  passed was named as failing and unreached. The summary is now read as what it is. The line
+  about the tests a change reaches says "this change (the push, or the working tree)", since an
+  uncommitted edit counts too.
+- **A night can allow an install script it runs on purpose.** The trust scan's check of install
+  scripts (`postinstall: prisma generate`) never read `preflight.trustAllow`, so a product whose
+  install generates its database client was refused every night. An entry `<manifest>#<field>`
+  allows that one script (`"^package\\.json#postinstall$"`); a manifest's path allows it too.
+- **`doctor --controls` keeps what each run printed.** The planted run's output went nowhere, so
+  a control that went red on one version and green on the next could not be explained: the only
+  log left was the gate's, of a clean run. Each step now leaves `<step>.planted.log` and, when it
+  went red, `<step>.clean.log` under `.abatty/steps/controls/`, and a step that stayed green or
+  was red without a plant names the log to read. The secret scan's log says where and what kind,
+  never the sample.
+
 ## [0.7.0-rc.2] - 2026-09-25
 
 The second release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

