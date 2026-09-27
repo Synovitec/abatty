@@ -18,6 +18,12 @@ What the replays of 0.7.0-rc.2 found.
   scripts (`postinstall: prisma generate`) never read `preflight.trustAllow`, so a product whose
   install generates its database client was refused every night. An entry `<manifest>#<field>`
   allows that one script (`"^package\\.json#postinstall$"`); a manifest's path allows it too.
+- **`doctor --controls` keeps what each run printed.** The planted run's output went nowhere, so
+  a control that went red on one version and green on the next could not be explained: the only
+  log left was the gate's, of a clean run. Each step now leaves `<step>.planted.log` and, when it
+  went red, `<step>.clean.log` under `.abatty/steps/controls/`, and a step that stayed green or
+  was red without a plant names the log to read. The secret scan's log says where and what kind,
+  never the sample.
 
 ## [0.7.0-rc.2] - 2026-09-25
 

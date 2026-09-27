@@ -58,6 +58,8 @@ npx abatty                   # where the repository stands
    script looks: its glob, the runner config or wrapper it hands over, or, behind a task runner
    (`turbo run test`), the first workspace that runs the task. Where a script cannot be followed,
    `controls` in the config names the folder (`"test:integration": "apps/web/tests/integration"`).
+   What each run printed is kept under `.abatty/steps/controls/`, the planted run's and the clean
+   one's, so a verdict can be read back.
 4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
    it.
 

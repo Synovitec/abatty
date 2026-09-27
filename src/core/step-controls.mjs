@@ -15,6 +15,11 @@
  * The planted files sit beside the sources under a name no repository uses
  * (`abatty-control.__.*`); a tree that already carries one is refused, and every file is
  * removed again whatever the step did.
+ *
+ * Both runs of a step keep their output, under `.abatty/steps/controls/`: the planted run's
+ * (`<step>.planted.log`) is the one that explains a verdict, and with only the gate's log of a
+ * clean run to read, a control that went red on one version and green on the next could not be
+ * explained at all.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -28,6 +33,25 @@ import { testRunEnv } from "./env.mjs";
 export { STEP_CONTROLS } from "./step-plants.mjs";
 /** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
 export const CONTROLS_FILE = ".abatty/controls.json";
+/** Where each control run's output is kept, one file per step and run (planted, clean). */
+export const CONTROLS_LOGS = ".abatty/steps/controls";
+
+/**
+ * The log of one run of a step's control, relative to the repository, the name as the gate's
+ * step logs are named. @param {string} label @param {"planted" | "clean"} phase
+ */
+export const controlLog = (label, phase) =>
+  `${CONTROLS_LOGS}/${label.replace(/[^\w.-]+/g, "_")}.${phase}.log`;
+
+/** A run's output into its log; a log that cannot be written must not stop the controls. @param {string} file @param {string} text */
+const keep = (file, text) => {
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, text);
+  } catch {
+    // The verdict stands without its log.
+  }
+};
 
 /**
  * The version of abatty that planted the controls, recorded with them: where a step is planted
@@ -84,14 +108,15 @@ export function plantedIn(files, folder) {
 /**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean }} o
  * @returns {{ at: string, abatty: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o) {
   const { repoDir, preset } = o;
   const log = o.log || (() => {});
   const dockerUp = o.dockerUp || dockerRunning;
-  const spawn = (/** @type {string} */ cmd, /** @type {string[]} */ args) => {
+  /** @param {string} cmd @param {string[]} args @param {string} logFile */
+  const spawn = (cmd, args, logFile) => {
     const l = launch(cmd, args);
     const r = spawnSync(l.file, l.args, {
       cwd: repoDir,
@@ -102,13 +127,16 @@ export function runStepControls(o) {
       env: testRunEnv(),
       maxBuffer: 16 * 1024 * 1024,
     });
-    // A tool that could not be spawned answers as a POSIX shell would (127), on every platform:
+    keep(
+      logFile,
+      `$ ${[cmd, ...args].join(" ")}\n${r.stdout || ""}${r.stderr || ""}${r.error ? `\n${r.error.message}\n` : ""}\nexit ${r.status ?? "none"}\n`,
+    ); // A tool that could not be spawned answers as a POSIX shell would (127), on every platform:
     // without this, a missing `ruff` on Windows read as a red control, which is the false red the
     // trial hit, inside the mechanism that exists to catch false greens.
     if (r.error && /** @type {NodeJS.ErrnoException} */ (r.error).code === "ENOENT") return 127;
     return r.status ?? 1;
   };
-  const run = o.run || ((cwd, script) => spawn("npm", ["run", "-s", script]));
+  const run = o.run || ((cwd, script, logFile) => spawn("npm", ["run", "-s", script], logFile));
   const pkg = readPackage(repoDir);
   const scripts = pkg.scripts || {};
   const deps = new Set([
@@ -120,15 +148,24 @@ export function runStepControls(o) {
   /** Where the repository says a step's plant goes, by its script (`controls` in the config). */
   const folders = /** @type {Record<string, unknown>} */ (readAdoption(repoDir)?.controls || {});
 
-  /** One step: what it runs, or null when it has nothing to run. @param {import("../presets/index.mjs").GateStep} s */
+  /** One step: what it runs, told where its output goes, or null when it has nothing to run. @param {import("../presets/index.mjs").GateStep} s @returns {((logFile: string) => number) | null} */
   const runner = (s) => {
     if (s.builtin === "secrets")
-      return () => (scanSecrets(repoDir, { mode: "tree" }).findings.length ? 1 : 0);
-    if (s.command) return () => spawn(String(s.command?.[0]), (s.command || []).slice(1));
+      return (logFile) => {
+        const found = scanSecrets(repoDir, { mode: "tree" }).findings;
+        // Where and what kind, never the sample: a log is not a place for a secret.
+        keep(
+          logFile,
+          found.map((f) => `${f.path}:${f.line} ${f.kind}\n`).join("") || "no findings\n",
+        );
+        return found.length ? 1 : 0;
+      };
+    if (s.command)
+      return (logFile) => spawn(String(s.command?.[0]), (s.command || []).slice(1), logFile);
     const script = [s.script, ...(s.alternatives || [])].find(
       (x) => typeof x === "string" && typeof scripts[x] === "string",
     );
-    return script ? () => run(repoDir, String(script)) : null;
+    return script ? (logFile) => run(repoDir, String(script), logFile) : null;
   };
 
   /** Plant, run, remove, confirm clean, judge. @param {import("../presets/index.mjs").GateStep} s @param {string} label */
@@ -174,6 +211,12 @@ export function runStepControls(o) {
       return;
     }
     log(`▶ ${label}: planting ${control.means}`);
+    const logs = {
+      planted: join(repoDir, controlLog(label, "planted")),
+      clean: join(repoDir, controlLog(label, "clean")),
+    };
+    // A run's log from an earlier pass must not read as this one's.
+    for (const f of Object.values(logs)) rmSync(f, { force: true });
     const t0 = Date.now();
     let code = 0;
     /** The folders the plant had to make, deepest last, so the tree is left as it was. @type {string[]} */
@@ -188,7 +231,7 @@ export function runStepControls(o) {
       // ratchet reads the tracked tree, and an untracked plant was invisible to it. The mark
       // (an empty index entry) is taken out again below, with the file.
       git(repoDir, "add", "--intent-to-add", "--", ...Object.keys(files));
-      code = exec();
+      code = exec(logs.planted);
     } finally {
       git(repoDir, "rm", "--cached", "--quiet", "--ignore-unmatch", "--", ...Object.keys(files));
       for (const rel of Object.keys(files)) rmSync(join(repoDir, rel), { force: true });
@@ -214,13 +257,13 @@ export function runStepControls(o) {
         detail: `stayed GREEN on ${control.means}: the check is absent`,
         ms,
       });
-      log(`  GREEN: absent (${ms} ms)`);
+      log(`  GREEN: absent (${ms} ms); what it printed: ${controlLog(label, "planted")}`);
       return;
     }
     // Red with the plant. Red without it too is the environment, not the guard: a suite that
     // cannot start (no browsers, no database) or a tree that is broken reads red on anything,
     // and calling that "proven" is the false red the trial hit on its first day.
-    const clean = exec();
+    const clean = exec(logs.clean);
     if (clean !== 0) {
       steps.push({
         label,
@@ -228,7 +271,7 @@ export function runStepControls(o) {
         detail: `red without a plant (exit ${clean}): nothing to prove until the step is green on its own`,
         ms,
       });
-      log(`  red without a plant: nothing proven`);
+      log(`  red without a plant: nothing proven; what it printed: ${controlLog(label, "clean")}`);
       return;
     }
     steps.push({

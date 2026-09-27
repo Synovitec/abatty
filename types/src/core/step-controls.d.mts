@@ -18,14 +18,14 @@ export function plantedIn(files: Record<string, string>, folder: unknown): Recor
 /**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string) => number, dockerUp?: () => boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean }} o
  * @returns {{ at: string, abatty: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o: {
     repoDir: string;
     preset: import("../presets/index.mjs").Preset;
     log?: (line: string) => void;
-    run?: (cwd: string, script: string) => number;
+    run?: (cwd: string, script: string, logFile: string) => number;
     dockerUp?: () => boolean;
 }): {
     at: string;
@@ -36,6 +36,9 @@ export function runStepControls(o: {
 export { STEP_CONTROLS } from "./step-plants.mjs";
 /** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
 export const CONTROLS_FILE: ".abatty/controls.json";
+/** Where each control run's output is kept, one file per step and run (planted, clean). */
+export const CONTROLS_LOGS: ".abatty/steps/controls";
+export function controlLog(label: string, phase: "planted" | "clean"): string;
 /**
  * The version of abatty that planted the controls, recorded with them: where a step is planted
  * changes between versions, and a proof taken with an older planting is not evidence about the
