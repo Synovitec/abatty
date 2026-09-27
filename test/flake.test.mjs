@@ -143,7 +143,10 @@ test("the wrapper keeps the output and the exit code, reads a killed step as one
   const dir = tempRepo("tee", {
     "package.json": JSON.stringify({
       scripts: {
-        red: "node -e \"console.log('FAIL src/x.test.ts'); process.exit(3)\"",
+        // The wrapper also shows the output live, into this suite's own run: a line shaped like a
+        // runner's failure was read by the gate as a failing src/x.test.ts whenever the suite
+        // went red for another reason, and recorded as a flake.
+        red: "node -e \"console.log('kept by the tee'); process.exit(3)\"",
         killed: "node -e \"process.kill(process.pid, 'SIGTERM')\"",
       },
     }),
@@ -153,7 +156,7 @@ test("the wrapper keeps the output and the exit code, reads a killed step as one
   const r = runScript(dir, "red", [], {}, { log });
   assert.equal(r.code, 3);
   assert.equal(r.errored, undefined, "a step that ran and failed is not one that could not run");
-  assert.match(readFileSync(log, "utf8"), /FAIL src\/x\.test\.ts/);
+  assert.match(readFileSync(log, "utf8"), /kept by the tee/);
   // A killed step reads exactly as it did without the wrapper: the signal is passed on (on POSIX
   // the gate then says "could not run"), and where there are no signals the code is the same.
   const killed = runScript(dir, "killed", [], {}, { log: join(dir, ".abatty/steps/killed.log") });
