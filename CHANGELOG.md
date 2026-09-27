@@ -5,7 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-What the replays of 0.7.0-rc.2 found.
+## [0.7.0-rc.3] - 2026-09-27
+
+The third release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the replays of 0.7.0-rc.2 on a product repository and on a Bun monorepo found.
+No config key is renamed and no exit code moves: `preflight.trustAllow` accepts one more form
+(`<manifest>#<field>`), and the new controls logs are under `.abatty/`.
 
 ### Fixed
 
