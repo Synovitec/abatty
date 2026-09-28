@@ -18,6 +18,12 @@ under Unreleased in the same commit.
   runs it; a failed build skips the steps after it with the log to read, and a live dev server
   skips them rather than building over it. A step red without a plant now names its log in the
   verdict, not only in the progress line.
+- **The pre-push hook says when the installed abatty is not the pinned version, before the gate
+  runs.** rc.4's gate line only exists once the installed copy is rc.4 or later, and the hooks
+  run the installed copy: a checkout pinned at rc.2 pushed through 0.5.2 for days and nothing
+  could say so. The generated `.githooks/pre-push` now compares `node_modules/abatty` with the pin
+  in plain shell first, and tells the gate so it is not said twice. Upgrading: `abatty update`
+  refreshes a hook it wrote; a hook you edited gets the new one beside it as `.abatty-new`.
 
 ## [0.7.0-rc.4] - 2026-09-28
 

@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
-import { writtenByInit } from "../src/core/git-hooks.mjs";
+import { spawnSync } from "node:child_process";
+import { PIN_CHECK, writtenByInit } from "../src/core/git-hooks.mjs";
 
 // Only init wrote the git hooks, so an adopter who upgraded with `update` kept a pre-push hook
 // from before --refs, and `npm run` on a pnpm repository, while doctor reported no drift.
@@ -87,6 +88,60 @@ test("the forms earlier versions wrote are recognised, and a hook with a command
   assert.equal(writtenByInit(".githooks/pre-push", "bun run --silent gate --refs\n"), true);
   assert.equal(writtenByInit(".githooks/pre-push", "npm run -s gate\nnpm run lint\n"), false);
   assert.equal(writtenByInit(".githooks/pre-push", "#!/bin/sh\n"), false, "an empty hook");
+});
+
+/** The shell git runs hooks with: on PATH, else the one git ships beside itself (Windows). */
+function hookShell() {
+  if (!spawnSync("sh", ["-c", "exit 0"]).error) return "sh";
+  const exec = spawnSync("git", ["--exec-path"], { encoding: "utf8" }).stdout.trim();
+  return join(exec, "..", "..", "..", "bin", "sh.exe");
+}
+
+// The rc.4 replay: a checkout pinned at rc.2 pushed through a 0.5.2 install for days, and the
+// gate's own check could not say so, because the gate is the stale copy. The hook compares first.
+test("the pre-push hook's own lines name an installed abatty that is not the pin, before the gate runs", () => {
+  /** @param {Record<string, string>} files */
+  const said = (files) => {
+    const dir = tempRepo("hooks-pin", files);
+    const r = spawnSync(
+      hookShell(),
+      ["-c", `${PIN_CHECK.join("\n")}\necho "said=$ABATTY_PIN_SAID"`],
+      {
+        cwd: dir,
+        encoding: "utf8",
+      },
+    );
+    return { out: r.stdout, err: r.stderr };
+  };
+  const pkg = (/** @type {string} */ v) =>
+    JSON.stringify({ name: "abatty", version: v, dependencies: { x: { version: "9" } } }, null, 2);
+  const cfg = (/** @type {string} */ v) => JSON.stringify({ stack: "next", abatty: v }, null, 2);
+  const stale = said({
+    "node_modules/abatty/package.json": pkg("0.5.2"),
+    "abatty.config.json": cfg("0.7.0-rc.2"),
+  });
+  assert.match(
+    stale.err,
+    /node_modules\/abatty is 0\.5\.2 and abatty\.config\.json pins 0\.7\.0-rc\.2/,
+  );
+  assert.match(stale.out, /said=1/, "the gate is told, so the line is said once");
+  const level = said({
+    "node_modules/abatty/package.json": pkg("0.7.0-rc.2"),
+    "abatty.config.json": cfg("0.7.0-rc.2"),
+  });
+  assert.equal(level.err, "");
+  assert.match(level.out, /said=1/);
+  const none = said({ "abatty.config.json": cfg("0.7.0-rc.2") });
+  assert.equal(none.err, "");
+  assert.match(none.out, /said=$/m, "not compared, so the gate still checks the running copy");
+  // Recognised as the package's own, so update refreshes it rather than offering it beside.
+  assert.equal(
+    writtenByInit(
+      ".githooks/pre-push",
+      `#!/bin/sh\n${PIN_CHECK.join("\n")}\npnpm run -s gate --refs\n`,
+    ),
+    true,
+  );
 });
 
 test("doctor fails a hook git records as not executable, whatever the disk says", () => {

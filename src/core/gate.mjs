@@ -103,7 +103,10 @@ export function runGate(o) {
   // Said before the first step rather than found after the slowest one; said, not refused.
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
-  const behind = pinBehindLine(repoDir, o.version || runningVersion());
+  // The pre-push hook compares in shell first, where a stale copy cannot hide it, and says so.
+  const behind = process.env.ABATTY_PIN_SAID
+    ? ""
+    : pinBehindLine(repoDir, o.version || runningVersion());
   if (behind) log(behind);
   // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
   // it would be judging something else. What it must never be is invisible.

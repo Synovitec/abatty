@@ -107,4 +107,17 @@ test("the gate prints the line before its first step, and only when the install 
     }),
     /older than the/,
   );
+  // The pre-push hook compared in shell and said it: the gate does not say it twice.
+  process.env.ABATTY_PIN_SAID = "1";
+  try {
+    assert.doesNotMatch(
+      gateLog({
+        "abatty.config.json": config("0.7.0-rc.3"),
+        "node_modules/abatty/package.json": installed("0.6.1"),
+      }),
+      /older than the/,
+    );
+  } finally {
+    delete process.env.ABATTY_PIN_SAID;
+  }
 });

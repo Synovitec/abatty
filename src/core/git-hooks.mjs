@@ -11,6 +11,19 @@ import { spawnSync } from "node:child_process";
 import { git } from "./repo.mjs";
 
 /**
+ * The pre-push hook's first lines: the installed abatty against the version the config pins, in
+ * plain shell. The gate says the same, but the gate is the installed copy, and a copy older than
+ * that check cannot say it is old: an adopter pushed through 0.5.2 for days under an rc.2 pin.
+ * Having compared, the hook tells the gate so (ABATTY_PIN_SAID), and the line is said once.
+ */
+export const PIN_CHECK = [
+  "# Before the gate runs the installed abatty: a copy older than the pin cannot say so itself.",
+  `i=$(grep -o '"version": *"[^"]*"' node_modules/abatty/package.json 2>/dev/null | head -n 1 | cut -d'"' -f4)`,
+  `p=$(grep -o '"abatty": *"[^"]*"' abatty.config.json 2>/dev/null | head -n 1 | cut -d'"' -f4)`,
+  `if [ -n "$i" ] && [ -n "$p" ]; then export ABATTY_PIN_SAID=1; [ "$i" = "$p" ] || echo "! node_modules/abatty is $i and abatty.config.json pins $p: this push is judged by $i. Reinstall, or run abatty update when $i is the newer" >&2; fi`,
+];
+
+/**
  * The hooks as this version writes them.
  * @param {{ run: (script: string, args?: string[]) => string[], exec: (bin: string) => string[] }} pm
  * @returns {Record<string, string>} path to content
@@ -22,7 +35,7 @@ export function gitHooks(pm) {
     ".githooks/pre-commit": `#!/bin/sh\n# The secret scan over the staged files, the same implementation the gate and CI run. ${installed}\n${abatty} secrets --staged\n`,
     // --refs: git hands the pushed refs on stdin, and the gate judges that push rather than
     // whatever happens to be checked out (a branch deletion ran the whole gate before).
-    ".githooks/pre-push": `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${pm.run("gate", ["--refs"]).join(" ")}\n`,
+    ".githooks/pre-push": `#!/bin/sh\n# One implementation, two callers: this hook and \`${pm.run("gate").join(" ")}\`. ${installed}\n${PIN_CHECK.join("\n")}\n${pm.run("gate", ["--refs"]).join(" ")}\n`,
     // The scrub refuses a message that names a tool where the repository opted in (a no-op
     // otherwise), and the changelog rule runs in the same hook, before the commit exists.
     ".githooks/commit-msg": `#!/bin/sh\n# Refuses a commit message that names a tool where scrub.enabled is on (a no-op otherwise), and a\n# source commit whose changelog line is not staged with it (CHANGE.1; \`no-changelog: <reason>\` in the message excuses it).\n${abatty} scrub --message "$1" && ${abatty} changelog --message "$1"\n`,
@@ -33,8 +46,13 @@ export function gitHooks(pm) {
 const X = "(npx |pnpm exec |yarn exec |yarn |bunx |bun x )?abatty";
 const EARLIER = /** @type {Record<string, RegExp>} */ ({
   ".githooks/pre-commit": new RegExp(`^${X} secrets --staged$`),
-  ".githooks/pre-push":
-    /^(npm|pnpm|yarn|bun)( -s| --silent)?( run)?( -s| --silent)? gate( --)?( --refs)?$/,
+  ".githooks/pre-push": new RegExp(
+    `^(?:(npm|pnpm|yarn|bun)( -s| --silent)?( run)?( -s| --silent)? gate( --)?( --refs)?|${PIN_CHECK.slice(
+      1,
+    )
+      .map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|")})$`,
+  ),
   ".githooks/commit-msg": new RegExp(
     `^${X} scrub --message "\\$1"( && ${X} changelog --message "\\$1")?$`,
   ),
@@ -62,7 +80,7 @@ export function writtenByInit(rel, text) {
 
 /** The comment lines `init` has written into the hooks, in every version. */
 const OUR_COMMENT =
-  /^# (One implementation, two callers|The secret scan over the staged files|Refuses a commit message|source commit whose changelog line)/;
+  /^# (One implementation, two callers|The secret scan over the staged files|Refuses a commit message|source commit whose changelog line|Before the gate runs the installed abatty)/;
 
 /**
  * The hooks git records as not executable, from the index rather than the disk: a hook committed
