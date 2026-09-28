@@ -24,7 +24,7 @@ import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
 import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
-import { unexpectedNodeEnv } from "./env.mjs";
+import { pinSaidFromEnv, unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
 import { measuredNothing } from "./coverage-empty.mjs";
@@ -104,9 +104,7 @@ export function runGate(o) {
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
   // The pre-push hook compares in shell first, where a stale copy cannot hide it, and says so.
-  const behind = process.env.ABATTY_PIN_SAID
-    ? ""
-    : pinBehindLine(repoDir, o.version || runningVersion());
+  const behind = pinSaidFromEnv() ? "" : pinBehindLine(repoDir, o.version || runningVersion());
   if (behind) log(behind);
   // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
   // it would be judging something else. What it must never be is invisible.
