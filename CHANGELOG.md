@@ -13,6 +13,11 @@ under Unreleased in the same commit.
   push that committed them was refused. Untracked, not-ignored sources, tests and documents
   under `docs/` are now named (the first five and a count). Nothing is measured differently, and
   the `--json` output is unchanged.
+- **The gate says when the installed abatty is older than the version the config pins.** A
+  branch that moved the `abatty` pin left `node_modules/abatty` where the last install put it,
+  and every push was judged by the older instrument without a word. The gate's first lines now
+  name both versions and the install to run. It warns and does not refuse; a newer install than
+  the pin stays `doctor`'s to report.
 
 ## [0.7.0-rc.3] - 2026-09-27
 

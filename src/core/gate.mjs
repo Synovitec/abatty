@@ -28,6 +28,7 @@ import { unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
 import { measuredNothing } from "./coverage-empty.mjs";
+import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
  * @typedef {"ok" | "failed" | "errored" | "skipped" | "deferred"} GateOutcome
@@ -35,7 +36,7 @@ import { measuredNothing } from "./coverage-empty.mjs";
  * @typedef {{ label: string, outcome: GateOutcome, detail?: string, ms?: number, workspace?: string }} GateEventW
  * @typedef {import("./spawn.mjs").RunResult} RunResult
  * @typedef {(cmd: string, args: string[]) => { status: number | null, output: string }} AuditRunner
- * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>, o?: { log?: string }) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
+ * @typedef {{ repoDir: string, preset: import("../presets/index.mjs").Preset, fast?: boolean, range?: string, base?: string, ci?: boolean, run?: (repoDir: string, script: string, extraArgs?: string[], env?: Record<string, string>, o?: { log?: string }) => RunResult | number, audit?: AuditRunner, dockerUp?: () => boolean, db?: { url: string, test: string }, nodeEnv?: string, version?: string, log?: (line: string) => void, workspaces?: { path: string, preset: import("../presets/index.mjs").Preset | null }[] }} GateOptions
  */
 
 /**
@@ -102,6 +103,8 @@ export function runGate(o) {
   // Said before the first step rather than found after the slowest one; said, not refused.
   const unready = preflightLine(repoDir, preset);
   if (unready) log(unready);
+  const behind = pinBehindLine(repoDir, o.version || runningVersion());
+  if (behind) log(behind);
   // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
   // it would be judging something else. What it must never be is invisible.
   const nodeEnv = o.nodeEnv ?? unexpectedNodeEnv();
