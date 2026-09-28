@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.4] - 2026-09-28
+
+The fourth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a Bun monorepo's session on 0.7.0-rc.3 found. Nothing is refused that was not
+before: the three changes are lines the ratchet, the baseline and the gate print. No config key,
+exit code or `--json` field moves.
+
 ### Fixed
 
 - **`ratchet` and `baseline` say which untracked files they left out.** Both read the tracked
