@@ -12,6 +12,12 @@ under Unreleased in the same commit.
   failure beside a slow test was steered toward a rerun. Each failing test is now counted on its
   own (jest's `●` lines included): a file where all timed out still reads `(timed out)`, a mixed
   one reads `(1 timed out, 1 failed)` and gets no rerun advice.
+- **`doctor --controls` builds before it judges the browser suite.** A suite's step with no
+  control of its own (the build) was never run, so on a fresh checkout the E2E control found no
+  build and read "red without a plant", blaming the suite. It is now run clean first, as the gate
+  runs it; a failed build skips the steps after it with the log to read, and a live dev server
+  skips them rather than building over it. A step red without a plant now names its log in the
+  verdict, not only in the progress line.
 
 ## [0.7.0-rc.4] - 2026-09-28
 

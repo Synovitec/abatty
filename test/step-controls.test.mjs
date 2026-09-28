@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
@@ -236,6 +236,65 @@ test("against a narrow typecheck and a one-folder test runner, both steps go red
   );
 });
 
+// The replay of rc.4 on a fresh checkout: nothing built before the browser control, so it read
+// red without a plant and blamed the suite for a missing build.
+test("a suite's step with no control is run before the steps that need it, and its failure says so", () => {
+  const dir = tempRepo("controls-build-first", {
+    "package.json": JSON.stringify({
+      name: "b",
+      private: true,
+      scripts: { build: "x", e2e: "x" },
+      dependencies: { next: "16", "@playwright/test": "1.0.0" },
+    }),
+    "src/a.ts": "export const a = 1;\n",
+  });
+  const next = /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next"));
+  const preset = {
+    ...next,
+    gate: { always: [], suites: next.gate.suites.filter((s) => /browser/.test(s.name)) },
+  };
+  /** @param {number} buildExit */
+  const judged = (buildExit) => {
+    /** @type {string[]} */
+    const seen = [];
+    const r = runStepControls({
+      repoDir: dir,
+      preset,
+      dockerUp: () => true,
+      log: () => {},
+      run: (cwd, script) => {
+        seen.push(script);
+        if (script === "build") return buildExit;
+        return readdirSync(cwd, { recursive: true }).some((f) =>
+          String(f).includes("abatty-control"),
+        )
+          ? 1
+          : 0;
+      },
+    });
+    const e2e = r.steps.find((s) => s.label.startsWith("E2E"));
+    return { seen, e2e };
+  };
+  const built = judged(0);
+  assert.deepEqual(built.seen, ["build", "e2e", "e2e"], "built once, then planted and clean");
+  assert.equal(built.e2e?.outcome, "red");
+  const broken = judged(2);
+  assert.deepEqual(broken.seen, ["build"], "no browser run over a failed build");
+  assert.equal(broken.e2e?.outcome, "skipped");
+  assert.match(broken.e2e?.detail || "", /build .* failed before it \(exit 2\)/);
+  assert.match(
+    broken.e2e?.detail || "",
+    /what it printed: \.abatty\/steps\/controls\/build[^ ]*\.clean\.log/,
+  );
+  assert.doesNotMatch(broken.e2e?.detail || "", /red without a plant/);
+  // A live dev server: the gate never builds over one, and neither do the controls.
+  mkdirSync(join(dir, ".next/dev"), { recursive: true });
+  writeFileSync(join(dir, ".next/dev/lock"), JSON.stringify({ pid: process.pid, port: 3000 }));
+  const live = judged(0);
+  assert.deepEqual(live.seen, [], "nothing built over a live dev server");
+  assert.match(live.e2e?.detail || "", /a dev server is running on this checkout/);
+});
+
 test("the suites are judged too, a step red without a plant proves nothing, and what no plant can prove is said", () => {
   // The browser and database steps are what vanished from the trial's empty-range run, and the
   // controls pass could not see them: it read the always-on steps alone. And a step that is red
@@ -304,6 +363,15 @@ test("the suites are judged too, a step red without a plant proves nothing, and 
   assert.match(
     u["integration suite against a real Postgres"]?.detail || "",
     /red without a plant \(exit 1\): nothing to prove/,
+  );
+  assert.match(
+    u["integration suite against a real Postgres"]?.detail || "",
+    /what it printed: \.abatty\/steps\/controls\/integration_suite[^ ]*\.clean\.log/,
+    "the verdict names the log that explains it",
+  );
+  assert.ok(
+    seen.lastIndexOf("build") > -1 && seen.lastIndexOf("build") < seen.lastIndexOf("e2e"),
+    "the build is run before the browser control, as the gate runs it",
   );
   assert.equal(u["unit tests"]?.outcome, "red", "an always-on step, judged the same way");
   assert.equal(u["audit"]?.outcome, "none");
