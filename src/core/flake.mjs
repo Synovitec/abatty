@@ -41,6 +41,8 @@ const TASK_PREFIX = /^((?:@[\w.-]+\/)?[\w.-]+):[\w.:-]+: ?(.*)$/;
 const TIMED_OUT =
   /\b(?:test timed out|this test timed out)\b|Exceeded timeout of \d|Test timeout of \d+\s*ms exceeded|testTimeoutFailure/i;
 
+/** @typedef {{ file: string, ws: string, test: boolean, timedOut?: boolean }} Failure `test`: the runner named one test, not only its file */
+
 /** The workspace folder of each package name, for a task runner's prefixed output. @param {string} [repoDir] */
 function workspacesByName(repoDir) {
   /** @type {Map<string, string>} */
@@ -58,18 +60,20 @@ function workspacesByName(repoDir) {
  * the workspace a task runner's prefix names, or the step's own. Reads the runners' `FAIL` and
  * `test at` forms line by line, and bun's, whose `(fail)` lines sit under a file header. Every
  * runner prints a timeout's message after the line naming the failure, so a timeout marks the
- * failure last read in its workspace.
+ * failure last read in its workspace. A failure is one test where the runner names one: jest's
+ * `FAIL file` stands for the whole file until its `●` lines name the tests in it, and a file with
+ * one test timed out and another failed on an assertion was read as timed out whole.
  * @param {string} plain @param {Map<string, string>} byName
- * @returns {{ file: string, ws: string, timedOut?: boolean }[]}
+ * @returns {Failure[]}
  */
 function failuresIn(plain, byName) {
-  /** @type {{ file: string, ws: string, timedOut?: boolean }[]} */
+  /** @type {Failure[]} */
   const out = [];
   /** @type {Map<string, string>} the bun header last seen, per workspace */
   const header = new Map();
-  /** @type {Map<string, { file: string, ws: string, timedOut?: boolean }>} the failure last read, per workspace */
+  /** @type {Map<string, Failure>} the failure last read, per workspace */
   const last = new Map();
-  const found = (/** @type {{ file: string, ws: string }} */ f) => (out.push(f), last.set(f.ws, f));
+  const found = (/** @type {Failure} */ f) => (out.push(f), last.set(f.ws, f));
   for (const raw of plain.split(/\r?\n/)) {
     const pre = TASK_PREFIX.exec(raw);
     const ws = pre && byName.has(String(pre[1])) ? String(byName.get(String(pre[1]))) : "";
@@ -80,11 +84,18 @@ function failuresIn(plain, byName) {
     // the last file printed, it named a test that had passed as a flake.
     else if (/^\s*\d+ tests? failed:\s*$/.test(line)) header.delete(ws);
     else if (/^\s*\(fail\)\s/.test(line) && header.has(ws))
-      found({ file: String(header.get(ws)), ws });
+      found({ file: String(header.get(ws)), ws, test: true });
     if (head) last.delete(ws);
-    for (const m of line.matchAll(FAILED)) found({ file: String(m[1] || m[2]), ws });
+    for (const m of line.matchAll(FAILED)) {
+      // `FAIL file` alone is jest's line for the file; vitest's `FAIL file > name` is a test.
+      const whole = /^\s*FAIL\b/.test(m[0]) && !/\s>\s/.test(line.slice(m.index + m[0].length));
+      found({ file: String(m[1] || m[2]), ws, test: !whole });
+    }
     const failure = last.get(ws);
-    if (failure && TIMED_OUT.test(line)) failure.timedOut = true;
+    if (failure && /^\s*● /.test(line)) {
+      if (failure.test) found({ file: failure.file, ws, test: true });
+      else failure.test = true;
+    } else if (failure && TIMED_OUT.test(line)) failure.timedOut = true;
   }
   return out;
 }
@@ -103,9 +114,10 @@ export function failingTestFiles(text, o = {}) {
 }
 
 /**
- * Each failing test file, repository-relative, and whether a test in it timed out.
+ * Each failing test file, repository-relative, with how many of its failures timed out and how
+ * many failed otherwise.
  * @param {string} text @param {{ repoDir?: string, cwd?: string }} o
- * @returns {Map<string, boolean>}
+ * @returns {Map<string, { timedOut: number, failed: number }>}
  */
 function readFailures(text, o) {
   // Colours are codes around the words, and a coloured `FAIL` is still one.
@@ -118,10 +130,13 @@ function readFailures(text, o) {
     const base = f.ws || under;
     return base ? posix.join(base, slashed) : slashed;
   };
-  /** @type {Map<string, boolean>} */
+  /** @type {Map<string, { timedOut: number, failed: number }>} */
   const files = new Map();
-  for (const f of failuresIn(plain, workspacesByName(o.repoDir)))
-    files.set(fromRepo(f), files.get(fromRepo(f)) || f.timedOut === true);
+  for (const f of failuresIn(plain, workspacesByName(o.repoDir))) {
+    const n = files.get(fromRepo(f)) || { timedOut: 0, failed: 0 };
+    n[f.timedOut ? "timedOut" : "failed"]++;
+    files.set(fromRepo(f), n);
+  }
   return files;
 }
 
@@ -154,11 +169,16 @@ export function explainFailure(o) {
   if (!existsSync(o.log)) return [];
   const read = readFailures(readFileSync(o.log, "utf8"), { repoDir: o.repoDir, cwd: o.cwd });
   const failing = [...read.keys()].sort();
-  const timedOut = failing.filter((f) => read.get(f));
   // A test that ran out of time is named apart from one that failed: on an adopter's machine
-  // three of five red pushes were 5 s timeouts that passed alone, and read as broken tests.
-  const named = (/** @type {string[]} */ fs) =>
-    fs.map((f) => (read.get(f) ? `${f} (timed out)` : f)).join(", ");
+  // three of five red pushes were 5 s timeouts that passed alone, and read as broken tests. A
+  // file where only some timed out says both counts; its assertion failure is no flake.
+  const count = (/** @type {string} */ f) => read.get(f) || { timedOut: 0, failed: 0 };
+  const timedOut = failing.filter((f) => count(f).timedOut && !count(f).failed);
+  const note = (/** @type {string} */ f) => {
+    const { timedOut: t, failed } = count(f);
+    return !t ? "" : failed ? ` (${t} timed out, ${failed} failed)` : " (timed out)";
+  };
+  const named = (/** @type {string[]} */ fs) => fs.map((f) => f + note(f)).join(", ");
   if (!failing.length)
     return o.tests
       ? [

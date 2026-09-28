@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A test file where one test timed out and another failed is no longer called a timeout.**
+  0.7.0-rc.4 tagged a file `(timed out)` when any test in it timed out, so a real assertion
+  failure beside a slow test was steered toward a rerun. Each failing test is now counted on its
+  own (jest's `●` lines included): a file where all timed out still reads `(timed out)`, a mixed
+  one reads `(1 timed out, 1 failed)` and gets no rerun advice.
+
 ## [0.7.0-rc.4] - 2026-09-28
 
 The fourth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
