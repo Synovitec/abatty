@@ -41,8 +41,6 @@ const TASK_PREFIX = /^((?:@[\w.-]+\/)?[\w.-]+):[\w.:-]+: ?(.*)$/;
 const TIMED_OUT =
   /\b(?:test timed out|this test timed out)\b|Exceeded timeout of \d|Test timeout of \d+\s*ms exceeded|testTimeoutFailure/i;
 
-/** @typedef {{ file: string, ws: string, test: boolean, timedOut?: boolean }} Failure `test`: the runner named one test, not only its file */
-
 /** The workspace folder of each package name, for a task runner's prefixed output. @param {string} [repoDir] */
 function workspacesByName(repoDir) {
   /** @type {Map<string, string>} */
@@ -64,16 +62,18 @@ function workspacesByName(repoDir) {
  * `FAIL file` stands for the whole file until its `●` lines name the tests in it, and a file with
  * one test timed out and another failed on an assertion was read as timed out whole.
  * @param {string} plain @param {Map<string, string>} byName
- * @returns {Failure[]}
+ * @returns {{ file: string, ws: string, test: boolean, timedOut?: boolean }[]}
  */
 function failuresIn(plain, byName) {
-  /** @type {Failure[]} */
+  /** @type {{ file: string, ws: string, test: boolean, timedOut?: boolean }[]} */
   const out = [];
   /** @type {Map<string, string>} the bun header last seen, per workspace */
   const header = new Map();
-  /** @type {Map<string, Failure>} the failure last read, per workspace */
+  /** @type {Map<string, { file: string, ws: string, test: boolean, timedOut?: boolean }>} the failure last read, per workspace */
   const last = new Map();
-  const found = (/** @type {Failure} */ f) => (out.push(f), last.set(f.ws, f));
+  const found = (
+    /** @type {{ file: string, ws: string, test: boolean, timedOut?: boolean }} */ f,
+  ) => (out.push(f), last.set(f.ws, f));
   for (const raw of plain.split(/\r?\n/)) {
     const pre = TASK_PREFIX.exec(raw);
     const ws = pre && byName.has(String(pre[1])) ? String(byName.get(String(pre[1]))) : "";
