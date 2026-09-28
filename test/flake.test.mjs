@@ -125,6 +125,51 @@ test("a failing test that imports what the push changed is the push's; one nothi
   );
 });
 
+// Three of an adopter's five red pushes were 5 s timeouts that passed alone, and read exactly
+// like a test the push broke.
+test("a test that timed out is named apart from one that failed, in each runner's words", () => {
+  const dir = tempRepo("flake-timeout", { "package.json": "{}" });
+  mkdirSync(join(dir, ".abatty/steps"), { recursive: true });
+  const log = join(dir, ".abatty/steps/unit.log");
+  writeFileSync(
+    log,
+    [
+      " FAIL  src/vitest.test.ts > slow",
+      "Error: Test timed out in 5000ms.",
+      "FAIL src/jest.test.ts",
+      '  thrown: "Exceeded timeout of 5000 ms for a test.',
+      "  location: 'test/node.test.mjs:3:1'",
+      "  failureType: 'testTimeoutFailure'",
+      "src/bun.test.ts:",
+      "(fail) slow [5001.20ms]",
+      "  ^ this test timed out after 5000ms.",
+      "  1) [chromium] › e2e/pw.spec.ts:3:5 › slow",
+      "    Test timeout of 30000ms exceeded.",
+      "FAIL src/assert.test.ts",
+      "AssertionError: expected 1 to be 2",
+      // a timeout printed under a file that passed is no failure's
+      "src/passing.test.ts:",
+      "(pass) fine",
+      "  ^ this test timed out after 5000ms.",
+    ].join("\n"),
+  );
+  const said = explainFailure({ repoDir: dir, log, changed: [], head: "c1" }).join("\n");
+  const [line] = said.split("\n").filter((l) => l.includes("timed out rather than failed"));
+  assert.equal(
+    line?.split(": ")[1]?.split(" · ")[0],
+    "e2e/pw.spec.ts, src/bun.test.ts, src/jest.test.ts, src/vitest.test.ts, test/node.test.mjs",
+  );
+  assert.match(said, /src\/assert\.test\.ts(?! \(timed out\))/, "an assertion is not a timeout");
+  assert.doesNotMatch(said, /passing\.test\.ts/);
+  assert.match(said, /src\/vitest\.test\.ts \(timed out\)/);
+});
+
+test("a red step with no timeout in it says nothing about timeouts", () => {
+  const { dir, log } = withGraph();
+  const said = explainFailure({ repoDir: dir, log, changed: [], head: "c1" }).join("\n");
+  assert.doesNotMatch(said, /timed out/);
+});
+
 test("with the push's range unknown nothing is attributed, and a damaged record never breaks it", () => {
   const { dir, log } = withGraph();
   const blind = explainFailure({

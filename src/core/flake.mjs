@@ -33,6 +33,14 @@ const BUN_HEADER = new RegExp(String.raw`^(${TEST_FILE}):\s*$`);
 /** A task runner's prefix on every line of a workspace's output: turbo's `@acme/web:test: `. */
 const TASK_PREFIX = /^((?:@[\w.-]+\/)?[\w.-]+):[\w.:-]+: ?(.*)$/;
 
+/**
+ * A runner saying a test ran out of time, not that it failed an assertion: vitest's `Test timed
+ * out in`, jest's `Exceeded timeout of`, Node's `test timed out after` (and its TAP
+ * `testTimeoutFailure`), bun's `this test timed out after`, Playwright's `Test timeout of ... exceeded`.
+ */
+const TIMED_OUT =
+  /\b(?:test timed out|this test timed out)\b|Exceeded timeout of \d|Test timeout of \d+\s*ms exceeded|testTimeoutFailure/i;
+
 /** The workspace folder of each package name, for a task runner's prefixed output. @param {string} [repoDir] */
 function workspacesByName(repoDir) {
   /** @type {Map<string, string>} */
@@ -48,15 +56,20 @@ function workspacesByName(repoDir) {
 /**
  * The failing test files a step's output names, each with the folder its path is relative to:
  * the workspace a task runner's prefix names, or the step's own. Reads the runners' `FAIL` and
- * `test at` forms line by line, and bun's, whose `(fail)` lines sit under a file header.
+ * `test at` forms line by line, and bun's, whose `(fail)` lines sit under a file header. Every
+ * runner prints a timeout's message after the line naming the failure, so a timeout marks the
+ * failure last read in its workspace.
  * @param {string} plain @param {Map<string, string>} byName
- * @returns {{ file: string, ws: string }[]}
+ * @returns {{ file: string, ws: string, timedOut?: boolean }[]}
  */
 function failuresIn(plain, byName) {
-  /** @type {{ file: string, ws: string }[]} */
+  /** @type {{ file: string, ws: string, timedOut?: boolean }[]} */
   const out = [];
   /** @type {Map<string, string>} the bun header last seen, per workspace */
   const header = new Map();
+  /** @type {Map<string, { file: string, ws: string, timedOut?: boolean }>} the failure last read, per workspace */
+  const last = new Map();
+  const found = (/** @type {{ file: string, ws: string }} */ f) => (out.push(f), last.set(f.ws, f));
   for (const raw of plain.split(/\r?\n/)) {
     const pre = TASK_PREFIX.exec(raw);
     const ws = pre && byName.has(String(pre[1])) ? String(byName.get(String(pre[1]))) : "";
@@ -67,8 +80,11 @@ function failuresIn(plain, byName) {
     // the last file printed, it named a test that had passed as a flake.
     else if (/^\s*\d+ tests? failed:\s*$/.test(line)) header.delete(ws);
     else if (/^\s*\(fail\)\s/.test(line) && header.has(ws))
-      out.push({ file: String(header.get(ws)), ws });
-    for (const m of line.matchAll(FAILED)) out.push({ file: String(m[1] || m[2]), ws });
+      found({ file: String(header.get(ws)), ws });
+    if (head) last.delete(ws);
+    for (const m of line.matchAll(FAILED)) found({ file: String(m[1] || m[2]), ws });
+    const failure = last.get(ws);
+    if (failure && TIMED_OUT.test(line)) failure.timedOut = true;
   }
   return out;
 }
@@ -83,6 +99,15 @@ function failuresIn(plain, byName) {
  * @returns {string[]}
  */
 export function failingTestFiles(text, o = {}) {
+  return [...readFailures(text, o).keys()].sort();
+}
+
+/**
+ * Each failing test file, repository-relative, and whether a test in it timed out.
+ * @param {string} text @param {{ repoDir?: string, cwd?: string }} o
+ * @returns {Map<string, boolean>}
+ */
+function readFailures(text, o) {
   // Colours are codes around the words, and a coloured `FAIL` is still one.
   const plain = text.replace(/\x1b\[[0-9;]*m/g, "");
   const under = o.repoDir && o.cwd ? relative(o.repoDir, o.cwd).replace(/\\/g, "/") : "";
@@ -93,7 +118,11 @@ export function failingTestFiles(text, o = {}) {
     const base = f.ws || under;
     return base ? posix.join(base, slashed) : slashed;
   };
-  return [...new Set(failuresIn(plain, workspacesByName(o.repoDir)).map(fromRepo))].sort();
+  /** @type {Map<string, boolean>} */
+  const files = new Map();
+  for (const f of failuresIn(plain, workspacesByName(o.repoDir)))
+    files.set(fromRepo(f), files.get(fromRepo(f)) || f.timedOut === true);
+  return files;
 }
 
 /** The unreached-failure record, or an empty one when it is missing or damaged: a diagnostic never breaks the gate. @param {string} repoDir */
@@ -123,7 +152,13 @@ function readFlakes(repoDir) {
  */
 export function explainFailure(o) {
   if (!existsSync(o.log)) return [];
-  const failing = failingTestFiles(readFileSync(o.log, "utf8"), { repoDir: o.repoDir, cwd: o.cwd });
+  const read = readFailures(readFileSync(o.log, "utf8"), { repoDir: o.repoDir, cwd: o.cwd });
+  const failing = [...read.keys()].sort();
+  const timedOut = failing.filter((f) => read.get(f));
+  // A test that ran out of time is named apart from one that failed: on an adopter's machine
+  // three of five red pushes were 5 s timeouts that passed alone, and read as broken tests.
+  const named = (/** @type {string[]} */ fs) =>
+    fs.map((f) => (read.get(f) ? `${f} (timed out)` : f)).join(", ");
   if (!failing.length)
     return o.tests
       ? [
@@ -132,7 +167,7 @@ export function explainFailure(o) {
       : [];
   if (o.blind)
     return [
-      `  failing: ${failing.join(", ")} · the push's range is unknown here, so whether it caused them is not said`,
+      `  failing: ${named(failing)} · the push's range is unknown here, so whether it caused them is not said`,
     ];
   const reached = reachedBy(importersOf(o.repoDir), o.changed);
   const ours = failing.filter((f) => reached.has(f));
@@ -150,15 +185,19 @@ export function explainFailure(o) {
   const lines = [];
   if (ours.length)
     lines.push(
-      `  failing, and this change (the push, or the working tree) touched them or what they import: ${ours.join(", ")}`,
+      `  failing, and this change (the push, or the working tree) touched them or what they import: ${named(ours)}`,
     );
   if (others.length)
     lines.push(
-      `  failing, and nothing this change touched reaches them through their imports: ${others.join(", ")} · a flake, the environment, or a change outside the code (a config, a lockfile); rerun one alone to tell`,
+      `  failing, and nothing this change touched reaches them through their imports: ${named(others)} · a flake, the environment, or a change outside the code (a config, a lockfile); rerun one alone to tell`,
     );
   if (repeat.length)
     lines.push(
       `  failed unreached on more than one commit: ${repeat.map((f) => `${f} (${(seen[f] || []).length})`).join(", ")} · if it is a flake, quarantine it with an owner and a date (TEST.6), never retry it away (${FLAKES})`,
+    );
+  if (timedOut.length)
+    lines.push(
+      `  timed out rather than failed: ${timedOut.join(", ")} · a test that runs out of time and passes alone is slow or waiting on the machine or a service; rerun it alone, then give it the time it needs or quarantine it (TEST.6)`,
     );
   return lines;
 }

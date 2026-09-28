@@ -18,6 +18,11 @@ under Unreleased in the same commit.
   and every push was judged by the older instrument without a word. The gate's first lines now
   name both versions and the install to run. It warns and does not refuse; a newer install than
   the pin stays `doctor`'s to report.
+- **A red test step names a test that timed out apart from one that failed.** Three of an
+  adopter's five red pushes were 5 s timeouts that passed when run alone, and the gate's
+  attribution read them exactly like a test the push broke. The timeout messages of vitest,
+  jest, Node's runner, bun and Playwright now mark the failing file `(timed out)`, and a line
+  lists them with what to do: rerun alone, then give the test its time or quarantine it.
 
 ## [0.7.0-rc.3] - 2026-09-27
 
