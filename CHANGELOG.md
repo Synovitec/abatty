@@ -5,6 +5,32 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.4] - 2026-09-28
+
+The fourth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a Bun monorepo's session on 0.7.0-rc.3 found. Nothing is refused that was not
+before: the three changes are lines the ratchet, the baseline and the gate print. No config key,
+exit code or `--json` field moves.
+
+### Fixed
+
+- **`ratchet` and `baseline` say which untracked files they left out.** Both read the tracked
+  tree on purpose, so a floor never moves on a file nobody commits, but they said nothing about
+  it: a baseline written over new sources not yet added recorded a floor without them, and the
+  push that committed them was refused. Untracked, not-ignored sources, tests and documents
+  under `docs/` are now named (the first five and a count). Nothing is measured differently, and
+  the `--json` output is unchanged.
+- **The gate says when the installed abatty is older than the version the config pins.** A
+  branch that moved the `abatty` pin left `node_modules/abatty` where the last install put it,
+  and every push was judged by the older instrument without a word. The gate's first lines now
+  name both versions and the install to run. It warns and does not refuse; a newer install than
+  the pin stays `doctor`'s to report.
+- **A red test step names a test that timed out apart from one that failed.** Three of an
+  adopter's five red pushes were 5 s timeouts that passed when run alone, and the gate's
+  attribution read them exactly like a test the push broke. The timeout messages of vitest,
+  jest, Node's runner, bun and Playwright now mark the failing file `(timed out)`, and a line
+  lists them with what to do: rerun alone, then give the test its time or quarantine it.
+
 ## [0.7.0-rc.3] - 2026-09-27
 
 The third release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

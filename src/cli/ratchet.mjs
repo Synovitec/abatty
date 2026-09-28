@@ -20,6 +20,7 @@ import {
   writeBaseline,
 } from "../ratchet/index.mjs";
 import { runControls } from "../ratchet/controls.mjs";
+import { untrackedInScope, untrackedLine } from "../ratchet/untracked.mjs";
 import * as t from "../ui/term.mjs";
 
 /**
@@ -96,6 +97,8 @@ export async function ratchetCommand(command, c) {
       out(
         `  ${t.gray(baseline ? `floor ${baselineRel} (${baseline.measuredAt})` : `no baseline at ${baselineRel} - every metric above zero fails until \`abatty baseline\` records the floor`)}${range ? t.gray(` · range ${range}`) : ""}\n\n`,
       );
+      const unseen = untrackedLine(untrackedInScope(dir, ctx), "ratchet");
+      if (unseen) out(`  ${t.glyph.warn} ${t.yellow(unseen)}\n\n`);
       // `improved` reads as a failure now: an unlocked floor is slack the gate still accepts.
       const mark = (/** @type {string} */ s) =>
         s === "ok"
@@ -231,6 +234,8 @@ export async function ratchetCommand(command, c) {
         );
       }
       for (const x of r.refusals) out(`\n  ${t.glyph.fail} ${t.red(x)}\n`);
+      const unseen = untrackedLine(untrackedInScope(dir, ctx), "baseline");
+      if (unseen) out(`\n  ${t.glyph.warn} ${t.yellow(unseen)}\n`);
       if (r.rises.length && r.ok)
         out(
           `\n  ${t.glyph.warn} ${t.yellow(`floor(s) raised by ${opt("--owner")}: ${r.rises.join(", ")} - the reason is recorded per metric in the baseline; write the same one in docs/STANDARDS_PROGRESS.md. It lands through a pull request somebody other than its author approves; the pipeline checks that with abatty raises`)}\n`,
