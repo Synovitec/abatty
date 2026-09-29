@@ -362,3 +362,14 @@ test("a step whose config is not in the repository is a comment in CI, as the ga
   assert.equal(format()?.absent, undefined);
   assert.match(String(format()?.command), /prettier --check/);
 });
+
+test("the pull-request template names the gate the way the repository runs it", () => {
+  const dir = tempRepo("ci-template-pm", {
+    "package.json": NEXT_PKG,
+    "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+  });
+  assert.equal(cli(["ci", dir, "--provider", "github"], dir).code, 0);
+  const text = readFileSync(join(dir, ".github/PULL_REQUEST_TEMPLATE.md"), "utf8");
+  assert.match(text, /The gate is green \(`pnpm run gate`\)/);
+  assert.match(renderPullRequestTemplate(), /The gate is green \(`npm run gate`\)/);
+});

@@ -11,6 +11,9 @@ under Unreleased in the same commit.
   pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead
   code steps without theirs, so CI was red where the gate said green. Such a step is now a comment
   in the pipeline that says why, in the gate's words.
+- **The pull-request template `abatty ci` writes names the gate the way the repository runs it.**
+  It said `npm run gate` whatever the package manager; a pnpm repository now reads
+  `pnpm run gate`, a bun one `bun run gate`.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

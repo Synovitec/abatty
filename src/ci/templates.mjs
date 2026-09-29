@@ -6,8 +6,13 @@
  */
 import { TERMS } from "../core/vocabulary.mjs";
 
-/** The pull-request template: the reviewer's checklist in the author's hands. */
-export function renderPullRequestTemplate() {
+/**
+ * The pull-request template: the reviewer's checklist in the author's hands. The gate is named
+ * the way the repository runs it; `npm run gate` in a pnpm repository's template was the first
+ * line an adopter corrected.
+ * @param {string} [gate] the command that runs the gate here
+ */
+export function renderPullRequestTemplate(gate = "npm run gate") {
   return [
     `## What changed, and why`,
     ``,
@@ -15,7 +20,7 @@ export function renderPullRequestTemplate() {
     ``,
     `## Before asking for review`,
     ``,
-    `- [ ] The gate is green (\`npm run gate\`), and CI runs the same steps`,
+    `- [ ] The gate is green (\`${gate}\`), and CI runs the same steps`,
     `- [ ] A line under \`## [Unreleased]\` in the changelog, written for the reader`,
     `- [ ] No floor raised, no threshold lowered, no rule switched off without a reason in the decisions file`,
     `- [ ] A new guard or probe was seen red before green (a planted violation, then the fix)`,

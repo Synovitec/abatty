@@ -14,6 +14,15 @@ import { packageManager } from "../core/package-manager.mjs";
 import { readPackage } from "../core/repo.mjs";
 import * as t from "../ui/term.mjs";
 
+/** The gate as a person here types it: the repository's manager, without the quiet flag. @param {import("../ci/generate.mjs").CiOptions} o */
+function gateCommand(o) {
+  if (!o.pm) return "npm run gate";
+  return o.pm
+    .run("gate", [])
+    .filter((a) => a !== "-s" && a !== "--silent")
+    .join(" ");
+}
+
 /** The files a provider gets. @param {string} provider @param {import("../presets/index.mjs").Preset} preset @param {import("../ci/generate.mjs").CiOptions} o */
 export function ciFilesFor(provider, preset, o) {
   /** @type {[string, string][]} */
@@ -22,7 +31,7 @@ export function ciFilesFor(provider, preset, o) {
     files.push([".woodpecker/checks.yaml", renderWoodpecker(preset, o)]);
   if (provider === "github") {
     files.push([".github/workflows/checks.yml", renderGithubActions(preset, o)]);
-    files.push([".github/PULL_REQUEST_TEMPLATE.md", renderPullRequestTemplate()]);
+    files.push([".github/PULL_REQUEST_TEMPLATE.md", renderPullRequestTemplate(gateCommand(o))]);
   }
   return files;
 }
@@ -40,6 +49,7 @@ export function writeCi(o) {
     base: o.base,
     scripts: readPackage(o.repoDir).scripts || {},
     pm: packageManager(o.repoDir),
+    present: (/** @type {string} */ rel) => existsSync(join(o.repoDir, rel)),
     present: (/** @type {string} */ rel) => existsSync(join(o.repoDir, rel)),
   };
   for (const p of o.providers)
