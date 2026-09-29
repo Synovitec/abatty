@@ -42,6 +42,11 @@ under Unreleased in the same commit.
 - **`measure --out` no longer names a JSON file it did not write.** A run with `--out` leaves the
   repository's latest reading alone, so no JSON goes under `.abatty/reports/`, yet the last line
   pointed there. It now names only the file it wrote.
+- **Every check on probation in `report --json` says why.** `why` was filled only when a check
+  could not read, so an adopter's report explained none of the rest. It now says, for each, whether
+  the reading is a vote to promote the check and why: clean over what it scanned, reads N (debt or
+  a false positive, for a person to say), disputed here, nothing of its kind to read, or opt-in
+  and not enabled. The field and its type are unchanged.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

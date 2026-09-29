@@ -19,6 +19,7 @@ import { BUILTIN_PROBES } from "../src/ratchet/index.mjs";
 import { resolveConfig } from "../src/ratchet/config.mjs";
 import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
+import { probationReadings } from "../src/core/probation.mjs";
 
 /** What the ratchet hands a probe with the default config and no range. */
 const SCAN = { config: resolveConfig({}), range: "" };
@@ -162,6 +163,14 @@ const CASES = [
       const r = cli(["ratchet", dir, "--help", "--plain"], dir);
       assert.match(r.out, /abatty ratchet \[dir\]/);
       assert.ok(!/abatty measure/.test(r.out));
+    },
+  },
+  {
+    report: "product · 2026-09-25 · probation why",
+    claim: "every check on probation says why its reading is or is not a vote",
+    run: () => {
+      const empty = probationReadings(productAdopter(), {}).filter((p) => !p.why);
+      assert.deepEqual(empty, []);
     },
   },
   {

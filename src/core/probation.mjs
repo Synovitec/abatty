@@ -36,6 +36,24 @@ export function probationReadings(repoDir, disputes) {
     const reads = r ? r.reads : null;
     const scanned = r ? r.scanned : 0;
     const clean = runs && reads === 0 && scanned > 0 && n === 0;
-    return { metric: p.metric, runs, reads, scanned, why: r?.why || "", disputes: n, clean };
+    const why = whyOf({ runs, reads, scanned, disputes: n, skipped: r?.why || "" });
+    return { metric: p.metric, runs, reads, scanned, why, disputes: n, clean };
   });
+}
+
+/**
+ * Why a reading is, or is not, a vote for promotion: the one sentence a reader deciding the check
+ * needs. It was set only when a probe could not read, so every other entry of an adopter's report
+ * said nothing, a clean one included.
+ * @param {{ runs: boolean, reads: number | null, scanned: number, disputes: number, skipped: string }} r
+ */
+function whyOf(r) {
+  if (!r.runs) return "opt-in and not enabled here (ratchet.enable): no vote";
+  if (r.reads === null) return r.skipped || "could not read here: no vote";
+  if (r.disputes)
+    return `disputed ${r.disputes} time(s) here: a vote against, until the dispute is settled`;
+  if (!r.scanned) return "nothing of its kind to read here: no vote";
+  if (r.reads)
+    return `reads ${r.reads} here: real debt or a false positive, and only a person can say which`;
+  return `clean over ${r.scanned} scanned here: one repository's vote for promotion`;
 }
