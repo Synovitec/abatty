@@ -175,7 +175,7 @@ by mutation.
 | `abatty check <ID>`   | One rule as an exit code, for a script                                                                    |
 | `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                            |
 | `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it                     |
-| `abatty ci`           | Generate CI from the gate. `--ruleset` prints a branch ruleset to import                                  |
+| `abatty ci`           | Generate CI from the gate; one you keep is judged, never overwritten. `--ruleset` prints a ruleset        |
 | `abatty update`       | Bring the harness to the package's version, keeping your edits                                            |
 | `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                                  |
 | `abatty presets`      | The stacks, and which repository proved each                                                              |

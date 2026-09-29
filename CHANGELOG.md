@@ -14,6 +14,15 @@ under Unreleased in the same commit.
 - **The pull-request template `abatty ci` writes names the gate the way the repository runs it.**
   It said `npm run gate` whatever the package manager; a pnpm repository now reads
   `pnpm run gate`, a bun one `bun run gate`.
+- **`abatty ci` no longer overwrites a pipeline it did not write, and judges it by what it runs.**
+  A repository that keeps its own pipeline, one job running its gate script with its own env,
+  services, pinned runner and actions and concurrency, had all of that replaced by the generated
+  file, with older pins, and `ci --check` called it behind forever. A pipeline without the
+  generated header is now left as it is: one that runs the gate (`abatty gate`, or a script whose
+  body is the gate) reads `runs gate` and passes; one that does not, or runs only `gate --fast`,
+  reads `not gate`, exits 3, and gets the generated pipeline beside it as `.abatty-new` to merge
+  from. A pull-request template the repository wrote is kept the same way. A pipeline `abatty ci`
+  wrote is regenerated as before.
 
 ## [0.7.0-rc.5] - 2026-09-29
 
