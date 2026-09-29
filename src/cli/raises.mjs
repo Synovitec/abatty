@@ -69,7 +69,12 @@ export function raisesCommand(cx) {
     out(`${t.glyph.ok} ${t.green(`floor(s) loosened, ${approval.detail}`)}\n`);
   else
     out(
-      `${t.glyph.fail} ${t.red(`${r.loosened.length} floor(s) loosened against ${base} without an approval the raiser cannot give itself`)}${t.gray(approval ? ` · ${approval.detail}` : " · a raise lands through a pull request somebody other than its author approves (abatty raises --require-review <number> in the pipeline)")}\n`,
+      `${t.glyph.fail} ${t.red(`${r.loosened.length} floor(s) loosened against ${base} without an approval the raiser cannot give itself`)}${t.gray(approval ? ` · ${approval.detail}` : " · a raise lands through a pull request somebody other than its author approves (abatty raises --require-review <number> in the pipeline)")}\n` +
+        // A repository with one maintainer has nobody to approve: the strict rule stays, and the
+        // way it is met there is the record on a base that takes direct pushes.
+        t.gray(
+          `    alone on this repository? nobody else can approve, so the raise goes to ${base} directly: directPushToBase true in the config on ${base}, and a line in the decisions file naming the metric, why and who decided\n`,
+        ),
     );
   return ok ? EXIT.clean : EXIT.findings;
 }

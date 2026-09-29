@@ -23,6 +23,10 @@ under Unreleased in the same commit.
   reads `not gate`, exits 3, and gets the generated pipeline beside it as `.abatty-new` to merge
   from. A pull-request template the repository wrote is kept the same way. A pipeline `abatty ci`
   wrote is regenerated as before.
+- **`abatty raises` tells a maintainer alone how a loosened floor lands.** The pipeline's floors
+  job refuses a loosened floor without a second person's approval, which a repository with one
+  maintainer can never give. The rule stays; the refusal now names the way it is met there: a push
+  to the base with `directPushToBase` on and a line in the decisions file naming the metric.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

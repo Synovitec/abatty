@@ -49,6 +49,8 @@ test("the command fails a loosened floor with no approval to read, and passes an
   const red = cli(["raises", dir, "--base", "main"], dir);
   assert.equal(red.code, 3, red.out);
   assert.match(red.out, /size\.overBudget\s+rose · 3 → 4/);
+  // A maintainer alone is told the way the strict rule is met without a second person.
+  assert.match(red.out, /alone on this repository\? .*directPushToBase true .*decisions file/);
   writeFileSync(join(dir, REL), JSON.stringify(BASE));
   assert.equal(cli(["raises", dir, "--base", "main"], dir).code, 0);
 });
