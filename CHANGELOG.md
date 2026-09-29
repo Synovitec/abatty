@@ -56,6 +56,9 @@ under Unreleased in the same commit.
 - **This repository no longer couples a rule change to a catalog commit.** The pair refused a push
   whose rules changed in logic alone, with nothing to regenerate; the catalog stays held by the test
   that compares it with the rules.
+- **`types.escapes` is zero here and held at zero.** The last escape in this repository was the
+  pattern the old TYPES-ESCAPES rule carried in its own source; with the rule reading the probe it
+  is gone, and the floor is locked and promoted to hard.
 
 ## [0.7.0-rc.5] - 2026-09-29
 
