@@ -74,7 +74,8 @@ export async function measureCommand(cx) {
   out("\n");
   out(familyTable(r.families, { na: true }) + "\n");
   out(
-    `\n  ${t.gray(`${nextSteps(r, 999).length} next step(s) · report: `)}${rel}${t.gray(" · JSON: .abatty/reports/" + r.date + ".json")}\n\n`,
+    // The JSON is written only when the run is the repository's latest reading, never with --out.
+    `\n  ${t.gray(`${nextSteps(r, 999).length} next step(s) · report: `)}${rel}${to ? "" : t.gray(" · JSON: .abatty/reports/" + r.date + ".json")}\n\n`,
   );
   return;
 }

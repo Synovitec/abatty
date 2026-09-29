@@ -20,3 +20,18 @@ test("measure --out writes the measurement there and only there", () => {
   assert.match(plain.out, /"findings"/, "without --out the JSON is on the screen");
   assert.equal(existsSync(latest), true, "and the run is recorded as the latest");
 });
+
+test("measure --out names only the file it wrote, never a JSON path it did not", () => {
+  const dir = tempRepo("measure-out-md", { "package.json": JSON.stringify({ name: "m" }) });
+  const r = cli(["measure", dir, "--out", "out/gap.md", "--plain"], dir);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /report: out\/gap\.md/);
+  assert.doesNotMatch(r.out, /JSON: \.abatty\/reports\//);
+  assert.equal(existsSync(join(dir, ".abatty/reports")), false, "no JSON was written");
+  const plain = cli(["measure", dir, "--plain"], dir);
+  const named = plain.out.match(/JSON: (\.abatty\/reports\/\S+\.json)/);
+  assert.ok(
+    named && existsSync(join(dir, String(named[1]))),
+    "without --out the named JSON exists",
+  );
+});

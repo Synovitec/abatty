@@ -39,6 +39,9 @@ under Unreleased in the same commit.
   analysis once the catalog gained two must-rules. When the state marks the phase, or a later one,
   done, the headline now says the adoption closed it and names the rules unmet since, new to the
   catalog or regressed. A repository still adopting reads as before.
+- **`measure --out` no longer names a JSON file it did not write.** A run with `--out` leaves the
+  repository's latest reading alone, so no JSON goes under `.abatty/reports/`, yet the last line
+  pointed there. It now names only the file it wrote.
 
 ## [0.7.0-rc.5] - 2026-09-29
 
