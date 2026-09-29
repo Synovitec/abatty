@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.5] - 2026-09-29
+
+The fifth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the product repository's replay of 0.7.0-rc.4 found. Nothing is refused that was
+not before; the generated pre-push hook gains a plain-shell pin check, which `abatty update`
+refreshes. No config key, exit code or `--json` field moves.
+
 ### Fixed
 
 - **A test file where one test timed out and another failed is no longer called a timeout.**
