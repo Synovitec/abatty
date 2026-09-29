@@ -10,7 +10,9 @@ import { renderHelp } from "../src/ui/help.mjs";
 const KNOWN = (() => {
   const bin = readFileSync(fileURLToPath(new URL("../bin/abatty.mjs", import.meta.url)), "utf8");
   const list = bin.match(/const KNOWN = \[([^\]]*)\]/)?.[1] || "";
-  return [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]).filter((c) => !c.startsWith("-"));
+  return [...list.matchAll(/"([^"]+)"/g)]
+    .map((m) => String(m[1]))
+    .filter((c) => !c.startsWith("-"));
 })();
 
 const HELP = renderHelp({ version: "0.0.0", presets }).replace(/\x1b\[[0-9;]*m/g, "");
