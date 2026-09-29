@@ -63,7 +63,10 @@ defect, not a false positive.
 - **`docs.indexDrift` passed while a document was genuinely missing from the index**, because the
   probe matched on a substring.
 - **A coupled-paths rule refused a correct push.** The pair `templates/harness/` → `.claude/` was
-  over-broad: the context template installs to the root. Four precise pairs replaced it.
+  over-broad: the context template installs to the root. Four precise pairs replaced it. A second
+  one did the same on 2026-09-29: `src/rules/families/` → `docs/CATALOG.md` refused two rules whose
+  logic changed and whose text did not, with nothing to regenerate. It was removed; the test that
+  compares the catalog with the rules holds that coupling exactly.
 - **The cache never hit**, because writing it created an untracked file that changed its own key.
 - **The trust scan flagged ten lines of its own harness**, until it learned that a line which
   forbids a thing is not an instruction to do it.

@@ -59,6 +59,7 @@ under Unreleased in the same commit.
 - **`types.escapes` is zero here and held at zero.** The last escape in this repository was the
   pattern the old TYPES-ESCAPES rule carried in its own source; with the rule reading the probe it
   is gone, and the floor is locked and promoted to hard.
+- **The dogfood page lists the catalog pair among the things the instrument got wrong here.**
 
 ## [0.7.0-rc.5] - 2026-09-29
 
