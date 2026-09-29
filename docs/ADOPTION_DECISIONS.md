@@ -83,3 +83,13 @@ the alternative each set aside.
   imported, `countMatches`, and three terminal colour helpers) and two knip patterns that matched
   nothing. The exports are deleted and the patterns corrected: a pattern that matches nothing is
   the `0 findings across 0 files` this standard refuses everywhere else.
+
+## 2026-09-29 · the catalog pair, by day
+
+- **The coupled pair `src/rules/families/** → docs/CATALOG.md` is removed.** Two rules came to
+  read their probes' counts (TYPES-ESCAPES, VALID-ENV); their text did not change, so
+  `abatty rules --md` wrote a byte-identical catalog and the pair refused a push with nothing to
+  commit. The coupling it stood for is held exactly by `test/rules.test.mjs`, which fails when the
+  committed catalog differs from the rules. The alternatives set aside: touching the catalog to
+  satisfy the pair (a change made for the check, not the reader), and an excuse line for the pair
+  (a new surface during the freeze).

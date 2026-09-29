@@ -33,11 +33,6 @@
   ],
   "coupled": [
     {
-      "when": "src/rules/families/**",
-      "then": "docs/CATALOG.md",
-      "why": "a rule change regenerates the catalog (abatty rules --md)"
-    },
-    {
       "when": "templates/harness/hooks/",
       "then": ".claude/hooks/",
       "why": "the hooks the package ships and the hooks this repository runs are the same files (abatty update)"

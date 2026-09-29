@@ -53,6 +53,9 @@ under Unreleased in the same commit.
   and VALID-ENV took a fixture named `env` for the env module, ignoring `ratchet.envModule` and the
   exempt list that `valid.rawEnv` honours. Both rules now run the probe, and their evidence names
   its count.
+- **This repository no longer couples a rule change to a catalog commit.** The pair refused a push
+  whose rules changed in logic alone, with nothing to regenerate; the catalog stays held by the test
+  that compares it with the rules.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

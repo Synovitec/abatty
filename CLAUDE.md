@@ -100,8 +100,9 @@ written in `docs/STANDARDS_PROGRESS.md` in the same commit.
 - **Every commit that touches source, tests, scripts or docs adds a line under `## [Unreleased]`
   in `CHANGELOG.md`, in the same commit**, written for the reader, not the committer. The gate
   and the Stop hook check this over the pushed range; a push without it fails.
-- **Coupled paths.** A change under `src/rules/families/` regenerates `docs/CATALOG.md`
-  (`abatty rules --md`) in the same push. The pairs are in `abatty.config.json` under `coupled`.
+- **Coupled paths.** The pairs are in `abatty.config.json` under `coupled`. `docs/CATALOG.md` is
+  held by a test instead (`abatty rules --md` must equal it), so a rule whose text changed
+  regenerates it in the same commit, and one whose logic alone changed does not.
 - **Versioning.** SemVer in `package.json`; `abatty` in `abatty.config.json` is the version this
   repository follows and `update` moves it. On a bump, `[Unreleased]` becomes `## [x.y.z] - date`.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`),
