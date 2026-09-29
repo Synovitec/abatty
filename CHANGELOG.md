@@ -27,6 +27,8 @@ under Unreleased in the same commit.
   job refuses a loosened floor without a second person's approval, which a repository with one
   maintainer can never give. The rule stays; the refusal now names the way it is met there: a push
   to the base with `directPushToBase` on and a line in the decisions file naming the metric.
+- **The dogfood page records how `ci --check` reads this repository's own pipeline:** kept by
+  hand, running the gate, left in place.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

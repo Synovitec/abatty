@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-09-29"
 ---
 
 # Running abatty on abatty
@@ -95,7 +95,8 @@ and is worth more than a green screen. `TEST-COVERAGE` is partial for a differen
 floor under the total is work not yet done, not a dependency declined.
 
 `SEC-AGENT-BYPASS` is missing for a different reason: the generated pipeline reports a bypassed
-commit, and this repository's own pipeline is hand-written and does not yet.
+commit, and this repository's own pipeline is hand-written and does not yet. `abatty ci --check`
+reads that pipeline as running the gate (its job runs the `gate` script) and leaves it in place.
 
 ## Where the instrument is wrong or incomplete
 
