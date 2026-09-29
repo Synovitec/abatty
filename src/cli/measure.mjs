@@ -8,6 +8,7 @@ import { buildReport } from "../core/report.mjs";
 import { renderMarkdown, truthLine } from "../core/gap-analysis.mjs";
 import { linkPreviousReadings } from "../core/readings.mjs";
 import { enforcedLine, familyTable, nextSteps, phaseLine } from "./status.mjs";
+import { reopened } from "../rules/phases.mjs";
 import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
 
@@ -51,9 +52,16 @@ export async function measureCommand(cx) {
   if (linked.length && !flag("--quiet"))
     err(`${t.glyph.ok} superseded_by written into ${linked.join(", ")}\n`);
   if (flag("--quiet")) {
-    out(
-      `${r.phase ? `Phase ${r.phase.id}: ${r.phase.held} of ${r.phase.applicable} held · ` : "Every phase held · "}Score ${r.score}/100 over ${r.applicable} applicable checks · ${rel}\n`,
+    const again = reopened(
+      r.phase,
+      r.plan.map((p) => p.id),
+      r.night.state,
+      r.findings,
     );
+    const phase = r.phase
+      ? `Phase ${r.phase.id}${again ? ` (reopened by ${again.by.length} rule(s) since the adoption closed it)` : ""}: ${r.phase.held} of ${r.phase.applicable} held · `
+      : "Every phase held · ";
+    out(`${phase}Score ${r.score}/100 over ${r.applicable} applicable checks · ${rel}\n`);
     return;
   }
   out(

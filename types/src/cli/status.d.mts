@@ -31,7 +31,9 @@ export function enforcedLine(e: import("../core/gap-analysis.mjs").Enforced | un
  * 2026-09-18, six were phase 0 and seventeen were phases the plan puts after it - so a
  * percentage that counts them reads as a verdict on work nobody was asked to do yet, and the
  * first impression a stranger gets is a failure they did not earn.
- * @param {{ phase: { id: string, title: string, held: number, applicable: number } | null, score: number, applicable: number }} r
+ *
+ * A phase the adoption already closed and new rules reopened is said to be that, never day 0.
+ * @param {{ phase: { id: string, title: string, held: number, applicable: number } | null, score: number, applicable: number, plan?: { id: string }[], night?: { state: unknown }, findings?: import("../rules/index.mjs").Finding[] }} r
  */
 export function phaseLine(r: {
     phase: {
@@ -42,5 +44,12 @@ export function phaseLine(r: {
     } | null;
     score: number;
     applicable: number;
+    plan?: {
+        id: string;
+    }[];
+    night?: {
+        state: unknown;
+    };
+    findings?: import("../rules/index.mjs").Finding[];
 }): string;
 export function nextSteps(r: import("../core/report.mjs").Report, n: number): import("../rules/index.mjs").Finding[];

@@ -9,7 +9,7 @@
  */
 import { buildContext } from "../rules/context.mjs";
 import { RULES, enforcedOf, loadCatalog, runCatalog, scoreOf, waiverOf } from "../rules/index.mjs";
-import { phaseOf, standing } from "../rules/phases.mjs";
+import { phaseOf, reopened, standing } from "../rules/phases.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
 import { detectPreset, presetById } from "../presets/index.mjs";
 import { dependencyNames, readAdoption } from "./repo.mjs";
@@ -148,8 +148,19 @@ export function renderMarkdown(result) {
   md.push("");
   md.push(`# Gap analysis - ${name} - ${date}`);
   md.push("");
+  // A phase the adoption closed and new rules reopened is said to be that, never day 0. The
+  // state comes with the full report (measure renders one); a bare gap analysis has none.
+  const again = reopened(
+    result.phase,
+    result.plan.map((p) => String(p.id)),
+    /** @type {{ night?: { state?: unknown } }} */ (result).night?.state,
+    findings,
+  );
+  const reopenedText = again
+    ? `The adoption closed this phase${again.closedAt ? ` by ${again.closedAt}` : ""}; ${again.by.length} rule(s) reopened it since, new to the catalog or regressed${again.by.length ? `: ${again.by.join(", ")}` : ""}. `
+    : "";
   md.push(
-    `${result.phase ? `**Phase ${result.phase.id}: ${result.phase.held} of ${result.phase.applicable} held.** ${result.phase.title}. That is the phase this repository is on: the earliest one in the plan with unfinished work, and the number to act on. ` : "**Every phase of the plan is held.** "}The score below is a trend over the whole catalog, including the phases the plan schedules for later, so a young repository is missing most of it by design.`,
+    `${result.phase ? `**Phase ${result.phase.id}: ${result.phase.held} of ${result.phase.applicable} held.** ${result.phase.title}. That is the phase this repository is on: the earliest one in the plan with unfinished work, and the number to act on. ${reopenedText}` : "**Every phase of the plan is held.** "}The score below is a trend over the whole catalog, including the phases the plan schedules for later, so a young repository is missing most of it by design.`,
   );
   md.push("");
   md.push(

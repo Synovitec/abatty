@@ -34,6 +34,11 @@ under Unreleased in the same commit.
   `raises` among them), so `ratchet --help` and `mutate --help` printed the global screen without
   the command asked about. Each now has its line with the flags it reads, `night --help` no
   longer prints `night-report`'s, and a test fails when a dispatched command has no line.
+- **A phase new rules reopened is no longer presented as day 0.** A repository whose adoption
+  state marked every phase done read "phase A.1 · Day 0" in `status`, `measure` and the gap
+  analysis once the catalog gained two must-rules. When the state marks the phase, or a later one,
+  done, the headline now says the adoption closed it and names the rules unmet since, new to the
+  catalog or regressed. A repository still adopting reads as before.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

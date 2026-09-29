@@ -39,6 +39,24 @@ export function standing(findings: Finding[], phases: {
     current: PhaseStanding | null;
     unscheduled: PhaseStanding;
 };
+/**
+ * Whether the phase a repository is on was already closed by its adoption, and by what since. A
+ * fully adopted repository read "phase A.1, day 0" when the catalog grew two must-rules: true of
+ * the rules, false of the repository, which had closed every phase a week before. A phase is
+ * reopened when the adoption state marks it, or a later phase, done; what reopened it is the
+ * rules of that phase unmet now, new to the catalog or regressed.
+ * @param {{ id: string } | null} phase the phase the repository is on
+ * @param {string[]} order the phase ids in plan order
+ * @param {unknown} state the adoption state file, as read
+ * @param {Finding[]} findings
+ * @returns {{ closedAt: string, by: string[] } | null}
+ */
+export function reopened(phase: {
+    id: string;
+} | null, order: string[], state: unknown, findings: Finding[]): {
+    closedAt: string;
+    by: string[];
+} | null;
 export type Finding = import("./index.mjs").Finding;
 /**
  * the counts a reader sees
