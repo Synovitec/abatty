@@ -29,6 +29,11 @@ under Unreleased in the same commit.
   to the base with `directPushToBase` on and a line in the decisions file naming the metric.
 - **The dogfood page records how `ci --check` reads this repository's own pipeline:** kept by
   hand, running the gate, left in place.
+- **`abatty help` lists every command, and each command's `--help` prints its own usage.** Sixteen
+  commands had no line (`ratchet`, `baseline`, `update`, `ci`, `changelog`, `hooks`, `mutate`,
+  `raises` among them), so `ratchet --help` and `mutate --help` printed the global screen without
+  the command asked about. Each now has its line with the flags it reads, `night --help` no
+  longer prints `night-report`'s, and a test fails when a dispatched command has no line.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

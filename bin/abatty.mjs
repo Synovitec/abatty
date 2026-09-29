@@ -185,9 +185,9 @@ if (flag("--help") || flag("-h")) {
   const { renderHelp } = await import("../src/ui/help.mjs");
   const all = renderHelp({ version: VERSION, presets });
   const plain = (/** @type {string} */ l) => l.replace(/\x1b\[[0-9;]*m/g, "");
-  const mine = named
-    ? all.split("\n").filter((l) => new RegExp(`^\\s*abatty ${command}\\b`).test(plain(l)))
-    : [];
+  // The command's own lines only: `night` is not `night-report`.
+  const own = new RegExp(`^\\s*abatty ${command}(?![\\w-])`);
+  const mine = named ? all.split("\n").filter((l) => own.test(plain(l))) : [];
   out(mine.length ? `\n${mine.join("\n")}\n\n` : all);
   process.exit(0);
 }

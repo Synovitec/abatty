@@ -155,6 +155,16 @@ const CASES = [
     },
   },
   {
+    report: "product · 2026-09-25 · help omits commands",
+    claim: "ratchet --help prints the ratchet's usage, not the global screen without it",
+    run: () => {
+      const dir = productAdopter();
+      const r = cli(["ratchet", dir, "--help", "--plain"], dir);
+      assert.match(r.out, /abatty ratchet \[dir\]/);
+      assert.ok(!/abatty measure/.test(r.out));
+    },
+  },
+  {
     report: "docs · 2026-09-24 · front matter",
     claim: "a cited document whose front matter alone changed has not moved",
     run: () => {

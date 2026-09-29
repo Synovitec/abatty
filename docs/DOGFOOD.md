@@ -103,10 +103,11 @@ reads that pipeline as running the gate (its job runs the `gate` script) and lea
 - **`abatty doctor` cannot be green on a machine that is not set up for an unattended run.** It is
   the night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
   That is a design decision badly named, and the name has not been fixed.
-- **`abatty help` lists fewer commands than the README documents.** The README also claimed,
-  when this page was first written, that `abatty ci --provider github` writes a pull-request
-  template while no code did; `src/cli/ci.mjs` writes one since 2026-09-19, so that half is
-  closed and `CLAUDE.md` §10 says so.
+- **`abatty help` listed fewer commands than the README documents,** sixteen of them missing, and
+  `ratchet --help` printed the global screen without the ratchet in it. Closed on 2026-09-29: every
+  command the entry point dispatches has a line, and `test/help.test.mjs` fails when one does not.
+  The README's other claim at the time, a pull-request template from `abatty ci --provider github`,
+  has been true since 2026-09-19.
 - **`abatty update` used to add a `lint` script to `package.json`** on every run here, and it had
   to be reverted by hand each time. Since 0.5.0 the lock records the scripts it offered, and one a
   repository removed is not offered again. The page said "not fixed" for two releases after it was,
