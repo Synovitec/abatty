@@ -123,7 +123,7 @@ test("abatty ci writes the providers' files from the gate, --check says when the
     readFileSync(join(dir, ".woodpecker/checks.yaml"), "utf8").trim(),
     renderWoodpecker(
       /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next")),
-      { base: "main", scripts, pm: null },
+      { base: "main", scripts, pm: null, present: (rel) => existsSync(join(dir, rel)) },
     ).trim(),
   );
   assert.ok(existsSync(join(dir, ".github/workflows/checks.yml")));
@@ -347,4 +347,18 @@ test("ci --check names a pipeline that judges a new branch by its last commit", 
     "on: push\njobs:\n  a:\n    steps:\n      - name: lint before build\n        run: git show HEAD~1\n",
   );
   assert.equal(cli(["ci", dir, "--provider", "github", "--check"], dir).code, 0);
+});
+
+test("a step whose config is not in the repository is a comment in CI, as the gate skips it", () => {
+  const preset = /** @type {import("../src/presets/index.mjs").Preset} */ (presetById("next"));
+  const dir = tempRepo("ci-requires", { "package.json": NEXT_PKG });
+  const present = (/** @type {string} */ rel) => existsSync(join(dir, rel));
+  const format = () =>
+    ciSteps(preset, { scripts: JSON.parse(NEXT_PKG).scripts, present }).find(
+      (s) => s.name === "format",
+    );
+  assert.match(String(format()?.absent), /no \.prettierrc in the repository; the gate skips/);
+  writeFileSync(join(dir, ".prettierrc"), "{}\n");
+  assert.equal(format()?.absent, undefined);
+  assert.match(String(format()?.command), /prettier --check/);
 });

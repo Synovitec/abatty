@@ -40,6 +40,7 @@ export function writeCi(o) {
     base: o.base,
     scripts: readPackage(o.repoDir).scripts || {},
     pm: packageManager(o.repoDir),
+    present: (/** @type {string} */ rel) => existsSync(join(o.repoDir, rel)),
   };
   for (const p of o.providers)
     for (const [rel, text] of ciFilesFor(p, o.preset, repo)) {

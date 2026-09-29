@@ -13,7 +13,8 @@ import { TERMS } from "../core/vocabulary.mjs";
  * @typedef {import("../presets/index.mjs").Preset} Preset
  * @typedef {import("../presets/index.mjs").GateStep} GateStep
  * @typedef {import("../core/package-manager.mjs").PackageManager} PackageManager
- * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null }} CiOptions
+ * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null, present?: (rel: string) => boolean }} CiOptions
+ *   `present`: whether a file is in the repository, for a step that `requires` one; without it every step is emitted.
  * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser", absent?: string }} CiStep
  */
 
@@ -63,9 +64,18 @@ export function ciSteps(preset, o = {}) {
   /** @param {GateStep} s @param {"always" | "db" | "browser"} when @param {string} [suffix] */
   const stepOf = (s, when, suffix = "") => {
     const name = `${s.label}${suffix}`;
+    /** @param {string} absent @returns {CiStep} */
+    const skip = (absent) => ({ name, command: "", when, absent });
+    // The gate skips a step whose config is not there (a format check with no prettier config),
+    // after a missing script; CI ran it anyway and was red on a repository the gate called green.
+    const unconfigured =
+      s.requires && o.present && !s.requires.some(o.present)
+        ? `no ${s.requires[0]} in the repository; the gate skips this step too`
+        : null;
     // A preset command that starts with `npx` names a tool, not a manager: the manager's own
     // exec runs it (`pnpm exec`, `bunx`), and a pnpm pipeline carries nothing npm-shaped.
-    if (s.command)
+    if (s.command) {
+      if (unconfigured) return skip(unconfigured);
       return {
         name,
         command:
@@ -74,14 +84,13 @@ export function ciSteps(preset, o = {}) {
             : s.command.join(" "),
         when,
       };
+    }
     const script = scriptOf(s);
     if (!script)
-      return {
-        name,
-        command: "",
-        when,
-        absent: `no "${s.script}" script in package.json; ${s.required ? "the preset requires this step, and the gate cannot run without it" : "the gap analysis names it"}`,
-      };
+      return skip(
+        `no "${s.script}" script in package.json; ${s.required ? "the preset requires this step, and the gate cannot run without it" : "the gap analysis names it"}`,
+      );
+    if (unconfigured) return skip(unconfigured);
     if (script === "standards")
       return {
         name,

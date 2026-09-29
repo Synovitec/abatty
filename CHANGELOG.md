@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`abatty ci` leaves out a step the gate would skip for want of its config.** The generated
+  pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead
+  code steps without theirs, so CI was red where the gate said green. Such a step is now a comment
+  in the pipeline that says why, in the gate's words.
+
 ## [0.7.0-rc.5] - 2026-09-29
 
 The fifth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
