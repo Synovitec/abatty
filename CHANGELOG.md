@@ -47,6 +47,12 @@ under Unreleased in the same commit.
   the reading is a vote to promote the check and why: clean over what it scanned, reads N (debt or
   a false positive, for a person to say), disputed here, nothing of its kind to read, or opt-in
   and not enabled. The field and its type are unchanged.
+- **TYPES-ESCAPES and VALID-ENV read the ratchet's own counts.** The catalog counted with its own
+  copy of each check, so an adopter was shown two numbers for one question: TYPES-ESCAPES counted
+  an `any` in a JavaScript comment and in an exempt script that `types.escapes` rightly skipped,
+  and VALID-ENV took a fixture named `env` for the env module, ignoring `ratchet.envModule` and the
+  exempt list that `valid.rawEnv` honours. Both rules now run the probe, and their evidence names
+  its count.
 
 ## [0.7.0-rc.5] - 2026-09-29
 

@@ -174,6 +174,15 @@ const CASES = [
     },
   },
   {
+    report: "product · 2026-09-25 · catalog vs ratchet",
+    claim: "TYPES-ESCAPES names the ratchet's own count, so the two cannot disagree",
+    run: () => {
+      const c = buildContext(productAdopter());
+      const escapes = RULES.find((r) => r.id === "TYPES-ESCAPES")?.check(c);
+      assert.match(String(escapes?.evidence), /\(types\.escapes: \d+\)|JavaScript repository/);
+    },
+  },
+  {
     report: "docs · 2026-09-24 · front matter",
     claim: "a cited document whose front matter alone changed has not moved",
     run: () => {
