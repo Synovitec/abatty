@@ -104,8 +104,15 @@ export function writeBaseline(o) {
         hard.has(m.metric) ||
         (m.probe.kind === "hard" && !forcedRatchet));
     if (isHard && m.value > 0) {
+      // The findings themselves, so the refusal is the list to fix: named only by its metric, it
+      // sent an adopter to another command to learn which three documents the index lacked.
+      const shown = m.findings
+        .slice(0, 5)
+        .map((f) => `${f.path}${f.line ? `:${f.line}` : ""}${f.detail ? ` (${f.detail})` : ""}`);
+      const more =
+        m.findings.length > shown.length ? `; ${m.findings.length - shown.length} more` : "";
       refusals.push(
-        `${m.metric} is HARD and reads ${m.value}; a HARD metric is never recorded above zero - fix the findings, or hold it as a ratchet through \`ratchet.ratchet\` in the adoption config with the reason in the decisions file`,
+        `${m.metric} is HARD and reads ${m.value}${shown.length ? `: ${shown.join("; ")}${more}` : ""}. A HARD metric is never recorded above zero - fix the findings, or hold it as a ratchet through \`ratchet.ratchet\` in the adoption config with the reason in the decisions file`,
       );
       continue;
     }

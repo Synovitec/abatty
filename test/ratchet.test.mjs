@@ -211,6 +211,8 @@ test("the baseline writer refuses a rise without a reason, a HARD metric above z
   });
   assert.equal(hard.ok, false);
   assert.match(hard.refusals.join("\n"), /types\.escapes is HARD and reads 1/);
+  // the refusal is the list to fix, not a pointer to another command
+  assert.match(hard.refusals.join("\n"), /reads 1: src\/c\.ts:1 \(escape: : any\)\./);
 });
 
 test("a repository's own probes load from abatty.probes.mjs, validated; a built-in name and a probe without a failing control are refused", async () => {

@@ -5,6 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A refused `baseline` lists what to fix.** A HARD metric above zero was named by its metric
+  and its count only, and an adopter ran another command to learn which three documents the index
+  lacked. The refusal now names the findings (the first five, then how many more).
+
 ## [0.7.0-rc.9] - 2026-10-02
 
 The ninth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
