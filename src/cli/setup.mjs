@@ -2,6 +2,7 @@
  * `init` and `update`: what the package writes into a repository the first time, and how it is
  * brought to the package's version afterwards without losing the repository's own edits.
  */
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { initRepo } from "../core/init.mjs";
@@ -12,6 +13,7 @@ import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
+import { contextState } from "../core/context-file.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
@@ -51,6 +53,11 @@ export async function initCommand(cx, preset) {
     pm.id
   ];
   if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  // Once, as one command: this filesystem keeps no executable bit, and git skips a hook without it.
+  if (r.notExecutable.length)
+    out(
+      `  ${n++}. git add --chmod=+x ${r.notExecutable.join(" ")}  ${t.gray("· this filesystem keeps no executable bit, and git runs a hook only with it")}\n`,
+    );
   out(`  ${n++}. ${pm.run("hooks:install").join(" ")}\n`);
   // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
   // documents repository was being told to fill a dependency-cruiser config it has no reason to
@@ -58,15 +65,30 @@ export async function initCommand(cx, preset) {
   const wrote = (/** @type {string} */ f) =>
     r.events.some((e) => e.file === f && e.action !== "n/a");
   const graph = wrote(".dependency-cruiser.cjs");
-  out(
-    `  ${n++}. Fill CLAUDE.md (the placeholders in <>)${graph ? ", then .dependency-cruiser.cjs: one rule per arrow of CLAUDE.md §3" : ""}\n`,
-  );
+  // The context step names the file that holds the context, and only asks to fill it when
+  // something is left to fill: a repository's own file is kept, and AGENTS.md points at it.
+  const ctx = contextState(dir);
+  const fill = ctx.placeholders
+    ? `Fill ${ctx.file} (${ctx.placeholders} placeholder(s) in <>)`
+    : ctx.own
+      ? `${ctx.file} is this repository's own and was kept; AGENTS.md points at it`
+      : "";
+  const deps = graph ? `.dependency-cruiser.cjs: one rule per arrow of ${ctx.file} §3` : "";
+  if (fill || deps) out(`  ${n++}. ${[fill, deps].filter(Boolean).join(", then ")}\n`);
   if (graph)
     out(
       `  ${n++}. On an existing repository: ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
+  // A step the gate will skip for want of its config, said here: init writes .prettierignore and
+  // no prettier config, and the gate's "no .prettierrc" read as init forgetting its own file.
+  // The config is the repository's decision to hold formatting, so it is named, not written.
+  for (const s of preset.gate.always)
+    if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
+      out(
+        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it`)}\n`,
+      );
   out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
   return;
 }

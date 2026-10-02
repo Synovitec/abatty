@@ -23,7 +23,6 @@ import { fileURLToPath } from "node:url";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
-  dependencyNames,
   git,
   readJsonFile,
   readPackage,
@@ -34,6 +33,8 @@ import { commandFor, managerFor } from "./package-manager.mjs";
 import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
+import { needLabel, ruleFacts } from "./rule-facts.mjs";
+import { added, appendLines } from "./init-merges.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -132,6 +133,10 @@ export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
   /** @type {InitEvent[]} */
   const events = [];
+  // The executables whose bit this filesystem would not keep, said once as one command at the
+  // end: said per file it was five lines, one of them on a `.cmd` whose bit means nothing.
+  /** @type {string[]} */
+  const notExecutable = [];
   const put = (
     /** @type {string} */ rel,
     /** @type {string} */ content,
@@ -152,11 +157,8 @@ export function initRepo(o) {
       writeFileSync(target, content);
       if (executable) bit = makeExecutable(target);
     }
-    events.push({
-      file: rel,
-      action: exists ? "overwritten" : merge ? "merged" : "written",
-      ...(!bit && { detail: `commit it with git add --chmod=+x ${rel}, or it runs nowhere else` }),
-    });
+    if (!bit && !/\.(cmd|bat)$/i.test(rel)) notExecutable.push(rel);
+    events.push({ file: rel, action: exists ? "overwritten" : merge ? "merged" : "written" });
     return true;
   };
   const tpl = (/** @type {string} */ rel) => readFileSync(join(TEMPLATES, rel), "utf8");
@@ -172,6 +174,13 @@ export function initRepo(o) {
       merge: false,
       executable: f !== "shim.mjs",
     });
+  // A file named `git` read as one that takes over git: it is said what it does and where. Only
+  // the night puts this folder first on PATH (src/core/shim.mjs shimmedPath); a shell of yours
+  // meets it only where you put it there yourself.
+  const shim = events.find((e) => e.file === `${SHIM_DIR}/git` && e.action !== "kept");
+  if (shim)
+    shim.detail =
+      "a git wrapper the night puts first on its PATH: refuses force push, --no-verify and moving core.hooksPath, hands everything else to git; your shell's git is untouched unless you add .claude/bin to PATH (ABATTY_SHIM=off passes all)";
   // The skill, in the open agent-skills format, at every configured adapter's skills folder.
   const skillText = tpl("skills/adopt-standards/SKILL.md");
   const skillAdapters = configuredAdapters(
@@ -187,7 +196,7 @@ export function initRepo(o) {
   put(".claude/mcp.night.json", tpl("harness/mcp.night.json"));
   // Gated the way the catalog's rules are: a file about one library is not written where the
   // repository does not depend on it, and the skip is reported rather than silent.
-  const rules = presetRules(preset, dependencyNames(repoDir));
+  const rules = presetRules(preset, ruleFacts(repoDir));
   for (const r of rules) {
     if (!existsSync(join(TEMPLATES, "harness", "rules", r.file))) continue;
     if (r.applies) put(`.claude/rules/${r.file}`, tpl(`harness/rules/${r.file}`));
@@ -195,7 +204,7 @@ export function initRepo(o) {
       events.push({
         file: `.claude/rules/${r.file}`,
         action: "n/a",
-        detail: `no ${r.needs.slice(0, 3).join(", ")} in this repository`,
+        detail: `no ${r.needs.slice(0, 3).map(needLabel).join(", ")} in this repository`,
       });
   }
 
@@ -234,7 +243,7 @@ export function initRepo(o) {
     events.push({ file: configRel, action: existing ? "overwritten" : "written" });
   } else if (!sameConfig(merged, existing)) {
     if (!dryRun) writeJsonFile(repoDir, configRel, merged);
-    events.push({ file: configRel, action: "merged" });
+    events.push({ file: configRel, action: "merged", detail: added(merged, existing, "keys") });
   } else events.push({ file: configRel, action: "kept" });
 
   // 3. The tooling: the import graph and dead code.
@@ -270,15 +279,12 @@ export function initRepo(o) {
   const pkg = readPackage(repoDir);
   if (existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    let added = 0;
     for (const [k, v] of Object.entries(preset.scripts))
-      if (!(k in scripts) || force) {
-        scripts[k] = rooted(v);
-        added++;
-      }
-    if (added) {
+      if (!(k in scripts) || force) scripts[k] = rooted(v);
+    const what = added(scripts, pkg.scripts || {}, "scripts");
+    if (what) {
       if (!dryRun) writeJsonFile(repoDir, "package.json", { ...pkg, scripts });
-      events.push({ file: "package.json", action: "merged" });
+      events.push({ file: "package.json", action: "merged", detail: what });
     } else events.push({ file: "package.json", action: "kept" });
   }
 
@@ -299,7 +305,11 @@ export function initRepo(o) {
       }
     if (n) {
       if (!dryRun) writeJsonFile(join(repoDir, w.path), "package.json", { ...wp, scripts: ws });
-      events.push({ file: `${w.path}/package.json`, action: "merged" });
+      events.push({
+        file: `${w.path}/package.json`,
+        action: "merged",
+        detail: added(ws, wp.scripts || {}, "scripts"),
+      });
     } else events.push({ file: `${w.path}/package.json`, action: "kept" });
   }
 
@@ -393,22 +403,5 @@ export function initRepo(o) {
   const missingDeps = preset.devDependencies.filter(
     (d) => !(pkg.devDependencies || {})[d] && !(pkg.dependencies || {})[d],
   );
-  return { events, missingDeps, preset };
-}
-
-/** @param {string} repoDir @param {string} rel @param {string[]} lines @param {InitEvent[]} events @param {boolean} dryRun */
-function appendLines(repoDir, rel, lines, events, dryRun) {
-  const target = join(repoDir, rel);
-  const current = existsSync(target) ? readFileSync(target, "utf8") : "";
-  const missing = lines.filter((l) => !current.split(/\r?\n/).includes(l));
-  if (!missing.length) {
-    events.push({ file: rel, action: "kept" });
-    return;
-  }
-  if (!dryRun)
-    writeFileSync(
-      target,
-      (current ? current.replace(/\s*$/, "\n") : "") + missing.join("\n") + "\n",
-    );
-  events.push({ file: rel, action: current ? "merged" : "written" });
+  return { events, missingDeps, preset, notExecutable };
 }

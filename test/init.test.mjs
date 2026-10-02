@@ -279,3 +279,60 @@ test("the database suite is selected by a migration in a workspace, not only at 
   assert.ok(db.test("migrations/0001_init.sql"));
   assert.ok(!db.test("docs/migrations-guide.md"), "a folder merely named like one is not");
 });
+
+test("the executable bit a filesystem would not keep is said once, as one command, and never for a .cmd", () => {
+  const dir = tempRepo("init-chmod", { "package.json": NEXT_PKG });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(r.code, 0, r.out);
+  const lines = r.out.split("\n").filter((l) => l.includes("--chmod=+x"));
+  if (process.platform === "win32") {
+    assert.equal(lines.length, 1, r.out);
+    assert.match(String(lines[0]), /^\s+\d+\. git add --chmod=\+x .*\.githooks\/pre-push/);
+    assert.doesNotMatch(String(lines[0]), /\.cmd\b/);
+  } else assert.equal(lines.length, 0, "the bit is kept here, so nothing to say");
+});
+
+test("the PWA rule file is written where the catalog reads a PWA, and skipped, said, where it does not", () => {
+  const plain = tempRepo("init-nopwa", { "package.json": NEXT_PKG });
+  const r = cli(["init", plain, "--stack", "next"], plain);
+  assert.equal(existsSync(join(plain, ".claude/rules/pwa.md")), false, r.out);
+  assert.match(
+    r.out,
+    /\.claude\/rules\/pwa\.md · no service worker or web manifest in this repository/,
+  );
+  const pwa = tempRepo("init-pwa", {
+    "package.json": NEXT_PKG,
+    "public/manifest.webmanifest": '{ "name": "app" }\n',
+  });
+  cli(["init", pwa, "--stack", "next"], pwa);
+  assert.equal(existsSync(join(pwa, ".claude/rules/pwa.md")), true);
+});
+
+test("a gate step that will be skipped for want of its config is named among the steps by hand", () => {
+  const bare = tempRepo("init-noprettier", { "package.json": NEXT_PKG });
+  const r = cli(["init", bare, "--stack", "next"], bare);
+  assert.match(r.out, /\d+\. the gate skips format until a \.prettierrc/);
+  const held = tempRepo("init-prettier", { "package.json": NEXT_PKG, ".prettierrc": "{}\n" });
+  assert.doesNotMatch(cli(["init", held, "--stack", "next"], held).out, /the gate skips format/);
+});
+
+test("a merged file says what init put in it, and a key the repository set is not named", () => {
+  const dir = tempRepo("init-merged", {
+    "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), scripts: { lint: "next lint" } }),
+    ".gitignore": "node_modules\n",
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  const pkg = r.out.split("\n").find((l) => /merged\s+package\.json/.test(l)) || "";
+  assert.match(pkg, /scripts added: .*\bgate\b/, r.out);
+  assert.doesNotMatch(pkg, /\blint\b/, "the repository's own script is kept, so not added");
+  assert.match(r.out, /merged\s+\.gitignore · added \.claude\/night\/, \.abatty\//);
+});
+
+test("the git shim is said for what it is: the night's, refusing three bypasses, never your shell's", () => {
+  const dir = tempRepo("init-shim", { "package.json": NEXT_PKG });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  const line = r.out.split("\n").find((l) => /written\s+\.claude\/bin\/git ·/.test(l)) || "";
+  assert.match(line, /the night puts first on its PATH/, r.out);
+  assert.match(line, /force push, --no-verify and moving core\.hooksPath/);
+  assert.match(line, /your shell's git is untouched/);
+});

@@ -5,6 +5,62 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.8] - 2026-10-02
+
+The eighth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a Next.js repository on Windows and a Bun monorepo reported against rc.4 to
+rc.6: `types.escapes` stops counting the word "any" in comments, `--version` prints the version,
+and `init` says what it did (what it merged, what the git shim is, which file holds the context,
+which gate step will be skipped) and writes the PWA rule only where there is a PWA. One check is
+redefined, under Upgrading; no config key, exit code or `--json` field moves.
+
+### Upgrading
+
+- **`types.escapes` is redefined (definition 2)**: it no longer counts the word `any` in a comment.
+  `abatty update` rewrites its floor under the new definition; the count can only fall.
+
+### Fixed
+
+- **`types.escapes` counts the escapes in the code, not the word "any" in its comments.** The
+  probe kept comments to see `@ts-ignore`, and matched `: any`, `as any` and `<any>` on them too,
+  so prose read as escapes: "site-level: any membership", "Prod: any SMTP relay", "as any side
+  effects", a JSDoc example quoting `(input as any)`. An adopter found 10 of its 42 in comments,
+  and could reach zero only by rewording them, the gaming the number exists to prevent. A
+  directive is still read in comments; an `any` is read on the code alone.
+- **`abatty --version` and `abatty -v` print the version and nothing else.** `--version` was read
+  as the status command with an unknown flag and measured the whole repository; `-v` was taken
+  for a directory.
+- **`init` says the executable-bit step once, as one command.** On a filesystem that keeps no
+  executable bit (Windows), every hook it wrote carried its own `commit it with git add
+  --chmod=+x` line, five of them, one on `.claude/bin/git.cmd` where the bit means nothing. It is
+  now one numbered step by hand naming every file, `.cmd` and `.bat` left out.
+- **`init` writes the PWA rule file only where there is a PWA.** The Next preset wrote
+  `.claude/rules/pwa.md` into every repository while `measure` read the PWA family as not
+  applying, with no service worker and no web manifest. A preset's rule file can now need a fact
+  the catalog reads from the tree (`stack:pwa`), not only a dependency, so both read it the same
+  way; a skipped file is said, with why. A `pwa.md` an earlier `init` wrote is left where it is,
+  and `update` no longer manages it.
+- **`init` names a gate step that will be skipped for want of its config.** It writes
+  `.prettierignore` and asks for prettier, but writes no prettier config, so the gate's first
+  run said "format · no .prettierrc", which read as `init` forgetting its own file. The config is
+  the repository's decision to hold formatting (written blind, it would turn every unformatted
+  file red), so it is named among the steps by hand rather than written.
+- **`init`'s context step names the file that holds the context.** It said "Fill CLAUDE.md (the
+  placeholders in <>)" to a repository whose own `CLAUDE.md` it had kept, which has none, and to a
+  fresh one, whose placeholders are in `AGENTS.md` (the template goes there, `CLAUDE.md` imports
+  it). A kept file is now said to be kept, with `AGENTS.md` pointing at it, the one source; a
+  fresh one is asked to fill `AGENTS.md`, with the count of what is left.
+- **A file `init` merged says what it put in.** `! merged package.json` sent a reader to
+  `git diff` to find out what had been done to a file of theirs. The line now names it: the
+  scripts added to a `package.json`, the lines added to `.gitignore` and `.prettierignore`, the
+  keys added to the config. A script or a key the repository already had is not named, since it
+  is kept.
+- **`init` says what `.claude/bin/git` is.** A file named `git` written without a word read as
+  one that takes over git on the machine. Its line now says it: a wrapper the night puts first on
+  its own PATH, refusing force push, `--no-verify` and moving `core.hooksPath` and handing every
+  other command to git; your shell's git is untouched unless you add `.claude/bin` to your PATH;
+  `ABATTY_SHIM=off` passes everything.
+
 ## [0.7.0-rc.7] - 2026-10-02
 
 The seventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

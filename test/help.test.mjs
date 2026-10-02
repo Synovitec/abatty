@@ -43,3 +43,15 @@ test("a command's --help prints its own lines, never the whole screen nor a long
   assert.match(night.out, /abatty night \[dir\]/);
   assert.ok(!/night-report/.test(night.out), "a longer name's line was printed");
 });
+
+test("--version and -v print the version alone, before any command could measure", () => {
+  const dir = tempRepo("version", { "package.json": "{}" });
+  const pkg = JSON.parse(
+    readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
+  );
+  for (const args of [["--version"], ["-v"], ["gate", "--version"]]) {
+    const r = cli(args, dir);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(r.out, `${pkg.version}\n`, args.join(" "));
+  }
+});

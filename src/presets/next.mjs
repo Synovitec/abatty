@@ -146,6 +146,13 @@ export const next = {
       },
     ],
   },
-  rules: ["testing.md", "i18n.md", "a11y.md", "pwa.md", "size-limits.md"],
+  rules: [
+    "testing.md",
+    "i18n.md",
+    "a11y.md",
+    // A PWA is read from the tree as the catalog reads it, never assumed of every Next app.
+    { file: "pwa.md", needs: ["stack:pwa"] },
+    "size-limits.md",
+  ],
   tooling: { dependencyCruiser: true, knip: true },
 };

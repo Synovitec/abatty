@@ -178,6 +178,13 @@ function openFile(file) {
 /** What every command screen is handed: the repository, the flags, the two streams, the version. */
 const ctx = { dir, opt, flag, out, err, VERSION };
 
+// The version and nothing else: `abatty --version` was read as the status command with an
+// unknown flag and measured the whole repository, and `-v` was taken for a directory.
+if (flag("--version") || argv[0] === "-v") {
+  out(`${VERSION}\n`);
+  process.exit(0);
+}
+
 // A help flag asks and never acts: `abatty baseline --help` rewrote the baseline, because only
 // the bare `help` command was read as one. Every command answers it with its own usage lines.
 if (flag("--help") || flag("-h")) {
