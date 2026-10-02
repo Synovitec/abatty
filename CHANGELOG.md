@@ -25,6 +25,9 @@ under Unreleased in the same commit.
   and ask for the import-graph baseline on every repository, not only an existing one. The
   graph rule step is its own line, and points at the template's §3 only where the template is
   the context.
+- **`abatty mutate` reads the import graph once per run.** It read every tracked script again
+  for each changed file, so the cost grew with the size of the change times the size of the
+  tree.
 
 - **`init` asks for a TypeScript the import graph can read.** Its install step named
   `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so

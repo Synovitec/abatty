@@ -132,10 +132,12 @@ export function changedLines(repoDir, base, head) {
  * controls is the probe's test; the word match that stood alone ran a test naming `refs` against
  * the refs probe and read three killable mutants as survived. The word match is kept for what a
  * relative import cannot reach. A module neither finds has no test to run, and says so.
+ * The graph is built once per run and handed in: built per changed file, it read every tracked
+ * script again for each, and a run over a large tree took minutes to plant nothing.
  * @param {string} repoDir @param {string} file
+ * @param {Map<string, string[]>} [graph] who imports whom (src/core/imports.mjs)
  */
-export function testsFor(repoDir, file) {
-  const graph = importersOf(repoDir);
+export function testsFor(repoDir, file, graph = importersOf(repoDir)) {
   const seen = new Set([file]);
   let ring = [file];
   for (let depth = 0; depth < 4 && ring.length; depth++) {
@@ -217,6 +219,8 @@ export function runMutants(o) {
       env: testRunEnv(),
       timeout: o.timeoutMs,
     });
+  /** @type {Map<string, string[]> | undefined} */
+  let graph;
   try {
     for (const [file, lines] of changed) {
       const path = join(o.repoDir, file);
@@ -224,7 +228,8 @@ export function runMutants(o) {
       const original = readFileSync(path, "utf8");
       const rows = original.split("\n");
       const code = codeOnly(original).split("\n");
-      const tests = testsFor(o.repoDir, file);
+      graph ??= importersOf(o.repoDir);
+      const tests = testsFor(o.repoDir, file, graph);
       let clean = null;
       for (const n of lines) {
         if (interrupted || mutants.length >= o.max) return result();
