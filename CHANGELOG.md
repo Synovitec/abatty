@@ -21,6 +21,10 @@ under Unreleased in the same commit.
   page of compiler options. The help screen is now read as the compiler saying it had nothing to
   check: the step could not run, and the line says to add the `tsconfig.json` or point the script
   at one. A typecheck that reports type errors still fails.
+- **An import graph with no baseline file could not run; it did not fail.** `init` writes the
+  dependency-cruiser config and asks for its known-violations baseline only "on an existing
+  repository", and without the file dependency-cruiser cannot start: the gate called that the
+  work red. It now reads as could not run, with the command that records today's baseline.
 
 ## [0.7.0-rc.8] - 2026-10-02
 

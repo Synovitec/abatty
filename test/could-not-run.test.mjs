@@ -5,8 +5,8 @@ import { dirname } from "node:path";
 import { tempRepo } from "./helpers.mjs";
 import { runGate } from "../src/core/gate.mjs";
 
-// `tsc --noEmit` with no tsconfig.json prints its help screen and exits 1. The gate called that a
-// typecheck that failed: the work judged red by a compiler that had nothing to check.
+// A tool that exits non-zero having judged nothing: `tsc --noEmit` with no tsconfig.json prints its
+// help, dependency-cruiser with no baseline cannot open it. The gate called both the work red.
 
 const HELP =
   "Version 6.0.3\ntsc: The TypeScript Compiler - Version 6.0.3\n\nCOMMON COMMANDS\n\n  tsc\n";
@@ -51,4 +51,15 @@ test("a typecheck that reported a type error still failed: the work, judged", ()
   const r = gate(TYPE_ERROR);
   assert.equal(r.errored, false);
   assert.equal(r.events.find((e) => e.label === "typecheck (CODE.3)")?.outcome, "failed");
+});
+
+test("an import graph with no known-violations baseline could not run, and says the command", () => {
+  const r = gate(
+    "\n  ERROR: Can't open '.dependency-cruiser-known-violations.json' for reading. Does it exist?\n",
+  );
+  assert.equal(r.errored, true);
+  assert.match(
+    String(r.events[r.events.length - 1]?.detail),
+    /npx depcruise src --config \.dependency-cruiser\.cjs --baseline/,
+  );
 });
