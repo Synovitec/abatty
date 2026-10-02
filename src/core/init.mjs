@@ -400,8 +400,11 @@ export function initRepo(o) {
   if (!dryRun) writeLock(repoDir, preset);
   events.push({ file: LOCK, action: "written" });
 
+  // A preset may pin a range (`typescript@^6`): the install line carries it, the check reads the
+  // name alone, so a repository that already has the package is not asked to install it again.
+  const nameOf = (/** @type {string} */ spec) => spec.replace(/^(@?[^@]+)@.*$/, "$1");
   const missingDeps = preset.devDependencies.filter(
-    (d) => !(pkg.devDependencies || {})[d] && !(pkg.dependencies || {})[d],
+    (d) => !(pkg.devDependencies || {})[nameOf(d)] && !(pkg.dependencies || {})[nameOf(d)],
   );
   return { events, missingDeps, preset, notExecutable };
 }

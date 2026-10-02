@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`init` asks for a TypeScript the import graph can read.** Its install step named
+  `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so
+  it cruised 0 modules and the import-graph step passed over a repository it had not read. The
+  step now asks for `typescript@^6`, and a repository that already has TypeScript is not asked.
+
 ## [0.7.0-rc.8] - 2026-10-02
 
 The eighth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

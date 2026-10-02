@@ -60,7 +60,9 @@ export const viteReact = {
     "gate:fast": "abatty gate --fast",
     "hooks:install": "abatty hooks",
   },
-  devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript"],
+  // typescript held below 7: dependency-cruiser reads TypeScript 2 to 6 only, and with 7 installed
+  // it cruised 0 modules and the import graph passed having read nothing.
+  devDependencies: ["dependency-cruiser", "knip", "prettier", "typescript@^6"],
   gate: {
     always: [
       {
