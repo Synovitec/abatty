@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.11] - 2026-10-02
+
+The eleventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the rc.10 replays found. A Next app in a monorepo workspace with no preset of
+its own had a browser suite the gate never selected; the gate now reads the suite's paths under
+the app's own folder, `doctor` names a suite it can never select, and a selected suite with no
+test script says so instead of building first. "Fix these first" is never silent, and `status`
+measures again when the commit has moved. No config key, exit code or `--json` field moves.
+
 ### Fixed
 
 - **"Fix these first" says when there is nothing to fix.** Silent when clean, it read the same as
