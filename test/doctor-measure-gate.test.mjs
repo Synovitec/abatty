@@ -75,7 +75,7 @@ test("measure writes the dated report with the standard's front matter and a sco
   const { result: r, days } = aroundToday(() => cli(["measure", dir, "--quiet"], dir));
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /Score \d+\/100 over \d+ applicable checks/);
-  const reports = days.map((d) => join(dir, "docs", `GAP_ANALYSIS_${d}.md`)).filter(existsSync);
+  const reports = days.map((d) => join(dir, ".abatty", "reports", `${d}.md`)).filter(existsSync);
   assert.equal(reports.length, 1, `one report dated ${days.join(" or ")}`);
   const report = readFileSync(String(reports[0]), "utf8");
   assert.match(report, /^---\ntitle: "Gap analysis/);

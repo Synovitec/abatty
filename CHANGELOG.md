@@ -5,7 +5,19 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Upgrading
+
+- **`abatty measure` writes its markdown report under `.abatty/reports/<date>.md`**, beside the
+  JSON, no longer `docs/GAP_ANALYSIS_<date>.md`. A repository that keeps its readings in git asks
+  for one with `--out docs/GAP_ANALYSIS_<date>.md`; the adoption skill's wrap-up now does, and
+  `abatty update` brings the skill over.
+
 ### Fixed
+
+- **`abatty measure` no longer writes into `docs/` on every run.** The dated report piled up
+  there, left the tree dirty (which a night refuses), and once committed turned the ratchet red
+  as a document the docs index does not list. It now goes under `.abatty/`, which git ignores,
+  and the line says where.
 
 - **`init` asks for a TypeScript the import graph can read.** Its install step named
   `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so

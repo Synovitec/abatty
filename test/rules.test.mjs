@@ -341,7 +341,7 @@ test("the markdown report carries the level and the insurance of every check", (
   const dir = tempRepo("md", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
   const { result: r, days } = aroundToday(() => cli(["measure", dir, "--quiet"], dir));
   assert.equal(r.code, 0, r.out);
-  const reports = days.map((d) => join(dir, "docs", `GAP_ANALYSIS_${d}.md`)).filter(existsSync);
+  const reports = days.map((d) => join(dir, ".abatty", "reports", `${d}.md`)).filter(existsSync);
   assert.equal(reports.length, 1, `one report dated ${days.join(" or ")}`);
   const md = readFileSync(String(reports[0]), "utf8");
   assert.match(md, /\| ID \| Family \| Rule \| Level \| Insured by \| Status \|/);

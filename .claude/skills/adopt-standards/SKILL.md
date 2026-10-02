@@ -161,7 +161,8 @@ revert it, close the phase as `in_progress` with `numbersAfter` so far, commit, 
    and record the deferral).
 2. Version: bump `files.version` - minor if any phase reached `done` in this run, patch
    otherwise. Move `[Unreleased]` into `## [x.y.z] - YYYY-MM-DD`.
-3. Run `npx abatty measure --quiet` so `docs/GAP_ANALYSIS_<date>.md` is fresh, and cite its
+3. Run `npx abatty measure --quiet --out docs/GAP_ANALYSIS_<date>.md` so the run's reading is
+   kept with the branch (measure alone writes under `.abatty/`, which git ignores), and cite its
    score. A rule the repository set aside is in the config → `rules.waived` with its
    reason; never add one there yourself (record `gate-deferred` instead).
 4. Write `docs/ADOPTION_REPORT_<date>.md` with front matter: the scoreboard before/after, the
