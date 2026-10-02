@@ -18,6 +18,13 @@ under Unreleased in the same commit.
   there, left the tree dirty (which a night refuses), and once committed turned the ratchet red
   as a document the docs index does not list. It now goes under `.abatty/`, which git ignores,
   and the line says where.
+- **`init`'s steps by hand lead to a first gate that can pass.** An adopter who did every step
+  met a ratchet with no floor and a coverage step skipped for a script nobody had mentioned. The
+  steps now ask to record the floor (`standards:baseline`) when there is none, name each gate
+  step whose script only the repository can write (`test`, `coverage:changed`) until it exists,
+  and ask for the import-graph baseline on every repository, not only an existing one. The
+  graph rule step is its own line, and points at the template's §3 only where the template is
+  the context.
 
 - **`init` asks for a TypeScript the import graph can read.** Its install step named
   `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so

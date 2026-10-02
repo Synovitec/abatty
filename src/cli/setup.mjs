@@ -14,6 +14,7 @@ import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
 import { contextState } from "../core/context-file.mjs";
+import { ratchetSetup } from "../ratchet/index.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
@@ -73,11 +74,17 @@ export async function initCommand(cx, preset) {
     : ctx.own
       ? `${ctx.file} is this repository's own and was kept; AGENTS.md points at it`
       : "";
-  const deps = graph ? `.dependency-cruiser.cjs: one rule per arrow of ${ctx.file} §3` : "";
-  if (fill || deps) out(`  ${n++}. ${[fill, deps].filter(Boolean).join(", then ")}\n`);
+  // Two steps, not one sentence: "was kept, then .dependency-cruiser.cjs" read as one thing, and
+  // a repository's own context file has no §3 to point at; the template's boundary map does.
+  if (fill) out(`  ${n++}. ${fill}\n`);
   if (graph)
     out(
-      `  ${n++}. On an existing repository: ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
+      `  ${n++}. Edit .dependency-cruiser.cjs: one rule per ${ctx.own ? "boundary this repository forbids" : `arrow of ${ctx.file} §3`}\n`,
+    );
+  if (graph)
+    out(
+      // Every repository, not only an existing one: without the file the graph step cannot start.
+      `  ${n++}. ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
@@ -89,6 +96,19 @@ export async function initCommand(cx, preset) {
       out(
         `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it`)}\n`,
       );
+  // A gate step whose script only the repository can write (the changed lines' coverage runs on
+  // its own runner), named here: doctor said it was absent and init had said nothing.
+  const scripts = readJsonFile(dir, "package.json")?.scripts || {};
+  for (const s of preset.gate.always)
+    if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
+      out(
+        `  ${n++}. ${t.gray(`the gate skips ${s.label} until package.json has a "${s.script}" script, run on this repository's own runner`)}\n`,
+      );
+  // The ratchet's floor: init writes none, and the first gate read NO FLOOR on every finding.
+  if (!existsSync(join(dir, ratchetSetup(dir).baselineRel)))
+    out(
+      `  ${n++}. ${pm.run("standards:baseline").join(" ")}  ${t.gray("· today's numbers as the floor, once the steps above are done; until then the ratchet has none")}\n`,
+    );
   out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
   return;
 }
