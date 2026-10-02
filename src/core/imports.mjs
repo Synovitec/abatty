@@ -8,12 +8,33 @@
 import { readFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import { git } from "./repo.mjs";
+import { aliasScopes, unalias } from "./ts-paths.mjs";
 
 /** A script file this graph reads. */
 export const SCRIPT = /\.[cm]?[jt]sx?$/;
 
+/** The extensions a specifier written without one may name, in TypeScript's order. */
+const EXTS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"];
+
+/**
+ * The tracked file a resolved specifier names, as TypeScript and the bundlers read it: as
+ * written, with an extension added, as a folder's index, or with the `.js` an ESM TypeScript
+ * import writes for its `.ts` source. Reading only the exact path left every TypeScript import
+ * (`./price`, `./price.js` for `price.ts`) without an edge.
+ * @param {Set<string>} known @param {string} target @returns {string}
+ */
+export function resolveIn(known, target) {
+  if (known.has(target)) return target;
+  const swapped = target.replace(/\.([cm]?)js(x?)$/, ".$1ts$2");
+  if (swapped !== target && known.has(swapped)) return swapped;
+  for (const stem of [target, `${target}/index`])
+    for (const ext of EXTS) if (known.has(stem + ext)) return stem + ext;
+  return "";
+}
+
 /**
  * Who imports whom over the tracked scripts: the map from a file to the files that import it.
+ * A relative specifier and a tsconfig path alias both count; a bare package name does not.
  * @param {string} repoDir @returns {Map<string, string[]>}
  */
 export function importersOf(repoDir) {
@@ -23,6 +44,10 @@ export function importersOf(repoDir) {
     .split("\n")
     .filter((f) => SCRIPT.test(f));
   const known = new Set(files);
+  const scopes = aliasScopes(
+    repoDir,
+    files.length ? git(repoDir, "ls-files", "--", ":(glob)**/tsconfig.json").split("\n") : [],
+  );
   for (const f of files) {
     let text = "";
     try {
@@ -30,9 +55,13 @@ export function importersOf(repoDir) {
     } catch {
       continue;
     }
-    for (const m of text.matchAll(/(?:from|import\s*\(?)\s*["'](\.{1,2}\/[^"']+)["']/g)) {
-      const target = posix.normalize(posix.join(posix.dirname(f), String(m[1])));
-      if (!known.has(target)) continue;
+    for (const m of text.matchAll(/(?:from|import\s*\(?|require\s*\()\s*["']([^"'\s]+)["']/g)) {
+      const spec = String(m[1]);
+      const candidates = spec.startsWith(".")
+        ? [posix.normalize(posix.join(posix.dirname(f), spec))]
+        : unalias(scopes, f, spec);
+      const target = candidates.map((c) => resolveIn(known, c)).find(Boolean);
+      if (!target || target === f) continue;
       by.set(target, [...(by.get(target) || []), f]);
     }
   }

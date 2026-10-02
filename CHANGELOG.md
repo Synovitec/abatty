@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The import graph reads TypeScript imports.** It only followed a relative import naming its
+  file exactly, so `./price`, `./cart` (an index), `./tax.js` for `tax.ts` and every tsconfig
+  alias (`@/lib/price`) were no edge at all. A TypeScript product's graph was empty:
+  `abatty mutate` found no test for any module it changed, and the gate could not tell a red test
+  the push reached from a flake. Each tracked tsconfig's `paths` now applies under its folder, so
+  a monorepo's `apps/web` keeps its own `@/`; `extends` is not followed.
+
 - **`abatty ci` leaves out a step the gate would skip for want of its config.** The generated
   pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead
   code steps without theirs, so CI was red where the gate said green. Such a step is now a comment
