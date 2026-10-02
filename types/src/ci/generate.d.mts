@@ -28,7 +28,8 @@ export function ident(name: string): string;
  * @typedef {import("../presets/index.mjs").Preset} Preset
  * @typedef {import("../presets/index.mjs").GateStep} GateStep
  * @typedef {import("../core/package-manager.mjs").PackageManager} PackageManager
- * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null }} CiOptions
+ * @typedef {{ base?: string, node?: string, publish?: boolean, scripts?: Record<string, string>, pm?: PackageManager | null, present?: (rel: string) => boolean }} CiOptions
+ *   `present`: whether a file is in the repository, for a step that `requires` one; without it every step is emitted.
  * @typedef {{ name: string, command: string, when?: "always" | "db" | "browser", absent?: string }} CiStep
  */
 /** The pipelines `abatty ci` can write, each from the same list of steps. */
@@ -36,12 +37,16 @@ export const PROVIDERS: string[];
 export type Preset = import("../presets/index.mjs").Preset;
 export type GateStep = import("../presets/index.mjs").GateStep;
 export type PackageManager = import("../core/package-manager.mjs").PackageManager;
+/**
+ * `present`: whether a file is in the repository, for a step that `requires` one; without it every step is emitted.
+ */
 export type CiOptions = {
     base?: string;
     node?: string;
     publish?: boolean;
     scripts?: Record<string, string>;
     pm?: PackageManager | null;
+    present?: (rel: string) => boolean;
 };
 export type CiStep = {
     name: string;

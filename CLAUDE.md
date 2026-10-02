@@ -100,8 +100,9 @@ written in `docs/STANDARDS_PROGRESS.md` in the same commit.
 - **Every commit that touches source, tests, scripts or docs adds a line under `## [Unreleased]`
   in `CHANGELOG.md`, in the same commit**, written for the reader, not the committer. The gate
   and the Stop hook check this over the pushed range; a push without it fails.
-- **Coupled paths.** A change under `src/rules/families/` regenerates `docs/CATALOG.md`
-  (`abatty rules --md`) in the same push. The pairs are in `abatty.config.json` under `coupled`.
+- **Coupled paths.** The pairs are in `abatty.config.json` under `coupled`. `docs/CATALOG.md` is
+  held by a test instead (`abatty rules --md` must equal it), so a rule whose text changed
+  regenerates it in the same commit, and one whose logic alone changed does not.
 - **Versioning.** SemVer in `package.json`; `abatty` in `abatty.config.json` is the version this
   repository follows and `update` moves it. On a bump, `[Unreleased]` becomes `## [x.y.z] - date`.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`),
@@ -157,8 +158,6 @@ when two readings of the request lead to materially different work.
   night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
 - The `node` preset is proven by this repository as of 2026-09-18; `astro`, `python` and `docs`
   are still proven by nobody.
-- `abatty help` lists fewer commands than the README documents. The pull-request template claim
-  is no longer a gap: `abatty ci --provider github` writes one (`src/cli/ci.mjs`).
 - The `lint` step is skipped here: this repository has no `lint` script, because it has not
   adopted eslint (below). The gate reports a step whose script is absent as skipped, and the
   gap analysis names it, so it is visible rather than silently green.

@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-10-02"
 ---
 
 # Running abatty on abatty
@@ -63,7 +63,10 @@ defect, not a false positive.
 - **`docs.indexDrift` passed while a document was genuinely missing from the index**, because the
   probe matched on a substring.
 - **A coupled-paths rule refused a correct push.** The pair `templates/harness/` → `.claude/` was
-  over-broad: the context template installs to the root. Four precise pairs replaced it.
+  over-broad: the context template installs to the root. Four precise pairs replaced it. A second
+  one did the same on 2026-09-29: `src/rules/families/` → `docs/CATALOG.md` refused two rules whose
+  logic changed and whose text did not, with nothing to regenerate. It was removed; the test that
+  compares the catalog with the rules holds that coupling exactly.
 - **The cache never hit**, because writing it created an untracked file that changed its own key.
 - **The trust scan flagged ten lines of its own harness**, until it learned that a line which
   forbids a thing is not an instruction to do it.
@@ -95,17 +98,19 @@ and is worth more than a green screen. `TEST-COVERAGE` is partial for a differen
 floor under the total is work not yet done, not a dependency declined.
 
 `SEC-AGENT-BYPASS` is missing for a different reason: the generated pipeline reports a bypassed
-commit, and this repository's own pipeline is hand-written and does not yet.
+commit, and this repository's own pipeline is hand-written and does not yet. `abatty ci --check`
+reads that pipeline as running the gate (its job runs the `gate` script) and leaves it in place.
 
 ## Where the instrument is wrong or incomplete
 
 - **`abatty doctor` cannot be green on a machine that is not set up for an unattended run.** It is
   the night's pre-flight, not a repository health check, and CI runs it with `--skip-self-test`.
   That is a design decision badly named, and the name has not been fixed.
-- **`abatty help` lists fewer commands than the README documents.** The README also claimed,
-  when this page was first written, that `abatty ci --provider github` writes a pull-request
-  template while no code did; `src/cli/ci.mjs` writes one since 2026-09-19, so that half is
-  closed and `CLAUDE.md` §10 says so.
+- **`abatty help` listed fewer commands than the README documents,** sixteen of them missing, and
+  `ratchet --help` printed the global screen without the ratchet in it. Closed on 2026-09-29: every
+  command the entry point dispatches has a line, and `test/help.test.mjs` fails when one does not.
+  The README's other claim at the time, a pull-request template from `abatty ci --provider github`,
+  has been true since 2026-09-19.
 - **`abatty update` used to add a `lint` script to `package.json`** on every run here, and it had
   to be reverted by hand each time. Since 0.5.0 the lock records the scripts it offered, and one a
   repository removed is not offered again. The page said "not fixed" for two releases after it was,

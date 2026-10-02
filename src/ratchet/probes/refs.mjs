@@ -17,8 +17,12 @@ const SPAN = /(?<!`)`([A-Za-z_$][\w$]{3,})(\(\))?`(?!`)/g;
  * sit in the code's comments and strings, so a plain word read as a name gone was noise.
  */
 const CODE_SHAPED = /[a-z][A-Z]|[A-Z][a-z]+[A-Z]|_/;
-/** The code a name is looked for in, at any depth, now and at a past commit. */
-const CODE = ["*.js", "*.mjs", "*.cjs", "*.ts", "*.tsx", "*.jsx", "*.py"];
+/**
+ * The code a name is looked for in, at any depth, now and at a past commit. SQL counts: a
+ * Postgres function a document names lives in a migration, and once the last script comment
+ * naming it went, the name read as gone while the database still had it.
+ */
+const CODE = ["*.js", "*.mjs", "*.cjs", "*.ts", "*.tsx", "*.jsx", "*.py", "*.sql"];
 
 /**
  * The identifiers a document cites in backticks, fenced blocks left out.
@@ -61,11 +65,12 @@ export const probes = [
     metric: "docs.danglingRefs",
     kind: "ratchet",
     probation: true,
+    version: 2,
     standard: ["DOC.4"],
     title: "Names a document cites that the code had and has no longer",
     why: "A document that names a function, a constant or a class tells its reader where to look; once the name is gone, the reader looks for something that does not exist, or finds the document and trusts it. Fix the document, or the code, whichever is wrong: about half such references are fixed by changing the code back.",
     approximates:
-      "stands in for knowing each name a document cites still means what it did: a single-backtick identifier of four characters or more, outside fenced blocks, counts when the code (JavaScript, TypeScript, Python, at any depth) had it at the document's last commit and has it nowhere now; a name renamed in a string only, or a document never committed, is not seen",
+      "stands in for knowing each name a document cites still means what it did: a single-backtick identifier of four characters or more, outside fenced blocks, counts when the code (JavaScript, TypeScript, Python or SQL, at any depth) had it at the document's last commit and has it nowhere now; a name renamed in a string only, or a document never committed, is not seen",
     axis: "docs-freshness",
     lossAt: 20,
     emptyScanOk: true,
@@ -123,6 +128,22 @@ export const probes = [
           {
             files: { "src/orders.ts": "export function fetchOrders() { return []; }\n" },
             message: "refactor: rename",
+          },
+        ],
+        expect: 0,
+      },
+      {
+        name: "a database function named in a comment that went, still defined in a migration, holds",
+        files: {
+          "docs/a.md": FM() + "\nEvery query runs `current_tenant_id()` first.\n",
+          "src/db.ts": "// scoped by current_tenant_id()\nexport const db = {};\n",
+          "migrations/001_tenant.sql":
+            "create function current_tenant_id() returns uuid as $$ select 1 $$ language sql;\n",
+        },
+        commits: [
+          {
+            files: { "src/db.ts": "export const db = {};\n" },
+            message: "chore: drop the comment",
           },
         ],
         expect: 0,

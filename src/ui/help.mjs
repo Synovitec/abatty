@@ -20,10 +20,10 @@ export function renderHelp(o) {
 ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
 
   ${t.bold("abatty")} [status] [dir] [--fresh]                                    the repository at a glance
-  ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--force] [--dry-run]   the instrument, from the templates and the preset
+  ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--ci <providers>] [--agent <ids>] [--force] [--dry-run]   the instrument, from the templates and the preset
   ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--sarif] [--quiet]  the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run
-  ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test]                  the harness self-test and the drift against the package
+  ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test] [--controls]     the harness self-test and the drift against the package; --controls proves each gate step can go red
   ${t.bold("abatty scrub")} [dir] [--fix] [--commits|--range <r>] [--prs] [--history]  no trace of the tools (opt-in, scrub.enabled): files, commit messages, pull requests
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/
@@ -37,6 +37,22 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty fix")} [dir] [--phase <n>] [--write]                        what a phase asks for that a machine can write; the plan unless --write
   ${t.bold("abatty check")} <ID> [dir] [--json]                                 one rule and an exit code: 0 it holds, 3 it does not (what a finding\u0027s verify names)
   ${t.bold("abatty secrets")} [dir] [--staged|--range <r>|--benchmark] [--json]   the secret scan: the tree, the staged files, a range, or the scan measured against the published corpus
+  ${t.bold("abatty ratchet")} [dir] [--range <r>] [--base <b>] [--json|--sarif] [--controls]  every probe against the committed floor: a number may only fall
+  ${t.bold("abatty baseline")} [dir] [--reason <why> --owner <who>] [--dry-run]   today's numbers as the floor; a floor raised names its reason and owner
+  ${t.bold("abatty raises")} [dir] [--base <b>] [--require-review <pr>] [--json]  the floors this branch loosened, and whether an approval lands them
+  ${t.bold("abatty mutate")} [dir] [--range <r>] [--max <n>] [--timeout <s>]  mutation testing over the changed lines on the repository's own runner; a survivor exits 3
+  ${t.bold("abatty changelog")} --message <file> | --release <version> [--date <d>]  the changelog rule at commit time (the commit-msg hook), or the release cut
+  ${t.bold("abatty ci")} [dir] [--provider github,woodpecker] [--check] [--ruleset]  CI from the gate; a pipeline you keep is judged by whether it runs the gate
+  ${t.bold("abatty hooks")} [dir]                                              point git at .githooks and give each hook its executable bit
+  ${t.bold("abatty update")} [dir] [--dry-run] [--force]                        the harness brought to this version, your edits kept; a conflict goes beside as .abatty-new
+  ${t.bold("abatty config")} [dir] [--json] [--migrate [--dry-run]]              the configuration, its problems against the schema, the move to the root config
+  ${t.bold("abatty agents")} [dir]                                             the agent adapters: what each gives, and what the ones named here lose
+  ${t.bold("abatty profiles")} [dir] [--json]                                   the standards profiles named here, their rules and phases
+  ${t.bold("abatty night")} [dir] [--phases <list>] [--until <HH:MM|+Nmin>] [--max-cost <usd>] [--no-push] [--canary-only]  the unattended run, one phase at a time
+  ${t.bold("abatty night-report")} [dir] [--date <yyyy-mm-dd>] [--json]           what a night did, read from its folder
+  ${t.bold("abatty serve")} [dir] [--port <n>] [--token <t>|--no-auth] [--data <dir>]  the hosted dashboard; reports are posted to it with a bearer token
+  ${t.bold("abatty publish")} [dir] --to <url> --token <t>                        the report sent to a hosted dashboard
+  ${t.bold("abatty mcp")} [dir]                                                the MCP server over stdio, scoped to this repository
   ${t.bold("abatty presets")}                                                    the stacks, and which repository proved each
   ${t.bold("abatty version")}
 

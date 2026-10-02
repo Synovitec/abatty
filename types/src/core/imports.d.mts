@@ -1,5 +1,14 @@
 /**
+ * The tracked file a resolved specifier names, as TypeScript and the bundlers read it: as
+ * written, with an extension added, as a folder's index, or with the `.js` an ESM TypeScript
+ * import writes for its `.ts` source. Reading only the exact path left every TypeScript import
+ * (`./price`, `./price.js` for `price.ts`) without an edge.
+ * @param {Set<string>} known @param {string} target @returns {string}
+ */
+export function resolveIn(known: Set<string>, target: string): string;
+/**
  * Who imports whom over the tracked scripts: the map from a file to the files that import it.
+ * A relative specifier and a tsconfig path alias both count; a bare package name does not.
  * @param {string} repoDir @returns {Map<string, string[]>}
  */
 export function importersOf(repoDir: string): Map<string, string[]>;

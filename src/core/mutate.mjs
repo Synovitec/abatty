@@ -42,6 +42,15 @@ const OPERATORS = [
 
 const SHIPPED = /\.[cm]?[jt]sx?$/;
 const TEST = /\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)(tests?|__tests__|e2e)\//;
+/**
+ * What is not the product: a hidden folder (the installed harness under `.claude/` and
+ * `.githooks/`, CI under `.github/`, tool config) and declaration files. An `abatty update`
+ * rewrites the harness, and the mutants went to `.claude/hooks` until the cap ran out before
+ * the product's own code was reached.
+ */
+const NOT_PRODUCT = /(^|\/)\.[^/]+\/|(^|\/)node_modules\/|\.d\.[cm]?ts$/;
+/** @param {string} f */
+const mutable = (f) => SHIPPED.test(f) && !TEST.test(f) && !NOT_PRODUCT.test(f);
 /** Where the original of a planted file waits until it is put back. */
 const RECOVERY = ".abatty/mutate-restore.json";
 
@@ -65,11 +74,12 @@ export function mutantOf(line, code) {
  * files included. The diff is limited to scripts and read with a large buffer: a diff over the
  * default one was read as empty, and a branch full of changes reported no mutant. A file header
  * is only read as one between `diff --git` and the first hunk, so a removed line that starts
- * with `-- ` is never taken for a path.
- * @param {string} repoDir @param {string} base
+ * with `-- ` is never taken for a path. With `head`, the lines are the commits' alone, `base` to
+ * `head`, and no untracked file is added.
+ * @param {string} repoDir @param {string} base @param {string} [head]
  * @returns {Map<string, number[]>}
  */
-export function changedLines(repoDir, base) {
+export function changedLines(repoDir, base, head) {
   const r = spawnSync(
     "git",
     [
@@ -78,6 +88,7 @@ export function changedLines(repoDir, base) {
       "--no-color",
       "--no-ext-diff",
       base,
+      ...(head ? [head] : []),
       "--",
       ":(glob)**/*.[cm][jt]s",
       ":(glob)**/*.[jt]s",
@@ -95,15 +106,16 @@ export function changedLines(repoDir, base) {
     const hunk = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/.exec(line);
     if (!hunk) continue;
     header = false;
-    if (!SHIPPED.test(file) || TEST.test(file)) continue;
+    if (!mutable(file)) continue;
     const start = Number(hunk[1]);
     const lines = out.get(file) || [];
     for (let n = start; n < start + (hunk[2] === undefined ? 1 : Number(hunk[2])); n++)
       lines.push(n);
     out.set(file, lines);
   }
+  if (head) return out;
   for (const f of git(repoDir, "ls-files", "--others", "--exclude-standard").split("\n")) {
-    if (!SHIPPED.test(f) || TEST.test(f) || out.has(f)) continue;
+    if (!mutable(f) || out.has(f)) continue;
     const count = readFileSync(join(repoDir, f), "utf8").split("\n").length;
     out.set(
       f,
@@ -166,7 +178,7 @@ export function restoreInterrupted(repoDir) {
 
 /**
  * @typedef {{ file: string, line: number, operator: string, outcome: "killed" | "survived" | "no test" | "timeout" | "tests red" }} Mutant
- * @typedef {{ mutants: Mutant[], interrupted: boolean, restored: string }} MutationRun
+ * @typedef {{ mutants: Mutant[], interrupted: boolean, restored: string, edited: string[] }} MutationRun
  */
 
 /**
@@ -174,7 +186,9 @@ export function restoreInterrupted(repoDir) {
  * run once unmutated first: a suite already red, or a command that cannot run, would read every
  * mutant as killed, so that file is reported as `tests red` and none of its mutants is judged.
  * A timeout under a shell ends the shell; on Windows the test process it started can outlive it.
- * @param {{ repoDir: string, base: string, command: string, max: number, timeoutMs: number, log?: (s: string) => void }} o
+ * With `head` (a range's end, checked out), a file edited since that commit is left alone and
+ * listed in `edited`: its lines are no longer the ones the range numbered.
+ * @param {{ repoDir: string, base: string, head?: string, command: string, max: number, timeoutMs: number, log?: (s: string) => void }} o
  * `command` runs the tests, with `{files}` where the test files go (`node --test {files}`).
  * @returns {MutationRun}
  */
@@ -183,6 +197,14 @@ export function runMutants(o) {
   /** @type {Mutant[]} */
   const mutants = [];
   let interrupted = false;
+  const changed = changedLines(o.repoDir, o.base, o.head);
+  const edited = o.head
+    ? git(o.repoDir, "diff", "--name-only", o.head)
+        .split("\n")
+        .filter((f) => changed.has(f))
+    : [];
+  /** @returns {MutationRun} */
+  const result = () => ({ mutants, interrupted, restored, edited });
   const stop = () => (interrupted = true);
   const signals = /** @type {NodeJS.Signals[]} */ (["SIGINT", "SIGTERM", "SIGHUP"]);
   for (const s of signals) process.on(s, stop);
@@ -196,16 +218,16 @@ export function runMutants(o) {
       timeout: o.timeoutMs,
     });
   try {
-    for (const [file, lines] of changedLines(o.repoDir, o.base)) {
+    for (const [file, lines] of changed) {
       const path = join(o.repoDir, file);
-      if (!existsSync(path)) continue;
+      if (!existsSync(path) || edited.includes(file)) continue;
       const original = readFileSync(path, "utf8");
       const rows = original.split("\n");
       const code = codeOnly(original).split("\n");
       const tests = testsFor(o.repoDir, file);
       let clean = null;
       for (const n of lines) {
-        if (interrupted || mutants.length >= o.max) return { mutants, interrupted, restored };
+        if (interrupted || mutants.length >= o.max) return result();
         const m = mutantOf(rows[n - 1] ?? "", code[n - 1] ?? "");
         if (!m) continue;
         if (!tests.length) {
@@ -239,7 +261,7 @@ export function runMutants(o) {
         }
       }
     }
-    return { mutants, interrupted, restored };
+    return result();
   } finally {
     for (const s of signals) process.off(s, stop);
   }

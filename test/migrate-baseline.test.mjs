@@ -46,6 +46,17 @@ test("a floor under an old definition is rewritten under the new one, and no oth
   assert.deepEqual(await migrateRedefined(dir), [], "nothing left to migrate");
 });
 
+test("a probe on probation is migrated too, where it read 'would read redefined' forever", async () => {
+  const dir = redefinedFloor();
+  const b = read(dir);
+  b.versions = { ...b.versions, "docs.danglingRefs": 0 };
+  writeFileSync(join(dir, REL), JSON.stringify(b, null, 2));
+  const migrated = await migrateRedefined(dir);
+  assert.ok(migrated.some((m) => m.metric === "docs.danglingRefs" && m.written));
+  assert.notEqual(read(dir).versions["docs.danglingRefs"], 0);
+  assert.doesNotMatch(cli(["ratchet", dir], dir).out, /would read redefined/);
+});
+
 test("a dry run writes nothing", async () => {
   const dir = redefinedFloor();
   const before = readFileSync(join(dir, REL), "utf8");

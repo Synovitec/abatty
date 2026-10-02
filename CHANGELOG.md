@@ -5,6 +5,124 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.6] - 2026-10-02
+
+The sixth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. The rest of what the adopters reported against 0.7.0-rc.1: `abatty ci` leaves a
+pipeline kept by hand alone, `--help` covers every command, the catalog and the ratchet count
+alike, and `abatty mutate` works on a TypeScript product. Two things move, both under Upgrading:
+`mutate`'s exit codes, and `docs.danglingRefs`, redefined on probation, whose floor `update`
+rewrites.
+
+### Upgrading
+
+- **`abatty mutate` exits 3 when a mutant survives**, and 2 when it cannot start (no runner named
+  and no `mutation.command`, or a range ending at a commit not checked out). It exited 0 unless
+  `--strict` was passed. A script that ran it for a report and expected 0 now reads 3.
+- **`docs.danglingRefs` is redefined (definition 2)**: it reads SQL files as code. `abatty update`
+  rewrites its floor; the check is on probation, so it fails nothing either way.
+
+### Fixed
+
+- **`abatty update` migrates the floor of a redefined check on probation.** Such a check reads
+  `probation` whatever it would read, so update never saw it as redefined, and its floor said
+  "would read redefined" on every run from then on. The version the floor was written under now
+  decides, as it does for every other check.
+- **`docs.danglingRefs` finds a database function where it is defined.** A document naming a
+  Postgres function (`current_tenant_id()`) read as citing a name gone once the last script
+  comment naming it was removed, while a migration still defined it. SQL files now count as code,
+  at the document's last change and now.
+- **Every gate step keeps a log under `.abatty/steps/`.** The format step and the built-in
+  steps (secret scan, audit, scrub) kept nothing, so a red one left no file to read after the run.
+  The format command's output is now kept as a script step's is, and a built-in step's log holds
+  what it printed and closes on its verdict (`failed: 1 finding(s)`, `ok: 601 file(s)`).
+- **`abatty update --dry-run` says what a run would do, to the last line.** The files already
+  read `would update`, but the verdict still said `N file(s) brought to <version>`, and a conflict
+  said the new version `is beside yours as .abatty-new` and asked to merge it, on a run that wrote
+  no such file. Both now say `would`.
+
+- **The import graph reads TypeScript imports.** It only followed a relative import naming its
+  file exactly, so `./price`, `./cart` (an index), `./tax.js` for `tax.ts` and every tsconfig
+  alias (`@/lib/price`) were no edge at all. A TypeScript product's graph was empty:
+  `abatty mutate` found no test for any module it changed, and the gate could not tell a red test
+  the push reached from a flake. Each tracked tsconfig's `paths` now applies under its folder, so
+  a monorepo's `apps/web` keeps its own `@/`; `extends` is not followed.
+- **`abatty mutate` runs the tests on the repository's own runner.** With no `mutation.command`
+  it ran `node --test` on every stack, so on a vitest product every file read `tests red` and
+  nothing was judged. The runner is now the one the test script names (vitest, jest, bun test or
+  node --test), then a workspace's, then an installed one, run through the package manager
+  (`pnpm exec vitest run {files}`). When nothing names one, the run stops with exit 2 and says to
+  set `mutation.command`, rather than guessing.
+- **`abatty mutate` mutates the product, not the installed harness.** Files under a hidden folder
+  (`.claude/hooks`, `.githooks`, `.github`) and declaration files are left alone. After an
+  `abatty update` the mutants all went to `.claude/hooks` and the cap ran out before any product
+  line was reached.
+- **`abatty mutate --range A..B` stops at B.** The end was dropped, so the lines were everything
+  from A to the working tree, uncommitted edits included. The lines are now the range's commits
+  alone. A range ending at a commit that is not checked out exits 2, since the mutants are planted
+  in the working tree; a file edited since B is left alone and named.
+- **A surviving mutant makes `abatty mutate` exit 3**, as every other finding does. It exited 0
+  unless `--strict` was passed, so a script running it learnt nothing; `--strict` is still
+  accepted and changes nothing.
+- **Tests hold that a configured `mutation.command` wins over the runner the scripts name, and
+  that a run with no range reads the branch since it forked from the base.** `abatty mutate`, run
+  on its own change, found the second unheld: every test passed `--range`, and a mutant that lost
+  the base branch survived.
+
+- **`abatty ci` leaves out a step the gate would skip for want of its config.** The generated
+  pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead
+  code steps without theirs, so CI was red where the gate said green. Such a step is now a comment
+  in the pipeline that says why, in the gate's words.
+- **The pull-request template `abatty ci` writes names the gate the way the repository runs it.**
+  It said `npm run gate` whatever the package manager; a pnpm repository now reads
+  `pnpm run gate`, a bun one `bun run gate`.
+- **`abatty ci` no longer overwrites a pipeline it did not write, and judges it by what it runs.**
+  A repository that keeps its own pipeline, one job running its gate script with its own env,
+  services, pinned runner and actions and concurrency, had all of that replaced by the generated
+  file, with older pins, and `ci --check` called it behind forever. A pipeline without the
+  generated header is now left as it is: one that runs the gate (`abatty gate`, or a script whose
+  body is the gate) reads `runs gate` and passes; one that does not, or runs only `gate --fast`,
+  reads `not gate`, exits 3, and gets the generated pipeline beside it as `.abatty-new` to merge
+  from. A pull-request template the repository wrote is kept the same way. A pipeline `abatty ci`
+  wrote is regenerated as before.
+- **`abatty raises` tells a maintainer alone how a loosened floor lands.** The pipeline's floors
+  job refuses a loosened floor without a second person's approval, which a repository with one
+  maintainer can never give. The rule stays; the refusal now names the way it is met there: a push
+  to the base with `directPushToBase` on and a line in the decisions file naming the metric.
+- **The dogfood page records how `ci --check` reads this repository's own pipeline:** kept by
+  hand, running the gate, left in place.
+- **`abatty help` lists every command, and each command's `--help` prints its own usage.** Sixteen
+  commands had no line (`ratchet`, `baseline`, `update`, `ci`, `changelog`, `hooks`, `mutate`,
+  `raises` among them), so `ratchet --help` and `mutate --help` printed the global screen without
+  the command asked about. Each now has its line with the flags it reads, `night --help` no
+  longer prints `night-report`'s, and a test fails when a dispatched command has no line.
+- **A phase new rules reopened is no longer presented as day 0.** A repository whose adoption
+  state marked every phase done read "phase A.1 · Day 0" in `status`, `measure` and the gap
+  analysis once the catalog gained two must-rules. When the state marks the phase, or a later one,
+  done, the headline now says the adoption closed it and names the rules unmet since, new to the
+  catalog or regressed. A repository still adopting reads as before.
+- **`measure --out` no longer names a JSON file it did not write.** A run with `--out` leaves the
+  repository's latest reading alone, so no JSON goes under `.abatty/reports/`, yet the last line
+  pointed there. It now names only the file it wrote.
+- **Every check on probation in `report --json` says why.** `why` was filled only when a check
+  could not read, so an adopter's report explained none of the rest. It now says, for each, whether
+  the reading is a vote to promote the check and why: clean over what it scanned, reads N (debt or
+  a false positive, for a person to say), disputed here, nothing of its kind to read, or opt-in
+  and not enabled. The field and its type are unchanged.
+- **TYPES-ESCAPES and VALID-ENV read the ratchet's own counts.** The catalog counted with its own
+  copy of each check, so an adopter was shown two numbers for one question: TYPES-ESCAPES counted
+  an `any` in a JavaScript comment and in an exempt script that `types.escapes` rightly skipped,
+  and VALID-ENV took a fixture named `env` for the env module, ignoring `ratchet.envModule` and the
+  exempt list that `valid.rawEnv` honours. Both rules now run the probe, and their evidence names
+  its count.
+- **This repository no longer couples a rule change to a catalog commit.** The pair refused a push
+  whose rules changed in logic alone, with nothing to regenerate; the catalog stays held by the test
+  that compares it with the rules.
+- **`types.escapes` is zero here and held at zero.** The last escape in this repository was the
+  pattern the old TYPES-ESCAPES rule carried in its own source; with the rule reading the probe it
+  is gone, and the floor is locked and promoted to hard.
+- **The dogfood page lists the catalog pair among the things the instrument got wrong here.**
+
 ## [0.7.0-rc.5] - 2026-09-29
 
 The fifth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

@@ -70,3 +70,33 @@ export function standing(findings, phases) {
     ),
   };
 }
+
+/**
+ * Whether the phase a repository is on was already closed by its adoption, and by what since. A
+ * fully adopted repository read "phase A.1, day 0" when the catalog grew two must-rules: true of
+ * the rules, false of the repository, which had closed every phase a week before. A phase is
+ * reopened when the adoption state marks it, or a later phase, done; what reopened it is the
+ * rules of that phase unmet now, new to the catalog or regressed.
+ * @param {{ id: string } | null} phase the phase the repository is on
+ * @param {string[]} order the phase ids in plan order
+ * @param {unknown} state the adoption state file, as read
+ * @param {Finding[]} findings
+ * @returns {{ closedAt: string, by: string[] } | null}
+ */
+export function reopened(phase, order, state, findings) {
+  const done = /** @type {{ id?: unknown, status?: unknown, updatedAt?: unknown }[]} */ (
+    Array.isArray(/** @type {any} */ (state)?.phases) ? /** @type {any} */ (state).phases : []
+  ).filter((p) => p?.status === "done");
+  if (!phase || !done.length) return null;
+  const furthest = Math.max(...done.map((p) => order.indexOf(String(p.id))));
+  if (furthest < 0 || order.indexOf(phase.id) > furthest) return null;
+  const closedAt = done
+    .map((p) => String(p.updatedAt || ""))
+    .sort()
+    .at(-1);
+  const by = findings
+    .filter((f) => !["present", "n/a", "waived"].includes(f.status))
+    .filter((f) => phaseOf(f.phase, order) === phase.id)
+    .map((f) => f.id);
+  return { closedAt: String(closedAt || "").slice(0, 10), by };
+}

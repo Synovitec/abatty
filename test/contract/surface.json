@@ -221,7 +221,7 @@
     "context.unsourcedGrowth": "hard v1",
     "docs.behindCode": "ratchet v4",
     "docs.citations": "ratchet v1",
-    "docs.danglingRefs": "ratchet probation v1",
+    "docs.danglingRefs": "ratchet probation v2",
     "docs.danglingSource": "hard v1",
     "docs.frontMatter": "ratchet v1",
     "docs.frontMatterSyntax": "ratchet probation v1",

@@ -5,6 +5,8 @@
  * order of the steps and the suites' selection, and these are what three of the steps do.
  */
 import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { launch } from "./spawn.mjs";
 import { readConfig } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
@@ -24,12 +26,39 @@ const spawnAudit = (repoDir) => (cmd, args) => {
 };
 
 /**
+ * @typedef {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner }} BuiltinContext
+ */
+
+/**
  * Run one built-in step. True when the gate goes on (passed, skipped or deferred), false when it
- * stops here.
+ * stops here. With `stepLog`, what the step said is kept there as a script step's output is:
+ * the secret scan, the audit and the scrub kept nothing, so a red one left no log to read.
  * @param {import("../presets/index.mjs").GateStep} s
- * @param {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner }} ctx
+ * @param {BuiltinContext & { stepLog?: string }} ctx
  */
 export function builtinStep(s, ctx) {
+  /** @type {string[]} */
+  const said = [];
+  const log = (/** @type {string} */ line) => {
+    said.push(line);
+    ctx.log(line);
+  };
+  const goOn = runBuiltin(s, { ...ctx, log });
+  // The verdict closes the log, so a green step's log says what it found as a red one's does.
+  const last = ctx.events[ctx.events.length - 1];
+  if (last?.label === s.label) said.push(`${last.outcome}${last.detail ? `: ${last.detail}` : ""}`);
+  if (ctx.stepLog)
+    try {
+      mkdirSync(dirname(ctx.stepLog), { recursive: true });
+      writeFileSync(ctx.stepLog, `${said.join("\n").trim()}\n`);
+    } catch {
+      // a log that cannot be written is given up; the step stands as it ran
+    }
+  return goOn;
+}
+
+/** The step itself. @param {import("../presets/index.mjs").GateStep} s @param {BuiltinContext} ctx */
+function runBuiltin(s, ctx) {
   const { repoDir, log, events } = ctx;
   if (s.builtin === "secrets") {
     log(`\n▶ ${s.label}`);

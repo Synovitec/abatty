@@ -5,7 +5,7 @@
  */
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
-import { phaseOf } from "../rules/phases.mjs";
+import { phaseOf, reopened } from "../rules/phases.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} c
@@ -168,7 +168,9 @@ export const nextSteps = (r, n) => {
  * 2026-09-18, six were phase 0 and seventeen were phases the plan puts after it - so a
  * percentage that counts them reads as a verdict on work nobody was asked to do yet, and the
  * first impression a stranger gets is a failure they did not earn.
- * @param {{ phase: { id: string, title: string, held: number, applicable: number } | null, score: number, applicable: number }} r
+ *
+ * A phase the adoption already closed and new rules reopened is said to be that, never day 0.
+ * @param {{ phase: { id: string, title: string, held: number, applicable: number } | null, score: number, applicable: number, plan?: { id: string }[], night?: { state: unknown }, findings?: import("../rules/index.mjs").Finding[] }} r
  */
 export function phaseLine(r) {
   const trend = `  ${t.gray(`${r.score}/100 over ${r.applicable} applicable checks · a trend, not a grade`)}\n`;
@@ -178,6 +180,20 @@ export function phaseLine(r) {
   return (
     `  ${t.bar(pct)}  ${t.bold(`phase ${p.id}`)} ${t.gray("·")} ${t.bold(`${p.held} of ${p.applicable} held`)}\n` +
     `  ${t.gray(p.title)}\n` +
+    reopenedLine(r) +
     trend
   );
+}
+
+/** The line under a phase the adoption closed and new rules reopened, or nothing. @param {Parameters<typeof phaseLine>[0]} r */
+function reopenedLine(r) {
+  const again = reopened(
+    r.phase,
+    (r.plan || []).map((p) => String(p.id)),
+    r.night?.state,
+    r.findings || [],
+  );
+  if (!again) return "";
+  const when = again.closedAt ? ` by ${again.closedAt}` : "";
+  return `  ${t.yellow(`reopened: the adoption closed this phase${when}; ${again.by.length} rule(s) unmet since, new to the catalog or regressed`)}${again.by.length ? t.gray(` · ${again.by.join(", ")}`) : ""}\n`;
 }

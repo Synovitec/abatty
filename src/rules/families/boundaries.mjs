@@ -4,6 +4,8 @@
  */
 
 import { BOUNDARY, SOURCES } from "../applies.mjs";
+import { probeFindings } from "../probe-count.mjs";
+import { matchesAny, regexes } from "../../ratchet/probes/lib.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -35,10 +37,15 @@ export const rules = [
     why: "A raw process.env read fails at the line that reads it, in production, at 3 a.m.; one module parsed at boot fails at start, on the developer's screen.",
     next: "Create one env module (env.ts under src/lib or the server config folder) parsed at boot; ratchet valid.rawEnv to its documented floor",
     check: (c) => {
-      const envModule = c.firstFile(/(^|\/)(src\/)?(lib\/|config\/)?env\.(ts|js|mjs)$/);
-      const raw = c.sourceFiles
-        .filter((f) => f !== envModule)
-        .reduce((n, f) => n + (c.read(f).match(/process\.env\./g) || []).length, 0);
+      // The ratchet's own reading (valid.rawEnv): its env module, configurable as
+      // `ratchet.envModule`, and its exempt list. A probe fixture or a script named env is not
+      // the repository's env module, and a read in an exempt file is not a read the ratchet holds.
+      const { findings, config } = probeFindings(c, "valid.rawEnv");
+      const exempt = regexes(config.exempt);
+      const moduleRe = new RegExp(config.envModule);
+      const envModule =
+        c.sourceFiles.find((f) => moduleRe.test(f) && !matchesAny(f, exempt)) || null;
+      const raw = findings.length;
       return {
         status: envModule && raw <= 3 ? "present" : envModule ? "partial" : "missing",
         evidence: `${envModule || "no env module"}; ${raw} raw process.env read(s) elsewhere`,

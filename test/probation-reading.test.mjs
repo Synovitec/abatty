@@ -20,15 +20,18 @@ test("a check that runs, reads 0 and was never disputed is clean here; a dispute
     runs: true,
     reads: 0,
     scanned: 1,
-    why: "",
+    why: "clean over 1 scanned here: one repository's vote for promotion",
     disputes: 0,
     clean: true,
   });
   const disputed = probationReadings(dir, { "docs.frontMatterSyntax": 1 });
-  assert.equal(disputed.find((p) => p.metric === "docs.frontMatterSyntax")?.clean, false);
+  const d = disputed.find((p) => p.metric === "docs.frontMatterSyntax");
+  assert.equal(d?.clean, false);
+  assert.match(String(d?.why), /^disputed 1 time\(s\) here/);
   const optIn = readings.find((p) => p.metric === "sec.weakRandom");
   assert.equal(optIn?.runs, false, "an opt-in check left off does not run here");
   assert.equal(optIn?.clean, false, "and casts no vote");
+  assert.match(String(optIn?.why), /opt-in and not enabled here/);
 });
 
 test("a finding keeps a check from reading clean", () => {
@@ -39,6 +42,7 @@ test("a finding keeps a check from reading clean", () => {
   const syntax = probationReadings(dir, {}).find((p) => p.metric === "docs.frontMatterSyntax");
   assert.ok((syntax?.reads || 0) > 0, JSON.stringify(syntax));
   assert.equal(syntax?.clean, false);
+  assert.match(String(syntax?.why), /^reads \d+ here: real debt or a false positive/);
 });
 
 test("a check with nothing of its kind to read casts no vote", () => {
@@ -47,4 +51,5 @@ test("a check with nothing of its kind to read casts no vote", () => {
   assert.equal(syntax?.reads, 0);
   assert.equal(syntax?.scanned, 0);
   assert.equal(syntax?.clean, false, "reading 0 over nothing is not a clean run");
+  assert.equal(syntax?.why, "nothing of its kind to read here: no vote");
 });

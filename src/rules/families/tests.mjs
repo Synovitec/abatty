@@ -5,6 +5,7 @@
 
 import { BROWSER, DATABASE, JS_SOURCES, SOURCES } from "../applies.mjs";
 import { perPack } from "../../packs/rules.mjs";
+import { runnerOfScript } from "../../core/test-runner.mjs";
 
 /**
  * Everywhere a repository configures a test-quality tool: the tool's own files, whichever tool,
@@ -53,16 +54,7 @@ export const rules = [
       const platform = Boolean(c.script(/\bnode\b[^&|]*--test|(^|\W)node:test(\W|$)/));
       // The script that runs the tests names the runner before an installed package does: a
       // monorepo whose tests run on `bun test` read as jest, because one app depended on it.
-      const byScript = (/** @type {string} */ s) =>
-        /\bvitest\b/.test(s)
-          ? "vitest"
-          : /\bbun test\b/.test(s)
-            ? "bun test"
-            : /\bjest\b/.test(s)
-              ? "jest"
-              : /\bnode\b[^&|]*--test/.test(s)
-                ? "node --test"
-                : "";
+      const byScript = runnerOfScript;
       // A root script that only hands the run to the workspaces (`turbo run test`, `nx run-many`,
       // a recursive run) names no runner: the workspaces' own test scripts do, and a monorepo
       // whose apps run `bun test` read as jest because one app depended on it.

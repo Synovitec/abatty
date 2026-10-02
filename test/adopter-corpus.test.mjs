@@ -19,6 +19,7 @@ import { BUILTIN_PROBES } from "../src/ratchet/index.mjs";
 import { resolveConfig } from "../src/ratchet/config.mjs";
 import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
+import { probationReadings } from "../src/core/probation.mjs";
 
 /** What the ratchet hands a probe with the default config and no range. */
 const SCAN = { config: resolveConfig({}), range: "" };
@@ -152,6 +153,33 @@ const CASES = [
       const dir = productAdopter();
       assert.equal(cli(["baseline", dir, "--help"], dir).code, 0);
       assert.throws(() => readFileSync(join(dir, "scripts/ci/standards-baseline.json")));
+    },
+  },
+  {
+    report: "product · 2026-09-25 · help omits commands",
+    claim: "ratchet --help prints the ratchet's usage, not the global screen without it",
+    run: () => {
+      const dir = productAdopter();
+      const r = cli(["ratchet", dir, "--help", "--plain"], dir);
+      assert.match(r.out, /abatty ratchet \[dir\]/);
+      assert.ok(!/abatty measure/.test(r.out));
+    },
+  },
+  {
+    report: "product · 2026-09-25 · probation why",
+    claim: "every check on probation says why its reading is or is not a vote",
+    run: () => {
+      const empty = probationReadings(productAdopter(), {}).filter((p) => !p.why);
+      assert.deepEqual(empty, []);
+    },
+  },
+  {
+    report: "product · 2026-09-25 · catalog vs ratchet",
+    claim: "TYPES-ESCAPES names the ratchet's own count, so the two cannot disagree",
+    run: () => {
+      const c = buildContext(productAdopter());
+      const escapes = RULES.find((r) => r.id === "TYPES-ESCAPES")?.check(c);
+      assert.match(String(escapes?.evidence), /\(types\.escapes: \d+\)|JavaScript repository/);
     },
   },
   {

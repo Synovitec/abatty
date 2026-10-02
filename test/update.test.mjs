@@ -189,6 +189,16 @@ test("a script the lock never offered is added, and a lock without the list read
   assert.equal(JSON.parse(readFileSync(pkgPath, "utf8")).scripts.lint, undefined);
 });
 
+test("a dry run's conflict says where the new version would go, and puts nothing there", () => {
+  const dir = installedOld("update-conflict-dry");
+  writeFileSync(join(dir, HOOK), OLD.split("\n").slice(0, -2).join("\n") + "\n// mine\n");
+  const r = updateRepo({ repoDir: dir, preset, version: "0.1.0", dryRun: true });
+  const e = r.events.find((x) => x.file === HOOK);
+  assert.equal(e?.action, "conflict");
+  assert.match(String(e?.detail), /would be put beside yours as/);
+  assert.equal(existsSync(join(dir, `${HOOK}.abatty-new`)), false);
+});
+
 test("mergeFile: clean when the edits are apart, conflicts counted when they meet", () => {
   const base = "a\nb\nc\n";
   assert.deepEqual(mergeFile("x\na\nb\nc\n", base, "a\nb\nc\nz\n"), {
@@ -203,6 +213,8 @@ test("the CLI: update --dry-run writes nothing; --force takes the package's vers
   const dry = cli(["update", dir, "--dry-run"], dir);
   assert.equal(dry.code, 0, dry.out);
   assert.match(dry.out, /would update\s+\.claude\/hooks\/session-brief\.mjs/);
+  assert.match(dry.out, /file\(s\) would be brought to .* · nothing written/);
+  assert.doesNotMatch(dry.out, /file\(s\) brought to/, "a dry run says what it would do");
   assert.equal(readFileSync(join(dir, HOOK), "utf8"), OLD, "nothing written");
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(

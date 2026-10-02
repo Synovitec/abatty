@@ -121,8 +121,24 @@ export async function updateCommand(cx, preset) {
         : `  ${t.glyph.warn} ${t.gray("redefined".padEnd(11))} ${m.metric}  ${t.gray(`· ${m.now} under definition ${m.version}: ${m.why}`)}\n`,
     );
   const changed = r.events.filter((e) => e.action !== "in step" && e.action !== "kept").length;
+  // A dry run's verdict is what a run would do: "brought to" and "merge the .abatty-new files"
+  // read as done, on a run that wrote nothing.
+  const dry = flag("--dry-run");
+  const verdict = r.conflicts
+    ? t.red(
+        dry
+          ? `${r.conflicts} conflict(s): a run would put the new version beside yours as .abatty-new to merge by hand`
+          : `${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`,
+      )
+    : t.green(
+        !changed
+          ? `in step with ${r.to}`
+          : dry
+            ? `${changed} file(s) would be brought to ${r.to}`
+            : `${changed} file(s) brought to ${r.to}`,
+      );
   out(
-    `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${r.conflicts ? t.red(`${r.conflicts} conflict(s): merge the .abatty-new file(s) by hand, then delete them`) : t.green(changed ? `${changed} file(s) brought to ${r.to}` : `in step with ${r.to}`)}${flag("--dry-run") ? t.gray(" · nothing written") : ""}\n\n`,
+    `\n${r.conflicts ? t.glyph.fail : t.glyph.ok} ${verdict}${dry ? t.gray(" · nothing written") : ""}\n\n`,
   );
   // Controls an older minor planted are no proof to this one, and the next night is refused until
   // they run again: said here, where the upgrade happens, not at the night's pre-flight.
