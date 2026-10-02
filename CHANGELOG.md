@@ -15,6 +15,12 @@ under Unreleased in the same commit.
   full pipeline pins them. It never touches a pipeline it did not write, and `abatty ci` still
   writes the full one. `doctor` says when CI runs no gate, or only the fast one, and `init`
   names the gap on another forge.
+- **A reading opens with what to fix first.** An adopter's first report led with documents,
+  context sections and decision records while two critical advisories and an unvalidated server
+  action waited. `measure` and `status` now open with a "Fix these first" block: the secrets in
+  the tree (the scan runs, it is local), the last gate's failed audit with its day and its
+  advisories (or that the audit has not run anywhere yet), and the must-level Security rules
+  still missing. A reading stays offline: the audit is the last gate's, never run by `measure`.
 
 ### Fixed
 

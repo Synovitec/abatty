@@ -6,6 +6,7 @@
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
 import { git } from "../core/repo.mjs";
+import { fixFirst } from "../core/fix-first.mjs";
 import { phaseOf, reopened } from "../rules/phases.mjs";
 
 /**
@@ -41,6 +42,7 @@ export async function statusCommand(c, preset) {
       `  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
   );
   out(enforcedLine(r.enforced) + "\n\n");
+  out(fixFirstBlock(dir, r.findings));
   out(familyTable(r.families) + "\n");
   out(t.heading("Harness"));
   out(
@@ -208,4 +210,16 @@ function reopenedLine(r) {
   if (!again) return "";
   const when = again.closedAt ? ` by ${again.closedAt}` : "";
   return `  ${t.yellow(`reopened: the adoption closed this phase${when}; ${again.by.length} rule(s) unmet since, new to the catalog or regressed`)}${again.by.length ? t.gray(` · ${again.by.join(", ")}`) : ""}\n`;
+}
+
+/**
+ * The "fix these first" block, above everything else a reading shows: secrets in the tree, the
+ * last gate's failed audit, the must-level Security rules missing (src/core/fix-first.mjs). An
+ * adopter's first report led with documents while two critical advisories waited.
+ * @param {string} dir @param {import("../rules/index.mjs").Finding[]} findings @returns {string}
+ */
+export function fixFirstBlock(dir, findings) {
+  const lines = fixFirst(dir, findings);
+  if (!lines.length) return "";
+  return `${t.heading("Fix these first", "security, before structure and docs")}${lines.map((l) => `  ${t.glyph.fail} ${t.red(l)}\n`).join("")}\n`;
 }

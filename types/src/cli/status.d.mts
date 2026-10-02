@@ -52,4 +52,11 @@ export function phaseLine(r: {
     };
     findings?: import("../rules/index.mjs").Finding[];
 }): string;
+/**
+ * The "fix these first" block, above everything else a reading shows: secrets in the tree, the
+ * last gate's failed audit, the must-level Security rules missing (src/core/fix-first.mjs). An
+ * adopter's first report led with documents while two critical advisories waited.
+ * @param {string} dir @param {import("../rules/index.mjs").Finding[]} findings @returns {string}
+ */
+export function fixFirstBlock(dir: string, findings: import("../rules/index.mjs").Finding[]): string;
 export function nextSteps(r: import("../core/report.mjs").Report, n: number): import("../rules/index.mjs").Finding[];
