@@ -74,6 +74,10 @@ export function doctor(o: {
         state: "gate" | "fast" | "no-gate" | "none";
         pipelines: string[];
     };
+    unreachable: {
+        name: string;
+        script: string;
+    }[];
 };
 export type DriftEvent = {
     file: string;

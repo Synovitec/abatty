@@ -9,6 +9,12 @@ under Unreleased in the same commit.
 
 - **"Fix these first" says when there is nothing to fix.** Silent when clean, it read the same as
   a check that never ran; it now prints one line that it ran and found nothing.
+- **`doctor` names a suite the gate can never select.** The gate selects a suite by its paths
+  (`app/`, `e2e/`, ...) read from the root. A monorepo whose Next app lives in a workspace with no
+  preset of its own matched none of them: its browser suite never ran, every push read "no
+  matching path", the rule that the suite catches page errors read present, and the first full
+  run found 25 real ones. Where a repository has every script of a suite and no tracked file its
+  paths match, `doctor` now says the gate can never select it.
 - **`abatty status` measures again when the commit has moved.** It marked a reading of another
   commit stale and still had to be asked for `--fresh`, so an adopter read the old numbers
   first. A reading of the same commit still stands, and status stays instant there.
