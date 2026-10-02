@@ -158,4 +158,7 @@ export const viteReact = {
     { file: "mui.md", needs: ["@mui/material", "@mui/joy", "@mui/base", "@mui/system"] },
   ],
   tooling: { dependencyCruiser: true, knip: true },
+  // The file that marks where an app lives: its suites' paths are read under that folder too,
+  // where a monorepo keeps the app in a workspace with no preset of its own.
+  appMarker: /(^|\/)vite\.config\.[cm]?[jt]s$/,
 };

@@ -7,6 +7,7 @@
  * has a suite's script but no file its paths match has a suite that never runs, and says so.
  */
 import { git, readJsonFile } from "./repo.mjs";
+import { appHomes, suiteReads } from "../presets/app-homes.mjs";
 
 /**
  * The suites of a preset this repository has the script for and the gate can never select.
@@ -17,6 +18,8 @@ export function unreachableSuites(repoDir, preset) {
   if (!preset) return [];
   const scripts = readJsonFile(repoDir, "package.json")?.scripts || {};
   const tracked = git(repoDir, "ls-files").split("\n").filter(Boolean);
+  // Read as the gate reads them: from the root and from the app's homes.
+  const homes = appHomes(preset, tracked);
   /** @type {{ name: string, script: string }[]} */
   const out = [];
   for (const suite of preset.gate.suites) {
@@ -26,7 +29,7 @@ export function unreachableSuites(repoDir, preset) {
       [s.script, ...(s.alternatives || [])].find((k) => k && k in scripts),
     );
     if (!each.length || each.some((k) => !k)) continue;
-    if (!tracked.some((f) => suite.paths.test(f)))
+    if (!tracked.some((f) => suiteReads(suite.paths, f, homes)))
       out.push({ name: suite.name, script: String(each[each.length - 1]) });
   }
   return out;

@@ -30,6 +30,7 @@ import { explainFailure } from "./flake.mjs";
 import { measuredNothing } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { couldNotRun } from "./could-not-run.mjs";
+import { appHomes, suiteReads } from "../presets/app-homes.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -263,9 +264,10 @@ export function runGate(o) {
   const suites = (p, under) => {
     for (const suite of p.gate.suites) {
       const name = prefix + suite.name;
-      const byPath = suiteSelection.some(
-        (f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)),
-      );
+      // The root's suites read their paths under the app's homes too (src/presets/app-homes.mjs).
+      const byPath = under
+        ? suiteSelection.some((f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)))
+        : suiteSelection.some((f) => suiteReads(suite.paths, f, homes));
       const ws = under.replace(/\/$/, "");
       const byGraph = Boolean(ws) && !byPath && affected.selected.has(ws);
       if (byGraph)
@@ -320,6 +322,11 @@ export function runGate(o) {
   };
 
   const gated = (o.workspaces || []).filter((w) => w.preset);
+  const homes = appHomes(
+    preset,
+    git(repoDir, "ls-files").split("\n"),
+    gated.map((w) => w.path),
+  );
   // The verdict, with the instrument's own state beside it: a step that could not run is not a
   // step that found something, and a caller that exits on the difference needs to see it.
   const done = (/** @type {boolean} */ ok) => ({

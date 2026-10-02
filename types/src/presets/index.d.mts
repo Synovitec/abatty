@@ -89,4 +89,5 @@ export type Preset = {
         dependencyCruiser: boolean;
         knip: boolean;
     };
+    appMarker?: RegExp;
 };

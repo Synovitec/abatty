@@ -9,6 +9,12 @@ under Unreleased in the same commit.
 
 - **"Fix these first" says when there is nothing to fix.** Silent when clean, it read the same as
   a check that never ran; it now prints one line that it ran and found nothing.
+- **The gate selects a suite under the app's own folder.** A Next app in a monorepo workspace
+  with no preset of its own (`apps/web`) matched none of the browser suite's root paths
+  (`app/`, `e2e/`), and the suite never ran. Each framework preset now names the file that marks
+  where its app lives (`next.config.*`, `astro.config.*`, `vite.config.*`), and the root's suites
+  read their paths under that folder too; the scripts still run from the root. A workspace that
+  has a preset of its own keeps running its suites under it, as before.
 - **`doctor` names a suite the gate can never select.** The gate selects a suite by its paths
   (`app/`, `e2e/`, ...) read from the root. A monorepo whose Next app lives in a workspace with no
   preset of its own matched none of them: its browser suite never ran, every push read "no
