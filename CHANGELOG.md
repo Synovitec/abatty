@@ -15,6 +15,12 @@ under Unreleased in the same commit.
   where its app lives (`next.config.*`, `astro.config.*`, `vite.config.*`), and the root's suites
   read their paths under that folder too; the scripts still run from the root. A workspace that
   has a preset of its own keeps running its suites under it, as before.
+- **A selected suite with no test script skips loudly, and builds nothing first.** Where a push
+  selected the browser suite and the repository had `build` but no `e2e` script, the gate ran the
+  whole production build, then skipped the tests in a grey line. Where no step but `build` has a
+  script, the suite now does not run at all, and the gate says so with the scripts to add. The
+  push is not refused; a suite with one of its testing scripts (integration without coverage)
+  still runs it.
 - **`doctor` names a suite the gate can never select.** The gate selects a suite by its paths
   (`app/`, `e2e/`, ...) read from the root. A monorepo whose Next app lives in a workspace with no
   preset of its own matched none of them: its browser suite never ran, every push read "no

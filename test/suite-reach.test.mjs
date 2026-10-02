@@ -90,3 +90,65 @@ test("the gate selects the browser suite under the app's workspace, and doctor s
   assert.equal(skipped?.outcome, "skipped", JSON.stringify(rb.events));
   assert.equal(ranBare.length, 0);
 });
+
+test("a selected suite whose own script is missing skips loudly, building nothing, refusing nothing", () => {
+  const pkg = { ...JSON.parse(NEXT_PKG), scripts: { build: "turbo run build" } };
+  const dir = tempRepo("reach-noe2e", {
+    "package.json": JSON.stringify(pkg),
+    "apps/web/next.config.ts": "export default {};\n",
+    "apps/web/app/page.tsx": "export default function P() { return null; }\n",
+  });
+  const base = git(dir, "rev-parse", "HEAD");
+  writeFileSync(join(dir, "apps/web/app/page.tsx"), "export default function P() { return 1; }\n");
+  git(dir, "commit", "-qam", "feat: the page");
+  /** @type {string[]} */
+  const ran = [];
+  /** @type {string[]} */
+  const said = [];
+  const r = runGate({
+    repoDir: dir,
+    preset: /** @type {any} */ ({ ...next, gate: { always: [], suites: next?.gate.suites } }),
+    range: `${base}..HEAD`,
+    workspaces: [{ path: "apps/web", preset: null }],
+    log: (l) => said.push(l),
+    run: (_cwd, script) => {
+      ran.push(String(script));
+      return 0;
+    },
+    dockerUp: () => true,
+    db: { url: "postgres://x", test: "postgres://x/t" },
+  });
+  assert.equal(r.ok, true, "the push is not refused");
+  assert.equal(ran.includes("build"), false, "no build to skip the tests after");
+  assert.match(
+    said.join("\n"),
+    /selected by this push, and package\.json has no e2e, e2e:client, test:e2e script, so nothing ran/,
+  );
+});
+
+test("a suite with one of its testing scripts still runs it: the database suite without coverage", () => {
+  const db = next?.gate.suites.find((s) => /database/i.test(s.name));
+  const pkg = { ...JSON.parse(NEXT_PKG), scripts: { "test:integration": "vitest run" } };
+  const dir = tempRepo("reach-db", {
+    "package.json": JSON.stringify(pkg),
+    "prisma/schema.prisma": "model A { id Int @id }\n",
+  });
+  const base = git(dir, "rev-parse", "HEAD");
+  writeFileSync(join(dir, "prisma/schema.prisma"), "model A { id Int @id\n n Int }\n");
+  git(dir, "commit", "-qam", "feat: a column");
+  /** @type {string[]} */
+  const ran = [];
+  runGate({
+    repoDir: dir,
+    preset: /** @type {any} */ ({ ...next, gate: { always: [], suites: [db] } }),
+    range: `${base}..HEAD`,
+    log: () => {},
+    run: (_cwd, script) => {
+      ran.push(String(script));
+      return 0;
+    },
+    dockerUp: () => true,
+    db: { url: "postgres://x", test: "postgres://x/t" },
+  });
+  assert.ok(ran.includes("test:integration"), ran.join(", "));
+});

@@ -284,6 +284,18 @@ export function runGate(o) {
         log(`\n· skipped ${name}: nothing under its paths in the push or the tree`);
         continue;
       }
+      // No step of the suite but `build` has a script here: nothing would be judged, so nothing
+      // runs, said loudly. It built the app on every push, only to skip the tests after it.
+      const judging = suite.steps.filter((s) => s.script !== "build");
+      const own = judging[judging.length - 1];
+      if (own?.script && judging.every((s) => !s.required && !resolveScript(s))) {
+        const names = [own.script, ...(own.alternatives || [])].join(", ");
+        events.push({ label: name, outcome: "skipped", detail: `no "${own.script}" script` });
+        log(
+          `\n! ${name}: selected by this push, and package.json has no ${names} script, so nothing ran. Add one to run the suite on every push that touches it.`,
+        );
+        continue;
+      }
       // Deferred to CI, loudly, without the Docker daemon or when the only database the suite
       // could reach is the developer's own (src/core/hermetic.mjs).
       const db = suite.docker
