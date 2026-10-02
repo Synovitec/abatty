@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **"Fix these first" says when there is nothing to fix.** Silent when clean, it read the same as
+  a check that never ran; it now prints one line that it ran and found nothing.
+- **`abatty status` measures again when the commit has moved.** It marked a reading of another
+  commit stale and still had to be asked for `--fresh`, so an adopter read the old numbers
+  first. A reading of the same commit still stands, and status stays instant there.
+
 ## [0.7.0-rc.10] - 2026-10-02
 
 The tenth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
