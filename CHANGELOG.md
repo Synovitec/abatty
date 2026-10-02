@@ -15,6 +15,14 @@ under Unreleased in the same commit.
   full pipeline pins them. It never touches a pipeline it did not write, and `abatty ci` still
   writes the full one. `doctor` says when CI runs no gate, or only the fast one, and `init`
   names the gap on another forge.
+- **A new check: server actions that never establish who is calling (`auth.unguardedAction`,
+  AUTH.1).** A `'use server'` export is a public POST endpoint whatever page shows its button,
+  and an adopter's worst finding was one with no check at all, seen only indirectly as an
+  unparsed parameter. The check reads each exported action for a call that establishes the
+  caller: the common session helpers (`auth()`, `getServerSession`, `currentUser`, `getUser`,
+  `requireUser`, `verifySession` and the like) or a name the repository lists in
+  `ratchet.authCalls`. Opt-in, enabled by the Next preset for a new repository, and on
+  probation: it reports, and blocks nothing until a named repository has run it clean.
 - **A reading opens with what to fix first.** An adopter's first report led with documents,
   context sections and decision records while two critical advisories and an unvalidated server
   action waited. `measure` and `status` now open with a "Fix these first" block: the secrets in

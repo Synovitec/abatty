@@ -24,6 +24,7 @@ import { probes as frontMatterProbes } from "./probes/frontmatter.mjs";
 import { probes as catchLogProbes } from "./probes/catchlog.mjs";
 import { probes as weakRandomProbes } from "./probes/weakrandom.mjs";
 import { probes as jsdocProbes } from "./probes/jsdoc.mjs";
+import { probes as actionProbes } from "./probes/actions.mjs";
 import { probes as refsProbes } from "./probes/refs.mjs";
 import { probes as tamperProbes } from "./probes/tamper.mjs";
 import { probes as journeyProbes } from "./probes/journeys.mjs";
@@ -94,6 +95,7 @@ import { probeVersion } from "./baseline.mjs";
  *   enable: string[],
  *   boundedBy?: string[],
  *   secretFields?: string[],
+ *   authCalls?: string[],
  *   moneyFields?: string[],
  *   pageGuards?: { pages: string, guard: string }[],
  *   shapeList?: string,
@@ -129,6 +131,7 @@ export const BUILTIN_PROBES = [
   ...catchLogProbes,
   ...weakRandomProbes,
   ...jsdocProbes,
+  ...actionProbes,
   ...refsProbes,
   ...tamperProbes,
   ...journeyProbes,

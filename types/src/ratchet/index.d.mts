@@ -130,6 +130,7 @@ export { DEFAULT_CONFIG } from "./config.mjs";
  *   enable: string[],
  *   boundedBy?: string[],
  *   secretFields?: string[],
+ *   authCalls?: string[],
  *   moneyFields?: string[],
  *   pageGuards?: { pages: string, guard: string }[],
  *   shapeList?: string,
@@ -224,6 +225,7 @@ export type RatchetConfig = {
     enable: string[];
     boundedBy?: string[];
     secretFields?: string[];
+    authCalls?: string[];
     moneyFields?: string[];
     pageGuards?: {
         pages: string;

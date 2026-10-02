@@ -326,6 +326,11 @@
         "envModule": {
           "type": "string"
         },
+        "authCalls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The names of this repository's own functions that establish who is calling a server action (auth.unguardedAction reads a call of one as a check), beside the common session helpers it knows."
+        },
         "citationsExempt": {
           "type": "array",
           "items": {

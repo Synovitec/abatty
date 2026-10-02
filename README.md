@@ -277,6 +277,7 @@ taken knowing the number:
 | `valid.unparsedBoundary`   | Route handlers, server actions and credentials callbacks reading input no schema parses            |                |
 | `valid.wholeEnv`           | The environment object taken whole outside the env module                                          |                |
 | `auth.unguardedPage`       | Protected pages whose first statement is not the guard                                             | `pageGuards`   |
+| `auth.unguardedAction`     | Server actions (`'use server'` exports) that never establish who is calling                        | `authCalls`    |
 | `api.unboundedList`        | List reads in a route handler without a bound                                                      | `boundedBy`    |
 | `api.rowReturn`            | Server actions returning the ORM's row, or a select carrying a secret column                       | `secretFields` |
 | `api.floatMoney`           | Money made a number on the wire, or stored as a Float column                                       | `moneyFields`  |

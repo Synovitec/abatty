@@ -46,6 +46,7 @@ export const next = {
     ratchet: {
       enable: [
         "valid.unparsedBoundary",
+        "auth.unguardedAction",
         "valid.wholeEnv",
         "api.unboundedList",
         "api.rowReturn",
