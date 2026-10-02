@@ -16,14 +16,27 @@ export function runScript(repoDir: string, script: string, extraArgs?: string[],
     log?: string;
 }): RunResult;
 /**
+ * Where a gate step's output is kept (`.abatty/steps/<label>.log`), the last run's copy removed so
+ * a step that writes nothing never leaves an older run's log to be read as its own. A log held
+ * open elsewhere is left, and overwritten by the run.
+ * @param {string} repoDir @param {string} label @returns {string}
+ */
+export function stepLogAt(repoDir: string, label: string): string;
+/**
  * A script that exited 1 on Windows, read again: when its program is found nowhere, cmd.exe's 1
  * meant "not recognized", and the step could not run rather than failed.
  * @param {RunResult} res @param {string} repoDir @param {string} script
  * @param {string} [platform] @param {NodeJS.ProcessEnv} [env] @returns {RunResult}
  */
 export function notInstalled(res: RunResult, repoDir: string, script: string, platform?: string, env?: NodeJS.ProcessEnv): RunResult;
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
-export function runCommand(repoDir: string, argv: string[]): RunResult;
+/**
+ * Run a command as given; output goes straight to the terminal, and with `o.log` is kept there
+ * too. The format step ran this way and kept nothing, so a red format had no log to read.
+ * @param {string} repoDir @param {string[]} argv @param {{ log?: string }} [o] @returns {RunResult}
+ */
+export function runCommand(repoDir: string, argv: string[], o?: {
+    log?: string;
+}): RunResult;
 export function dockerRunning(): boolean;
 export function quoteForCmd(a: string): string;
 export function asResult(r: RunResult | number): RunResult;

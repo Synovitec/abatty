@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { missingTool } from "./which.mjs";
 import { childEnv, searchFromEnv } from "./env.mjs";
@@ -85,21 +87,40 @@ export const asResult = (r) => (typeof r === "number" ? { code: r } : r);
  */
 export function runScript(repoDir, script, extraArgs = [], env = {}, o = {}) {
   const l = launch("npm", ["run", "-s", script, ...(extraArgs.length ? ["--", ...extraArgs] : [])]);
-  const res = resultOf(
-    o.log
-      ? spawnSync(process.execPath, [TEE, o.log, l.shell ? "1" : "0", l.file, ...l.args], {
-          cwd: repoDir,
+  return notInstalled(spawnStep(l, repoDir, childEnv(env), o.log), repoDir, script);
+}
+
+/**
+ * Spawn a step with its output on the terminal and, given a log file, kept there as well.
+ * @param {Launch} l @param {string} cwd @param {NodeJS.ProcessEnv | undefined} env @param {string} [log]
+ * @returns {RunResult}
+ */
+function spawnStep(l, cwd, env, log) {
+  return resultOf(
+    log
+      ? spawnSync(process.execPath, [TEE, log, l.shell ? "1" : "0", l.file, ...l.args], {
+          cwd,
           stdio: "inherit",
-          env: childEnv(env),
+          env,
         })
-      : spawnSync(l.file, l.args, {
-          cwd: repoDir,
-          stdio: "inherit",
-          shell: l.shell,
-          env: childEnv(env),
-        }),
+      : spawnSync(l.file, l.args, { cwd, stdio: "inherit", shell: l.shell, env }),
   );
-  return notInstalled(res, repoDir, script);
+}
+
+/**
+ * Where a gate step's output is kept (`.abatty/steps/<label>.log`), the last run's copy removed so
+ * a step that writes nothing never leaves an older run's log to be read as its own. A log held
+ * open elsewhere is left, and overwritten by the run.
+ * @param {string} repoDir @param {string} label @returns {string}
+ */
+export function stepLogAt(repoDir, label) {
+  const at = join(repoDir, ".abatty", "steps", `${label.replace(/[^\w.-]+/g, "_")}.log`);
+  try {
+    rmSync(at, { force: true });
+  } catch {
+    // held open: the run overwrites it
+  }
+  return at;
 }
 
 /** The step wrapper that shows a step's output and keeps it. */
@@ -125,11 +146,14 @@ export function notInstalled(
     : res;
 }
 
-/** Run a command as given; output goes straight to the terminal. @param {string} repoDir @param {string[]} argv @returns {RunResult} */
-export function runCommand(repoDir, argv) {
+/**
+ * Run a command as given; output goes straight to the terminal, and with `o.log` is kept there
+ * too. The format step ran this way and kept nothing, so a red format had no log to read.
+ * @param {string} repoDir @param {string[]} argv @param {{ log?: string }} [o] @returns {RunResult}
+ */
+export function runCommand(repoDir, argv, o = {}) {
   const [cmd, ...args] = argv;
-  const l = launch(String(cmd), args);
-  return resultOf(spawnSync(l.file, l.args, { cwd: repoDir, stdio: "inherit", shell: l.shell }));
+  return spawnStep(launch(String(cmd), args), repoDir, undefined, o.log);
 }
 
 export function dockerRunning() {

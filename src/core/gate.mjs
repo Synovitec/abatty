@@ -13,10 +13,10 @@
  * preset's steps in its own folder (its own scripts, its suites' paths under its folder); the
  * built-in steps (the secret scan, the audit) and the ratchet run once, at the root.
  */
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { asResult, dockerRunning, launch, runCommand, runScript } from "./spawn.mjs";
+import { asResult, dockerRunning, launch, runCommand, runScript, stepLogAt } from "./spawn.mjs";
 import { git, hasScript, readConfig, readPackage } from "./repo.mjs";
 import { narrowerThanBranch, pendingPaths, pushRangeInfo } from "./range.mjs";
 import { affectedWorkspaces } from "../presets/workspaces.mjs";
@@ -160,7 +160,14 @@ export function runGate(o) {
   };
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
-    if (s.builtin) return builtinStep(s, { repoDir, log, events, audit: o.audit });
+    if (s.builtin)
+      return builtinStep(s, {
+        repoDir,
+        log,
+        events,
+        audit: o.audit,
+        stepLog: stepLogAt(repoDir, s.label),
+      });
     // A step the preset requires is the instrument itself: without its script or its config the
     // gate cannot run, and says so, rather than passing with the step skipped. A repository
     // whose every step was skipped for want of a script read "gate green" and exited 0; the
@@ -188,7 +195,9 @@ export function runGate(o) {
     if (s.command) {
       log(`\n▶ ${prefix}${s.label}`);
       const t0 = Date.now();
-      const res = asResult(runCommand(cwd, s.command));
+      const res = asResult(
+        runCommand(cwd, s.command, { log: stepLogAt(repoDir, prefix + s.label) }),
+      );
       return settle(prefix + s.label, res, Date.now() - t0, s.command.join(" "));
     }
     if (s.rangeArg && prefix) return true; // the ratchet runs once, at the root
@@ -212,17 +221,7 @@ export function runGate(o) {
     // trust is not handed on: told an empty one, a coverage script passed green over nothing.
     const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
     // The output is kept as well as shown, so a red test step can say whose failure it is.
-    const stepLog = join(
-      repoDir,
-      ".abatty",
-      "steps",
-      `${(prefix + s.label).replace(/[^\w.-]+/g, "_")}.log`,
-    );
-    try {
-      rmSync(stepLog, { force: true });
-    } catch {
-      // A log held open elsewhere is overwritten by the run; it must not stop the gate.
-    }
+    const stepLog = stepLogAt(repoDir, prefix + s.label);
     const res = asResult(
       run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog }),
     );

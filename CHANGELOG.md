@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Every gate step keeps a log under `.abatty/steps/`.** The format step and the built-in
+  steps (secret scan, audit, scrub) kept nothing, so a red one left no file to read after the run.
+  The format command's output is now kept as a script step's is, and a built-in step's log holds
+  what it printed and closes on its verdict (`failed: 1 finding(s)`, `ok: 601 file(s)`).
+
 - **The import graph reads TypeScript imports.** It only followed a relative import naming its
   file exactly, so `./price`, `./cart` (an index), `./tax.js` for `tax.ts` and every tsconfig
   alias (`@/lib/price`) were no edge at all. A TypeScript product's graph was empty:
