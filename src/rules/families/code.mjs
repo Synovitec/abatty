@@ -34,27 +34,38 @@ export const rules = [
     why: "A warning nobody has to fix is a rule nobody follows; at zero, a warning is an error with a softer name.",
     next: "Make a warning fail the lint script: --max-warnings=0 (ESLint, oxlint) or --error-on-warnings (Biome)",
     check: (c) => {
-      const lintScripts = [
-        ["package.json", c.scripts.lint],
-        ...c
-          .files(/^(apps|packages|services)\/[^/]+\/package\.json$/)
-          .map((q) => [q, c.readJson(q)?.scripts?.lint]),
-      ].filter(([, v]) => v && /eslint|oxlint|biome/.test(String(v)));
-      const first = lintScripts[0];
-      const lint = first
-        ? [String(first[0]), String(first[1])]
-        : c.scripts.lint
-          ? ["lint", c.scripts.lint]
-          : null;
-      return {
-        status:
-          lint && /max-warnings[= ]0|--error-on-warnings/.test(lint[1] || "")
-            ? "present"
-            : lint
-              ? "partial"
-              : "missing",
-        evidence: lint ? "`" + lint[1] + "`" : "no lint script",
-      };
+      const runs = (/** @type {string} */ v) => /eslint|oxlint|biome|\bnext lint\b/.test(v);
+      const strict = (/** @type {string} */ v) => /max-warnings[= ]0|--error-on-warnings/.test(v);
+      // A script that answers "lint" without running a linter (`echo 'lint deferred' && exit 0`):
+      // read past, it let a monorepo whose root delegates to its workspaces read present while
+      // fourteen of them linted nothing.
+      const stub = (/** @type {string} */ v) =>
+        !runs(v) && /\becho\b|\bexit 0\b|^\s*(true|:)\s*$/.test(v);
+      const all = /** @type {[string, string][]} */ (
+        [
+          ["package.json", c.scripts.lint],
+          ...c
+            .files(/^(apps|packages|services)\/[^/]+\/package\.json$/)
+            .map((q) => [q, c.readJson(q)?.scripts?.lint]),
+        ]
+          .filter(([, v]) => v)
+          .map(([q, v]) => [String(q), String(v)])
+      );
+      const linting = all.filter(([, v]) => runs(v));
+      const first = linting[0] || all[0];
+      if (!first) return { status: "missing", evidence: "no lint script" };
+      const short = all.filter(([, v]) => stub(v) || (runs(v) && !strict(v)));
+      if (!linting.length || short.length)
+        return {
+          status: "partial",
+          evidence: short.length
+            ? `${short.length} lint script(s) that lint nothing or let a warning pass: ${short
+                .slice(0, 4)
+                .map(([q, v]) => `${q.replace(/\/?package\.json$/, "") || "root"} \`${v}\``)
+                .join(", ")}`
+            : "`" + first[1] + "`",
+        };
+      return { status: "present", evidence: "`" + first[1] + "`" };
     },
   },
   {

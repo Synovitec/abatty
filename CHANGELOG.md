@@ -10,6 +10,10 @@ under Unreleased in the same commit.
 - **A refused `baseline` lists what to fix.** A HARD metric above zero was named by its metric
   and its count only, and an adopter ran another command to learn which three documents the index
   lacked. The refusal now names the findings (the first five, then how many more).
+- **CODE-MAXWARN reads every lint script, a workspace's included.** It judged the first script
+  that ran a linter, so a monorepo read present while fourteen workspaces had
+  `"lint": "echo 'lint deferred' && exit 0"`. A script that lints nothing, or a linter run that
+  lets a warning pass, now keeps the rule partial and is named; `next lint` counts as a linter.
 
 ## [0.7.0-rc.9] - 2026-10-02
 
