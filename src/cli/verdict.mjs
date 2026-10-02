@@ -185,6 +185,10 @@ export async function doctorCommand(cx, preset) {
   out(
     `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits where it has the installed copy to merge from, and puts it beside yours as .abatty-new where it has not (a git hook you edited); or keep yours and say why in the decisions file") : ""}\n`,
   );
+  for (const p of r.split)
+    out(
+      `  ${t.glyph.fail} ${t.red(`${p.family}'s packages are installed at different versions (${p.versions}): they are released together and expect one; align them (a lockfile refresh or an override split them)`)}\n`,
+    );
   for (const u of r.unreachable)
     out(
       `  ${t.glyph.fail} ${t.red(`the gate can never select ${u.name}: this repository has its "${u.script}" script, and no tracked file matches the paths the gate selects it by (an app in a workspace with no preset of its own is read from the root)`)}\n`,

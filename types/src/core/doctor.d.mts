@@ -78,6 +78,10 @@ export function doctor(o: {
         name: string;
         script: string;
     }[];
+    split: {
+        family: string;
+        versions: string;
+    }[];
 };
 export type DriftEvent = {
     file: string;

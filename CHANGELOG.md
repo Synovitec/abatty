@@ -11,6 +11,11 @@ under Unreleased in the same commit.
   `init` read a pipeline by its commands, but a `name: abatty gate` (the workflow's, a job's or a
   step's) matched as one, so a pipeline running only `npm test` under that name read as running
   the gate. Names are now left out of the reading, as comments already were.
+- **`doctor` names packages released together and installed at different versions.** A lockfile
+  refresh moved an adopter's `@playwright/test` to 1.63 while an override held `playwright-core`
+  at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
+  reads the installed versions of families that expect one shared version (Playwright, Prisma,
+  React and React DOM, Vitest and its plugins) and names a family whose members disagree.
 
 ## [0.7.0-rc.11] - 2026-10-02
 
