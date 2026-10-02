@@ -20,6 +20,7 @@ export function renderHelp(o) {
 ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
 
   ${t.bold("abatty")} [status] [dir] [--fresh]                                    the repository at a glance
+  ${t.bold("abatty")} --version | -v                                             the package's version, and nothing else
   ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--ci <providers>] [--agent <ids>] [--force] [--dry-run]   the instrument, from the templates and the preset
   ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--sarif] [--quiet]  the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run

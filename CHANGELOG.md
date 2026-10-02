@@ -18,6 +18,9 @@ under Unreleased in the same commit.
   effects", a JSDoc example quoting `(input as any)`. An adopter found 10 of its 42 in comments,
   and could reach zero only by rewording them, the gaming the number exists to prevent. A
   directive is still read in comments; an `any` is read on the code alone.
+- **`abatty --version` and `abatty -v` print the version and nothing else.** `--version` was read
+  as the status command with an unknown flag and measured the whole repository; `-v` was taken
+  for a directory.
 
 ## [0.7.0-rc.7] - 2026-10-02
 
