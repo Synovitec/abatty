@@ -13,6 +13,7 @@ import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
+import { contextState } from "../core/context-file.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
@@ -64,9 +65,16 @@ export async function initCommand(cx, preset) {
   const wrote = (/** @type {string} */ f) =>
     r.events.some((e) => e.file === f && e.action !== "n/a");
   const graph = wrote(".dependency-cruiser.cjs");
-  out(
-    `  ${n++}. Fill CLAUDE.md (the placeholders in <>)${graph ? ", then .dependency-cruiser.cjs: one rule per arrow of CLAUDE.md §3" : ""}\n`,
-  );
+  // The context step names the file that holds the context, and only asks to fill it when
+  // something is left to fill: a repository's own file is kept, and AGENTS.md points at it.
+  const ctx = contextState(dir);
+  const fill = ctx.placeholders
+    ? `Fill ${ctx.file} (${ctx.placeholders} placeholder(s) in <>)`
+    : ctx.own
+      ? `${ctx.file} is this repository's own and was kept; AGENTS.md points at it`
+      : "";
+  const deps = graph ? `.dependency-cruiser.cjs: one rule per arrow of ${ctx.file} §3` : "";
+  if (fill || deps) out(`  ${n++}. ${[fill, deps].filter(Boolean).join(", then ")}\n`);
   if (graph)
     out(
       `  ${n++}. On an existing repository: ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,

@@ -36,6 +36,11 @@ under Unreleased in the same commit.
   run said "format · no .prettierrc", which read as `init` forgetting its own file. The config is
   the repository's decision to hold formatting (written blind, it would turn every unformatted
   file red), so it is named among the steps by hand rather than written.
+- **`init`'s context step names the file that holds the context.** It said "Fill CLAUDE.md (the
+  placeholders in <>)" to a repository whose own `CLAUDE.md` it had kept, which has none, and to a
+  fresh one, whose placeholders are in `AGENTS.md` (the template goes there, `CLAUDE.md` imports
+  it). A kept file is now said to be kept, with `AGENTS.md` pointing at it, the one source; a
+  fresh one is asked to fill `AGENTS.md`, with the count of what is left.
 
 ## [0.7.0-rc.7] - 2026-10-02
 
