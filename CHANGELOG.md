@@ -5,6 +5,16 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`abatty doctor` no longer hangs on a Windows checkout.** The check for exports with no doc
+  comment read the text above each export with one regular expression, which on a CRLF file
+  under a long run of `//` lines tried every way to split each line end: 20 lines took a third of
+  a second, 31 took minutes, for one export. `doctor` reads that opt-in check to say what it
+  would count, so it sat silent at full CPU. With `core.autocrlf` on, every Windows checkout is
+  CRLF. The text above an export is now read line by line, in linear time, and gives the same
+  answer: compared on 2,690 exports in both line endings, none differs.
+
 ## [0.7.0-rc.6] - 2026-10-02
 
 The sixth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
