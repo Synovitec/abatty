@@ -116,3 +116,12 @@ test("a pull-request template the repository wrote is kept, and the generated on
   assert.match(theirs, /The gate is green \(`pnpm run gate`\)/);
   assert.ok(!/npm run gate/.test(theirs.replace(/pnpm run gate/g, "")));
 });
+
+test("a pipeline only named after the gate does not run it, and a run line under that name does", () => {
+  const named =
+    "name: abatty gate\njobs:\n  a:\n    name: abatty gate on push\n    steps:\n      - name: abatty gate\n        run: npm test\n";
+  assert.equal(runsGate(named, { test: "node --test" }).runs, false);
+  const ran =
+    "name: ci\njobs:\n  a:\n    steps:\n      - name: the gate\n        run: npx abatty gate\n";
+  assert.equal(runsGate(ran, {}).runs, true);
+});

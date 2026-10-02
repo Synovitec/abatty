@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A pipeline named after the gate is not read as running it.** `ci --check`, `doctor` and
+  `init` read a pipeline by its commands, but a `name: abatty gate` (the workflow's, a job's or a
+  step's) matched as one, so a pipeline running only `npm test` under that name read as running
+  the gate. Names are now left out of the reading, as comments already were.
+
 ## [0.7.0-rc.11] - 2026-10-02
 
 The eleventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

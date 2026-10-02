@@ -28,7 +28,9 @@ const FAST_GATE = /\babatty(?:\.mjs)?\s+gate\b[^&|;]*--fast/;
  * @returns {{ runs: boolean, how: string }}
  */
 export function runsGate(text, scripts) {
-  const commands = text.replace(/^\s*#.*$/gm, "");
+  // Commands only: a comment, and a `name:` (a job's, a step's, the workflow's), say what a
+  // pipeline is called, never what it runs; `name: abatty gate` read as running it.
+  const commands = text.replace(/^\s*#.*$/gm, "").replace(/^\s*-?\s*name\s*:.*$/gm, "");
   const direct = commands.match(/\babatty\s+gate\b[^\n]*/);
   if (direct && !/--fast/.test(direct[0])) return { runs: true, how: "runs `abatty gate`" };
   /** @type {string | null} */
