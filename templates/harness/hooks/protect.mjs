@@ -20,7 +20,7 @@
 // boundary on its own.
 
 import { basename } from "node:path";
-import { HARNESS_DIR, NIGHT, appendLog, decide, isHarnessPath, loadConfig, readEvent, toRepoPath } from "./lib.mjs";
+import { NIGHT, appendLog, decide, isHarnessPath, loadConfig, readEvent, toRepoPath } from "./lib.mjs";
 
 if (!NIGHT) process.exit(0);
 

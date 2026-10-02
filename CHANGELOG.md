@@ -18,6 +18,10 @@ under Unreleased in the same commit.
   was printed only after every check returned, so the hang above read as a doctor that printed
   nothing at all, with no clue where it was. The banner now comes first, and `--verbose` prints
   each check (drift, permissions, opt-in probes, config, hook modes) before it runs.
+- **The `protect` hook no longer imports a name it never uses.** An adopter's eslint
+  (`no-unused-vars`) failed on `HARNESS_DIR` in `.claude/hooks/protect.mjs`, which `init` wrote,
+  so the gate went red on a file the adopter never touched. It is the only unused import in the
+  templates; `abatty update` brings the hook over.
 
 ## [0.7.0-rc.6] - 2026-10-02
 
