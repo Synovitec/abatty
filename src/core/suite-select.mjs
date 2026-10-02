@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { git } from "./repo.mjs";
 import { codeOnly } from "../ratchet/probes/lex.mjs";
+import { appHomes, suiteReads } from "../presets/app-homes.mjs";
 
 /**
  * A dev server holding this folder, read from the lock files a preset names for its framework
@@ -104,4 +105,51 @@ export function commentOnly(repoDir, range, files) {
     if (was !== null && was === reading(after)) only.add(f);
   }
   return only;
+}
+
+/**
+ * Whether a suite's paths match a file the push or the tree touches: under a workspace's folder
+ * for a workspace's preset, and from the root or the app's homes for the root's
+ * (src/presets/app-homes.mjs).
+ * @param {RegExp} paths @param {string[]} files @param {string} under "" for the root
+ * @param {string[]} homes the root app's homes
+ */
+export function selectedByPath(paths, files, under, homes) {
+  return under
+    ? files.some((f) => f.startsWith(under) && paths.test(f.slice(under.length)))
+    : files.some((f) => suiteReads(paths, f, homes));
+}
+
+/**
+ * A selected suite whose testing steps have no script: no step but `build` has one, so nothing
+ * would be judged and nothing runs. It built the app on every push, only to skip the tests after
+ * it. Returned with what the gate records and says; null when a testing step has its script
+ * (integration without coverage runs).
+ * @param {import("../presets/index.mjs").GateSuite} suite @param {string} name as the gate labels it
+ * @param {(s: import("../presets/index.mjs").GateStep) => boolean} has
+ * @returns {{ event: import("./gate.mjs").GateEvent, says: string } | null}
+ */
+export function untestedSuite(suite, name, has) {
+  const judging = suite.steps.filter((s) => s.script !== "build");
+  const own = judging[judging.length - 1];
+  if (!own?.script || judging.some((s) => s.required || has(s))) return null;
+  const names = [own.script, ...(own.alternatives || [])].join(", ");
+  return {
+    event: { label: name, outcome: "skipped", detail: `no ${names} script` },
+    says: `\n! ${name}: selected by this push, and package.json has no ${names} script, so nothing ran. Add one to run the suite on every push that touches it.`,
+  };
+}
+
+/**
+ * The root app's homes in this repository: the folders holding its marker that no workspace with
+ * a preset of its own covers (src/presets/app-homes.mjs).
+ * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
+ * @param {{ path: string }[]} gated the workspaces with a preset
+ */
+export function suiteHomes(repoDir, preset, gated) {
+  return appHomes(
+    preset,
+    git(repoDir, "ls-files").split("\n"),
+    gated.map((w) => w.path),
+  );
 }

@@ -28,7 +28,9 @@ function monorepo(name, rootExtra = {}) {
     "apps/web/package.json":
       JSON.stringify({
         name: "web",
-        scripts: { lint: "true", typecheck: "true", test: "true" },
+        // e2e: a suite with no testing script is skipped before Docker is asked, and this case
+        // is about the browser suite's paths selecting it.
+        scripts: { lint: "true", typecheck: "true", test: "true", e2e: "true" },
         dependencies: { next: "15.0.0", react: "19.0.0" },
       }) + "\n",
     "apps/web/src/app/page.tsx": "export default function Page() { return null; }\n",

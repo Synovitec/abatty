@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 import { fixFirst } from "../src/core/fix-first.mjs";
+import { fixFirstBlock } from "../src/cli/status.mjs";
 
 // An adopter's first report led with documents and decision records while two critical
 // advisories and an unvalidated server action waited. A reading now opens with what to fix first.
@@ -45,4 +46,19 @@ test("a passed audit, or one CI runs, adds nothing", () => {
   mkdirSync(join(dir, ".abatty/steps"), { recursive: true });
   writeFileSync(join(dir, ".abatty/steps/audit_SEC.1_.log"), "▶ audit (SEC.1)\nok\n");
   assert.deepEqual(fixFirst(dir, []), []);
+});
+
+test("nothing to fix first is said in one line, never left as silence", () => {
+  const dir = tempRepo("ff-said", {
+    "package.json": NEXT_PKG,
+    ".github/workflows/ci.yml": "on: push\njobs:\n  a:\n    steps:\n      - run: npx abatty gate\n",
+  });
+  const out = cli(["measure", dir], dir).out;
+  // The Security musts this bare fixture misses keep the block; the line appears once they hold.
+  assert.match(out, /Fix these first|Security: nothing to fix first/);
+  assert.match(
+    fixFirstBlock(dir, []),
+    /Security: nothing to fix first/,
+    "no finding passed: the line",
+  );
 });

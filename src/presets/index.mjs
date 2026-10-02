@@ -29,6 +29,7 @@
  *   gate: { always: GateStep[], suites: GateSuite[] },
  *   rules: (string | PresetRule)[],
  *   tooling: { dependencyCruiser: boolean, knip: boolean },
+ *   appMarker?: RegExp,
  * }} Preset
  */
 import { next } from "./next.mjs";

@@ -18,24 +18,27 @@ export async function statusCommand(c, preset) {
   // The repository at a glance: the newest report (measured now when there is none, or on
   // --fresh), the harness, the nights, what to do next.
   const known = latestReport(dir);
-  const fresh = flag("--fresh") || !known;
+  // A reading of another commit is measured again: shown with a "stale" mark, it still had to be
+  // asked for with --fresh, and an adopter read the old numbers first. Same commit, the reading
+  // stands and status stays instant.
+  const moved =
+    Boolean(known) &&
+    (known?.commit !== git(dir, "rev-parse", "--short", "HEAD") ||
+      known?.branch !== git(dir, "rev-parse", "--abbrev-ref", "HEAD"));
+  const fresh = flag("--fresh") || !known || moved;
   const r = fresh || !known ? await buildReport(dir, { abattyVersion: VERSION }) : known;
   const present = r.findings.filter((f) => f.status === "present").length;
   const partial = r.findings.filter((f) => f.status === "partial").length;
   const missing = r.findings.filter((f) => f.status === "missing").length;
-  // The header names the checkout as it is now. A stored reading taken on another branch or
-  // commit printed that branch and commit as if they were the current one: an adopter on main
-  // read an adoption branch from three days before.
-  const branch = git(dir, "rev-parse", "--abbrev-ref", "HEAD") || r.branch;
-  const commit = git(dir, "rev-parse", "--short", "HEAD") || r.commit;
-  const elsewhere = !fresh && (branch !== r.branch || commit !== r.commit);
+  // The reading shown is always of this checkout: one of another commit was measured again
+  // above, so its branch and commit are the ones checked out.
   const when = fresh
-    ? "measured now"
-    : elsewhere
-      ? t.yellow(`stale: reading of ${r.date} on ${r.branch} @ ${r.commit} · --fresh to measure`)
-      : `reading of ${r.date} · --fresh to measure`;
+    ? moved
+      ? `measured now · the last reading was of ${known?.branch} @ ${known?.commit}`
+      : "measured now"
+    : `reading of ${r.date} · --fresh to measure`;
   out(
-    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${branch} @ ${commit}`)}  ${t.gray(when)}\n\n`,
+    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(when)}\n\n`,
   );
   out(
     phaseLine(r) +
@@ -220,6 +223,8 @@ function reopenedLine(r) {
  */
 export function fixFirstBlock(dir, findings) {
   const lines = fixFirst(dir, findings);
-  if (!lines.length) return "";
+  // Silent when clean read the same as a check that never ran; one line says it did.
+  if (!lines.length)
+    return `  ${t.glyph.ok} ${t.gray("Security: nothing to fix first (no secret in the tree, the last audit green or run in CI, no Security must missing)")}\n\n`;
   return `${t.heading("Fix these first", "security, before structure and docs")}${lines.map((l) => `  ${t.glyph.fail} ${t.red(l)}\n`).join("")}\n`;
 }

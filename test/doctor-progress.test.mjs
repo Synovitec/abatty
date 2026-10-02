@@ -20,6 +20,7 @@ test("doctor names each check before it starts, in the order it runs them", () =
     "hook file modes",
     "eslint over the harness",
     "CI and the gate",
+    "suites the gate can reach",
   ]);
 });
 

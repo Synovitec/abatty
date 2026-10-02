@@ -9,15 +9,13 @@ export function measuredNothing(output: string): {
     line: string;
 } | null;
 /**
- * A coverage step that measured nothing. The step exits 0 whether it judged a thousand lines or
- * none, and a product's `vitest --coverage` over a push that touched nothing under
- * `coverage.include` printed "Unknown% ( 0/0 )" and read green, which is the same colour as a
- * push whose every changed line was covered. The gate cannot know what the step should have
- * measured; it can read what the tool says it measured, and say so when that was nothing.
- *
- * Only a tool's own words for "no data" count. A table row of zeros is not one: a file that
- * exists and is wholly untested reads 0% too, and that is a measurement.
+ * Mark a green coverage step whose kept output says it measured nothing, so the verdict says so,
+ * and say it on the log. The step stands as it ran when there is no log to read.
+ * @param {string} file the step's kept output
+ * @param {import("./gate.mjs").GateEvent[]} events the gate's, the step's own last
+ * @param {(line: string) => void} log
  */
+export function markHollow(file: string, events: import("./gate.mjs").GateEvent[], log: (line: string) => void): void;
 /**
  * How the coverage tools a profile may name say they measured nothing, each by the tool that
  * prints it. A tool missing here reads as a step that measured something, which is today's

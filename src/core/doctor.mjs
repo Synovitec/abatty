@@ -9,6 +9,7 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { harnessLintHint } from "./harness-lint.mjs";
 import { ciGate } from "../ci/day-one.mjs";
+import { unreachableSuites } from "./suite-reach.mjs";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
@@ -170,6 +171,8 @@ export function doctor(o) {
   // Whether CI runs the gate: a repository whose gate runs by hand only finds a critical advisory
   // when somebody remembers. Said, never a failure.
   const ci = at("CI and the gate", () => ciGate(repoDir));
+  // A suite the repository has and the gate can never select (src/core/suite-reach.mjs).
+  const unreachable = at("suites the gate can reach", () => unreachableSuites(repoDir, preset));
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
@@ -200,5 +203,6 @@ export function doctor(o) {
     notExecutable,
     harnessLint,
     ci,
+    unreachable,
   };
 }

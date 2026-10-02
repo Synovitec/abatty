@@ -5,6 +5,41 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.11] - 2026-10-02
+
+The eleventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the rc.10 replays found. A Next app in a monorepo workspace with no preset of
+its own had a browser suite the gate never selected; the gate now reads the suite's paths under
+the app's own folder, `doctor` names a suite it can never select, and a selected suite with no
+test script says so instead of building first. "Fix these first" is never silent, and `status`
+measures again when the commit has moved. No config key, exit code or `--json` field moves.
+
+### Fixed
+
+- **"Fix these first" says when there is nothing to fix.** Silent when clean, it read the same as
+  a check that never ran; it now prints one line that it ran and found nothing.
+- **The gate selects a suite under the app's own folder.** A Next app in a monorepo workspace
+  with no preset of its own (`apps/web`) matched none of the browser suite's root paths
+  (`app/`, `e2e/`), and the suite never ran. Each framework preset now names the file that marks
+  where its app lives (`next.config.*`, `astro.config.*`, `vite.config.*`), and the root's suites
+  read their paths under that folder too; the scripts still run from the root. A workspace that
+  has a preset of its own keeps running its suites under it, as before.
+- **A selected suite with no test script skips loudly, and builds nothing first.** Where a push
+  selected the browser suite and the repository had `build` but no `e2e` script, the gate ran the
+  whole production build, then skipped the tests in a grey line. Where no step but `build` has a
+  script, the suite now does not run at all, and the gate says so with the scripts to add; it is
+  not deferred to CI either, where it would do nothing too. The push is not refused; a suite with
+  one of its testing scripts (integration without coverage) still runs it.
+- **`doctor` names a suite the gate can never select.** The gate selects a suite by its paths
+  (`app/`, `e2e/`, ...) read from the root. A monorepo whose Next app lives in a workspace with no
+  preset of its own matched none of them: its browser suite never ran, every push read "no
+  matching path", the rule that the suite catches page errors read present, and the first full
+  run found 25 real ones. Where a repository has every script of a suite and no tracked file its
+  paths match, `doctor` now says the gate can never select it.
+- **`abatty status` measures again when the commit has moved.** It marked a reading of another
+  commit stale and still had to be asked for `--fresh`, so an adopter read the old numbers
+  first. A reading of the same commit still stands, and status stays instant there.
+
 ## [0.7.0-rc.10] - 2026-10-02
 
 The tenth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
