@@ -141,7 +141,9 @@ export function renderMarkdown(result) {
   md.push("status: stable");
   md.push('audience: ["architect", "developer"]');
   md.push('tags: ["gap-analysis", "standards", "generated"]');
-  md.push('related: ["../CLAUDE.md"]');
+  // No `related`: a path relative to the report read as wrong to a docs check that resolves from
+  // the root, and the other way round for the next one; no single spelling satisfies both, and
+  // the report needs neither.
   md.push("scope: synovitec");
   md.push(`last_verified: "${date}"`);
   md.push("---");

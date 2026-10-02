@@ -32,3 +32,12 @@ test("a repository that keeps its readings asks for one in docs, and the series 
   assert.ok(existsSync(join(dir, out)), r.out);
   assert.match(readFileSync(join(dir, "GAP_ANALYSIS_2000-01-01.md"), "utf8"), /superseded_by/);
 });
+
+test("the report names no related path, which one docs check reads from the root and another from the file", () => {
+  const dir = tempRepo("measure-related", { "package.json": NEXT_PKG });
+  cli(["measure", dir, "--quiet"], dir);
+  const file = readdirSync(join(dir, ".abatty/reports")).find((f) => f.endsWith(".md"));
+  const text = readFileSync(join(dir, ".abatty/reports", String(file)), "utf8");
+  assert.match(text, /^status: stable$/m);
+  assert.doesNotMatch(text, /^related:/m);
+});

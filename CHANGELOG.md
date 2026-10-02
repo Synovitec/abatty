@@ -14,6 +14,9 @@ under Unreleased in the same commit.
   that ran a linter, so a monorepo read present while fourteen workspaces had
   `"lint": "echo 'lint deferred' && exit 0"`. A script that lints nothing, or a linter run that
   lets a warning pass, now keeps the rule partial and is named; `next lint` counts as a linter.
+- **The gap analysis names no `related` path.** It wrote `related: ["../CLAUDE.md"]`, relative to
+  the report, and an adopter whose docs check resolves `related` from the root refused the push;
+  no spelling satisfies both conventions, and the report needs neither.
 - **A red audit names every affected range and where each is installed.** It printed one line
   per package, and `brace-expansion` was affected in three majors at once (`<1.1.20`,
   `>=2.0.0 <2.1.5`, `>=5.0.0 <5.0.11`), each needing its own fix, which an adopter learnt only by
