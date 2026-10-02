@@ -11,6 +11,10 @@ under Unreleased in the same commit.
   steps (secret scan, audit, scrub) kept nothing, so a red one left no file to read after the run.
   The format command's output is now kept as a script step's is, and a built-in step's log holds
   what it printed and closes on its verdict (`failed: 1 finding(s)`, `ok: 601 file(s)`).
+- **`abatty update --dry-run` says what a run would do, to the last line.** The files already
+  read `would update`, but the verdict still said `N file(s) brought to <version>`, and a conflict
+  said the new version `is beside yours as .abatty-new` and asked to merge it, on a run that wrote
+  no such file. Both now say `would`.
 
 - **The import graph reads TypeScript imports.** It only followed a relative import naming its
   file exactly, so `./price`, `./cart` (an index), `./tax.js` for `tax.ts` and every tsconfig

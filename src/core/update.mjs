@@ -326,8 +326,8 @@ export function updateRepo(o) {
       action: "conflict",
       detail:
         base === null
-          ? `edited here and changed by the package, and the installed copy is not on this machine (${BASE_DIR}/${lock?.abatty || "?"}) to merge from: the new version is beside yours as ${rel}.abatty-new`
-          : `your edit and the package's change touch the same lines: the new version is beside yours as ${rel}.abatty-new; merge by hand, then delete it`,
+          ? `edited here and changed by the package, and the installed copy is not on this machine (${BASE_DIR}/${lock?.abatty || "?"}) to merge from: the new version ${dryRun ? "would be put" : "is"} beside yours as ${rel}.abatty-new`
+          : `your edit and the package's change touch the same lines: the new version ${dryRun ? "would be put" : "is"} beside yours as ${rel}.abatty-new; merge by hand, then delete it`,
     });
   }
 

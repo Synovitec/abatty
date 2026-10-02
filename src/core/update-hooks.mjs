@@ -58,7 +58,7 @@ export function refreshGitHooks(o) {
     events.push({
       file: rel,
       action: "conflict",
-      detail: `edited here: the hook this version writes is beside yours as ${rel}.abatty-new`,
+      detail: `edited here: the hook this version writes ${dryRun ? "would be put" : "is"} beside yours as ${rel}.abatty-new`,
     });
   }
   return events;
