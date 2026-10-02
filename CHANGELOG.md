@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.8] - 2026-10-02
+
+The eighth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a Next.js repository on Windows and a Bun monorepo reported against rc.4 to
+rc.6: `types.escapes` stops counting the word "any" in comments, `--version` prints the version,
+and `init` says what it did (what it merged, what the git shim is, which file holds the context,
+which gate step will be skipped) and writes the PWA rule only where there is a PWA. One check is
+redefined, under Upgrading; no config key, exit code or `--json` field moves.
+
 ### Upgrading
 
 - **`types.escapes` is redefined (definition 2)**: it no longer counts the word `any` in a comment.
