@@ -10,6 +10,8 @@ under Unreleased in the same commit.
 - **`abatty mutate` exits 3 when a mutant survives**, and 2 when it cannot start (no runner named
   and no `mutation.command`, or a range ending at a commit not checked out). It exited 0 unless
   `--strict` was passed. A script that ran it for a report and expected 0 now reads 3.
+- **`docs.danglingRefs` is redefined (definition 2)**: it reads SQL files as code. `abatty update`
+  rewrites its floor; the check is on probation, so it fails nothing either way.
 
 ### Fixed
 
@@ -17,6 +19,10 @@ under Unreleased in the same commit.
   `probation` whatever it would read, so update never saw it as redefined, and its floor said
   "would read redefined" on every run from then on. The version the floor was written under now
   decides, as it does for every other check.
+- **`docs.danglingRefs` finds a database function where it is defined.** A document naming a
+  Postgres function (`current_tenant_id()`) read as citing a name gone once the last script
+  comment naming it was removed, while a migration still defined it. SQL files now count as code,
+  at the document's last change and now.
 - **Every gate step keeps a log under `.abatty/steps/`.** The format step and the built-in
   steps (secret scan, audit, scrub) kept nothing, so a red one left no file to read after the run.
   The format command's output is now kept as a script step's is, and a built-in step's log holds
