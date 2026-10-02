@@ -172,3 +172,40 @@ export function duration(ms) {
 export function banner(version) {
   return `${bold(magenta("abatty"))} ${gray("v" + version)}`;
 }
+
+/**
+ * Whether this console can show UTF-8. abatty writes UTF-8 always, and a classic Windows console
+ * (PowerShell 5.1, cmd) decodes it in its OEM code page: an adopter read "Ô£ù gate red ┬À". The
+ * terminals known to show it are trusted (Windows Terminal, VS Code, an MSYS shell such as Git
+ * Bash, any CI log); `ABATTY_ASCII=1` or `=0` settles it either way.
+ * @param {NodeJS.ProcessEnv} env @param {string} platform @returns {boolean}
+ */
+export function asciiOnly(env, platform) {
+  if (env.ABATTY_ASCII === "1") return true;
+  if (env.ABATTY_ASCII === "0" || platform !== "win32") return false;
+  return !(env.WT_SESSION || env.TERM_PROGRAM || env.MSYSTEM || env.CI);
+}
+
+/** abatty's own symbols, as ASCII. */
+const ASCII = /** @type {[RegExp, string][]} */ ([
+  [/·/g, "-"],
+  [/✓/g, "ok"],
+  [/✗/g, "x"],
+  [/[▶►]/g, ">"],
+  [/‼/g, "!!"],
+  [/→/g, "->"],
+  [/←/g, "<-"],
+  [/…/g, "..."],
+  [/≥/g, ">="],
+  [/≤/g, "<="],
+  [/█/g, "#"],
+  [/▒/g, "+"],
+  [/░/g, "."],
+  [/─/g, "-"],
+  [/[—–]/g, "-"],
+]);
+
+/** A screen's text with abatty's symbols written in ASCII; everything else as it was. @param {string} s */
+export function toAscii(s) {
+  return ASCII.reduce((text, [re, to]) => text.replace(re, to), s);
+}

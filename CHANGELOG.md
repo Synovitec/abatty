@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **A classic Windows console reads abatty's symbols in ASCII.** abatty writes UTF-8, and
+  PowerShell 5.1 or `cmd` decodes it in the console's old code page: an adopter read
+  `Ô£ù gate red ┬À 1 step(s)`. On Windows, outside Windows Terminal, VS Code, an MSYS shell (Git
+  Bash) and CI, the symbols are now written in ASCII (`·` as `-`, `✓` as `ok`, `✗` as `x`, the
+  bars as `#` and `.`); `ABATTY_ASCII=1` or `0` settles it either way.
 - **`doctor` names a package the code imports and no `package.json` declares, once.** An adopter
   imported `server-only` from 13 files without declaring it, and the gate read 13 import-graph
   errors and 13 dead-code findings, one per file, with nothing saying to install it. `doctor` now

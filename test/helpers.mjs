@@ -93,6 +93,9 @@ export function cli(args, cwd, env = {}) {
         // process; inherited into a fixture it points the hooks at a file that is not there and
         // they run on defaults, so the suite must not read the machine's.
         ADOPTION_CONFIG: "",
+        // The screens as written, whatever console runs the suite: a classic Windows console
+        // would read ASCII and every case that matches a symbol would fail there only.
+        ABATTY_ASCII: "0",
         ABATTY_AGENT: process.env.ABATTY_AGENT || STUB_AGENT,
         ...env,
       },
