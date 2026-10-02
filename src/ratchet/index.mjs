@@ -16,30 +16,10 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readConfig } from "../core/repo.mjs";
-import { probes as sizeProbes } from "./probes/size.mjs";
-import { probes as docsProbes } from "./probes/docs.mjs";
-import { probes as freshnessProbes } from "./probes/freshness.mjs";
-import { probes as successionProbes } from "./probes/succession.mjs";
-import { probes as frontMatterProbes } from "./probes/frontmatter.mjs";
-import { probes as catchLogProbes } from "./probes/catchlog.mjs";
-import { probes as weakRandomProbes } from "./probes/weakrandom.mjs";
-import { probes as jsdocProbes } from "./probes/jsdoc.mjs";
-import { probes as actionProbes } from "./probes/actions.mjs";
-import { probes as refsProbes } from "./probes/refs.mjs";
-import { probes as tamperProbes } from "./probes/tamper.mjs";
-import { probes as journeyProbes } from "./probes/journeys.mjs";
-import { probes as codeProbes } from "./probes/code.mjs";
-import { probes as changeProbes } from "./probes/change.mjs";
-import { probes as startupProbes } from "./probes/startup.mjs";
-import { probes as boundaryProbes } from "./probes/boundary.mjs";
-import { probes as apiProbes } from "./probes/api.mjs";
-import { probes as shapeProbes } from "./probes/shape.mjs";
-import { probes as coverageProbes } from "./probes/coverage.mjs";
-import { probes as nonNullProbes } from "./probes/nonnull.mjs";
-import { probes as sqlDateProbes } from "./probes/sqldate.mjs";
-import { probes as refactorProbes } from "./probes/refactor.mjs";
-import { probes as cloneProbes } from "./probes/clones.mjs";
 import { DEFAULT_CONFIG, baselinePath, resolveConfig } from "./config.mjs";
+import { BUILTIN_PROBES } from "./registry.mjs";
+
+export { BUILTIN_PROBES } from "./registry.mjs";
 
 // Only what a caller outside this folder uses: the rest were re-exports nobody imported, which
 // the dead-code gate names once it runs (CODE.6). `config.mjs` remains their home.
@@ -109,33 +89,6 @@ import { probeVersion } from "./baseline.mjs";
  * @typedef {{ at: string, was: number, now: number, reason: string, owner: string }} BaselineEntry
  * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
  */
-
-/** @type {Probe[]} */
-export const BUILTIN_PROBES = [
-  ...sizeProbes,
-  ...codeProbes,
-  ...docsProbes,
-  ...freshnessProbes,
-  ...successionProbes,
-  ...frontMatterProbes,
-  ...changeProbes,
-  ...startupProbes,
-  ...boundaryProbes,
-  ...apiProbes,
-  ...shapeProbes,
-  ...refactorProbes,
-  ...cloneProbes,
-  ...coverageProbes,
-  ...nonNullProbes,
-  ...sqlDateProbes,
-  ...catchLogProbes,
-  ...weakRandomProbes,
-  ...jsdocProbes,
-  ...actionProbes,
-  ...refsProbes,
-  ...tamperProbes,
-  ...journeyProbes,
-].map((p) => ({ ...p, source: "abatty" }));
 
 /**
  * Validate a probe's shape. Returns the problems; an empty list is a valid probe.
