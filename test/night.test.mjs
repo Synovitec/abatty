@@ -2,11 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { git } from "./helpers.mjs";
+import { aroundToday, git } from "./helpers.mjs";
 import { night, nightRepo } from "./night-helpers.mjs";
 import { deadlineOf } from "../src/night/session.mjs";
 import { judgeMcp } from "../src/night/canary.mjs";
-import { localToday } from "../src/core/today.mjs";
 
 test("the deadline: HH:MM is today or tomorrow, +Nmin is relative", () => {
   const now = new Date("2026-09-15T22:00:00");
@@ -30,12 +29,13 @@ test("the canary's MCP judgement: undeclared servers and declared servers withou
 
 test("a stub night: pre-flight green, the canary green, the phase done, the wrap-up, the branch local and clean", () => {
   const dir = nightRepo("night-happy");
-  const r = night(dir);
+  const { result: r, days } = aroundToday(() => night(dir));
   assert.equal(r.ok, true, r.out);
   assert.equal(r.code, 0);
   assert.match(r.out, /canary ok/);
   assert.match(r.out, /night-run done/);
-  assert.equal(r.branch, `adopt/standards-${localToday()}`);
+  const day = String(r.branch).replace("adopt/standards-", "");
+  assert.ok(days.includes(day), `${r.branch} is not on ${days.join(" or ")}`);
   assert.equal(git(dir, "rev-parse", "--abbrev-ref", "HEAD"), r.branch);
   const state = JSON.parse(readFileSync(join(dir, "docs/ADOPTION_STATE.json"), "utf8"));
   assert.equal(state.phases[0].status, "done");
@@ -48,7 +48,7 @@ test("a stub night: pre-flight green, the canary green, the phase done, the wrap
     0,
     "clean tree",
   );
-  assert.ok(existsSync(join(dir, ".claude/night", localToday(), "preflight-gate.txt")));
+  assert.ok(existsSync(join(dir, ".claude/night", day, "preflight-gate.txt")));
   assert.ok(r.spent > 0 && r.spent < 10, `spent ${r.spent}`);
   assert.equal(r.pushed, false);
   // the numbers are JSON, never a locale: the run file reads back
