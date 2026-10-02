@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.7] - 2026-10-02
+
+The seventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. Two blockers a Next.js repository on Windows reported against rc.5: `abatty doctor`
+hung silent on a CRLF checkout, and `init`'s own harness failed the repository's lint. Nothing is
+refused that was not before; no config key, exit code or `--json` field moves. `doctor` gains
+`--verbose`.
+
 ### Fixed
 
 - **`abatty doctor` no longer hangs on a Windows checkout.** The check for exports with no doc
