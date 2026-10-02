@@ -11,6 +11,7 @@ import { readAdoption, readJsonFile } from "../core/repo.mjs";
 import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
+import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
@@ -64,6 +65,8 @@ export async function initCommand(cx, preset) {
     out(
       `  ${n++}. On an existing repository: ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
     );
+  const lint = harnessLintHint(dir);
+  if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
   out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
   return;
 }

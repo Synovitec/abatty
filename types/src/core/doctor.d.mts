@@ -66,6 +66,10 @@ export function doctor(o: {
     } | null;
     hooks: import("./hook-modes.mjs").HookMode[];
     notExecutable: string[];
+    harnessLint: {
+        config: string;
+        line: string;
+    } | null;
 };
 export type DriftEvent = {
     file: string;

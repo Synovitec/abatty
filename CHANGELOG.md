@@ -22,6 +22,12 @@ under Unreleased in the same commit.
   (`no-unused-vars`) failed on `HARNESS_DIR` in `.claude/hooks/protect.mjs`, which `init` wrote,
   so the gate went red on a file the adopter never touched. It is the only unused import in the
   templates; `abatty update` brings the hook over.
+- **`init` and `doctor` say when your eslint would read the harness.** `eslint .` lints `.claude/`,
+  so the instrument was judged by the product's rules: the self-test is 739 lines, over a
+  repository's `max-lines: 600`, and the gate went red on files nobody there wrote. When an eslint
+  config that does not name `.claude` is found, `init` lists the line to add (`{ ignores:
+  [".claude/**"] }` for a flat config, `ignorePatterns` for a legacy one) among its steps by hand,
+  and `doctor` repeats it without failing. Your eslint config is code and is never edited.
 
 ## [0.7.0-rc.6] - 2026-10-02
 

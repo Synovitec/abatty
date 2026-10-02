@@ -7,6 +7,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
+import { harnessLintHint } from "./harness-lint.mjs";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
@@ -163,6 +164,8 @@ export function doctor(o) {
   const hooks = at("hook modes", () => hookModes(repoDir));
   // A hook git records as 100644 is skipped by git on every machine but the one it was written on.
   const notExecutable = at("hook file modes", () => hooksNotExecutable(repoDir));
+  // The repository's eslint reading the harness as product code: said, never a failure.
+  const harnessLint = at("eslint over the harness", () => harnessLintHint(repoDir));
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
@@ -191,5 +194,6 @@ export function doctor(o) {
     controls,
     hooks,
     notExecutable,
+    harnessLint,
   };
 }
