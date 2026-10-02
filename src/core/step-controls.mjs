@@ -29,6 +29,7 @@ import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 import { testRunEnv } from "./env.mjs";
+import { liveDevServer } from "./suite-select.mjs";
 
 export { STEP_CONTROLS } from "./step-plants.mjs";
 /** Where the gate steps' control outcomes are recorded: the one file under `.abatty/` a rule may read, since it is proof and not a cache. */
@@ -268,7 +269,7 @@ export function runStepControls(o) {
       steps.push({
         label,
         outcome: "skipped",
-        detail: `red without a plant (exit ${clean}): nothing to prove until the step is green on its own`,
+        detail: `red without a plant (exit ${clean}): nothing to prove until the step is green on its own; what it printed: ${controlLog(label, "clean")}`,
         ms,
       });
       log(`  red without a plant: nothing proven; what it printed: ${controlLog(label, "clean")}`);
@@ -283,6 +284,26 @@ export function runStepControls(o) {
     log(`  red, as it must (${ms} ms)`);
   };
 
+  /**
+   * Run a step with no control, clean, for the suite's steps after it; "" when they can go on,
+   * else why they cannot. @param {import("../presets/index.mjs").GateStep} s @param {string} label
+   * @param {string[] | undefined} devLocks
+   */
+  const prepare = (s, label, devLocks) => {
+    const exec = runner(s);
+    if (!exec) return "";
+    // A build over a live dev server emptied an adopter's node_modules; the gate defers, and so
+    // does this.
+    const dev = liveDevServer(repoDir, devLocks);
+    if (dev)
+      return `${label} was not run: a dev server is running on this checkout (pid ${dev.pid}, ${dev.lock}); stop it and run the controls again`;
+    log(`▶ ${label}: run clean, as the steps after it need it`);
+    const code = exec(join(repoDir, controlLog(label, "clean")));
+    return code === 0
+      ? ""
+      : `${label} failed before it (exit ${code}), so nothing can be proven; what it printed: ${controlLog(label, "clean")}`;
+  };
+
   for (const s of preset.gate.always) judge(s, s.label);
   for (const suite of preset.gate.suites) {
     if (suite.docker && !dockerUp()) {
@@ -295,7 +316,21 @@ export function runStepControls(o) {
         });
       continue;
     }
-    for (const s of suite.steps) judge(s, `${s.label} · ${suite.name}`);
+    // The gate runs a suite's steps in order, and the later ones stand on the earlier: a browser
+    // suite serves what its build wrote. A step with no control of its own is run clean first,
+    // as the gate would run it; without that, the E2E control on a fresh checkout found no build
+    // and read red without a plant, blaming the suite for a missing prerequisite.
+    let blocked = "";
+    for (const [i, s] of suite.steps.entries()) {
+      const label = `${s.label} · ${suite.name}`;
+      if (blocked) {
+        steps.push({ label, outcome: "skipped", detail: blocked });
+        continue;
+      }
+      judge(s, label);
+      if (i < suite.steps.length - 1 && steps[steps.length - 1]?.outcome === "none")
+        blocked = prepare(s, label, suite.devLocks);
+    }
   }
   const result = {
     at: new Date().toISOString(),

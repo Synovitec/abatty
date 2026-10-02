@@ -33,3 +33,10 @@ export function hooksNotExecutable(repoDir: string): string[];
  * @returns {string[]} the paths whose mode was set
  */
 export function indexExecutable(cwd: string, paths: string[]): string[];
+/**
+ * The pre-push hook's first lines: the installed abatty against the version the config pins, in
+ * plain shell. The gate says the same, but the gate is the installed copy, and a copy older than
+ * that check cannot say it is old: an adopter pushed through 0.5.2 for days under an rc.2 pin.
+ * Having compared, the hook tells the gate so (ABATTY_PIN_SAID), and the line is said once.
+ */
+export const PIN_CHECK: string[];

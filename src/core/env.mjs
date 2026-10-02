@@ -90,3 +90,8 @@ export function portFromEnv() {
 export function ciFromEnv() {
   return Boolean(process.env.CI);
 }
+
+/** True when the pre-push hook already compared the installed abatty with the pin and said so. */
+export function pinSaidFromEnv() {
+  return Boolean(process.env.ABATTY_PIN_SAID);
+}

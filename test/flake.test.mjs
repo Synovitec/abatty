@@ -164,6 +164,39 @@ test("a test that timed out is named apart from one that failed, in each runner'
   assert.match(said, /src\/vitest\.test\.ts \(timed out\)/);
 });
 
+// The replay of rc.4: one vitest file with a test that timed out and one that failed an
+// assertion was tagged timed out whole, steering a real failure toward a rerun.
+test("a file where one test timed out and another failed says both, and is not called a timeout", () => {
+  const dir = tempRepo("flake-mixed", { "package.json": "{}" });
+  mkdirSync(join(dir, ".abatty/steps"), { recursive: true });
+  const log = join(dir, ".abatty/steps/unit.log");
+  const said = (/** @type {string[]} */ lines) => {
+    writeFileSync(log, lines.join("\n"));
+    return explainFailure({ repoDir: dir, log, changed: [], head: "c1" }).join("\n");
+  };
+  const vitest = said([
+    " FAIL  lib/mixed.test.ts > waits",
+    "Error: Test timed out in 5000ms.",
+    " FAIL  lib/mixed.test.ts > fails",
+    "AssertionError: expected 1 to be 2",
+  ]);
+  assert.match(vitest, /lib\/mixed\.test\.ts \(1 timed out, 1 failed\)/);
+  assert.doesNotMatch(vitest, /timed out rather than failed/);
+  // Jest names the file once and each test under it with `●`.
+  const jest = said([
+    "FAIL src/mixed.test.ts (6.1 s)",
+    "  ● slow",
+    '    thrown: "Exceeded timeout of 5000 ms for a test.',
+    "  ● wrong",
+    "    expect(received).toBe(expected)",
+    "FAIL src/slow.test.ts",
+    "  ● only slow",
+    '    thrown: "Exceeded timeout of 5000 ms for a test.',
+  ]);
+  assert.match(jest, /src\/mixed\.test\.ts \(1 timed out, 1 failed\)/);
+  assert.match(jest, /timed out rather than failed: src\/slow\.test\.ts ·/);
+});
+
 test("a red step with no timeout in it says nothing about timeouts", () => {
   const { dir, log } = withGraph();
   const said = explainFailure({ repoDir: dir, log, changed: [], head: "c1" }).join("\n");

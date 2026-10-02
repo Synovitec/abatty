@@ -5,6 +5,33 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.5] - 2026-09-29
+
+The fifth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the product repository's replay of 0.7.0-rc.4 found. Nothing is refused that was
+not before; the generated pre-push hook gains a plain-shell pin check, which `abatty update`
+refreshes. No config key, exit code or `--json` field moves.
+
+### Fixed
+
+- **A test file where one test timed out and another failed is no longer called a timeout.**
+  0.7.0-rc.4 tagged a file `(timed out)` when any test in it timed out, so a real assertion
+  failure beside a slow test was steered toward a rerun. Each failing test is now counted on its
+  own (jest's `●` lines included): a file where all timed out still reads `(timed out)`, a mixed
+  one reads `(1 timed out, 1 failed)` and gets no rerun advice.
+- **`doctor --controls` builds before it judges the browser suite.** A suite's step with no
+  control of its own (the build) was never run, so on a fresh checkout the E2E control found no
+  build and read "red without a plant", blaming the suite. It is now run clean first, as the gate
+  runs it; a failed build skips the steps after it with the log to read, and a live dev server
+  skips them rather than building over it. A step red without a plant now names its log in the
+  verdict, not only in the progress line.
+- **The pre-push hook says when the installed abatty is not the pinned version, before the gate
+  runs.** rc.4's gate line only exists once the installed copy is rc.4 or later, and the hooks
+  run the installed copy: a checkout pinned at rc.2 pushed through 0.5.2 for days and nothing
+  could say so. The generated `.githooks/pre-push` now compares `node_modules/abatty` with the pin
+  in plain shell first, and tells the gate so it is not said twice. Upgrading: `abatty update`
+  refreshes a hook it wrote; a hook you edited gets the new one beside it as `.abatty-new`.
+
 ## [0.7.0-rc.4] - 2026-09-28
 
 The fourth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
