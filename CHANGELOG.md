@@ -20,6 +20,10 @@ under Unreleased in the same commit.
   changed neither `package.json` nor the lockfile, the gate now says so: the advisories are
   against what was already on the base, to fix as their own change. Where it did change them, it
   says the push may have brought one in.
+- **`abatty status` names the checkout as it is.** It printed the stored reading's branch and
+  commit as the current ones, and an adopter on main read an adoption branch and a commit from
+  three days before. The header now shows the branch and commit checked out, and a reading taken
+  on another one is called stale, with where it was taken.
 
 ## [0.7.0-rc.9] - 2026-10-02
 

@@ -5,6 +5,7 @@
  */
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
+import { git } from "../core/repo.mjs";
 import { phaseOf, reopened } from "../rules/phases.mjs";
 
 /**
@@ -21,8 +22,19 @@ export async function statusCommand(c, preset) {
   const present = r.findings.filter((f) => f.status === "present").length;
   const partial = r.findings.filter((f) => f.status === "partial").length;
   const missing = r.findings.filter((f) => f.status === "missing").length;
+  // The header names the checkout as it is now. A stored reading taken on another branch or
+  // commit printed that branch and commit as if they were the current one: an adopter on main
+  // read an adoption branch from three days before.
+  const branch = git(dir, "rev-parse", "--abbrev-ref", "HEAD") || r.branch;
+  const commit = git(dir, "rev-parse", "--short", "HEAD") || r.commit;
+  const elsewhere = !fresh && (branch !== r.branch || commit !== r.commit);
+  const when = fresh
+    ? "measured now"
+    : elsewhere
+      ? t.yellow(`stale: reading of ${r.date} on ${r.branch} @ ${r.commit} · --fresh to measure`)
+      : `reading of ${r.date} · --fresh to measure`;
   out(
-    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(fresh ? "measured now" : `reading of ${r.date} · --fresh to measure`)}\n\n`,
+    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${branch} @ ${commit}`)}  ${t.gray(when)}\n\n`,
   );
   out(
     phaseLine(r) +
