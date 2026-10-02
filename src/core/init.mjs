@@ -34,7 +34,7 @@ import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
-import { added, appendLines } from "./init-merges.mjs";
+import { added, appendLines, ignoredHere } from "./init-merges.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -314,7 +314,7 @@ export function initRepo(o) {
   }
 
   // 5. The ignore files.
-  appendLines(repoDir, ".gitignore", [".claude/night/", ".abatty/"], events, dryRun);
+  appendLines(repoDir, ".gitignore", ignoredHere(repoDir), events, dryRun);
   appendLines(
     repoDir,
     ".prettierignore",

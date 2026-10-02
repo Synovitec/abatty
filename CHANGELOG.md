@@ -25,6 +25,10 @@ under Unreleased in the same commit.
   and ask for the import-graph baseline on every repository, not only an existing one. The
   graph rule step is its own line, and points at the template's §3 only where the template is
   the context.
+- **`init` keeps a JavaScript repository's packages out of git.** In a repository with no
+  `.gitignore`, the one it wrote held its own folders only, and an adopter who followed the steps
+  and committed committed `node_modules`. It now adds `node_modules/` where there is a
+  `package.json` and the file does not already name it in any form.
 - **`abatty mutate` reads the import graph once per run.** It read every tracked script again
   for each changed file, so the cost grew with the size of the change times the size of the
   tree.

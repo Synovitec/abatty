@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 
@@ -47,4 +47,13 @@ test("the graph step is its own, and never points at a section a repository's ow
   );
   assert.doesNotMatch(out, /§3/);
   assert.doesNotMatch(out, /was kept[^\n]*then/);
+});
+
+test("a JavaScript repository's .gitignore ignores node_modules, once, in whatever form it had", () => {
+  const bare = tempRepo("gi-none", { "package.json": NEXT_PKG });
+  cli(["init", bare, "--stack", "next"], bare);
+  assert.match(readFileSync(join(bare, ".gitignore"), "utf8"), /^node_modules\/$/m);
+  const had = tempRepo("gi-had", { "package.json": NEXT_PKG, ".gitignore": "/node_modules\n" });
+  cli(["init", had, "--stack", "next"], had);
+  assert.equal(readFileSync(join(had, ".gitignore"), "utf8").match(/node_modules/g)?.length, 1);
 });
