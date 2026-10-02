@@ -50,20 +50,7 @@ export function renderGithubActions(preset, o = {}) {
       ].join("\n");
     return [`      - name: ${y(s.name)}`, `        run: ${y(s.command)}`].join("\n");
   };
-  // The runner's toolchain follows the lockfile: pnpm is installed before node so the cache
-  // can find it, bun brings its own action, and the install is the manager's frozen one.
-  const setup = [
-    `      - uses: ${ACTIONS.checkout}`,
-    `        with:`,
-    `          fetch-depth: 0`,
-    ...(t.id === "pnpm" ? [`      - uses: ${ACTIONS.setupPnpm}`] : []),
-    ...(t.id === "bun" ? [`      - uses: ${ACTIONS.setupBun}`] : []),
-    `      - uses: ${ACTIONS.setupNode}`,
-    `        with:`,
-    `          node-version: "${node}"`,
-    ...(t.id === "bun" ? [] : [`          cache: ${t.id}`]),
-    `      - run: ${t.install}`,
-  ];
+  const setup = githubSetup(t, node);
   const always = steps.filter((s) => s.when === "always");
   const db = steps.filter((s) => s.when === "db");
   const browser = steps.filter((s) => s.when === "browser");
@@ -191,4 +178,26 @@ export function renderGithubActions(preset, o = {}) {
     );
   }
   return out.join("\n") + "\n";
+}
+
+/**
+ * A job's first steps: the checkout with its history, the runner's toolchain following the
+ * lockfile (pnpm before node so the cache can find it, bun with its own action) and the manager's
+ * frozen install. Shared with the day-one workflow, so both pin the same actions.
+ * @param {ReturnType<typeof tooling>} t @param {string} node
+ * @returns {string[]}
+ */
+export function githubSetup(t, node) {
+  return [
+    `      - uses: ${ACTIONS.checkout}`,
+    `        with:`,
+    `          fetch-depth: 0`,
+    ...(t.id === "pnpm" ? [`      - uses: ${ACTIONS.setupPnpm}`] : []),
+    ...(t.id === "bun" ? [`      - uses: ${ACTIONS.setupBun}`] : []),
+    `      - uses: ${ACTIONS.setupNode}`,
+    `        with:`,
+    `          node-version: "${node}"`,
+    ...(t.id === "bun" ? [] : [`          cache: ${t.id}`]),
+    `      - run: ${t.install}`,
+  ];
 }

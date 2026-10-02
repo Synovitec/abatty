@@ -70,6 +70,10 @@ export function doctor(o: {
         config: string;
         line: string;
     } | null;
+    ci: {
+        state: "gate" | "fast" | "no-gate" | "none";
+        pipelines: string[];
+    };
 };
 export type DriftEvent = {
     file: string;

@@ -7,6 +7,7 @@ import { CONFIG_FILE, LEGACY_CONFIG } from "../core/config.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { doctor } from "../core/doctor.mjs";
 import { harnessLintSays } from "../core/harness-lint.mjs";
+import { ciSays } from "../ci/day-one.mjs";
 import { prerequisites } from "../core/prereqs.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
@@ -184,6 +185,7 @@ export async function doctorCommand(cx, preset) {
   out(
     `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits where it has the installed copy to merge from, and puts it beside yours as .abatty-new where it has not (a git hook you edited); or keep yours and say why in the decisions file") : ""}\n`,
   );
+  if (r.ci.state !== "gate") out(`  ${t.glyph.warn} ${ciSays(r.ci)}\n`);
   if (r.harnessLint) out(`  ${t.glyph.warn} ${harnessLintSays(r.harnessLint)}\n`);
   if (r.notExecutable.length)
     out(

@@ -5,6 +5,17 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The gate runs in CI from the first day.** An adopter's two critical advisories surfaced only
+  because somebody ran the gate by hand, and nothing said no pipeline ran it. On a GitHub
+  repository where no pipeline runs the gate, `init` now writes
+  `.github/workflows/abatty-gate.yml`: the repository's own install, then `gate:fast` (the audit
+  and the secret scan included) on every push and pull request, with the actions pinned as the
+  full pipeline pins them. It never touches a pipeline it did not write, and `abatty ci` still
+  writes the full one. `doctor` says when CI runs no gate, or only the fast one, and `init`
+  names the gap on another forge.
+
 ### Fixed
 
 - **A refused `baseline` lists what to fix.** A HARD metric above zero was named by its metric
