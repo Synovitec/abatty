@@ -9,7 +9,7 @@ test("a fresh repository is asked to fill the file the template went into, with 
   const dir = tempRepo("ctx-fresh", { "package.json": NEXT_PKG });
   const r = cli(["init", dir, "--stack", "next"], dir);
   assert.match(r.out, /\d+\. Fill AGENTS\.md \(\d+ placeholder\(s\) in <>\)/);
-  assert.doesNotMatch(r.out, /Fill CLAUDE\.md/);
+  assert.equal(r.out.includes("Fill CLAUDE.md"), false, r.out);
 });
 
 test("a repository with its own context file is told it was kept and how AGENTS.md relates", () => {
@@ -18,6 +18,7 @@ test("a repository with its own context file is told it was kept and how AGENTS.
     "CLAUDE.md": "# Mine\n\nThe real context, written by hand.\n",
   });
   const r = cli(["init", dir, "--stack", "next"], dir);
-  assert.match(r.out, /CLAUDE\.md is this repository's own and was kept; AGENTS\.md points at it/);
+  const said = "CLAUDE.md is this repository's own and was kept; AGENTS.md points at it";
+  assert.ok(r.out.includes(said), r.out);
   assert.doesNotMatch(r.out, /Fill /);
 });
