@@ -236,7 +236,7 @@
     "startup.eagerModules": "ratchet v1",
     "test.coverageExclusions": "ratchet opt-in v1",
     "test.unvisitedRoutes": "ratchet opt-in probation v1",
-    "types.escapes": "ratchet v1",
+    "types.escapes": "ratchet v2",
     "types.nonNull": "ratchet opt-in v1",
     "valid.rawEnv": "ratchet v1",
     "valid.sqlCurrentDate": "ratchet opt-in probation v1",

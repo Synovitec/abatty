@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Upgrading
+
+- **`types.escapes` is redefined (definition 2)**: it no longer counts the word `any` in a comment.
+  `abatty update` rewrites its floor under the new definition; the count can only fall.
+
+### Fixed
+
+- **`types.escapes` counts the escapes in the code, not the word "any" in its comments.** The
+  probe kept comments to see `@ts-ignore`, and matched `: any`, `as any` and `<any>` on them too,
+  so prose read as escapes: "site-level: any membership", "Prod: any SMTP relay", "as any side
+  effects", a JSDoc example quoting `(input as any)`. An adopter found 10 of its 42 in comments,
+  and could reach zero only by rewording them, the gaming the number exists to prevent. A
+  directive is still read in comments; an `any` is read on the code alone.
+
 ## [0.7.0-rc.7] - 2026-10-02
 
 The seventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

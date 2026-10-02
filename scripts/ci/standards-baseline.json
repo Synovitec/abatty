@@ -64,7 +64,7 @@
     "size.excessCode": 182,
     "size.overBudget": 182,
     "size.overRaw": 204,
-    "types.escapes": 182,
+    "types.escapes": 185,
     "valid.rawEnv": 181,
     "valid.utcDay": 182,
     "valid.wholeEnv": 181
@@ -124,7 +124,7 @@
     "size.overBudget": 1,
     "size.overRaw": 1,
     "startup.eagerModules": 1,
-    "types.escapes": 1,
+    "types.escapes": 2,
     "valid.rawEnv": 1,
     "valid.utcDay": 1,
     "valid.wholeEnv": 1

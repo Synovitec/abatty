@@ -11,10 +11,10 @@ import { lines, matchesAny, regexes } from "./lib.mjs";
 // repository's 7 escapes and 3 of its 7 raw reads.
 const TS = ["@ts", ""].join("-");
 const ENV = ["process", "env"].join(".");
-const ESCAPE = new RegExp(
-  String.raw`(:\s*any\b|<any>|\bas any\b|${TS}ignore|${TS}nocheck|${TS}expect-error)`,
-  "g",
-);
+/** An `any` the code wrote, read with comments blanked: "Prod: any relay" in prose is no escape. */
+const ANY = /:\s*any\b|<any>|\bas any\b/g;
+/** A directive that silences the compiler, which lives in a comment. */
+const DIRECTIVE = new RegExp(`${TS}ignore|${TS}nocheck|${TS}expect-error`, "g");
 const RAW_ENV = /\bprocess\.env(\.|\[)/g;
 
 // A calendar day taken off a UTC instant (VALID.5). Assembled from two halves so that THIS FILE
@@ -81,6 +81,7 @@ export const probes = [
   {
     metric: "types.escapes",
     kind: "ratchet",
+    version: 2,
     standard: ["CODE.3"],
     title: "any and ts-ignore escapes in the sources",
     why: "Every escape is a place the compiler was told to look away; the count is the honest measure of how strict the types are.",
@@ -94,15 +95,19 @@ export const probes = [
       // The total and the per-file debt are identical either way - the ratchet sums the weights -
       // so the floor does not move, and a reviewer gets the finding on the line that caused it.
       for (const f of files) {
-        // Strings blanked, comments kept: an escape quoted in a message is text, and the ignore
-        // directive lives in a comment. Read raw, a rule that quoted the escapes it looks for
-        // counted three of this repository's seven.
-        const text = codeOnly(c.read(f), { comments: "keep" });
-        const isTs = /\.tsx?$/.test(f);
-        for (const m of text.matchAll(ESCAPE)) {
-          if (!isTs && !m[0].startsWith("@ts-")) continue;
-          findings.push({ path: f, line: lineAt(text, m.index ?? 0), detail: `escape: ${m[0]}` });
-        }
+        // Strings blanked: an escape quoted in a message is text (read raw, a rule that quoted the
+        // escapes it looks for counted three of this repository's seven). The directive lives in
+        // a comment, so comments are kept for it alone; an `any` is read on the code, since prose
+        // ("site-level: any membership", "as any side effects") matched as one and an adopter
+        // could reach zero only by rewording comments.
+        const raw = c.read(f);
+        const kept = codeOnly(raw, { comments: "keep" });
+        const code = /\.tsx?$/.test(f) ? codeOnly(raw) : "";
+        const hits = [...kept.matchAll(DIRECTIVE), ...code.matchAll(ANY)].sort(
+          (a, b) => (a.index ?? 0) - (b.index ?? 0),
+        );
+        for (const m of hits)
+          findings.push({ path: f, line: lineAt(kept, m.index ?? 0), detail: `escape: ${m[0]}` });
       }
       return { scanned: files.length, findings };
     },
@@ -117,6 +122,21 @@ export const probes = [
       {
         name: "a typed file counts none",
         files: { "src/a.ts": "export const x: number = 1;\n" },
+        expect: 0,
+      },
+      {
+        name: "'any' in prose is not an escape: a line comment, a doc block, a quoted example",
+        files: {
+          "src/a.ts": [
+            "// site-level: any site_membership with role='manager'",
+            "/**",
+            " * Prod: any SMTP relay; fail-soft contract: any DB error,",
+            " * as any side effects. Cond = { value: <any> }; (input as any) in an example.",
+            " */",
+            "export const x: number = 1;",
+            "",
+          ].join("\n"),
+        },
         expect: 0,
       },
       {
