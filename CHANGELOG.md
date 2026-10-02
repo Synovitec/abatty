@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.9] - 2026-10-02
+
+The ninth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a replay of rc.8 on a fresh Next.js repository and a first real adoption
+found: an import graph that read nothing passed (TypeScript 7), setup gaps read as failed work,
+the docs index left a repository's own documents out and refused its first baseline, and
+`measure` wrote into `docs/` on every run. `init`'s steps by hand now lead to a first gate that
+can pass. One behaviour moves, under Upgrading: where `measure` writes its markdown report.
+
 ### Upgrading
 
 - **`abatty measure` writes its markdown report under `.abatty/reports/<date>.md`**, beside the
