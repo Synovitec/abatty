@@ -30,6 +30,10 @@ under Unreleased in the same commit.
 - **A surviving mutant makes `abatty mutate` exit 3**, as every other finding does. It exited 0
   unless `--strict` was passed, so a script running it learnt nothing; `--strict` is still
   accepted and changes nothing.
+- **Tests hold that a configured `mutation.command` wins over the runner the scripts name, and
+  that a run with no range reads the branch since it forked from the base.** `abatty mutate`, run
+  on its own change, found the second unheld: every test passed `--range`, and a mutant that lost
+  the base branch survived.
 
 - **`abatty ci` leaves out a step the gate would skip for want of its config.** The generated
   pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead

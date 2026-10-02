@@ -74,6 +74,15 @@ test("a survivor fails the run as every finding does, with or without --strict",
   assert.equal(cli(["mutate", dir, "--range", `${base}..HEAD`, "--strict"], dir).code, 3);
 });
 
+test("with no range, the lines are the branch's since it forked from main", () => {
+  const { dir, base } = changed();
+  git(dir, "checkout", "-q", "-b", "feat/rules");
+  git(dir, "branch", "-f", "main", base);
+  const report = cli(["mutate", dir], dir);
+  assert.match(report.out, new RegExp(`since ${base.slice(0, 12)} `), report.out);
+  assert.match(report.out, /1 killed, 1 survived, 1 with no test/);
+});
+
 test("a run whose mutants are all killed exits clean", () => {
   const { dir, base } = changed();
   writeFileSync(
@@ -135,6 +144,16 @@ test("a repository whose runner nothing names is told to set mutation.command", 
   const report = cli(["mutate", dir, "--range", "HEAD..HEAD"], dir);
   assert.equal(report.code, 2, report.out);
   assert.match(report.out, /mutation\.command/);
+});
+
+test("a configured mutation.command is the one run, over the runner the scripts name", () => {
+  const dir = tempRepo("mutate-configured", {
+    "package.json": JSON.stringify({ name: "m", scripts: { test: "vitest run" } }),
+    "abatty.config.json": JSON.stringify({ mutation: { command: "node --test {files}" } }),
+  });
+  const report = cli(["mutate", dir, "--range", "HEAD..HEAD"], dir);
+  assert.equal(report.code, 0, report.out);
+  assert.match(report.out, /· node --test \{files\}/);
 });
 
 test("a module reached only through a registry is tested by the tests that import the registry", () => {
