@@ -30,6 +30,10 @@ under Unreleased in the same commit.
   read as missing from the index, `docs.indexDrift` is HARD, and the first `baseline` was refused.
   Each one now has its row, read from its own front matter (description, category, status), and
   a document without front matter is listed with dashes for a person to fill.
+- **`init`'s install step names abatty itself.** The scripts it adds call `abatty` and the config
+  reads its files, but run from a global install it was in no manifest: knip read the binary as
+  unlisted, and a clone had no abatty to run. The step now adds `abatty@<this version>` when the
+  repository does not list it.
 - **`init` keeps a JavaScript repository's packages out of git.** In a repository with no
   `.gitignore`, the one it wrote held its own folders only, and an adopter who followed the steps
   and committed committed `node_modules`. It now adds `node_modules/` where there is a

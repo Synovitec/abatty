@@ -57,3 +57,17 @@ test("a JavaScript repository's .gitignore ignores node_modules, once, in whatev
   cli(["init", had, "--stack", "next"], had);
   assert.equal(readFileSync(join(had, ".gitignore"), "utf8").match(/node_modules/g)?.length, 1);
 });
+
+test("the install step names abatty at this version, unless the repository already lists it", () => {
+  const version = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ).version;
+  const bare = tempRepo("steps-abatty", { "package.json": NEXT_PKG });
+  const line = steps(cli(["init", bare, "--stack", "next"], bare).out)
+    .split("\n")
+    .find((l) => /npm i -D/.test(l));
+  assert.ok(String(line).includes(`abatty@${version}`), String(line));
+  const pkg = { ...JSON.parse(NEXT_PKG), devDependencies: { abatty: "^0.7.0-rc.1" } };
+  const has = tempRepo("steps-has-abatty", { "package.json": JSON.stringify(pkg) });
+  assert.doesNotMatch(steps(cli(["init", has, "--stack", "next"], has).out), /\babatty@/);
+});

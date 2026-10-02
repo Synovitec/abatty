@@ -407,7 +407,10 @@ export function initRepo(o) {
   // A preset may pin a range (`typescript@^6`): the install line carries it, the check reads the
   // name alone, so a repository that already has the package is not asked to install it again.
   const nameOf = (/** @type {string} */ spec) => spec.replace(/^(@?[^@]+)@.*$/, "$1");
-  const missingDeps = preset.devDependencies.filter(
+  // abatty itself, at the version that wrote the harness: the scripts init adds call it and the
+  // config reads its files, and run from a global install it was in no manifest, so knip read the
+  // binary as unlisted and a clone had no abatty to run.
+  const missingDeps = [...preset.devDependencies, `abatty@${packageVersion()}`].filter(
     (d) => !(pkg.devDependencies || {})[nameOf(d)] && !(pkg.dependencies || {})[nameOf(d)],
   );
   return { events, missingDeps, preset, notExecutable };
