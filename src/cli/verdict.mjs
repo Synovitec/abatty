@@ -152,14 +152,16 @@ function preflightScreen(cx, preset) {
  */
 export async function doctorCommand(cx, preset) {
   const { dir, opt, flag, out, err, VERSION } = cx;
+  // The banner before the work: printed after it, a doctor stuck in one check said nothing at all.
+  out(`\n${t.banner(VERSION)}  ${t.bold("doctor")} ${t.gray("·")} ${dir}\n\n`);
   const r = doctor({
     repoDir: dir,
     preset,
     strict: flag("--strict"),
     skipSelfTest: flag("--skip-self-test"),
     controls: flag("--controls"),
+    step: flag("--verbose") ? (name) => out(t.gray(`  · ${name}\n`)) : undefined,
   });
-  out(`\n${t.banner(VERSION)}  ${t.bold("doctor")} ${t.gray("·")} ${dir}\n\n`);
   if (r.controls) {
     out(t.heading("Controls", "every gate step planted a violation and must have gone red"));
     for (const s of r.controls.steps)

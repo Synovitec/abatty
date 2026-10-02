@@ -23,7 +23,9 @@ export function selfTest(repoDir: string): {
     output: string;
 };
 /**
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void }} o
+ * Every check doctor makes, in order. `step` hears each one's name before it starts, so a check
+ * that hangs is named, where doctor printed nothing until all of them had returned.
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void, step?: (name: string) => void }} o
  */
 export function doctor(o: {
     repoDir: string;
@@ -32,6 +34,7 @@ export function doctor(o: {
     skipSelfTest?: boolean;
     controls?: boolean;
     log?: (line: string) => void;
+    step?: (name: string) => void;
 }): {
     ok: boolean;
     selfTest: {

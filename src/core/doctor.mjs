@@ -133,24 +133,36 @@ export function selfTest(repoDir) {
 }
 
 /**
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void }} o
+ * Every check doctor makes, in order. `step` hears each one's name before it starts, so a check
+ * that hangs is named, where doctor printed nothing until all of them had returned.
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset | null, strict?: boolean, skipSelfTest?: boolean, controls?: boolean, log?: (line: string) => void, step?: (name: string) => void }} o
  */
 export function doctor(o) {
   const { repoDir, preset } = o;
+  /** @template T @param {string} name @param {() => T} run @returns {T} */
+  const at = (name, run) => {
+    o.step?.(name);
+    return run();
+  };
   // Every gate step proves it can go red: planted, run, removed; a step that stays green is absent.
-  const controls = o.controls && preset ? runStepControls({ repoDir, preset, log: o.log }) : null;
-  const st = o.skipSelfTest ? { code: 0, output: "self-test skipped\n" } : selfTest(repoDir);
-  const d = drift(repoDir);
+  const controls =
+    o.controls && preset
+      ? at("controls", () => runStepControls({ repoDir, preset, log: o.log }))
+      : null;
+  const st = o.skipSelfTest
+    ? { code: 0, output: "self-test skipped\n" }
+    : at("self-test", () => selfTest(repoDir));
+  const d = at("drift against the templates", () => drift(repoDir));
   const missing = d.filter((x) => x.state === "missing");
   const differs = d.filter((x) => x.state === "differs");
   const scripts = preset ? missingGateScripts(repoDir, preset) : [];
-  const permissions = permissionChanges(repoDir);
-  const optIn = offProbes(repoDir);
-  const problems = configProblems(repoDir);
+  const permissions = at("permissions", () => permissionChanges(repoDir));
+  const optIn = at("opt-in probes", () => offProbes(repoDir));
+  const problems = at("config", () => configProblems(repoDir));
   // What each hook does here, day and night; one that does nothing it seems to fails --strict.
-  const hooks = hookModes(repoDir);
+  const hooks = at("hook modes", () => hookModes(repoDir));
   // A hook git records as 100644 is skipped by git on every machine but the one it was written on.
-  const notExecutable = hooksNotExecutable(repoDir);
+  const notExecutable = at("hook file modes", () => hooksNotExecutable(repoDir));
   const ok =
     st.code === 0 &&
     missing.length === 0 &&

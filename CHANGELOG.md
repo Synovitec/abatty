@@ -14,6 +14,10 @@ under Unreleased in the same commit.
   would count, so it sat silent at full CPU. With `core.autocrlf` on, every Windows checkout is
   CRLF. The text above an export is now read line by line, in linear time, and gives the same
   answer: compared on 2,690 exports in both line endings, none differs.
+- **`abatty doctor` says it started, and `--verbose` names each check as it begins.** Its banner
+  was printed only after every check returned, so the hang above read as a doctor that printed
+  nothing at all, with no clue where it was. The banner now comes first, and `--verbose` prints
+  each check (drift, permissions, opt-in probes, config, hook modes) before it runs.
 
 ## [0.7.0-rc.6] - 2026-10-02
 
