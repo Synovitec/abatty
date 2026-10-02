@@ -14,6 +14,12 @@ under Unreleased in the same commit.
   that ran a linter, so a monorepo read present while fourteen workspaces had
   `"lint": "echo 'lint deferred' && exit 0"`. A script that lints nothing, or a linter run that
   lets a warning pass, now keeps the rule partial and is named; `next lint` counts as a linter.
+- **A red audit says whose the advisories are.** It read the same whether the push added a
+  vulnerable dependency or the advisories were published since the last green push, and an
+  adopter whose push touched only docs took five of the latter for the push's. Where the push
+  changed neither `package.json` nor the lockfile, the gate now says so: the advisories are
+  against what was already on the base, to fix as their own change. Where it did change them, it
+  says the push may have brought one in.
 
 ## [0.7.0-rc.9] - 2026-10-02
 

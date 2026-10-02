@@ -1,5 +1,5 @@
 /**
- * @typedef {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner }} BuiltinContext
+ * @typedef {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner, range?: string }} BuiltinContext
  */
 /**
  * Run one built-in step. True when the gate goes on (passed, skipped or deferred), false when it
@@ -16,4 +16,5 @@ export type BuiltinContext = {
     log: (line: string) => void;
     events: import("./gate.mjs").GateEvent[];
     audit?: import("./gate.mjs").AuditRunner;
+    range?: string;
 };

@@ -12,6 +12,7 @@
  * take, and taking it forever is not a decision. An allowance whose date has passed stops
  * allowing, the advisory comes back, and the gate says which allowance ran out.
  */
+import { spawnSync } from "node:child_process";
 import { localToday } from "./today.mjs";
 import { packageManager } from "./package-manager.mjs";
 
@@ -267,4 +268,28 @@ const ids = (list) => list.map((a) => String(a.id));
 function failure(output, note) {
   const tail = String(output).split(/\r?\n/).filter(Boolean).slice(-8).join("\n");
   return { outcome: "failed", detail: note ? `${note}\n${tail}` : tail };
+}
+
+/**
+ * Whose advisories these are: the push's, when it changed the manifest or the lockfile, or the
+ * base's, when it changed neither and the advisories were published (or found) against what was
+ * already installed. A red audit read the same either way, and an adopter whose push touched only
+ * docs took five advisories published since the last green push for something the push did.
+ * "" when there is no range to judge.
+ * @param {string} repoDir @param {string} range the gate's pushed range, "" when it has none
+ * @returns {string}
+ */
+export function auditAttribution(repoDir, range) {
+  if (!range) return "";
+  const lockfile = packageManager(repoDir)?.lockfile || "";
+  const watched = ["package.json", ...(lockfile ? [lockfile] : [])];
+  const r = spawnSync("git", ["diff", "--name-only", range, "--", ...watched], {
+    cwd: repoDir,
+    encoding: "utf8",
+  });
+  if (r.status !== 0) return "";
+  const touched = String(r.stdout).split("\n").filter(Boolean);
+  return touched.length
+    ? `this push changed ${touched.join(", ")}: an advisory above may be one it brought in`
+    : `this push changed neither ${watched.join(" nor ")}: these advisories are against dependencies already on the base, published or found since, not something the push added. Fix them as their own change (refresh the lockfile entry, raise a range, or allow one with a date)`;
 }

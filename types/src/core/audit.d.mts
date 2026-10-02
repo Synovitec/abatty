@@ -34,6 +34,16 @@ export function auditOutcome(repoDir: string, run: (cmd: string, args: string[])
     level?: string;
     today?: string;
 }): AuditOutcome;
+/**
+ * Whose advisories these are: the push's, when it changed the manifest or the lockfile, or the
+ * base's, when it changed neither and the advisories were published (or found) against what was
+ * already installed. A red audit read the same either way, and an adopter whose push touched only
+ * docs took five advisories published since the last green push for something the push did.
+ * "" when there is no range to judge.
+ * @param {string} repoDir @param {string} range the gate's pushed range, "" when it has none
+ * @returns {string}
+ */
+export function auditAttribution(repoDir: string, range: string): string;
 export type Allowance = {
     id: string;
     reason: string;

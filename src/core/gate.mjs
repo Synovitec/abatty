@@ -169,6 +169,8 @@ export function runGate(o) {
         events,
         audit: o.audit,
         stepLog: stepLogAt(repoDir, s.label),
+        // A range the gate could not trust is not handed on, as it is not to a script step.
+        range: blind ? "" : range,
       });
     // A step the preset requires is the instrument itself: without its script or its config the
     // gate cannot run, and says so, rather than passing with the step skipped. A repository

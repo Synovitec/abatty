@@ -10,7 +10,7 @@ import { dirname } from "node:path";
 import { launch } from "./spawn.mjs";
 import { readConfig } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
-import { auditOutcome } from "./audit.mjs";
+import { auditAttribution, auditOutcome } from "./audit.mjs";
 import { scanFiles, scrubConfig } from "./scrub.mjs";
 
 /** The audit as spawned in a repository: the package manager's command, its output in one string. @param {string} repoDir @returns {import("./gate.mjs").AuditRunner} */
@@ -26,7 +26,7 @@ const spawnAudit = (repoDir) => (cmd, args) => {
 };
 
 /**
- * @typedef {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner }} BuiltinContext
+ * @typedef {{ repoDir: string, log: (line: string) => void, events: import("./gate.mjs").GateEvent[], audit?: import("./gate.mjs").AuditRunner, range?: string }} BuiltinContext
  */
 
 /**
@@ -126,6 +126,9 @@ function runBuiltin(s, ctx) {
     if (a.outcome === "ok" && a.detail) log(`  ${a.detail}`);
     if (a.outcome === "failed") {
       log(a.detail);
+      // Whose they are: an advisory published since the last green push read as the push's own.
+      const whose = auditAttribution(repoDir, ctx.range || "");
+      if (whose) log(`  ${whose}`);
       events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });
       log(`\n✗ ${s.label} failed. The gate stops here.`);
       return false;
