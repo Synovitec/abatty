@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.10] - 2026-10-02
+
+The tenth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. Security first, from the first day: `init` writes a workflow that runs the fast gate
+(the audit and the secret scan included) on every push where no pipeline runs the gate, a reading
+opens with what to fix first, and a new check on probation counts server actions that never ask
+who is calling. With it, what a Next.js adopter and a Bun monorepo reported against rc.4 to rc.8.
+No config key is removed and no exit code moves; one optional key is added (`ratchet.authCalls`).
+
 ### Added
 
 - **The gate runs in CI from the first day.** An adopter's two critical advisories surfaced only
