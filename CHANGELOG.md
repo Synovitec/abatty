@@ -25,6 +25,11 @@ under Unreleased in the same commit.
   and ask for the import-graph baseline on every repository, not only an existing one. The
   graph rule step is its own line, and points at the template's §3 only where the template is
   the context.
+- **The docs index `init` writes names the documents a repository already had.** It listed
+  only the two files `init` wrote, so in a repository with its own documents under `docs/` each
+  read as missing from the index, `docs.indexDrift` is HARD, and the first `baseline` was refused.
+  Each one now has its row, read from its own front matter (description, category, status), and
+  a document without front matter is listed with dashes for a person to fill.
 - **`init` keeps a JavaScript repository's packages out of git.** In a repository with no
   `.gitignore`, the one it wrote held its own folders only, and an adopter who followed the steps
   and committed committed `node_modules`. It now adds `node_modules/` where there is a

@@ -35,6 +35,7 @@ import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere } from "./init-merges.mjs";
+import { existingDocRows } from "./docs-index.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -373,7 +374,10 @@ export function initRepo(o) {
     // index written without it made every freshly initialised repository red on its first clean
     // ratchet, and a controls pass that read that red as a proof.
     '---\ntitle: "Documentation index"\ndescription: "Every document under docs/ with what it is for, its category and its status; the one entry point, kept equal to the tree by the ratchet."\ncategory: reference\nstatus: living\naudience: ["developer", "agent"]\ntags: ["index", "docs"]\n---\n\n' +
-      "# Documentation index\n\nEvery document under docs/ is listed here (DOC.3): what it is for, its category and status.\n\n| Document | What it is for | Category | Status |\n|---|---|---|---|\n| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |\n| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |\n",
+      "# Documentation index\n\nEvery document under docs/ is listed here (DOC.3): what it is for, its category and status.\n\n| Document | What it is for | Category | Status |\n|---|---|---|---|\n| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |\n| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |\n" +
+      // The documents the repository already had, from their own front matter: listed without
+      // them, each read as missing from the index and the first baseline was refused.
+      existingDocRows(repoDir, ["STANDARDS_PROGRESS.md", "ADOPTION_DECISIONS.md"]),
   );
   put(
     "docs/STANDARDS_PROGRESS.md",
