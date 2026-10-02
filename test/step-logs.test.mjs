@@ -46,6 +46,8 @@ test("a built-in step keeps what it said and its verdict, red or green", () => {
   const log = read(dir, "secret_scan_SEC.1_");
   assert.match(log, /src\/leak\.ts:1 {2}cloud access key id/);
   assert.match(log, /failed: 1 finding\(s\)\n$/);
+  // An adopter put the mark on the line above and read the refusal as a bug.
+  assert.match(log, /abatty:allow-secret on the same line as the string \(the line above/);
   writeFileSync(join(dir, "src/leak.ts"), "export const k = 1;\n");
   runGate({ repoDir: dir, preset: steps, log: () => {}, run: () => 0 });
   assert.match(read(dir, "secret_scan_SEC.1_"), /^ok: \d+ file\(s\)\n$/m);
