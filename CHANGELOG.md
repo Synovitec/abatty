@@ -24,6 +24,11 @@ under Unreleased in the same commit.
   commit as the current ones, and an adopter on main read an adoption branch and a commit from
   three days before. The header now shows the branch and commit checked out, and a reading taken
   on another one is called stale, with where it was taken.
+- **Two lines `init` writes say what an adopter had to find out.** The knip step said "at today's
+  count", and an adopter read the last section of knip's output (19) as the count when every
+  section added up was 39; it now says to add them up. The template's server-only boundary rule
+  reads all of `lib/env` as server-only; it now carries a commented `pathNot` for a repository
+  that splits its env into a public half the client may read.
 
 ## [0.7.0-rc.9] - 2026-10-02
 

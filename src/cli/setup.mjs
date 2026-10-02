@@ -84,7 +84,7 @@ export async function initCommand(cx, preset) {
   if (graph)
     out(
       // Every repository, not only an existing one: without the file the graph step cannot start.
-      `  ${n++}. ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count" : ""}\n`,
+      `  ${n++}. ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);

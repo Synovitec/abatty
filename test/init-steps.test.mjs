@@ -71,3 +71,11 @@ test("the install step names abatty at this version, unless the repository alrea
   const has = tempRepo("steps-has-abatty", { "package.json": JSON.stringify(pkg) });
   assert.doesNotMatch(steps(cli(["init", has, "--stack", "next"], has).out), /\babatty@/);
 });
+
+test("the knip step says the count is every section added up, and the env rule shows its split", () => {
+  const dir = tempRepo("steps-knip", { "package.json": NEXT_PKG });
+  const out = steps(cli(["init", dir, "--stack", "next"], dir).out);
+  assert.match(out, /knip at today's count \(every section it prints added up/);
+  const rules = readFileSync(join(dir, ".dependency-cruiser.cjs"), "utf8");
+  assert.match(rules, /pathNot: "\^src\/lib\/env\/public\[\.\]ts\$"/);
+});
