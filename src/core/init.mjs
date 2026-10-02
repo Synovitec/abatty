@@ -34,6 +34,7 @@ import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
+import { added, appendLines } from "./init-merges.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -403,38 +404,4 @@ export function initRepo(o) {
     (d) => !(pkg.devDependencies || {})[d] && !(pkg.dependencies || {})[d],
   );
   return { events, missingDeps, preset, notExecutable };
-}
-
-/** @param {string} repoDir @param {string} rel @param {string[]} lines @param {InitEvent[]} events @param {boolean} dryRun */
-function appendLines(repoDir, rel, lines, events, dryRun) {
-  const target = join(repoDir, rel);
-  const current = existsSync(target) ? readFileSync(target, "utf8") : "";
-  const missing = lines.filter((l) => !current.split(/\r?\n/).includes(l));
-  if (!missing.length) {
-    events.push({ file: rel, action: "kept" });
-    return;
-  }
-  if (!dryRun)
-    writeFileSync(
-      target,
-      (current ? current.replace(/\s*$/, "\n") : "") + missing.join("\n") + "\n",
-    );
-  events.push({
-    file: rel,
-    action: current ? "merged" : "written",
-    ...(current && { detail: `added ${missing.join(", ")}` }),
-  });
-}
-
-/**
- * What a merge put in, said on its line: "merged" alone sent a reader to `git diff` to find out
- * what `init` had done to a file of theirs. A key whose value it replaced (under --force) counts.
- * @param {Record<string, unknown>} after @param {Record<string, unknown>} before @param {string} kind
- * @returns {string} "" when nothing changed
- */
-function added(after, before, kind) {
-  const keys = Object.keys(after).filter(
-    (k) => JSON.stringify(after[k]) !== JSON.stringify(before[k]),
-  );
-  return keys.length ? `${kind} added: ${keys.join(", ")}` : "";
 }
