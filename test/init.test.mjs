@@ -279,3 +279,15 @@ test("the database suite is selected by a migration in a workspace, not only at 
   assert.ok(db.test("migrations/0001_init.sql"));
   assert.ok(!db.test("docs/migrations-guide.md"), "a folder merely named like one is not");
 });
+
+test("the executable bit a filesystem would not keep is said once, as one command, and never for a .cmd", () => {
+  const dir = tempRepo("init-chmod", { "package.json": NEXT_PKG });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.equal(r.code, 0, r.out);
+  const lines = r.out.split("\n").filter((l) => l.includes("--chmod=+x"));
+  if (process.platform === "win32") {
+    assert.equal(lines.length, 1, r.out);
+    assert.match(String(lines[0]), /^\s+\d+\. git add --chmod=\+x .*\.githooks\/pre-push/);
+    assert.doesNotMatch(String(lines[0]), /\.cmd\b/);
+  } else assert.equal(lines.length, 0, "the bit is kept here, so nothing to say");
+});

@@ -132,6 +132,10 @@ export function initRepo(o) {
   const { repoDir, preset, force = false, dryRun = false } = o;
   /** @type {InitEvent[]} */
   const events = [];
+  // The executables whose bit this filesystem would not keep, said once as one command at the
+  // end: said per file it was five lines, one of them on a `.cmd` whose bit means nothing.
+  /** @type {string[]} */
+  const notExecutable = [];
   const put = (
     /** @type {string} */ rel,
     /** @type {string} */ content,
@@ -152,11 +156,8 @@ export function initRepo(o) {
       writeFileSync(target, content);
       if (executable) bit = makeExecutable(target);
     }
-    events.push({
-      file: rel,
-      action: exists ? "overwritten" : merge ? "merged" : "written",
-      ...(!bit && { detail: `commit it with git add --chmod=+x ${rel}, or it runs nowhere else` }),
-    });
+    if (!bit && !/\.(cmd|bat)$/i.test(rel)) notExecutable.push(rel);
+    events.push({ file: rel, action: exists ? "overwritten" : merge ? "merged" : "written" });
     return true;
   };
   const tpl = (/** @type {string} */ rel) => readFileSync(join(TEMPLATES, rel), "utf8");
@@ -393,7 +394,7 @@ export function initRepo(o) {
   const missingDeps = preset.devDependencies.filter(
     (d) => !(pkg.devDependencies || {})[d] && !(pkg.dependencies || {})[d],
   );
-  return { events, missingDeps, preset };
+  return { events, missingDeps, preset, notExecutable };
 }
 
 /** @param {string} repoDir @param {string} rel @param {string[]} lines @param {InitEvent[]} events @param {boolean} dryRun */

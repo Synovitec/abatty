@@ -21,6 +21,10 @@ under Unreleased in the same commit.
 - **`abatty --version` and `abatty -v` print the version and nothing else.** `--version` was read
   as the status command with an unknown flag and measured the whole repository; `-v` was taken
   for a directory.
+- **`init` says the executable-bit step once, as one command.** On a filesystem that keeps no
+  executable bit (Windows), every hook it wrote carried its own `commit it with git add
+  --chmod=+x` line, five of them, one on `.claude/bin/git.cmd` where the bit means nothing. It is
+  now one numbered step by hand naming every file, `.cmd` and `.bat` left out.
 
 ## [0.7.0-rc.7] - 2026-10-02
 

@@ -51,6 +51,11 @@ export async function initCommand(cx, preset) {
     pm.id
   ];
   if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  // Once, as one command: this filesystem keeps no executable bit, and git skips a hook without it.
+  if (r.notExecutable.length)
+    out(
+      `  ${n++}. git add --chmod=+x ${r.notExecutable.join(" ")}  ${t.gray("· this filesystem keeps no executable bit, and git runs a hook only with it")}\n`,
+    );
   out(`  ${n++}. ${pm.run("hooks:install").join(" ")}\n`);
   // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
   // documents repository was being told to fill a dependency-cruiser config it has no reason to
