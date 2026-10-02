@@ -44,6 +44,13 @@ export function auditOutcome(repoDir: string, run: (cmd: string, args: string[])
  * @returns {string}
  */
 export function auditAttribution(repoDir: string, range: string): string;
+/**
+ * One advisory as the gate prints it: the package, then every affected range and where it is
+ * installed. One line per package hid that a package was affected in three majors at once, each
+ * needing its own fix, which an adopter learnt only by asking the manager again range by range.
+ * @param {Advisory} a @returns {string}
+ */
+export function describeAdvisory(a: Advisory): string;
 export type Allowance = {
     id: string;
     reason: string;
@@ -60,4 +67,6 @@ export type Advisory = {
     severity: string;
     ids: string[];
     title: string;
+    ranges?: string[];
+    installed?: string[];
 };

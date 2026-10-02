@@ -14,6 +14,12 @@ under Unreleased in the same commit.
   that ran a linter, so a monorepo read present while fourteen workspaces had
   `"lint": "echo 'lint deferred' && exit 0"`. A script that lints nothing, or a linter run that
   lets a warning pass, now keeps the rule partial and is named; `next lint` counts as a linter.
+- **A red audit names every affected range and where each is installed.** It printed one line
+  per package, and `brace-expansion` was affected in three majors at once (`<1.1.20`,
+  `>=2.0.0 <2.1.5`, `>=5.0.0 <5.0.11`), each needing its own fix, which an adopter learnt only by
+  asking the manager again range by range. The gate now reads the audit's report and prints, per
+  package, every affected range and, where the report says it (npm, pnpm), each installed copy
+  and what pulls it in. A report that cannot be read leaves the tool's own lines, as before.
 - **A red audit says whose the advisories are.** It read the same whether the push added a
   vulnerable dependency or the advisories were published since the last green push, and an
   adopter whose push touched only docs took five of the latter for the push's. Where the push

@@ -18,7 +18,7 @@ import { packageManager } from "./package-manager.mjs";
 
 /** @typedef {{ id: string, reason: string, until?: string }} Allowance */
 /** @typedef {{ outcome: "ok" | "failed" | "errored" | "deferred", detail: string, allowed?: string[], expired?: string[] }} AuditOutcome */
-/** @typedef {{ package: string, severity: string, ids: string[], title: string }} Advisory */
+/** @typedef {{ package: string, severity: string, ids: string[], title: string, ranges?: string[], installed?: string[] }} Advisory */
 
 /** Severity, weakest first: the floor is an index into this. */
 const SEVERITY = ["info", "low", "moderate", "high", "critical"];
@@ -82,6 +82,8 @@ export function advisoriesOf(json, floor) {
         severity: String(v?.severity),
         ids: via.map((x) => String(x.source)),
         title: String(via[0]?.title || ""),
+        ranges: uniq(via.map((x) => x.range)),
+        installed: uniq((Array.isArray(v?.nodes) ? v.nodes : []).map(installedAt)),
       });
     }
     return out.filter(aboveFloor);
@@ -94,6 +96,13 @@ export function advisoriesOf(json, floor) {
       const name = String(a?.module_name || "");
       const entry = byPackage.get(name) || { package: name, severity: "info", ids: [], title: "" };
       entry.ids.push(String(a?.id ?? id));
+      entry.ranges = uniq([...(entry.ranges || []), a?.vulnerable_versions]);
+      entry.installed = uniq([
+        ...(entry.installed || []),
+        ...(Array.isArray(a?.findings) ? a.findings : []).map(
+          (/** @type {any} */ f) => `${f?.version}${f?.paths?.[0] ? ` via ${f.paths[0]}` : ""}`,
+        ),
+      ]);
       if (SEVERITY.indexOf(String(a?.severity)) > SEVERITY.indexOf(entry.severity)) {
         entry.severity = String(a?.severity);
         entry.title = String(a?.title || "");
@@ -115,6 +124,7 @@ export function advisoriesOf(json, floor) {
           severity: String(worst.severity),
           ids: /** @type {any[]} */ (list).map((a) => String(a?.id)),
           title: String(worst.title || ""),
+          ranges: uniq(/** @type {any[]} */ (list).map((a) => a?.vulnerable_versions)),
         };
       })
       .filter(aboveFloor);
@@ -227,7 +237,14 @@ export function auditOutcome(repoDir, run, o = {}) {
   // A report that parsed was delivered by the registry, whatever its advisories say.
   if (offline(r.output) && !(cmd.byJson && advisoriesOf(r.output, level)))
     return { outcome: "deferred", detail: "the registry is unreachable; CI runs the audit" };
-  if (!live.length && !cmd.byJson) return failure(r.output, expiredNote);
+  if (!live.length && !cmd.byJson) {
+    // Read the report for what the summary line leaves out (every affected range, where each is
+    // installed); a report that does not parse leaves the tool's own last lines, as before.
+    const found = advisoriesOf(run(String(cmd.json[0]), cmd.json.slice(1)).output, level);
+    if (!found?.length) return failure(r.output, expiredNote);
+    const said = [expiredNote, ...found.map(describeAdvisory)].filter(Boolean);
+    return { outcome: "failed", detail: said.join("\n") };
+  }
 
   // Something is above the floor and this repository allows some of it: read the report properly
   // rather than guessing from the text, and fail on whatever is left.
@@ -241,11 +258,7 @@ export function auditOutcome(repoDir, run, o = {}) {
   const names = new Set(live.map((a) => String(a.id)));
   const left = found.filter((f) => !names.has(f.package) && !f.ids.some((i) => names.has(i)));
   const allowed = found.filter((f) => names.has(f.package) || f.ids.some((i) => names.has(i)));
-  if (left.length)
-    return failure(
-      left.map((f) => `${f.package} (${f.severity}) ${f.title}`).join("\n"),
-      expiredNote,
-    );
+  if (left.length) return failure(left.map(describeAdvisory).join("\n"), expiredNote);
   return {
     outcome: "ok",
     // Allowed is never silent: the gate is green BECAUSE somebody decided, and the decision is
@@ -292,4 +305,31 @@ export function auditAttribution(repoDir, range) {
   return touched.length
     ? `this push changed ${touched.join(", ")}: an advisory above may be one it brought in`
     : `this push changed neither ${watched.join(" nor ")}: these advisories are against dependencies already on the base, published or found since, not something the push added. Fix them as their own change (refresh the lockfile entry, raise a range, or allow one with a date)`;
+}
+
+/** The distinct non-empty strings of a list. @param {unknown[]} list @returns {string[]} */
+const uniq = (list) => [...new Set(list.filter(Boolean).map(String))];
+
+/** An npm node path as a reader says it: `node_modules/a/node_modules/b` is `a > b`. @param {unknown} node */
+const installedAt = (node) =>
+  String(node)
+    .split("node_modules/")
+    .map((s) => s.replace(/\/$/, ""))
+    .filter(Boolean)
+    .join(" > ");
+
+/**
+ * One advisory as the gate prints it: the package, then every affected range and where it is
+ * installed. One line per package hid that a package was affected in three majors at once, each
+ * needing its own fix, which an adopter learnt only by asking the manager again range by range.
+ * @param {Advisory} a @returns {string}
+ */
+export function describeAdvisory(a) {
+  const lines = [`${a.package} (${a.severity}) ${a.title}`.trim()];
+  if (a.ranges?.length) lines.push(`    affected: ${a.ranges.join(", ")}`);
+  if (a.installed?.length)
+    lines.push(
+      `    installed: ${a.installed.slice(0, 4).join("; ")}${a.installed.length > 4 ? `; ${a.installed.length - 4} more` : ""}`,
+    );
+  return lines.join("\n");
 }
