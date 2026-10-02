@@ -25,6 +25,12 @@ under Unreleased in the same commit.
   executable bit (Windows), every hook it wrote carried its own `commit it with git add
   --chmod=+x` line, five of them, one on `.claude/bin/git.cmd` where the bit means nothing. It is
   now one numbered step by hand naming every file, `.cmd` and `.bat` left out.
+- **`init` writes the PWA rule file only where there is a PWA.** The Next preset wrote
+  `.claude/rules/pwa.md` into every repository while `measure` read the PWA family as not
+  applying, with no service worker and no web manifest. A preset's rule file can now need a fact
+  the catalog reads from the tree (`stack:pwa`), not only a dependency, so both read it the same
+  way; a skipped file is said, with why. A `pwa.md` an earlier `init` wrote is left where it is,
+  and `update` no longer manages it.
 
 ## [0.7.0-rc.7] - 2026-10-02
 

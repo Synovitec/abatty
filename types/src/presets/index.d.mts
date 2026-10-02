@@ -57,7 +57,8 @@ export type GateSuite = {
 };
 /**
  * a rule file that applies only where the
- *   repository depends on one of `needs`. A bare string always applies.
+ *   repository depends on one of `needs`, or (as `stack:<fact>`) the catalog reads that fact from its
+ *   tree (src/core/rule-facts.mjs). A bare string always applies.
  */
 export type PresetRule = {
     file: string;

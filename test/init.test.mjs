@@ -291,3 +291,19 @@ test("the executable bit a filesystem would not keep is said once, as one comman
     assert.doesNotMatch(String(lines[0]), /\.cmd\b/);
   } else assert.equal(lines.length, 0, "the bit is kept here, so nothing to say");
 });
+
+test("the PWA rule file is written where the catalog reads a PWA, and skipped, said, where it does not", () => {
+  const plain = tempRepo("init-nopwa", { "package.json": NEXT_PKG });
+  const r = cli(["init", plain, "--stack", "next"], plain);
+  assert.equal(existsSync(join(plain, ".claude/rules/pwa.md")), false, r.out);
+  assert.match(
+    r.out,
+    /\.claude\/rules\/pwa\.md · no service worker or web manifest in this repository/,
+  );
+  const pwa = tempRepo("init-pwa", {
+    "package.json": NEXT_PKG,
+    "public/manifest.webmanifest": '{ "name": "app" }\n',
+  });
+  cli(["init", pwa, "--stack", "next"], pwa);
+  assert.equal(existsSync(join(pwa, ".claude/rules/pwa.md")), true);
+});

@@ -23,7 +23,6 @@ import { fileURLToPath } from "node:url";
 import {
   CONFIG_FILE,
   LEGACY_CONFIG,
-  dependencyNames,
   git,
   readJsonFile,
   readPackage,
@@ -34,6 +33,7 @@ import { commandFor, managerFor } from "./package-manager.mjs";
 import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
+import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -188,7 +188,7 @@ export function initRepo(o) {
   put(".claude/mcp.night.json", tpl("harness/mcp.night.json"));
   // Gated the way the catalog's rules are: a file about one library is not written where the
   // repository does not depend on it, and the skip is reported rather than silent.
-  const rules = presetRules(preset, dependencyNames(repoDir));
+  const rules = presetRules(preset, ruleFacts(repoDir));
   for (const r of rules) {
     if (!existsSync(join(TEMPLATES, "harness", "rules", r.file))) continue;
     if (r.applies) put(`.claude/rules/${r.file}`, tpl(`harness/rules/${r.file}`));
@@ -196,7 +196,7 @@ export function initRepo(o) {
       events.push({
         file: `.claude/rules/${r.file}`,
         action: "n/a",
-        detail: `no ${r.needs.slice(0, 3).join(", ")} in this repository`,
+        detail: `no ${r.needs.slice(0, 3).map(needLabel).join(", ")} in this repository`,
       });
   }
 

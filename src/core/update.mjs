@@ -26,15 +26,9 @@ import { refreshGitHooks } from "./update-hooks.mjs";
 import { managerFor } from "./package-manager.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
 import { shimExecutable } from "./shim.mjs";
-import {
-  CONFIG_FILE,
-  LEGACY_CONFIG,
-  dependencyNames,
-  readJsonFile,
-  readPackage,
-  writeJsonFile,
-} from "./repo.mjs";
+import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { presetRules } from "../presets/index.mjs";
+import { ruleFacts } from "./rule-facts.mjs";
 import { localToday } from "./today.mjs";
 
 /** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
@@ -104,7 +98,7 @@ export function writeLock(repoDir, preset, version = packageVersion()) {
   /** @type {Record<string, string>} the template offered for a file the repository kept its own of */
   const offered = {};
   const previous = readLock(repoDir);
-  for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {
+  for (const [tpl, rel] of managedFiles(preset, ruleFacts(repoDir))) {
     const text = readFileSync(join(TEMPLATES, tpl), "utf8");
     const target = join(repoDir, rel);
     const installed = existsSync(target) && hashOf(readFileSync(target, "utf8")) === hashOf(text);
@@ -264,7 +258,7 @@ export function updateRepo(o) {
     if (shimExecutable(rel)) makeExecutable(join(repoDir, rel));
   };
 
-  for (const [tpl, rel] of managedFiles(preset, dependencyNames(repoDir))) {
+  for (const [tpl, rel] of managedFiles(preset, ruleFacts(repoDir))) {
     const theirs = readFileSync(join(TEMPLATES, tpl), "utf8");
     const target = join(repoDir, rel);
     if (!existsSync(target)) {

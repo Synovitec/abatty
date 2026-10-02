@@ -14,7 +14,8 @@
  *   `devLocks` are the lock files a framework's dev server holds; while one is live the suite is
  *   deferred to CI rather than built over it.
  * @typedef {{ file: string, needs: string[] }} PresetRule a rule file that applies only where the
- *   repository depends on one of `needs`. A bare string always applies.
+ *   repository depends on one of `needs`, or (as `stack:<fact>`) the catalog reads that fact from its
+ *   tree (src/core/rule-facts.mjs). A bare string always applies.
  * @typedef {{
  *   id: string,
  *   name: string,
