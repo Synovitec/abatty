@@ -125,6 +125,7 @@
     "ratchet": {
       "type": "object",
       "keys": [
+        "authCalls",
         "barrelMax",
         "boundedBy",
         "cap",
@@ -208,6 +209,7 @@
     "api.floatMoney": "ratchet opt-in v1",
     "api.rowReturn": "ratchet opt-in v1",
     "api.unboundedList": "ratchet opt-in v1",
+    "auth.unguardedAction": "ratchet opt-in probation v1",
     "auth.unguardedPage": "ratchet opt-in v1",
     "cache.serverCacheUse": "ratchet opt-in v1",
     "change.changelogMissing": "hard v1",

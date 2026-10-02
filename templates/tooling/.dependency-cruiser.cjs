@@ -93,6 +93,9 @@ module.exports = {
       comment: "A module that holds a secret or a database client is imported by server code only (CODE-10, SEC-1).",
       from: { path: "^src/(?:components|app/.*/_components)/" },
       to: { path: "^src/(?:lib/db|server|lib/env)" },
+      // An env split into a public half the client may read and a server half it must not:
+      // name the public file here, or every client import of it reads as a breach.
+      // to: { path: "^src/(?:lib/db|server|lib/env)", pathNot: "^src/lib/env/public[.]ts$" },
     },
   ],
   options: {

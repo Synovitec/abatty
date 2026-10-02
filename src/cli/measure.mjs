@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { buildReport } from "../core/report.mjs";
 import { renderMarkdown, truthLine } from "../core/gap-analysis.mjs";
 import { linkPreviousReadings } from "../core/readings.mjs";
-import { enforcedLine, familyTable, nextSteps, phaseLine } from "./status.mjs";
+import { enforcedLine, familyTable, fixFirstBlock, nextSteps, phaseLine } from "./status.mjs";
 import { reopened } from "../rules/phases.mjs";
 import { sarifOfFindings } from "../ui/sarif.mjs";
 import * as t from "../ui/term.mjs";
@@ -76,6 +76,7 @@ export async function measureCommand(cx) {
   const truth = truthLine(r).replace(/\*\*|`/g, "");
   if (truth) out(`  ${t.gray(truth)}\n`);
   out("\n");
+  out(fixFirstBlock(dir, r.findings));
   out(familyTable(r.families, { na: true }) + "\n");
   out(
     // The JSON is written only when the run is the repository's latest reading, never with --out.

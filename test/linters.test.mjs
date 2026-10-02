@@ -141,3 +141,24 @@ test("a warning fails the lint script whichever flag the linter spells it with",
   // The control: the linter runs and a warning costs nothing.
   assert.equal(of(withScript("loose", "biome lint ."), "CODE-MAXWARN").status, "partial");
 });
+
+test("a workspace whose lint script lints nothing keeps the rule partial, named", () => {
+  const pkg = (/** @type {string} */ lint) => JSON.stringify({ name: "w", scripts: { lint } });
+  const repo = (/** @type {string} */ name, /** @type {string} */ workerLint) =>
+    read(`lint-maxwarn-${name}`, {
+      "package.json": JSON.stringify({
+        name: "mono",
+        private: true,
+        scripts: { lint: "turbo run lint" },
+      }),
+      "apps/web/package.json": pkg("eslint . --max-warnings=0"),
+      "apps/workers/package.json": pkg(workerLint),
+      "apps/web/a.js": "export const a = 1;\n",
+      "eslint.config.mjs": "export default [];\n",
+    });
+  const stubbed = of(repo("stub", "echo 'lint deferred' && exit 0"), "CODE-MAXWARN");
+  assert.equal(stubbed.status, "partial");
+  assert.match(String(stubbed.evidence), /apps\/workers `echo 'lint deferred' && exit 0`/);
+  assert.equal(of(repo("all", "eslint . --max-warnings=0"), "CODE-MAXWARN").status, "present");
+  assert.equal(of(repo("next", "next lint --max-warnings=0"), "CODE-MAXWARN").status, "present");
+});

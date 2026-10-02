@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { harnessLintHint } from "./harness-lint.mjs";
+import { ciGate } from "../ci/day-one.mjs";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
@@ -166,6 +167,9 @@ export function doctor(o) {
   const notExecutable = at("hook file modes", () => hooksNotExecutable(repoDir));
   // The repository's eslint reading the harness as product code: said, never a failure.
   const harnessLint = at("eslint over the harness", () => harnessLintHint(repoDir));
+  // Whether CI runs the gate: a repository whose gate runs by hand only finds a critical advisory
+  // when somebody remembers. Said, never a failure.
+  const ci = at("CI and the gate", () => ciGate(repoDir));
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
@@ -195,5 +199,6 @@ export function doctor(o) {
     hooks,
     notExecutable,
     harnessLint,
+    ci,
   };
 }

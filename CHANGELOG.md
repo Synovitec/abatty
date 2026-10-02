@@ -5,6 +5,74 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.10] - 2026-10-02
+
+The tenth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. Security first, from the first day: `init` writes a workflow that runs the fast gate
+(the audit and the secret scan included) on every push where no pipeline runs the gate, a reading
+opens with what to fix first, and a new check on probation counts server actions that never ask
+who is calling. With it, what a Next.js adopter and a Bun monorepo reported against rc.4 to rc.8.
+No config key is removed and no exit code moves; one optional key is added (`ratchet.authCalls`).
+
+### Added
+
+- **The gate runs in CI from the first day.** An adopter's two critical advisories surfaced only
+  because somebody ran the gate by hand, and nothing said no pipeline ran it. On a GitHub
+  repository where no pipeline runs the gate, `init` now writes
+  `.github/workflows/abatty-gate.yml`: the repository's own install, then `gate:fast` (the audit
+  and the secret scan included) on every push and pull request, with the actions pinned as the
+  full pipeline pins them. It never touches a pipeline it did not write, and `abatty ci` still
+  writes the full one. `doctor` says when CI runs no gate, or only the fast one, and `init`
+  names the gap on another forge.
+- **A new check: server actions that never establish who is calling (`auth.unguardedAction`,
+  AUTH.1).** A `'use server'` export is a public POST endpoint whatever page shows its button,
+  and an adopter's worst finding was one with no check at all, seen only indirectly as an
+  unparsed parameter. The check reads each exported action for a call that establishes the
+  caller: the common session helpers (`auth()`, `getServerSession`, `currentUser`, `getUser`,
+  `requireUser`, `verifySession` and the like) or a name the repository lists in
+  `ratchet.authCalls`. Opt-in, enabled by the Next preset for a new repository, and on
+  probation: it reports, and blocks nothing until a named repository has run it clean.
+- **A reading opens with what to fix first.** An adopter's first report led with documents,
+  context sections and decision records while two critical advisories and an unvalidated server
+  action waited. `measure` and `status` now open with a "Fix these first" block: the secrets in
+  the tree (the scan runs, it is local), the last gate's failed audit with its day and its
+  advisories (or that the audit has not run anywhere yet), and the must-level Security rules
+  still missing. A reading stays offline: the audit is the last gate's, never run by `measure`.
+
+### Fixed
+
+- **A refused `baseline` lists what to fix.** A HARD metric above zero was named by its metric
+  and its count only, and an adopter ran another command to learn which three documents the index
+  lacked. The refusal now names the findings (the first five, then how many more).
+- **CODE-MAXWARN reads every lint script, a workspace's included.** It judged the first script
+  that ran a linter, so a monorepo read present while fourteen workspaces had
+  `"lint": "echo 'lint deferred' && exit 0"`. A script that lints nothing, or a linter run that
+  lets a warning pass, now keeps the rule partial and is named; `next lint` counts as a linter.
+- **The gap analysis names no `related` path.** It wrote `related: ["../CLAUDE.md"]`, relative to
+  the report, and an adopter whose docs check resolves `related` from the root refused the push;
+  no spelling satisfies both conventions, and the report needs neither.
+- **A red audit names every affected range and where each is installed.** It printed one line
+  per package, and `brace-expansion` was affected in three majors at once (`<1.1.20`,
+  `>=2.0.0 <2.1.5`, `>=5.0.0 <5.0.11`), each needing its own fix, which an adopter learnt only by
+  asking the manager again range by range. The gate now reads the audit's report and prints, per
+  package, every affected range and, where the report says it (npm, pnpm), each installed copy
+  and what pulls it in. A report that cannot be read leaves the tool's own lines, as before.
+- **A red audit says whose the advisories are.** It read the same whether the push added a
+  vulnerable dependency or the advisories were published since the last green push, and an
+  adopter whose push touched only docs took five of the latter for the push's. Where the push
+  changed neither `package.json` nor the lockfile, the gate now says so: the advisories are
+  against what was already on the base, to fix as their own change. Where it did change them, it
+  says the push may have brought one in.
+- **`abatty status` names the checkout as it is.** It printed the stored reading's branch and
+  commit as the current ones, and an adopter on main read an adoption branch and a commit from
+  three days before. The header now shows the branch and commit checked out, and a reading taken
+  on another one is called stale, with where it was taken.
+- **Two lines `init` writes say what an adopter had to find out.** The knip step said "at today's
+  count", and an adopter read the last section of knip's output (19) as the count when every
+  section added up was 39; it now says to add them up. The template's server-only boundary rule
+  reads all of `lib/env` as server-only; it now carries a commented `pathNot` for a repository
+  that splits its env into a public half the client may read.
+
 ## [0.7.0-rc.9] - 2026-10-02
 
 The ninth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

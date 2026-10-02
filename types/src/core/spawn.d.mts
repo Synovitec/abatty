@@ -38,6 +38,11 @@ export function runCommand(repoDir: string, argv: string[], o?: {
     log?: string;
 }): RunResult;
 export function dockerRunning(): boolean;
+/**
+ * Where a step's last log is, read and never removed: what a reader of the last gate opens.
+ * @param {string} repoDir @param {string} label @returns {string}
+ */
+export function stepLogPath(repoDir: string, label: string): string;
 export function quoteForCmd(a: string): string;
 export function asResult(r: RunResult | number): RunResult;
 export type RunResult = {

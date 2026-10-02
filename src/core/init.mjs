@@ -36,6 +36,7 @@ import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere } from "./init-merges.mjs";
 import { existingDocRows } from "./docs-index.mjs";
+import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
@@ -398,6 +399,9 @@ export function initRepo(o) {
       base: String(merged.baseBranch || "main"),
     }))
       events.push({ file: e.file, action: e.action === "written" ? "written" : "kept" });
+  // 6c. No provider named: the gate in CI from the first day where nothing runs it.
+  if (!providers.length && onGithub(repoDir) && ["none", "no-gate"].includes(ciGate(repoDir).state))
+    put(DAY_ONE, dayOneWorkflow(repoDir));
 
   // 7. The lock: the package version and the hash of every shipped file as installed, and the
   //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.

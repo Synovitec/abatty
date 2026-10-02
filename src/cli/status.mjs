@@ -5,6 +5,8 @@
  */
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
+import { git } from "../core/repo.mjs";
+import { fixFirst } from "../core/fix-first.mjs";
 import { phaseOf, reopened } from "../rules/phases.mjs";
 
 /**
@@ -21,14 +23,26 @@ export async function statusCommand(c, preset) {
   const present = r.findings.filter((f) => f.status === "present").length;
   const partial = r.findings.filter((f) => f.status === "partial").length;
   const missing = r.findings.filter((f) => f.status === "missing").length;
+  // The header names the checkout as it is now. A stored reading taken on another branch or
+  // commit printed that branch and commit as if they were the current one: an adopter on main
+  // read an adoption branch from three days before.
+  const branch = git(dir, "rev-parse", "--abbrev-ref", "HEAD") || r.branch;
+  const commit = git(dir, "rev-parse", "--short", "HEAD") || r.commit;
+  const elsewhere = !fresh && (branch !== r.branch || commit !== r.commit);
+  const when = fresh
+    ? "measured now"
+    : elsewhere
+      ? t.yellow(`stale: reading of ${r.date} on ${r.branch} @ ${r.commit} · --fresh to measure`)
+      : `reading of ${r.date} · --fresh to measure`;
   out(
-    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(fresh ? "measured now" : `reading of ${r.date} · --fresh to measure`)}\n\n`,
+    `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${branch} @ ${commit}`)}  ${t.gray(when)}\n\n`,
   );
   out(
     phaseLine(r) +
       `  ${t.gray(`${r.applicable} checks · `)}${t.green(present + " present")} ${t.gray("·")} ${t.yellow(partial + " partial")} ${t.gray("·")} ${t.red(missing + " missing")}\n\n`,
   );
   out(enforcedLine(r.enforced) + "\n\n");
+  out(fixFirstBlock(dir, r.findings));
   out(familyTable(r.families) + "\n");
   out(t.heading("Harness"));
   out(
@@ -196,4 +210,16 @@ function reopenedLine(r) {
   if (!again) return "";
   const when = again.closedAt ? ` by ${again.closedAt}` : "";
   return `  ${t.yellow(`reopened: the adoption closed this phase${when}; ${again.by.length} rule(s) unmet since, new to the catalog or regressed`)}${again.by.length ? t.gray(` · ${again.by.join(", ")}`) : ""}\n`;
+}
+
+/**
+ * The "fix these first" block, above everything else a reading shows: secrets in the tree, the
+ * last gate's failed audit, the must-level Security rules missing (src/core/fix-first.mjs). An
+ * adopter's first report led with documents while two critical advisories waited.
+ * @param {string} dir @param {import("../rules/index.mjs").Finding[]} findings @returns {string}
+ */
+export function fixFirstBlock(dir, findings) {
+  const lines = fixFirst(dir, findings);
+  if (!lines.length) return "";
+  return `${t.heading("Fix these first", "security, before structure and docs")}${lines.map((l) => `  ${t.glyph.fail} ${t.red(l)}\n`).join("")}\n`;
 }

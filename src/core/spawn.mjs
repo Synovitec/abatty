@@ -114,7 +114,7 @@ function spawnStep(l, cwd, env, log) {
  * @param {string} repoDir @param {string} label @returns {string}
  */
 export function stepLogAt(repoDir, label) {
-  const at = join(repoDir, ".abatty", "steps", `${label.replace(/[^\w.-]+/g, "_")}.log`);
+  const at = stepLogPath(repoDir, label);
   try {
     rmSync(at, { force: true });
   } catch {
@@ -158,4 +158,12 @@ export function runCommand(repoDir, argv, o = {}) {
 
 export function dockerRunning() {
   return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
+}
+
+/**
+ * Where a step's last log is, read and never removed: what a reader of the last gate opens.
+ * @param {string} repoDir @param {string} label @returns {string}
+ */
+export function stepLogPath(repoDir, label) {
+  return join(repoDir, ".abatty", "steps", `${label.replace(/[^\w.-]+/g, "_")}.log`);
 }
