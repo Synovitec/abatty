@@ -73,7 +73,7 @@ function runBuiltin(s, ctx) {
         detail: `${r.findings.length} finding(s)`,
       });
       log(
-        `\n✗ ${s.label} failed (${r.findings.length} finding(s)). Rotate the secret, remove it, or mark a false positive on its line with abatty:allow-secret. The gate stops here.`,
+        `\n✗ ${s.label} failed (${r.findings.length} finding(s)). Rotate the secret, remove it, or mark a false positive with abatty:allow-secret on the same line as the string (the line above does not count). The gate stops here.`,
       );
       return false;
     }

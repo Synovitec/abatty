@@ -336,3 +336,15 @@ test("the git shim is said for what it is: the night's, refusing three bypasses,
   assert.match(line, /force push, --no-verify and moving core\.hooksPath/);
   assert.match(line, /your shell's git is untouched/);
 });
+
+test("the install step holds typescript below 7, and a repository that has it is not asked again", () => {
+  const bare = tempRepo("init-ts", { "package.json": NEXT_PKG });
+  const r = cli(["init", bare, "--stack", "next"], bare);
+  assert.match(r.out, /\d+\. npm i -D [^\n]*\btypescript@\^6\b/, r.out);
+  const pkg = { ...JSON.parse(NEXT_PKG), devDependencies: { typescript: "^5.6.0" } };
+  const has = tempRepo("init-has-ts", { "package.json": JSON.stringify(pkg) });
+  const line = cli(["init", has, "--stack", "next"], has)
+    .out.split("\n")
+    .find((l) => /npm i -D/.test(l));
+  assert.doesNotMatch(String(line), /typescript/);
+});

@@ -28,6 +28,8 @@ import { pinSaidFromEnv, unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
 import { measuredNothing } from "./coverage-empty.mjs";
+import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
+import { couldNotRun } from "./could-not-run.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -222,12 +224,15 @@ export function runGate(o) {
     const env = { ...stepDatabase(o.db), ...suiteEnv, ...(blind ? {} : { ABATTY_RANGE: range }) };
     // The output is kept as well as shown, so a red test step can say whose failure it is.
     const stepLog = stepLogAt(repoDir, prefix + s.label);
-    const res = asResult(
-      run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog }),
+    const res = couldNotRun(
+      asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog })),
+      stepLog,
     );
     const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
     // By the step's own label, not its suite's: "database suite + coverage (TEST.4)" names both.
     if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) hollow(stepLog);
+    const unread = passed && /\(CODE\.5\)/.test(s.label) && graphReadNothing(repoDir, stepLog);
+    if (unread) return couldNotRead(events, log, unread);
     if (!passed && !res.errored)
       for (const line of explainFailure({
         repoDir,

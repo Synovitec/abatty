@@ -26,9 +26,12 @@ export function changedLines(repoDir: string, base: string, head?: string): Map<
  * controls is the probe's test; the word match that stood alone ran a test naming `refs` against
  * the refs probe and read three killable mutants as survived. The word match is kept for what a
  * relative import cannot reach. A module neither finds has no test to run, and says so.
+ * The graph is built once per run and handed in: built per changed file, it read every tracked
+ * script again for each, and a run over a large tree took minutes to plant nothing.
  * @param {string} repoDir @param {string} file
+ * @param {Map<string, string[]>} [graph] who imports whom (src/core/imports.mjs)
  */
-export function testsFor(repoDir: string, file: string): string[];
+export function testsFor(repoDir: string, file: string, graph?: Map<string, string[]>): string[];
 /**
  * Put back a file a run was killed before restoring: the recovery file holds its original.
  * @param {string} repoDir @returns {string} the path restored, or ""

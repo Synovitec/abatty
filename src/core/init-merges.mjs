@@ -33,6 +33,22 @@ export function appendLines(repoDir, rel, lines, events, dryRun) {
 }
 
 /**
+ * What `.gitignore` must hold: the night's folder and abatty's own, and in a JavaScript
+ * repository its packages unless the file already names them in any form. An adopter with no
+ * `.gitignore` followed init's steps, committed, and committed node_modules with it.
+ * @param {string} repoDir @returns {string[]}
+ */
+export function ignoredHere(repoDir) {
+  const lines = [".claude/night/", ".abatty/"];
+  const current = existsSync(join(repoDir, ".gitignore"))
+    ? readFileSync(join(repoDir, ".gitignore"), "utf8")
+    : "";
+  if (existsSync(join(repoDir, "package.json")) && !/node_modules/.test(current))
+    lines.push("node_modules/");
+  return lines;
+}
+
+/**
  * The keys a merge put in or changed, as a merged line says them. A key whose value it replaced
  * (under --force) counts; one the repository already had and kept does not.
  * @param {Record<string, unknown>} after @param {Record<string, unknown>} before @param {string} kind

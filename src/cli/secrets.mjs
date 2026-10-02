@@ -71,7 +71,7 @@ export function secretsCommand(c) {
       `  ${t.glyph.fail} ${f.path}${t.gray(":" + f.line)}  ${t.red(f.kind)}  ${t.gray(f.sample)}\n`,
     );
   out(
-    `${r.findings.length ? "\n" + t.glyph.fail + " " + t.red(`${r.findings.length} secret(s): rotate it, remove it, or mark a false positive on its line with abatty:allow-secret (or a path in secrets.allow, with the reason)`) : t.glyph.ok + " " + t.green("no secret in the scanned files")}\n\n`,
+    `${r.findings.length ? "\n" + t.glyph.fail + " " + t.red(`${r.findings.length} secret(s): rotate it, remove it, or mark a false positive with abatty:allow-secret on the same line as the string, not the line above (or a path in secrets.allow, with the reason)`) : t.glyph.ok + " " + t.green("no secret in the scanned files")}\n\n`,
   );
   return r.findings.length ? EXIT.findings : EXIT.clean;
 }

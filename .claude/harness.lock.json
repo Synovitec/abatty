@@ -1,5 +1,5 @@
 {
-  "abatty": "0.7.0-rc.8",
+  "abatty": "0.7.0-rc.9",
   "installedAt": "2026-10-02",
   "files": {
     ".claude/hooks/check-direction.mjs": "33553875bf51bef3c1f9dfc92ed1ab467444ecaab0717fe71107cd3d718d8652",
@@ -12,7 +12,7 @@
     ".claude/hooks/shell.mjs": "e9edf9201d3f6c1993ee12afef6a8d198a0a4fbd0c207b65c92f6fdb90b6ab05",
     ".claude/hooks/stop-gate.mjs": "26eb1f3bd60678119fa7098cf3d7ec895f1c399363e931e4d0c85f67604b9af9",
     ".claude/hooks/vocabulary.mjs": "cb3f80737b8124562321c816fc6679db84b241a901def3b346b7abd713d01b3d",
-    ".claude/skills/adopt-standards/SKILL.md": "edba13f3d2ef03766626bd49c3e46a6521d041d78d4aaf59a6fcf14cfcaea019",
+    ".claude/skills/adopt-standards/SKILL.md": "946d962c2e20a07a3432b700d3e421d67d6141f0dd8b6de538b3dfba239719ba",
     ".claude/agents/standards-reviewer.md": "fbd61a3e5baadca110547a06dd2e8ac4048ba92089d7a2519592792531475266",
     ".claude/agents/standards-adopter.md": "abbec418909a6fe4a65e06d859f2d726c907cab98373450e3f7f62599ebd3785",
     ".claude/bin/shim.mjs": "532f75997d80221bbf2db9dcd885198dec8616fee4ddbbc75ac11dd501e98661",

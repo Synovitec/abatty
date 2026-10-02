@@ -5,6 +5,74 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.9] - 2026-10-02
+
+The ninth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What a replay of rc.8 on a fresh Next.js repository and a first real adoption
+found: an import graph that read nothing passed (TypeScript 7), setup gaps read as failed work,
+the docs index left a repository's own documents out and refused its first baseline, and
+`measure` wrote into `docs/` on every run. `init`'s steps by hand now lead to a first gate that
+can pass. One behaviour moves, under Upgrading: where `measure` writes its markdown report.
+
+### Upgrading
+
+- **`abatty measure` writes its markdown report under `.abatty/reports/<date>.md`**, beside the
+  JSON, no longer `docs/GAP_ANALYSIS_<date>.md`. A repository that keeps its readings in git asks
+  for one with `--out docs/GAP_ANALYSIS_<date>.md`; the adoption skill's wrap-up now does, and
+  `abatty update` brings the skill over.
+
+### Fixed
+
+- **`abatty measure` no longer writes into `docs/` on every run.** The dated report piled up
+  there, left the tree dirty (which a night refuses), and once committed turned the ratchet red
+  as a document the docs index does not list. It now goes under `.abatty/`, which git ignores,
+  and the line says where.
+- **`init`'s steps by hand lead to a first gate that can pass.** An adopter who did every step
+  met a ratchet with no floor and a coverage step skipped for a script nobody had mentioned. The
+  steps now ask to record the floor (`standards:baseline`) when there is none, name each gate
+  step whose script only the repository can write (`test`, `coverage:changed`) until it exists,
+  and ask for the import-graph baseline on every repository, not only an existing one. The
+  graph rule step is its own line, and points at the template's §3 only where the template is
+  the context.
+- **The docs index `init` writes names the documents a repository already had.** It listed
+  only the two files `init` wrote, so in a repository with its own documents under `docs/` each
+  read as missing from the index, `docs.indexDrift` is HARD, and the first `baseline` was refused.
+  Each one now has its row, read from its own front matter (description, category, status), and
+  a document without front matter is listed with dashes for a person to fill.
+- **`init`'s install step names abatty itself.** The scripts it adds call `abatty` and the config
+  reads its files, but run from a global install it was in no manifest: knip read the binary as
+  unlisted, and a clone had no abatty to run. The step now adds `abatty@<this version>` when the
+  repository does not list it.
+- **The secret scan's refusal says where the allow mark goes.** It said "on its line", and an
+  adopter put `abatty:allow-secret` on the line above and read the refusal as a bug. The gate and
+  `abatty secrets` now say on the same line as the string, not the line above.
+- **`init` keeps a JavaScript repository's packages out of git.** In a repository with no
+  `.gitignore`, the one it wrote held its own folders only, and an adopter who followed the steps
+  and committed committed `node_modules`. It now adds `node_modules/` where there is a
+  `package.json` and the file does not already name it in any form.
+- **`abatty mutate` reads the import graph once per run.** It read every tracked script again
+  for each changed file, so the cost grew with the size of the change times the size of the
+  tree.
+
+- **`init` asks for a TypeScript the import graph can read.** Its install step named
+  `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so
+  it cruised 0 modules and the import-graph step passed over a repository it had not read. The
+  step now asks for `typescript@^6`, and a repository that already has TypeScript is not asked.
+- **An import graph that read nothing no longer passes.** Where dependency-cruiser says it
+  cruised 0 modules and the repository has scripts it could have read, the step could not run:
+  the gate stops there and says why (a TypeScript it does not support, or a path it is not
+  given), as it does for a tool that is not installed. A repository with no script to read, and a
+  graph that read modules, are unchanged.
+- **A typecheck that found no project could not run; it did not fail.** `tsc --noEmit` with no
+  `tsconfig.json` prints its help screen and exits 1, and the gate called the work red under a
+  page of compiler options. The help screen is now read as the compiler saying it had nothing to
+  check: the step could not run, and the line says to add the `tsconfig.json` or point the script
+  at one. A typecheck that reports type errors still fails.
+- **An import graph with no baseline file could not run; it did not fail.** `init` writes the
+  dependency-cruiser config and asks for its known-violations baseline only "on an existing
+  repository", and without the file dependency-cruiser cannot start: the gate called that the
+  work red. It now reads as could not run, with the command that records today's baseline.
+
 ## [0.7.0-rc.8] - 2026-10-02
 
 The eighth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

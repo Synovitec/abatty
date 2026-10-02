@@ -44,7 +44,11 @@ export async function measureCommand(cx) {
     return;
   }
   const md = renderMarkdown({ ...r, families: r.families.map((f) => f.name) });
-  const target = resolve(dir, to || join("docs", `GAP_ANALYSIS_${r.date}.md`));
+  // Beside the JSON under .abatty/, which git ignores: written into docs/ on every run, the dated
+  // report piled up there, dirtied the tree a night refuses, and once committed turned the
+  // ratchet red as a document the docs index does not list. A repository that keeps its
+  // readings asks for one with --out docs/GAP_ANALYSIS_<date>.md.
+  const target = resolve(dir, to || join(".abatty", "reports", `${r.date}.md`));
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, md);
   const linked = linkPreviousReadings(target);
