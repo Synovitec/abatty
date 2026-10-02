@@ -9,7 +9,7 @@ related: ["../CHANGELOG.md", "../CONTRIBUTING.md", "../SECURITY.md"]
 source_truth:
   ["../src/ratchet/config.mjs", "../schema/abatty.config.schema.json", "../src/cli/exit.mjs"]
 scope: synovitec
-last_verified: "2026-09-25"
+last_verified: "2026-10-02"
 ---
 
 # Versioning

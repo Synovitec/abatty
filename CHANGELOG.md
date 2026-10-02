@@ -5,6 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Upgrading
+
+- **`abatty mutate` exits 3 when a mutant survives**, and 2 when it cannot start (no runner named
+  and no `mutation.command`, or a range ending at a commit not checked out). It exited 0 unless
+  `--strict` was passed. A script that ran it for a report and expected 0 now reads 3.
+
 ### Fixed
 
 - **Every gate step keeps a log under `.abatty/steps/`.** The format step and the built-in
