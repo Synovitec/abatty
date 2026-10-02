@@ -16,6 +16,14 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The pipeline `abatty ci` writes is least-privilege, and its suites get a working database.**
+  An adopter refused it on three counts: the workflow granted `id-token`, `attestations` and
+  `security-events` write to every job, the database job set no `TEST_DATABASE_URL`, and the
+  browser job neither migrated nor seeded the database its pages read, so every end-to-end test
+  failed before it ran. The writes now go to the one job that signs and uploads; the database
+  jobs set `TEST_DATABASE_URL` beside `DATABASE_URL` (GitHub and Woodpecker); and where the
+  repository has a migrate script (`db:migrate`, `migrate`, `prisma:migrate`), the browser job
+  gets the same Postgres and runs it, then the seed script if there is one, before the build.
 - **A classic Windows console reads abatty's symbols in ASCII.** abatty writes UTF-8, and
   PowerShell 5.1 or `cmd` decodes it in the console's old code page: an adopter read
   `Ô£ù gate red ┬À 1 step(s)`. On Windows, outside Windows Terminal, VS Code, an MSYS shell (Git

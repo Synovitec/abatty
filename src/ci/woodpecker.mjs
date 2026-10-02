@@ -97,6 +97,7 @@ export function renderWoodpecker(preset, o = {}) {
           `    image: ${image}`,
           `    environment:`,
           `      DATABASE_URL: postgres://postgres:postgres@postgres:5432/test`,
+          `      TEST_DATABASE_URL: postgres://postgres:postgres@postgres:5432/test`,
           `    commands:`,
           `      - ${y(s.command)}`,
         );

@@ -64,19 +64,25 @@ export function renderGithubActions(preset, o = {}) {
     // A review re-runs the floors job alone: the approval arrives after the checks ran.
     `  pull_request_review:`,
     `    types: [submitted, dismissed]`,
+    // Read-only for every job; the writes go to the one job that signs and uploads. Granted to
+    // the whole workflow, they reached the database and browser jobs, which run the repository's
+    // own code, and an adopter refused the pipeline for it.
     `permissions:`,
     `  contents: read`,
     `  pull-requests: read`,
-    // The workload identity the signature is made with, and the write the transparency log needs.
-    `  id-token: write`,
-    `  attestations: write`,
-    // The findings are uploaded to code scanning, which is what puts them on the diff of the
-    // change under review rather than in a report nobody opens.
-    `  security-events: write`,
     `jobs:`,
     `  checks:`,
     `    if: github.event_name != 'pull_request_review'`,
     `    runs-on: ubuntu-latest`,
+    `    permissions:`,
+    `      contents: read`,
+    `      pull-requests: read`,
+    // The workload identity the signature is made with, and the write the transparency log needs.
+    `      id-token: write`,
+    `      attestations: write`,
+    // The findings are uploaded to code scanning, which is what puts them on the diff of the
+    // change under review rather than in a report nobody opens.
+    `      security-events: write`,
     `    steps:`,
     ...setup,
     ...always.map(step),
@@ -144,40 +150,63 @@ export function renderGithubActions(preset, o = {}) {
       ...list.map((s) => `  #   ${s.name}: ${s.absent}`),
     );
   if (db.length && db.every((s) => s.absent)) onlyAbsent("database", db);
-  else if (db.length) {
+  else if (db.length)
     out.push(
       `  database:`,
       `    needs: checks`,
-      `    runs-on: ubuntu-latest`,
-      `    services:`,
-      `      postgres:`,
-      `        image: postgres:16`,
-      `        env:`,
-      `          POSTGRES_PASSWORD: postgres`,
-      `          POSTGRES_DB: test`,
-      `        ports: ["5432:5432"]`,
-      `        options: >-`,
-      `          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10`,
-      `    env:`,
-      `      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test`,
+      ...postgres(),
       `    steps:`,
       ...setup,
       ...db.map(step),
     );
-  }
   if (browser.length && browser.every((s) => s.absent)) onlyAbsent("browser", browser);
   else if (browser.length) {
+    // An app whose pages read a database needs one migrated and seeded before the build serves
+    // it: without, every browser test failed before it ran. Where the repository has a migrate
+    // script, the browser job gets the database job's Postgres and runs its migrate and seed.
+    const migrate = firstScript(o.scripts, ["db:migrate", "migrate", "prisma:migrate"]);
+    const seed = firstScript(o.scripts, ["db:seed", "seed", "prisma:seed"]);
     out.push(
       `  browser:`,
       `    needs: checks`,
-      `    runs-on: ubuntu-latest`,
+      ...(migrate ? postgres() : [`    runs-on: ubuntu-latest`]),
       `    steps:`,
       ...setup,
+      ...(migrate ? [`      - run: ${t.run(migrate)}`] : []),
+      ...(migrate && seed ? [`      - run: ${t.run(seed)}`] : []),
       `      - run: ${t.exec("playwright")} install --with-deps`,
       ...browser.map(step),
     );
   }
   return out.join("\n") + "\n";
+}
+
+/** The first of `names` the repository has a script for, or "". @param {Record<string, string> | undefined} scripts @param {string[]} names */
+const firstScript = (scripts, names) => names.find((n) => scripts && n in scripts) || "";
+
+/**
+ * A job's runner and its throwaway Postgres, with the URL every runner and the gate read: the
+ * database as DATABASE_URL and, for a configuration that keeps the suites' database apart, as
+ * TEST_DATABASE_URL too (the gate itself hands TEST_DATABASE_URL on as DATABASE_URL).
+ * @returns {string[]}
+ */
+function postgres() {
+  const url = "postgres://postgres:postgres@localhost:5432/test";
+  return [
+    `    runs-on: ubuntu-latest`,
+    `    services:`,
+    `      postgres:`,
+    `        image: postgres:16`,
+    `        env:`,
+    `          POSTGRES_PASSWORD: postgres`,
+    `          POSTGRES_DB: test`,
+    `        ports: ["5432:5432"]`,
+    `        options: >-`,
+    `          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10`,
+    `    env:`,
+    `      DATABASE_URL: ${url}`,
+    `      TEST_DATABASE_URL: ${url}`,
+  ];
 }
 
 /**
