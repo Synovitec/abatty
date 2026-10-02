@@ -1,16 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
+import { NEXT_PKG, aroundToday, cli, git, tempRepo } from "./helpers.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { pushRangeInfo } from "../src/core/range.mjs";
 import { presetById } from "../src/presets/index.mjs";
 import { analyze } from "../src/core/gap-analysis.mjs";
 import { normalise } from "../src/core/doctor.mjs";
 import { sampleTrailer } from "../src/core/vocabulary.mjs";
-import { localToday } from "../src/core/today.mjs";
 
 test("doctor after init: the repository's self-test runs and every shipped file is in step", () => {
   const dir = tempRepo("doctor", { "package.json": NEXT_PKG });
@@ -73,10 +72,12 @@ test("measure writes the dated report with the standard's front matter and a sco
     "package.json": NEXT_PKG,
     "src/a.ts": "export const a = 1;\n",
   });
-  const r = cli(["measure", dir, "--quiet"], dir);
+  const { result: r, days } = aroundToday(() => cli(["measure", dir, "--quiet"], dir));
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /Score \d+\/100 over \d+ applicable checks/);
-  const report = readFileSync(join(dir, "docs", `GAP_ANALYSIS_${localToday()}.md`), "utf8");
+  const reports = days.map((d) => join(dir, "docs", `GAP_ANALYSIS_${d}.md`)).filter(existsSync);
+  assert.equal(reports.length, 1, `one report dated ${days.join(" or ")}`);
+  const report = readFileSync(String(reports[0]), "utf8");
   assert.match(report, /^---\ntitle: "Gap analysis/);
   assert.match(report, /\| INST-GATE \|/);
   assert.doesNotMatch(

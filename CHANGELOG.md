@@ -5,6 +5,38 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.7] - 2026-10-02
+
+The seventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. Two blockers a Next.js repository on Windows reported against rc.5: `abatty doctor`
+hung silent on a CRLF checkout, and `init`'s own harness failed the repository's lint. Nothing is
+refused that was not before; no config key, exit code or `--json` field moves. `doctor` gains
+`--verbose`.
+
+### Fixed
+
+- **`abatty doctor` no longer hangs on a Windows checkout.** The check for exports with no doc
+  comment read the text above each export with one regular expression, which on a CRLF file
+  under a long run of `//` lines tried every way to split each line end: 20 lines took a third of
+  a second, 31 took minutes, for one export. `doctor` reads that opt-in check to say what it
+  would count, so it sat silent at full CPU. With `core.autocrlf` on, every Windows checkout is
+  CRLF. The text above an export is now read line by line, in linear time, and gives the same
+  answer: compared on 2,690 exports in both line endings, none differs.
+- **`abatty doctor` says it started, and `--verbose` names each check as it begins.** Its banner
+  was printed only after every check returned, so the hang above read as a doctor that printed
+  nothing at all, with no clue where it was. The banner now comes first, and `--verbose` prints
+  each check (drift, permissions, opt-in probes, config, hook modes) before it runs.
+- **The `protect` hook no longer imports a name it never uses.** An adopter's eslint
+  (`no-unused-vars`) failed on `HARNESS_DIR` in `.claude/hooks/protect.mjs`, which `init` wrote,
+  so the gate went red on a file the adopter never touched. It is the only unused import in the
+  templates; `abatty update` brings the hook over.
+- **`init` and `doctor` say when your eslint would read the harness.** `eslint .` lints `.claude/`,
+  so the instrument was judged by the product's rules: the self-test is 739 lines, over a
+  repository's `max-lines: 600`, and the gate went red on files nobody there wrote. When an eslint
+  config that does not name `.claude` is found, `init` lists the line to add (`{ ignores:
+  [".claude/**"] }` for a flat config, `ignorePatterns` for a legacy one) among its steps by hand,
+  and `doctor` repeats it without failing. Your eslint config is code and is never edited.
+
 ## [0.7.0-rc.6] - 2026-10-02
 
 The sixth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

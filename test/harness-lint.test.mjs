@@ -1,0 +1,47 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
+import { harnessLintHint } from "../src/core/harness-lint.mjs";
+
+// An adopter's `eslint .` judged the harness init installs under .claude/ by the product's rules,
+// and the gate went red on files nobody there wrote. Their config is code and is never edited:
+// the line to add is said, by init and by doctor, until the config names .claude.
+
+const FLAT = 'export default [{ rules: { "max-lines": ["error", 600] } }];\n';
+
+test("a flat config that does not name .claude is told the ignores line", () => {
+  const dir = tempRepo("hl-flat", { "eslint.config.mjs": FLAT });
+  assert.deepEqual(harnessLintHint(dir), {
+    config: "eslint.config.mjs",
+    line: '{ ignores: [".claude/**"] }',
+  });
+});
+
+test("a legacy config is told its own key", () => {
+  const dir = tempRepo("hl-legacy", { ".eslintrc.json": "{}\n" });
+  assert.equal(harnessLintHint(dir)?.line, 'ignorePatterns: [".claude/"]');
+});
+
+test("a config or an .eslintignore that names .claude, or no eslint at all, is left alone", () => {
+  const named = tempRepo("hl-named", {
+    "eslint.config.js": 'export default [{ ignores: [".claude/**"] }];\n',
+  });
+  assert.equal(harnessLintHint(named), null);
+  const ignored = tempRepo("hl-ignore", {
+    ".eslintrc.cjs": "module.exports = {};\n",
+    ".eslintignore": ".claude/\n",
+  });
+  assert.equal(harnessLintHint(ignored), null);
+  assert.equal(harnessLintHint(tempRepo("hl-none", { "package.json": "{}" })), null);
+});
+
+test("init lists it among the steps by hand, and doctor says it without failing", () => {
+  const dir = tempRepo("hl-cli", { "package.json": NEXT_PKG, "eslint.config.mjs": FLAT });
+  const init = cli(["init", dir, "--stack", "next"], dir);
+  assert.match(init.out, /\d+\. eslint\.config\.mjs lints \.claude\/, the harness abatty installs/);
+  const doc = cli(["doctor", dir, "--skip-self-test"], dir);
+  assert.match(
+    doc.out,
+    /eslint\.config\.mjs lints \.claude\/.*abatty does not edit your eslint config/,
+  );
+});

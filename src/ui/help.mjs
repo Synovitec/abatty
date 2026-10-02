@@ -23,7 +23,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--ci <providers>] [--agent <ids>] [--force] [--dry-run]   the instrument, from the templates and the preset
   ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--sarif] [--quiet]  the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run
-  ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test] [--controls]     the harness self-test and the drift against the package; --controls proves each gate step can go red
+  ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test] [--controls] [--verbose]  the harness self-test and the drift against the package; --controls proves each gate step can go red, --verbose names each check as it starts
   ${t.bold("abatty scrub")} [dir] [--fix] [--commits|--range <r>] [--prs] [--history]  no trace of the tools (opt-in, scrub.enabled): files, commit messages, pull requests
   ${t.bold("abatty scrub")} --message <file>                                     the commit-msg hook: refuse a message that names one
   ${t.bold("abatty report")} [dir] [--json]                                     the JSON report under .abatty/reports/

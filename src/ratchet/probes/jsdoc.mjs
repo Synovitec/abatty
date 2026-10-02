@@ -12,18 +12,45 @@ const EXPORT =
   /^[ \t]*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\*?|const|let|var|class|abstract\s+class|type|interface|enum)\s+([\w$]+)/gm;
 
 /**
+ * The body of the `/** *\/` block that ends right above the last line, or null. Read line by line
+ * from the bottom: blank lines, decorators and line comments (a linter directive, a note) sit
+ * between the block and the export without taking the block away from it. It was one regex over
+ * everything above the export, which backtracked on a CRLF file (a line end matched two ways
+ * under a run of `//` lines) and took minutes for one export, which hung `doctor` on Windows.
+ * @param {string[]} lines the file up to the export, split on `\n`; the last is the export's own
+ * @returns {string | null}
+ */
+function blockAbove(lines) {
+  let i = lines.length - 2;
+  for (; i >= 0; i--) {
+    const l = String(lines[i]).trim();
+    if (l && !l.startsWith("@") && !l.startsWith("//")) break;
+  }
+  const last = i >= 0 ? String(lines[i]).trimEnd() : "";
+  if (!last.endsWith("*/")) return null;
+  // Up to the block's own `/**`: a `/*` in its prose (`/api/*`) is text, and a `*/` met first
+  // means the comment above closed without a doc block opening.
+  /** @type {string[]} */
+  const parts = [];
+  for (let j = i; j >= 0; j--) {
+    const l = j === i ? last.slice(0, -2) : String(lines[j]);
+    const open = l.lastIndexOf("/**");
+    if (l.lastIndexOf("*/") > open) return null;
+    if (open >= 0) return [l.slice(open + 3), ...parts].join("\n");
+    parts.unshift(l);
+  }
+  return null;
+}
+
+/**
  * Whether a doc comment ends right above a position, blank lines and decorators aside.
  * @param {string} text the file with strings blanked and comments kept @param {number} at
  */
 function documented(text, at) {
-  // Decorators and line comments (a linter directive, a note) may sit between the block and
-  // the export without taking the block away from it.
-  const above = text.slice(0, at).replace(/(\s*(@[\w.]+(\([^)]*\))?|\/\/[^\n]*))*\s*$/, "");
-  // The block that ends here, opened by its own `/**`: a `/*` in its prose (`/api/*`) is text.
-  const block = /\/\*\*((?:(?!\*\/)[\s\S])*)\*\/$/.exec(above);
-  if (!block) return false;
+  const body = blockAbove(text.slice(0, at).split("\n"));
+  if (body === null) return false;
   // A block of `@typedef`s documents types, not the export that happens to follow it.
-  const lines = String(block[1])
+  const lines = body
     .split("\n")
     .map((l) => l.replace(/^\s*\*?\s?/, "").trim())
     .filter(Boolean);
@@ -115,6 +142,22 @@ export const probes = [
           "src/__tests__/a.ts": "export function helper() {}\n",
         },
         expect: 0,
+      },
+      {
+        // The shape that hung doctor for minutes on Windows: CRLF, a long run of line comments,
+        // code under it, then a documented export. Read in a blink, one finding (the first).
+        name: "a CRLF file with a long run of line comments above code is read in linear time",
+        files: {
+          "src/history.ts": [
+            ...Array.from({ length: 40 }, (_, i) => `// ${i} a version note`),
+            "export const VERSION = '1';",
+            "",
+            "/** Why the next one exists. */",
+            "export const NEXT = '2';",
+            "",
+          ].join("\r\n"),
+        },
+        expect: 1,
       },
     ],
   },

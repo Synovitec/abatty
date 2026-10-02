@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { localToday } from "../src/core/today.mjs";
 
 // The suite is hermetic: the harness a developer installed in THIS repository exports
 // ADOPTION_CONFIG for every child process, and inherited into a fixture it points the hooks at a
@@ -44,6 +45,18 @@ export function inTimezone(tz, fn) {
     // once before anything was pinned, is restored by name.
     process.env.TZ = was === undefined ? SYSTEM_ZONE : was;
   }
+}
+
+/**
+ * Run something that stamps today's local date, and return it with the days it may have stamped:
+ * the one it started on and the one it ended on. A case that read the day only afterwards failed
+ * when the run crossed local midnight, which the skewed-clock job makes happen at noon UTC.
+ * @template T @param {() => T} run @returns {{ result: T, days: string[] }}
+ */
+export function aroundToday(run) {
+  const before = localToday();
+  const result = run();
+  return { result, days: [...new Set([before, localToday()])] };
 }
 
 /** The machine's own zone, read before any case pins another. */

@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
+import { NEXT_PKG, aroundToday, cli, tempRepo } from "./helpers.mjs";
 import {
   FAMILIES,
   RULES,
@@ -18,7 +18,6 @@ import {
 import { buildContext } from "../src/rules/context.mjs";
 import { analyze, measure } from "../src/core/gap-analysis.mjs";
 import { renderCatalogMarkdown } from "../src/ui/catalog.mjs";
-import { localToday } from "../src/core/today.mjs";
 
 // The checks of the first days, by ID: a rule renamed or dropped by accident would break every
 // dated report that cites it. Adding one appends here.
@@ -340,9 +339,11 @@ test("docs/CATALOG.md is the catalog: abatty rules --md, committed", () => {
 
 test("the markdown report carries the level and the insurance of every check", () => {
   const dir = tempRepo("md", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
-  const r = cli(["measure", dir, "--quiet"], dir);
+  const { result: r, days } = aroundToday(() => cli(["measure", dir, "--quiet"], dir));
   assert.equal(r.code, 0, r.out);
-  const md = readFileSync(join(dir, "docs", `GAP_ANALYSIS_${localToday()}.md`), "utf8");
+  const reports = days.map((d) => join(dir, "docs", `GAP_ANALYSIS_${d}.md`)).filter(existsSync);
+  assert.equal(reports.length, 1, `one report dated ${days.join(" or ")}`);
+  const md = readFileSync(String(reports[0]), "utf8");
   assert.match(md, /\| ID \| Family \| Rule \| Level \| Insured by \| Status \|/);
   assert.match(md, /\| CODE-DEADCODE \| Code \| [^|]+ \| must \| hard \| \*\*missing\*\* \|/);
   assert.match(md, /abatty explain <ID>/);

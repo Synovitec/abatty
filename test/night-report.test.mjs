@@ -2,11 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { NEXT_PKG, STUB_AGENT, cli, git, tempRepo } from "./helpers.mjs";
+import { NEXT_PKG, STUB_AGENT, aroundToday, cli, git, tempRepo } from "./helpers.mjs";
 import { recordControls } from "./night-helpers.mjs";
 import { runNight } from "../src/night/runner.mjs";
 import { distil, gatherNight, nightDates, renderNightReport } from "../src/night/report.mjs";
-import { localToday } from "../src/core/today.mjs";
 
 /** A repository with the harness committed, a no-op gate and one phase. @param {string} name */
 function nightRepo(name) {
@@ -31,17 +30,21 @@ function nightRepo(name) {
 
 test("after a stub night: the facts are gathered, the recurring dirty-tree block becomes a proposed lesson, the report renders and writes", () => {
   const dir = nightRepo("nr-happy");
-  const r = runNight({
-    repoDir: dir,
-    until: "+10min",
-    maxCostUsd: 10,
-    noPush: true,
-    agent: STUB_AGENT,
-    log: () => {},
-  });
+  const { result: r, days } = aroundToday(() =>
+    runNight({
+      repoDir: dir,
+      until: "+10min",
+      maxCostUsd: 10,
+      noPush: true,
+      agent: STUB_AGENT,
+      log: () => {},
+    }),
+  );
   assert.equal(r.ok, true);
-  const date = localToday();
-  assert.deepEqual(nightDates(dir), [date]);
+  const dates = nightDates(dir);
+  assert.equal(dates.length, 1, dates.join(", "));
+  const date = String(dates[0]);
+  assert.ok(days.includes(date), `${date} is not ${days.join(" or ")}`);
   const n = gatherNight(dir);
   assert.ok(n);
   assert.equal(n.date, date);
