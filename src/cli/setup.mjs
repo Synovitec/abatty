@@ -2,6 +2,7 @@
  * `init` and `update`: what the package writes into a repository the first time, and how it is
  * brought to the package's version afterwards without losing the repository's own edits.
  */
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { initRepo } from "../core/init.mjs";
@@ -72,6 +73,14 @@ export async function initCommand(cx, preset) {
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
+  // A step the gate will skip for want of its config, said here: init writes .prettierignore and
+  // no prettier config, and the gate's "no .prettierrc" read as init forgetting its own file.
+  // The config is the repository's decision to hold formatting, so it is named, not written.
+  for (const s of preset.gate.always)
+    if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
+      out(
+        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it`)}\n`,
+      );
   out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
   return;
 }

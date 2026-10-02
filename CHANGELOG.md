@@ -31,6 +31,11 @@ under Unreleased in the same commit.
   the catalog reads from the tree (`stack:pwa`), not only a dependency, so both read it the same
   way; a skipped file is said, with why. A `pwa.md` an earlier `init` wrote is left where it is,
   and `update` no longer manages it.
+- **`init` names a gate step that will be skipped for want of its config.** It writes
+  `.prettierignore` and asks for prettier, but writes no prettier config, so the gate's first
+  run said "format · no .prettierrc", which read as `init` forgetting its own file. The config is
+  the repository's decision to hold formatting (written blind, it would turn every unformatted
+  file red), so it is named among the steps by hand rather than written.
 
 ## [0.7.0-rc.7] - 2026-10-02
 
