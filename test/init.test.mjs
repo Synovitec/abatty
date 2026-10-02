@@ -315,3 +315,15 @@ test("a gate step that will be skipped for want of its config is named among the
   const held = tempRepo("init-prettier", { "package.json": NEXT_PKG, ".prettierrc": "{}\n" });
   assert.doesNotMatch(cli(["init", held, "--stack", "next"], held).out, /the gate skips format/);
 });
+
+test("a merged file says what init put in it, and a key the repository set is not named", () => {
+  const dir = tempRepo("init-merged", {
+    "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), scripts: { lint: "next lint" } }),
+    ".gitignore": "node_modules\n",
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  const pkg = r.out.split("\n").find((l) => /merged\s+package\.json/.test(l)) || "";
+  assert.match(pkg, /scripts added: .*\bgate\b/, r.out);
+  assert.doesNotMatch(pkg, /\blint\b/, "the repository's own script is kept, so not added");
+  assert.match(r.out, /merged\s+\.gitignore · added \.claude\/night\/, \.abatty\//);
+});

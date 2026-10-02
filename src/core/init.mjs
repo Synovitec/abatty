@@ -235,7 +235,7 @@ export function initRepo(o) {
     events.push({ file: configRel, action: existing ? "overwritten" : "written" });
   } else if (!sameConfig(merged, existing)) {
     if (!dryRun) writeJsonFile(repoDir, configRel, merged);
-    events.push({ file: configRel, action: "merged" });
+    events.push({ file: configRel, action: "merged", detail: added(merged, existing, "keys") });
   } else events.push({ file: configRel, action: "kept" });
 
   // 3. The tooling: the import graph and dead code.
@@ -271,15 +271,12 @@ export function initRepo(o) {
   const pkg = readPackage(repoDir);
   if (existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    let added = 0;
     for (const [k, v] of Object.entries(preset.scripts))
-      if (!(k in scripts) || force) {
-        scripts[k] = rooted(v);
-        added++;
-      }
-    if (added) {
+      if (!(k in scripts) || force) scripts[k] = rooted(v);
+    const what = added(scripts, pkg.scripts || {}, "scripts");
+    if (what) {
       if (!dryRun) writeJsonFile(repoDir, "package.json", { ...pkg, scripts });
-      events.push({ file: "package.json", action: "merged" });
+      events.push({ file: "package.json", action: "merged", detail: what });
     } else events.push({ file: "package.json", action: "kept" });
   }
 
@@ -300,7 +297,11 @@ export function initRepo(o) {
       }
     if (n) {
       if (!dryRun) writeJsonFile(join(repoDir, w.path), "package.json", { ...wp, scripts: ws });
-      events.push({ file: `${w.path}/package.json`, action: "merged" });
+      events.push({
+        file: `${w.path}/package.json`,
+        action: "merged",
+        detail: added(ws, wp.scripts || {}, "scripts"),
+      });
     } else events.push({ file: `${w.path}/package.json`, action: "kept" });
   }
 
@@ -411,5 +412,22 @@ function appendLines(repoDir, rel, lines, events, dryRun) {
       target,
       (current ? current.replace(/\s*$/, "\n") : "") + missing.join("\n") + "\n",
     );
-  events.push({ file: rel, action: current ? "merged" : "written" });
+  events.push({
+    file: rel,
+    action: current ? "merged" : "written",
+    ...(current && { detail: `added ${missing.join(", ")}` }),
+  });
+}
+
+/**
+ * What a merge put in, said on its line: "merged" alone sent a reader to `git diff` to find out
+ * what `init` had done to a file of theirs. A key whose value it replaced (under --force) counts.
+ * @param {Record<string, unknown>} after @param {Record<string, unknown>} before @param {string} kind
+ * @returns {string} "" when nothing changed
+ */
+function added(after, before, kind) {
+  const keys = Object.keys(after).filter(
+    (k) => JSON.stringify(after[k]) !== JSON.stringify(before[k]),
+  );
+  return keys.length ? `${kind} added: ${keys.join(", ")}` : "";
 }

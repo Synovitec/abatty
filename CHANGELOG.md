@@ -41,6 +41,11 @@ under Unreleased in the same commit.
   fresh one, whose placeholders are in `AGENTS.md` (the template goes there, `CLAUDE.md` imports
   it). A kept file is now said to be kept, with `AGENTS.md` pointing at it, the one source; a
   fresh one is asked to fill `AGENTS.md`, with the count of what is left.
+- **A file `init` merged says what it put in.** `! merged package.json` sent a reader to
+  `git diff` to find out what had been done to a file of theirs. The line now names it: the
+  scripts added to a `package.json`, the lines added to `.gitignore` and `.prettierignore`, the
+  keys added to the config. A script or a key the repository already had is not named, since it
+  is kept.
 
 ## [0.7.0-rc.7] - 2026-10-02
 
