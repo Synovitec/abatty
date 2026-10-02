@@ -18,9 +18,9 @@ under Unreleased in the same commit.
 - **A selected suite with no test script skips loudly, and builds nothing first.** Where a push
   selected the browser suite and the repository had `build` but no `e2e` script, the gate ran the
   whole production build, then skipped the tests in a grey line. Where no step but `build` has a
-  script, the suite now does not run at all, and the gate says so with the scripts to add. The
-  push is not refused; a suite with one of its testing scripts (integration without coverage)
-  still runs it.
+  script, the suite now does not run at all, and the gate says so with the scripts to add; it is
+  not deferred to CI either, where it would do nothing too. The push is not refused; a suite with
+  one of its testing scripts (integration without coverage) still runs it.
 - **`doctor` names a suite the gate can never select.** The gate selects a suite by its paths
   (`app/`, `e2e/`, ...) read from the root. A monorepo whose Next app lives in a workspace with no
   preset of its own matched none of them: its browser suite never ran, every push read "no
