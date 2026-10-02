@@ -8,6 +8,7 @@ import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { doctor } from "../core/doctor.mjs";
 import { harnessLintSays } from "../core/harness-lint.mjs";
 import { ciSays } from "../ci/day-one.mjs";
+import { managerFor } from "../core/package-manager.mjs";
 import { prerequisites } from "../core/prereqs.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
@@ -185,6 +186,14 @@ export async function doctorCommand(cx, preset) {
   out(
     `  ${r.differs.length || r.missing.length ? t.glyph.warn : t.glyph.ok} drift: ${r.differs.length} file(s) differ from the shipped templates, ${r.missing.length} missing${r.differs.length ? t.gray(" · abatty update merges the package's version with your edits where it has the installed copy to merge from, and puts it beside yours as .abatty-new where it has not (a git hook you edited); or keep yours and say why in the decisions file") : ""}\n`,
   );
+  if (r.undeclared.length) {
+    const add = { npm: "npm i", pnpm: "pnpm add", yarn: "yarn add", bun: "bun add" }[
+      managerFor(dir).id
+    ];
+    out(
+      `  ${t.glyph.fail} ${t.red(`imported and declared in no package.json: ${r.undeclared.map((u) => `${u.name} (${u.files} file(s))`).join(", ")}`)}${t.gray(` · ${add} ${r.undeclared.map((u) => u.name).join(" ")}, or remove the imports; the import graph and the dead-code step report each file`)}\n`,
+    );
+  }
   for (const p of r.split)
     out(
       `  ${t.glyph.fail} ${t.red(`${p.family}'s packages are installed at different versions (${p.versions}): they are released together and expect one; align them (a lockfile refresh or an override split them)`)}\n`,

@@ -16,6 +16,12 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **`doctor` names a package the code imports and no `package.json` declares, once.** An adopter
+  imported `server-only` from 13 files without declaring it, and the gate read 13 import-graph
+  errors and 13 dead-code findings, one per file, with nothing saying to install it. `doctor` now
+  names each such package with how many files import it, and the install command in the
+  repository's manager. Builtins, framework virtual modules, tsconfig aliases, the repository's
+  own workspaces, and imports inside strings or comments are not counted.
 
 ## [0.7.0-rc.11] - 2026-10-02
 

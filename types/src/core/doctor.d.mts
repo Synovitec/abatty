@@ -82,6 +82,10 @@ export function doctor(o: {
         family: string;
         versions: string;
     }[];
+    undeclared: {
+        name: string;
+        files: number;
+    }[];
 };
 export type DriftEvent = {
     file: string;
