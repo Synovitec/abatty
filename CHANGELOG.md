@@ -11,6 +11,11 @@ under Unreleased in the same commit.
   `typescript` bare, which now installs 7.x; dependency-cruiser reads TypeScript 2 to 6 only, so
   it cruised 0 modules and the import-graph step passed over a repository it had not read. The
   step now asks for `typescript@^6`, and a repository that already has TypeScript is not asked.
+- **An import graph that read nothing no longer passes.** Where dependency-cruiser says it
+  cruised 0 modules and the repository has scripts it could have read, the step could not run:
+  the gate stops there and says why (a TypeScript it does not support, or a path it is not
+  given), as it does for a tool that is not installed. A repository with no script to read, and a
+  graph that read modules, are unchanged.
 
 ## [0.7.0-rc.8] - 2026-10-02
 

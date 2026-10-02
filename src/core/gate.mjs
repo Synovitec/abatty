@@ -28,6 +28,7 @@ import { pinSaidFromEnv, unexpectedNodeEnv } from "./env.mjs";
 import { commentOnly, liveDevServer } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
 import { measuredNothing } from "./coverage-empty.mjs";
+import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -228,6 +229,8 @@ export function runGate(o) {
     const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
     // By the step's own label, not its suite's: "database suite + coverage (TEST.4)" names both.
     if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) hollow(stepLog);
+    const unread = passed && /\(CODE\.5\)/.test(s.label) && graphReadNothing(repoDir, stepLog);
+    if (unread) return couldNotRead(events, log, unread);
     if (!passed && !res.errored)
       for (const line of explainFailure({
         repoDir,
