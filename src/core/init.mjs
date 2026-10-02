@@ -173,6 +173,13 @@ export function initRepo(o) {
       merge: false,
       executable: f !== "shim.mjs",
     });
+  // A file named `git` read as one that takes over git: it is said what it does and where. Only
+  // the night puts this folder first on PATH (src/core/shim.mjs shimmedPath); a shell of yours
+  // meets it only where you put it there yourself.
+  const shim = events.find((e) => e.file === `${SHIM_DIR}/git` && e.action !== "kept");
+  if (shim)
+    shim.detail =
+      "a git wrapper the night puts first on its PATH: refuses force push, --no-verify and moving core.hooksPath, hands everything else to git; your shell's git is untouched unless you add .claude/bin to PATH (ABATTY_SHIM=off passes all)";
   // The skill, in the open agent-skills format, at every configured adapter's skills folder.
   const skillText = tpl("skills/adopt-standards/SKILL.md");
   const skillAdapters = configuredAdapters(

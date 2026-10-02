@@ -327,3 +327,12 @@ test("a merged file says what init put in it, and a key the repository set is no
   assert.doesNotMatch(pkg, /\blint\b/, "the repository's own script is kept, so not added");
   assert.match(r.out, /merged\s+\.gitignore · added \.claude\/night\/, \.abatty\//);
 });
+
+test("the git shim is said for what it is: the night's, refusing three bypasses, never your shell's", () => {
+  const dir = tempRepo("init-shim", { "package.json": NEXT_PKG });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  const line = r.out.split("\n").find((l) => /written\s+\.claude\/bin\/git ·/.test(l)) || "";
+  assert.match(line, /the night puts first on its PATH/, r.out);
+  assert.match(line, /force push, --no-verify and moving core\.hooksPath/);
+  assert.match(line, /your shell's git is untouched/);
+});

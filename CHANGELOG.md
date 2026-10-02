@@ -46,6 +46,11 @@ under Unreleased in the same commit.
   scripts added to a `package.json`, the lines added to `.gitignore` and `.prettierignore`, the
   keys added to the config. A script or a key the repository already had is not named, since it
   is kept.
+- **`init` says what `.claude/bin/git` is.** A file named `git` written without a word read as
+  one that takes over git on the machine. Its line now says it: a wrapper the night puts first on
+  its own PATH, refusing force push, `--no-verify` and moving `core.hooksPath` and handing every
+  other command to git; your shell's git is untouched unless you add `.claude/bin` to your PATH;
+  `ABATTY_SHIM=off` passes everything.
 
 ## [0.7.0-rc.7] - 2026-10-02
 
