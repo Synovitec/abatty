@@ -13,6 +13,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`abatty update` migrates the floor of a redefined check on probation.** Such a check reads
+  `probation` whatever it would read, so update never saw it as redefined, and its floor said
+  "would read redefined" on every run from then on. The version the floor was written under now
+  decides, as it does for every other check.
 - **Every gate step keeps a log under `.abatty/steps/`.** The format step and the built-in
   steps (secret scan, audit, scrub) kept nothing, so a red one left no file to read after the run.
   The format command's output is now kept as a script step's is, and a built-in step's log holds

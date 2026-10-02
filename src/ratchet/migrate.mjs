@@ -31,7 +31,19 @@ export async function migrateRedefined(repoDir, o = {}) {
     { config, range: "" },
     previous,
   );
-  const redefined = compare(measurements, previous, config).filter((v) => v.status === "redefined");
+  // A probe on probation reads `probation` whatever its verdict would be, so its floor under an
+  // old definition was never migrated and read "would read redefined" from then on: the version
+  // the floor was written under says it as well.
+  const movedOn = (/** @type {string} */ metric) => {
+    const m = measurements.find((x) => x.metric === metric);
+    const wroteUnder = previous.versions?.[metric];
+    return Boolean(
+      m?.probe.probation && wroteUnder !== undefined && wroteUnder !== probeVersion(m),
+    );
+  };
+  const redefined = compare(measurements, previous, config).filter(
+    (v) => v.status === "redefined" || (v.status === "probation" && movedOn(v.metric)),
+  );
   if (!redefined.length) return [];
   const next = JSON.parse(JSON.stringify(previous));
   const hard = new Set(previous.hard || []);
