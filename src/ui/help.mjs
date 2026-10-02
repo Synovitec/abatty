@@ -40,7 +40,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
   ${t.bold("abatty ratchet")} [dir] [--range <r>] [--base <b>] [--json|--sarif] [--controls]  every probe against the committed floor: a number may only fall
   ${t.bold("abatty baseline")} [dir] [--reason <why> --owner <who>] [--dry-run]   today's numbers as the floor; a floor raised names its reason and owner
   ${t.bold("abatty raises")} [dir] [--base <b>] [--require-review <pr>] [--json]  the floors this branch loosened, and whether an approval lands them
-  ${t.bold("abatty mutate")} [dir] [--range <r>] [--max <n>] [--timeout <s>] [--strict]  mutation testing over the changed lines: a test that survives a broken line
+  ${t.bold("abatty mutate")} [dir] [--range <r>] [--max <n>] [--timeout <s>]  mutation testing over the changed lines on the repository's own runner; a survivor exits 3
   ${t.bold("abatty changelog")} --message <file> | --release <version> [--date <d>]  the changelog rule at commit time (the commit-msg hook), or the release cut
   ${t.bold("abatty ci")} [dir] [--provider github,woodpecker] [--check] [--ruleset]  CI from the gate; a pipeline you keep is judged by whether it runs the gate
   ${t.bold("abatty hooks")} [dir]                                              point git at .githooks and give each hook its executable bit

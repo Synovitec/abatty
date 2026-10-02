@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cli, git, tempRepo } from "./helpers.mjs";
-import { mutantOf, runMutants } from "../src/core/mutate.mjs";
+import { changedLines, mutantOf, runMutants } from "../src/core/mutate.mjs";
 
 // A green suite says the tests passed, not that they would notice the lines this change wrote.
 // One mutant per changed line, the tests that name the module run against it, the file restored.
@@ -64,13 +64,77 @@ test("the mutant is taken from code, never from a string or a comment", () => {
   });
 });
 
-test("the command reports survivors, and --strict makes one fail the run", () => {
+test("a survivor fails the run as every finding does, with or without --strict", () => {
   const { dir, base } = changed();
   const report = cli(["mutate", dir, "--range", `${base}..HEAD`], dir);
-  assert.equal(report.code, 0, report.out);
+  assert.equal(report.code, 3, report.out);
+  assert.match(report.out, /node --test \{files\}/, "the runner the tests import, unconfigured");
   assert.match(report.out, /src\/big\.mjs:1 boundary moved/);
   assert.match(report.out, /1 killed, 1 survived, 1 with no test/);
   assert.equal(cli(["mutate", dir, "--range", `${base}..HEAD`, "--strict"], dir).code, 3);
+});
+
+test("a run whose mutants are all killed exits clean", () => {
+  const { dir, base } = changed();
+  writeFileSync(
+    join(dir, "test/big.test.mjs"),
+    'import { test } from "node:test";\nimport assert from "node:assert/strict";\nimport { big } from "../src/big.mjs";\ntest("big", () => { assert.equal(big(100), false); assert.equal(big(101), true); });\n',
+  );
+  writeFileSync(join(dir, "src/lonely.mjs"), "export const one = () => true;\n");
+  git(dir, "commit", "-qam", "test: the edge of big");
+  const report = cli(["mutate", dir, "--range", `${base}..HEAD`], dir);
+  assert.equal(report.code, 0, report.out);
+  assert.match(report.out, /2 killed, 0 survived/);
+});
+
+test("the installed harness and hidden folders are not the product, and are never mutated", () => {
+  const { dir, base } = changed();
+  mkdirSync(join(dir, ".claude/hooks"), { recursive: true });
+  writeFileSync(join(dir, ".claude/hooks/guard.mjs"), "export const g = (a) => a === 1;\n");
+  writeFileSync(join(dir, "src/types.d.ts"), "export type A = 1 | 2;\n");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-qm", "chore: harness");
+  const files = [...changedLines(dir, base).keys()].sort();
+  assert.deepEqual(files, ["src/adult.mjs", "src/big.mjs", "src/lonely.mjs"]);
+});
+
+test("a range's end is respected: only its commits' lines, and a file edited since is left alone", () => {
+  const { dir, base } = changed();
+  writeFileSync(join(dir, "src/later.mjs"), "export const later = (a) => a === 2;\n");
+  writeFileSync(join(dir, "src/big.mjs"), `${BIG}export const small = (n) => n < 3;\n`);
+  assert.deepEqual(
+    [...changedLines(dir, base, "HEAD").keys()].sort(),
+    ["src/adult.mjs", "src/big.mjs", "src/lonely.mjs"],
+    "the untracked file is not in the range",
+  );
+  const run = runMutants({
+    repoDir: dir,
+    base,
+    head: "HEAD",
+    command: "node --test {files}",
+    max: 10,
+    timeoutMs: 60000,
+  });
+  assert.deepEqual(run.edited, ["src/big.mjs"]);
+  assert.equal(run.mutants.filter((m) => m.file === "src/big.mjs").length, 0);
+  assert.equal(readFileSync(join(dir, "src/big.mjs"), "utf8").includes("small"), true);
+});
+
+test("a range ending at a commit not checked out is refused, since mutants go in the tree", () => {
+  const { dir, base } = changed();
+  const report = cli(["mutate", dir, "--range", `${base}..${base}`], dir);
+  assert.equal(report.code, 2, report.out);
+  assert.match(report.out, /not checked out/);
+});
+
+test("a repository whose runner nothing names is told to set mutation.command", () => {
+  const dir = tempRepo("mutate-norunner", {
+    "package.json": JSON.stringify({ name: "m", scripts: { test: "node scripts/t.mjs" } }),
+    "src/a.mjs": "export const a = (x) => x === 1;\n",
+  });
+  const report = cli(["mutate", dir, "--range", "HEAD..HEAD"], dir);
+  assert.equal(report.code, 2, report.out);
+  assert.match(report.out, /mutation\.command/);
 });
 
 test("a module reached only through a registry is tested by the tests that import the registry", () => {

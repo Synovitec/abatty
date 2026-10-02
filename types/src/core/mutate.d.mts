@@ -13,11 +13,12 @@ export function mutantOf(line: string, code: string): {
  * files included. The diff is limited to scripts and read with a large buffer: a diff over the
  * default one was read as empty, and a branch full of changes reported no mutant. A file header
  * is only read as one between `diff --git` and the first hunk, so a removed line that starts
- * with `-- ` is never taken for a path.
- * @param {string} repoDir @param {string} base
+ * with `-- ` is never taken for a path. With `head`, the lines are the commits' alone, `base` to
+ * `head`, and no untracked file is added.
+ * @param {string} repoDir @param {string} base @param {string} [head]
  * @returns {Map<string, number[]>}
  */
-export function changedLines(repoDir: string, base: string): Map<string, number[]>;
+export function changedLines(repoDir: string, base: string, head?: string): Map<string, number[]>;
 /**
  * The tests that can notice a change to a module: the nearest ring of test files on the import
  * graph, the ones importing it or else the ones importing an importer, and so on. A probe is
@@ -35,20 +36,23 @@ export function testsFor(repoDir: string, file: string): string[];
 export function restoreInterrupted(repoDir: string): string;
 /**
  * @typedef {{ file: string, line: number, operator: string, outcome: "killed" | "survived" | "no test" | "timeout" | "tests red" }} Mutant
- * @typedef {{ mutants: Mutant[], interrupted: boolean, restored: string }} MutationRun
+ * @typedef {{ mutants: Mutant[], interrupted: boolean, restored: string, edited: string[] }} MutationRun
  */
 /**
  * Plant each mutant, run the nearest tests, put the file back, whatever happened. A file's tests
  * run once unmutated first: a suite already red, or a command that cannot run, would read every
  * mutant as killed, so that file is reported as `tests red` and none of its mutants is judged.
  * A timeout under a shell ends the shell; on Windows the test process it started can outlive it.
- * @param {{ repoDir: string, base: string, command: string, max: number, timeoutMs: number, log?: (s: string) => void }} o
+ * With `head` (a range's end, checked out), a file edited since that commit is left alone and
+ * listed in `edited`: its lines are no longer the ones the range numbered.
+ * @param {{ repoDir: string, base: string, head?: string, command: string, max: number, timeoutMs: number, log?: (s: string) => void }} o
  * `command` runs the tests, with `{files}` where the test files go (`node --test {files}`).
  * @returns {MutationRun}
  */
 export function runMutants(o: {
     repoDir: string;
     base: string;
+    head?: string;
     command: string;
     max: number;
     timeoutMs: number;
@@ -64,4 +68,5 @@ export type MutationRun = {
     mutants: Mutant[];
     interrupted: boolean;
     restored: string;
+    edited: string[];
 };

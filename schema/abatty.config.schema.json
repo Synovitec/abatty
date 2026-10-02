@@ -646,7 +646,7 @@
       "properties": {
         "command": {
           "type": "string",
-          "description": "The test command, with {files} where the test files go. Default: node --test {files}."
+          "description": "The test command, with {files} where the test files go. Default: the runner the test script names (vitest, jest, bun test or node --test), through the package manager."
         },
         "max": {
           "type": "integer",

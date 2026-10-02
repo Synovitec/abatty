@@ -13,6 +13,23 @@ under Unreleased in the same commit.
   `abatty mutate` found no test for any module it changed, and the gate could not tell a red test
   the push reached from a flake. Each tracked tsconfig's `paths` now applies under its folder, so
   a monorepo's `apps/web` keeps its own `@/`; `extends` is not followed.
+- **`abatty mutate` runs the tests on the repository's own runner.** With no `mutation.command`
+  it ran `node --test` on every stack, so on a vitest product every file read `tests red` and
+  nothing was judged. The runner is now the one the test script names (vitest, jest, bun test or
+  node --test), then a workspace's, then an installed one, run through the package manager
+  (`pnpm exec vitest run {files}`). When nothing names one, the run stops with exit 2 and says to
+  set `mutation.command`, rather than guessing.
+- **`abatty mutate` mutates the product, not the installed harness.** Files under a hidden folder
+  (`.claude/hooks`, `.githooks`, `.github`) and declaration files are left alone. After an
+  `abatty update` the mutants all went to `.claude/hooks` and the cap ran out before any product
+  line was reached.
+- **`abatty mutate --range A..B` stops at B.** The end was dropped, so the lines were everything
+  from A to the working tree, uncommitted edits included. The lines are now the range's commits
+  alone. A range ending at a commit that is not checked out exits 2, since the mutants are planted
+  in the working tree; a file edited since B is left alone and named.
+- **A surviving mutant makes `abatty mutate` exit 3**, as every other finding does. It exited 0
+  unless `--strict` was passed, so a script running it learnt nothing; `--strict` is still
+  accepted and changes nothing.
 
 - **`abatty ci` leaves out a step the gate would skip for want of its config.** The generated
   pipeline ran `prettier --check` on a repository with no prettier config, and the graph and dead
