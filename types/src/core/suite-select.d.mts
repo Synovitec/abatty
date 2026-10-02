@@ -23,3 +23,33 @@ export function liveDevServer(dir: string, locks?: string[]): {
  * @returns {Set<string>}
  */
 export function commentOnly(repoDir: string, range: string, files: string[]): Set<string>;
+/**
+ * Whether a suite's paths match a file the push or the tree touches: under a workspace's folder
+ * for a workspace's preset, and from the root or the app's homes for the root's
+ * (src/presets/app-homes.mjs).
+ * @param {RegExp} paths @param {string[]} files @param {string} under "" for the root
+ * @param {string[]} homes the root app's homes
+ */
+export function selectedByPath(paths: RegExp, files: string[], under: string, homes: string[]): boolean;
+/**
+ * A selected suite whose testing steps have no script: no step but `build` has one, so nothing
+ * would be judged and nothing runs. It built the app on every push, only to skip the tests after
+ * it. Returned with what the gate records and says; null when a testing step has its script
+ * (integration without coverage runs).
+ * @param {import("../presets/index.mjs").GateSuite} suite @param {string} name as the gate labels it
+ * @param {(s: import("../presets/index.mjs").GateStep) => boolean} has
+ * @returns {{ event: import("./gate.mjs").GateEvent, says: string } | null}
+ */
+export function untestedSuite(suite: import("../presets/index.mjs").GateSuite, name: string, has: (s: import("../presets/index.mjs").GateStep) => boolean): {
+    event: import("./gate.mjs").GateEvent;
+    says: string;
+} | null;
+/**
+ * The root app's homes in this repository: the folders holding its marker that no workspace with
+ * a preset of its own covers (src/presets/app-homes.mjs).
+ * @param {string} repoDir @param {import("../presets/index.mjs").Preset} preset
+ * @param {{ path: string }[]} gated the workspaces with a preset
+ */
+export function suiteHomes(repoDir: string, preset: import("../presets/index.mjs").Preset, gated: {
+    path: string;
+}[]): string[];

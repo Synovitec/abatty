@@ -13,7 +13,7 @@
  * preset's steps in its own folder (its own scripts, its suites' paths under its folder); the
  * built-in steps (the secret scan, the audit) and the ratchet run once, at the root.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { asResult, dockerRunning, launch, runCommand, runScript, stepLogAt } from "./spawn.mjs";
@@ -25,12 +25,17 @@ import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
 import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
 import { pinSaidFromEnv, unexpectedNodeEnv } from "./env.mjs";
-import { commentOnly, liveDevServer } from "./suite-select.mjs";
+import {
+  commentOnly,
+  liveDevServer,
+  selectedByPath,
+  suiteHomes,
+  untestedSuite,
+} from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
-import { measuredNothing } from "./coverage-empty.mjs";
+import { markHollow } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { couldNotRun } from "./could-not-run.mjs";
-import { appHomes, suiteReads } from "../presets/app-homes.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -144,23 +149,6 @@ export function runGate(o) {
     events.push({ label, outcome: "ok", ms });
     return true;
   };
-  /** A green coverage step whose tool says it measured nothing, marked so the verdict says so. @param {string} file */
-  const hollow = (file) => {
-    let text = "";
-    try {
-      text = readFileSync(file, "utf8");
-    } catch {
-      return; // no log, nothing to read: the step stands as it ran
-    }
-    const none = measuredNothing(text);
-    const last = events[events.length - 1];
-    if (!none || !last) return;
-    last.empty = `${none.tool}: ${none.line}`;
-    last.detail = `measured nothing (${last.empty})`;
-    log(
-      `· ${last.label} passed and measured nothing: ${none.line}. The changed lines lie outside what the step's tool includes, or it ran no test; green here proves nothing about them`,
-    );
-  };
   const step = (/** @type {import("../presets/index.mjs").GateStep} */ s) => {
     if (s.builtin && prefix) return true; // the built-in steps run once, at the root
     if (s.builtin)
@@ -233,7 +221,7 @@ export function runGate(o) {
     );
     const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
     // By the step's own label, not its suite's: "database suite + coverage (TEST.4)" names both.
-    if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) hollow(stepLog);
+    if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) markHollow(stepLog, events, log);
     const unread = passed && /\(CODE\.5\)/.test(s.label) && graphReadNothing(repoDir, stepLog);
     if (unread) return couldNotRead(events, log, unread);
     if (!passed && !res.errored)
@@ -265,9 +253,7 @@ export function runGate(o) {
     for (const suite of p.gate.suites) {
       const name = prefix + suite.name;
       // The root's suites read their paths under the app's homes too (src/presets/app-homes.mjs).
-      const byPath = under
-        ? suiteSelection.some((f) => f.startsWith(under) && suite.paths.test(f.slice(under.length)))
-        : suiteSelection.some((f) => suiteReads(suite.paths, f, homes));
+      const byPath = selectedByPath(suite.paths, suiteSelection, under, homes);
       const ws = under.replace(/\/$/, "");
       const byGraph = Boolean(ws) && !byPath && affected.selected.has(ws);
       if (byGraph)
@@ -284,16 +270,11 @@ export function runGate(o) {
         log(`\n· skipped ${name}: nothing under its paths in the push or the tree`);
         continue;
       }
-      // No step of the suite but `build` has a script here: nothing would be judged, so nothing
-      // runs, said loudly. It built the app on every push, only to skip the tests after it.
-      const judging = suite.steps.filter((s) => s.script !== "build");
-      const own = judging[judging.length - 1];
-      if (own?.script && judging.every((s) => !s.required && !resolveScript(s))) {
-        const names = [own.script, ...(own.alternatives || [])].join(", ");
-        events.push({ label: name, outcome: "skipped", detail: `no "${own.script}" script` });
-        log(
-          `\n! ${name}: selected by this push, and package.json has no ${names} script, so nothing ran. Add one to run the suite on every push that touches it.`,
-        );
+      // A suite with no testing script runs nothing, said loudly (suite-select.mjs).
+      const untested = untestedSuite(suite, name, (s) => Boolean(resolveScript(s)));
+      if (untested) {
+        events.push(untested.event);
+        log(untested.says);
         continue;
       }
       // Deferred to CI, loudly, without the Docker daemon or when the only database the suite
@@ -334,11 +315,7 @@ export function runGate(o) {
   };
 
   const gated = (o.workspaces || []).filter((w) => w.preset);
-  const homes = appHomes(
-    preset,
-    git(repoDir, "ls-files").split("\n"),
-    gated.map((w) => w.path),
-  );
+  const homes = suiteHomes(repoDir, preset, gated);
   // The verdict, with the instrument's own state beside it: a step that could not run is not a
   // step that found something, and a caller that exits on the difference needs to see it.
   const done = (/** @type {boolean} */ ok) => ({
