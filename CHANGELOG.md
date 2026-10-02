@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   the gate stops there and says why (a TypeScript it does not support, or a path it is not
   given), as it does for a tool that is not installed. A repository with no script to read, and a
   graph that read modules, are unchanged.
+- **A typecheck that found no project could not run; it did not fail.** `tsc --noEmit` with no
+  `tsconfig.json` prints its help screen and exits 1, and the gate called the work red under a
+  page of compiler options. The help screen is now read as the compiler saying it had nothing to
+  check: the step could not run, and the line says to add the `tsconfig.json` or point the script
+  at one. A typecheck that reports type errors still fails.
 
 ## [0.7.0-rc.8] - 2026-10-02
 
