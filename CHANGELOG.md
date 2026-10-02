@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.6] - 2026-10-02
+
+The sixth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. The rest of what the adopters reported against 0.7.0-rc.1: `abatty ci` leaves a
+pipeline kept by hand alone, `--help` covers every command, the catalog and the ratchet count
+alike, and `abatty mutate` works on a TypeScript product. Two things move, both under Upgrading:
+`mutate`'s exit codes, and `docs.danglingRefs`, redefined on probation, whose floor `update`
+rewrites.
+
 ### Upgrading
 
 - **`abatty mutate` exits 3 when a mutant survives**, and 2 when it cannot start (no runner named
