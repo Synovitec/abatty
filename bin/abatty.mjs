@@ -3,7 +3,7 @@
  * abatty - the engineering standard as a command.
  *
  *   abatty [status] [dir] [--fresh]                                    the repository at a glance
- *   abatty init [dir] --stack <next|astro|vite-react|node> [--stage design|build|run] [--agent <id,id>] [--force] [--dry-run]
+ *   abatty init [dir] --stack <next|astro|vite-react|node> [--stage design|build|run] [--agent <id,id>] [--force] [--dry-run] [--apply]
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose

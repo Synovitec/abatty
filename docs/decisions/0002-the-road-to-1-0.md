@@ -6,7 +6,7 @@ status: living
 audience: ["developer", "architect", "agent"]
 tags: ["versioning", "release", "roadmap"]
 related: ["../VERSIONING.md", "../../CONTRIBUTING.md"]
-last_verified: "2026-09-24"
+last_verified: "2026-10-03"
 ---
 
 # 0002 - The road to 1.0
@@ -59,3 +59,16 @@ Features slow down for a few weeks; that is the point. The adopters carry a real
 testing, so their reports have to keep turning into corpus cases, or the replay loses its value.
 A preset outside the promise is still shipped and still usable; it simply may change in a minor
 after 1.0.
+
+## Amendments
+
+Each lifts the freeze for one named surface, says why the freeze's own list does not cover it,
+and lands in a pull request of its own, so it can be declined without touching a candidate.
+
+- **2026-10-03 · `init --apply`** (a flag on an existing command; proposed). The adopters'
+  first hour was the steps `init` leaves by hand, typed one at a time, and a step typed wrong was
+  the first red they met (Tocoda's report of 2026-10-02, item 6). That is install friction, not
+  a miss the freeze lists. The flag takes the steps a machine can take safely (the dependency
+  install, the executable bits, the hooks, the ratchet's first floor) and stops at the first
+  that fails; the rest stay by hand. It adds no config key, probe or output field, the contract
+  snapshot does not move, and `init` without it prints what it printed before.
