@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`init` on the minimal profile ends green.** Replayed from the packed package on a fresh
+  JavaScript project: `init --apply` took the installs, the executable bits, the hooks, the
+  import graph's baseline and the ratchet's floor in nine seconds, the commit went through every
+  hook, and the gate was green in under four seconds. Under minimal no dead-code step is set up
+  (its zero-issue default turned an existing codebase red on its first gate), TypeScript is
+  installed only where there is a tsconfig, and the graph's baseline is a step `--apply` takes.
+  What the gate will skip until the repository adds it (a formatter config, a lint or typecheck
+  script) is listed apart under "Not in the gate yet", no longer numbered among the steps.
 - **A minimal profile, the default of a new repository.** Thirteen rules any stack agrees to: the
   gate, CI running it, the ratchet and the controls, a linter, a formatter and tests, the secret
   scan, the audit, a committed lockfile, no tracked `.env`, and the 800-line cap. `init` on it

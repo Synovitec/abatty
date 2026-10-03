@@ -316,10 +316,11 @@ test("the PWA rule file is written where the catalog reads a PWA, and skipped, s
   assert.equal(existsSync(join(pwa, ".claude/rules/pwa.md")), true);
 });
 
-test("a gate step that will be skipped for want of its config is named among the steps by hand", () => {
+test("a gate step that will be skipped for want of its config is named, apart from the steps to take", () => {
   const bare = tempRepo("init-noprettier", { "package.json": NEXT_PKG });
   const r = cli(["init", "--profile", "synovitec", bare, "--stack", "next"], bare);
-  assert.match(r.out, /\d+\. the gate skips format until a \.prettierrc/);
+  assert.match(r.out, /Not in the gate yet[\s\S]*the gate skips format until a \.prettierrc/);
+  assert.doesNotMatch(r.out, /\d+\. the gate skips format/, "a note, not a numbered step");
   const held = tempRepo("init-prettier", { "package.json": NEXT_PKG, ".prettierrc": "{}\n" });
   assert.doesNotMatch(
     cli(["init", "--profile", "synovitec", held, "--stack", "next"], held).out,

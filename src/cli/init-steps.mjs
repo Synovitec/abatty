@@ -11,7 +11,8 @@ import * as t from "../ui/term.mjs";
 
 /**
  * A step: what it says, and the command that takes it when a machine safely can.
- * @typedef {{ text: string, run?: string[] }} InitStep
+ * @typedef {{ text: string, run?: string[], note?: boolean }} InitStep a `note` is what the gate
+ * skips until the repository adds it: said apart, never numbered as something to do
  */
 
 /**
@@ -24,7 +25,13 @@ export function finishSteps(steps, o) {
   let ok = true;
   /** @type {InitStep[]} */
   const left = [];
+  /** @type {InitStep[]} */
+  const notes = [];
   for (const s of steps) {
+    if (s.note) {
+      notes.push(s);
+      continue;
+    }
     if (!o.apply || !s.run || !ok) {
       left.push(s);
       continue;
@@ -45,6 +52,8 @@ export function finishSteps(steps, o) {
   }
   if (o.apply) o.out(t.heading(left.length ? "Left to do by hand" : "Nothing left to do by hand"));
   left.forEach((s, i) => o.out(`  ${i + 1}. ${s.text}\n`));
+  if (notes.length) o.out(t.heading("Not in the gate yet"));
+  for (const s of notes) o.out(`  ${t.glyph.skip} ${s.text}\n`);
   o.out("\n");
   return ok;
 }

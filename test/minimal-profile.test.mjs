@@ -60,3 +60,24 @@ test("the synovitec setup is one flag away, and a repository configured before k
   );
   assert.ok(existsSync(join(before, ".claude/hooks/guard.mjs")), "the harness, as before");
 });
+
+test("minimal sets up no dead-code step and no compiler for plain JavaScript, and update does not add them back", () => {
+  // knip's zero-issue default turned an existing codebase's first gate red, and a plain
+  // JavaScript package was given TypeScript to install; neither is a minimal rule.
+  const dir = tempRepo("minimal-tools", {
+    "package.json": PKG,
+    "src/a.js": "module.exports = 1;\n",
+  });
+  const r = cli(["init", dir, "--yes"], dir);
+  assert.equal(existsSync(join(dir, "knip.jsonc")), false);
+  assert.doesNotMatch(r.out, /\bknip\b[^.]*\binstall|typescript@/);
+  assert.match(r.out, /Not in the gate yet/);
+  const scripts = () => JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+  assert.equal(scripts().dead, undefined);
+  cli(["update", dir], dir);
+  assert.equal(scripts().dead, undefined, "update offers what init would write");
+  // the other direction: the synovitec setup keeps both
+  const full = tempRepo("minimal-tools-full", { "package.json": PKG });
+  cli(["init", full, "--yes", "--profile", "synovitec"], full);
+  assert.ok(existsSync(join(full, "knip.jsonc")));
+});

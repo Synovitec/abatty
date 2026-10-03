@@ -6,6 +6,8 @@
  * changelog line come with `synovitec` alone. A repository whose config names no profile keeps
  * `synovitec`, as it was measured before, so an upgrade moves nobody (decision 0002, 1.0 scope).
  */
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile } from "./repo.mjs";
 import { profileNames } from "../profiles/index.mjs";
 
@@ -29,4 +31,25 @@ export function initScope(repoDir, o) {
     harness: full || Boolean(o.agents?.length),
     name: Boolean(o.profile) || !existing,
   };
+}
+
+/**
+ * The preset's scripts and dev dependencies as the scope takes them. Under a profile without the
+ * standard, no dead-code step: it is none of minimal's rules, and its zero-issue default turned an
+ * existing codebase's first gate red, where the ratchet promises old debt never blocks a push.
+ * TypeScript is installed only where the repository has a tsconfig: a plain JavaScript package
+ * was given a compiler it never runs.
+ * @param {{ full: boolean }} scope @param {string} repoDir
+ * @param {{ scripts: Record<string, string>, devDependencies: string[], tooling: { knip: boolean } }} preset
+ */
+export function scopedTools(scope, repoDir, preset) {
+  const knip = preset.tooling.knip && scope.full;
+  const typed = scope.full || existsSync(join(repoDir, "tsconfig.json"));
+  const scripts = Object.fromEntries(
+    Object.entries(preset.scripts).filter(([k]) => knip || k !== "dead"),
+  );
+  const devDependencies = preset.devDependencies.filter(
+    (d) => (knip || !/^knip(@|$)/.test(d)) && (typed || !/^typescript(@|$)/.test(d)),
+  );
+  return { knip, scripts, devDependencies };
 }

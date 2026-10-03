@@ -1,6 +1,7 @@
 /**
  * A step: what it says, and the command that takes it when a machine safely can.
- * @typedef {{ text: string, run?: string[] }} InitStep
+ * @typedef {{ text: string, run?: string[], note?: boolean }} InitStep a `note` is what the gate
+ * skips until the repository adds it: said apart, never numbered as something to do
  */
 /**
  * Say the steps; with `apply`, take each one that has a command, in order, until one fails. The
@@ -14,9 +15,11 @@ export function finishSteps(steps: InitStep[], o: {
     out: (s: string) => void;
 }): boolean;
 /**
- * A step: what it says, and the command that takes it when a machine safely can.
+ * a `note` is what the gate
+ * skips until the repository adds it: said apart, never numbered as something to do
  */
 export type InitStep = {
     text: string;
     run?: string[];
+    note?: boolean;
 };

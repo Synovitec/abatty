@@ -41,7 +41,7 @@ import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
-import { initScope } from "./init-scope.mjs";
+import { initScope, scopedTools } from "./init-scope.mjs";
 
 /** The templates `init` and `update` copy from, read as files: nothing under `src/` imports them (CLAUDE.md §3). */
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
@@ -172,6 +172,7 @@ export function initRepo(o) {
   // asked for, and none of the standard's documents.
   const scope = initScope(repoDir, o);
   const rules = presetRules(preset, ruleFacts(repoDir));
+  const tools = scopedTools(scope, repoDir, preset);
   // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
   if (scope.harness) writeHarness();
   /** The agent harness, as one step: the hooks, the shim, the skill, the agents, the rules. */
@@ -264,7 +265,7 @@ export function initRepo(o) {
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)
     put(".dependency-cruiser.cjs", depcruiseFor(repoDir, tpl("tooling/.dependency-cruiser.cjs")));
-  if (preset.tooling.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
+  if (tools.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
 
   // The graph reads every source folder that exists (src/core/source-roots.mjs).
   const roots = graphRoots(repoDir);
@@ -286,7 +287,7 @@ export function initRepo(o) {
         name: packageName(basename(repoDir)),
         private: true,
         scripts: Object.fromEntries(
-          Object.entries(runnableScripts(repoDir, preset.scripts)).map(([k, v]) => [k, rooted(v)]),
+          Object.entries(runnableScripts(repoDir, tools.scripts)).map(([k, v]) => [k, rooted(v)]),
         ),
       });
     events.push({ file: "package.json", action: "written" });
@@ -295,7 +296,7 @@ export function initRepo(o) {
   // The package just written is not also "kept": one file, one line.
   if (!fresh && existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    for (const [k, v] of Object.entries(runnableScripts(repoDir, preset.scripts)))
+    for (const [k, v] of Object.entries(runnableScripts(repoDir, tools.scripts)))
       if (!(k in scripts) || force) scripts[k] = rooted(v);
     const what = added(scripts, pkg.scripts || {}, "scripts");
     if (what) {
@@ -419,7 +420,7 @@ export function initRepo(o) {
   // abatty itself, at the version that wrote the harness: the scripts init adds call it and the
   // config reads its files, and run from a global install it was in no manifest, so knip read the
   // binary as unlisted and a clone had no abatty to run.
-  const missingDeps = [...preset.devDependencies, `abatty@${packageVersion()}`].filter(
+  const missingDeps = [...tools.devDependencies, `abatty@${packageVersion()}`].filter(
     (d) => !(pkg.devDependencies || {})[nameOf(d)] && !(pkg.dependencies || {})[nameOf(d)],
   );
   return { events, missingDeps, preset, notExecutable };

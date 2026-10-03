@@ -57,6 +57,8 @@ export async function initCommand(cx, preset) {
   const steps = [];
   /** A step to say, with the command that takes it where `--apply` may. @param {string} text @param {string[]} [run] */
   const say = (text, run) => steps.push({ text, run });
+  /** What the gate will skip until the repository adds it: said, but not a step to take. @param {string} text */
+  const note = (text) => steps.push({ text, note: true });
   // In the manager the repository committed: a bun-only repository was told to run npm.
   const pm = managerFor(dir);
   const addDev = { npm: "npm i -D", pnpm: "pnpm add -D", yarn: "yarn add -D", bun: "bun add -d" }[
@@ -95,15 +97,30 @@ export async function initCommand(cx, preset) {
   // Two steps, not one sentence: "was kept, then .dependency-cruiser.cjs" read as one thing, and
   // a repository's own context file has no §3 to point at; the template's boundary map does.
   if (fill) say(fill);
-  if (graph)
+  // With no context file (the minimal profile writes none) there is no boundary map to turn into
+  // rules first: the template's own rules (no cycles, no orphans) hold, and the baseline is a step
+  // --apply can take. A context file asks for its rules before the baseline is taken.
+  const mapped = existsSync(join(dir, ctx.file));
+  if (graph && mapped)
     say(
       `Edit .dependency-cruiser.cjs: one rule per ${ctx.own ? "boundary this repository forbids" : `arrow of ${ctx.file} §3`}`,
     );
+  if (graph && !mapped)
+    note(
+      "the import graph holds no cycles and no orphans; add a rule to .dependency-cruiser.cjs for each boundary this repository forbids, then take its baseline again",
+    );
   // Every repository, not only an existing one: without the file the graph step cannot start.
-  // Left by hand under --apply too: the baseline belongs after the rules the step above writes.
+  const baseline = [
+    ...pm.exec("depcruise"),
+    ...graphRoots(dir).split(" "),
+    "--config",
+    ".dependency-cruiser.cjs",
+    "--baseline",
+  ];
   if (graph)
     say(
-      `${pm.exec("depcruise").join(" ")} ${graphRoots(dir)} --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}`,
+      `${baseline.join(" ")} (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}`,
+      mapped ? undefined : baseline,
     );
   const lint = harnessLintHint(dir);
   if (lint) say(harnessLintSays(lint));
@@ -112,7 +129,7 @@ export async function initCommand(cx, preset) {
   // The config is the repository's decision to hold formatting, so it is named, not written.
   for (const s of preset.gate.always)
     if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
-      say(
+      note(
         t.gray(
           `the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it${s.label === "format" ? `, then ${pm.exec("prettier").join(" ")} --write . once, so the files init wrote take its style` : ""}`,
         ),
@@ -137,8 +154,14 @@ export async function initCommand(cx, preset) {
   for (const h of homes) {
     const scripts = readJsonFile(h.at, "package.json")?.scripts || {};
     for (const s of h.steps)
-      if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
-        say(
+      if (
+        s.script &&
+        ![s.script, ...(s.alternatives || [])].some((k) => k in scripts) &&
+        !(s.requires && !s.requires.some((f) => existsSync(join(h.at, f))))
+      )
+        // A required step that cannot run is a step to take; one the gate skips is a note,
+        // and one already noted for its missing config is not said twice.
+        (s.required ? say : note)(
           t.gray(
             `the gate ${s.required ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required ? ` (${s.label} is required)` : ""}, run on its own runner`,
           ),

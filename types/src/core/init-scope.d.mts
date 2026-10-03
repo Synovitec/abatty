@@ -13,3 +13,27 @@ export function initScope(repoDir: string, o: {
     harness: boolean;
     name: boolean;
 };
+/**
+ * The preset's scripts and dev dependencies as the scope takes them. Under a profile without the
+ * standard, no dead-code step: it is none of minimal's rules, and its zero-issue default turned an
+ * existing codebase's first gate red, where the ratchet promises old debt never blocks a push.
+ * TypeScript is installed only where the repository has a tsconfig: a plain JavaScript package
+ * was given a compiler it never runs.
+ * @param {{ full: boolean }} scope @param {string} repoDir
+ * @param {{ scripts: Record<string, string>, devDependencies: string[], tooling: { knip: boolean } }} preset
+ */
+export function scopedTools(scope: {
+    full: boolean;
+}, repoDir: string, preset: {
+    scripts: Record<string, string>;
+    devDependencies: string[];
+    tooling: {
+        knip: boolean;
+    };
+}): {
+    knip: boolean;
+    scripts: {
+        [k: string]: string;
+    };
+    devDependencies: string[];
+};
