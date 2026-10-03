@@ -16,6 +16,13 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The format and lint steps no longer go red on files `init` wrote.** An adopter who followed
+  every step and added a `.prettierrc` saw the format step red on `.claude/`, the workflow, the
+  docs `init` wrote and `pnpm-lock.yaml`; another's eslint read `.dependency-cruiser.cjs` as a
+  module and called `module` undefined. `.prettierignore` now holds `.claude/` and the managers'
+  lockfiles, the format step says to run `prettier --write .` once after adding the config so
+  the written files take the repository's style, and the dependency-cruiser template declares the
+  one CommonJS global it uses.
 - **A unit step that ran no test says so.** `node --test` with no test file exits 0 and prints
   `# tests 0`, and the unit step read green having judged nothing. The step stays a pass, as
   the coverage step that measured nothing does, and its line and its event now say it ran no test.

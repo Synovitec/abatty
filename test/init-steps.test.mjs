@@ -79,3 +79,12 @@ test("the knip step says the count is every section added up, and the env rule s
   const rules = readFileSync(join(dir, ".dependency-cruiser.cjs"), "utf8");
   assert.match(rules, /pathNot: "\^src\/lib\/env\/public\[\.\]ts\$"/);
 });
+
+test("the format step is told to rewrite once, and the instrument and lockfiles are not formatted", () => {
+  const dir = tempRepo("steps-prettier", { "package.json": NEXT_PKG });
+  const out = steps(cli(["init", dir, "--stack", "next"], dir).out);
+  assert.match(out, /add one when this repository holds it, then npx prettier --write \. once/);
+  const ignore = readFileSync(join(dir, ".prettierignore"), "utf8");
+  for (const line of [".claude/", "pnpm-lock.yaml", "package-lock.json"])
+    assert.match(ignore, new RegExp(`^${line.replace(/\./g, "\.")}$`, "m"), line);
+});

@@ -95,7 +95,7 @@ export async function initCommand(cx, preset) {
   for (const s of preset.gate.always)
     if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
       out(
-        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it`)}\n`,
+        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it${s.label === "format" ? `, then ${pm.exec("prettier").join(" ")} --write . once, so the files init wrote take its style` : ""}`)}\n`,
       );
   // A gate step whose script only the repository can write (the changed lines' coverage runs on
   // its own runner), named here: doctor said it was absent and init had said nothing.

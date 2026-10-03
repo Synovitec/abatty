@@ -320,7 +320,16 @@ export function initRepo(o) {
   appendLines(
     repoDir,
     ".prettierignore",
-    [".dependency-cruiser-known-violations.json", ".claude/night/"],
+    // The instrument and the managers' lockfiles are nobody's code to format: an adopter who
+    // added a .prettierrc saw the format step red on .claude/ and pnpm-lock.yaml.
+    [
+      ".dependency-cruiser-known-violations.json",
+      ".claude/",
+      "pnpm-lock.yaml",
+      "package-lock.json",
+      "yarn.lock",
+      "bun.lock",
+    ],
     events,
     dryRun,
   );
