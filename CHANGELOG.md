@@ -24,6 +24,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`update` names a range on a prerelease pin.** `"abatty": "^0.7.0-rc.12"` matches the later
+  candidates of 0.7.0, never `0.8.0-rc.1`, so the package manager kept the old version while
+  `update` moved the harness to the new one. `update` now says so and gives the exact pin.
+
 - **A reading saves its markdown with its JSON.** `status` measuring again rewrote the day's
   JSON and left the day's `.md` that an earlier version had written, and an adopter quoted that
   file's evidence as the new version's. Every saved reading now writes the dated JSON, the latest

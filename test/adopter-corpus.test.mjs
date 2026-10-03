@@ -422,6 +422,23 @@ const CASES = [
       assert.match(r.out, /held as a ratchet/);
     },
   },
+  {
+    report: "monorepo · 2026-10-03 · rc.2 replay, bun",
+    claim: "update names a range on a prerelease pin, which never reaches the next minor",
+    run: () => {
+      const pinned = (/** @type {string} */ spec) =>
+        tempRepo("adopter-pin", {
+          "package.json": JSON.stringify({ name: "m", devDependencies: { abatty: spec } }),
+        });
+      const caret = pinned("^0.7.0-rc.12");
+      const r = cli(["update", caret, "--dry-run"], caret);
+      assert.match(r.out, /pins abatty at \^0\.7\.0-rc\.12: a range on a prerelease/, r.out);
+      for (const spec of ["0.8.0-rc.2", "^0.6.1"]) {
+        const dir = pinned(spec);
+        assert.doesNotMatch(cli(["update", dir, "--dry-run"], dir).out, /a range on a prerelease/);
+      }
+    },
+  },
 ];
 
 /** A design-stage repository as the design adopter's is: documents, a mockup's scripts, no package. */

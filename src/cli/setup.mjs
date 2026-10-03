@@ -15,6 +15,7 @@ import { readAdoption, readJsonFile } from "../core/repo.mjs";
 import { managerFor } from "../core/package-manager.mjs";
 import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
+import { prereleaseRange } from "../core/pin.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
 import { contextState } from "../core/context-file.mjs";
 import { graphRoots } from "../core/source-roots.mjs";
@@ -242,6 +243,11 @@ export async function updateCommand(cx, preset) {
       `  ${g} ${t.gray(action.padEnd(11))} ${e.file}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
     );
   }
+  const range = prereleaseRange(dir);
+  if (range)
+    out(
+      `  ${t.glyph.warn} ${t.yellow(`package.json pins abatty at ${range}: a range on a prerelease never reaches the next minor's candidates`)}${t.gray(` · pin it exactly: abatty@${VERSION}`)}\n`,
+    );
   for (const p of stalePatches(dir, VERSION))
     out(
       `  ${t.glyph.warn} ${t.yellow(stalePatchNote(p, VERSION).says)}${t.gray(` · ${stalePatchNote(p, VERSION).fix}`)}
