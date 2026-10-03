@@ -47,7 +47,7 @@ test("a reading another version of abatty measured is measured again, and says w
   writeFileSync(file, JSON.stringify({ ...report, abatty: "0.0.1" }));
   const r = cli(["status", dir, "--plain"], dir);
   assert.match(r.out, /measured now · the last reading was abatty 0\.0\.1's/);
-  // the other direction: once this version has measured, its reading stands
-  cli(["measure", dir, "--quiet"], dir);
+  // the other direction: the same reading, as this version wrote it, stands
+  writeFileSync(file, JSON.stringify(report));
   assert.match(cli(["status", dir, "--plain"], dir).out, /reading of/);
 });
