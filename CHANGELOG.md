@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The reading is measured again after an update.** `abatty` showed a report the previous
+  version had measured, as today's, without saying whose it was. A reading by another version is
+  measured again, as one of another commit already is, and the header names the version it
+  replaced.
+
 - **`prove` judges a monorepo's steps, and says what it could not judge.** The copy linked only
   the root's dependencies, so in a monorepo whose workspaces keep their own `node_modules` the
   typecheck and the tests failed before anything was planted, and five working steps read as
