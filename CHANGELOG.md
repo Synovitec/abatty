@@ -16,6 +16,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`prove` says exactly what it showed.** On a repository with one test script it said "2 of 2
+  checks went red", counting the secret scan abatty brings as one of the repository's own; the
+  built-in scans are now said on a line of their own. The summary says each check went red on a
+  planted violation and green again without it, which is what a control shows, rather than that
+  each "can stop a bad change"; the README says what a control does not show. The lint plant is
+  described in the repository's language: a JavaScript repository read about a Python import.
+
 - **The reading is measured again after an update.** `abatty` showed a report the previous
   version had measured, as today's, without saying whose it was. A reading by another version is
   measured again, as one of another commit already is, and the header names the version it

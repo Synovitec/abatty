@@ -16,7 +16,7 @@ export const MARK = "abatty-control.__";
 
 /**
  * @typedef {{ deps: Set<string>, pack: string, dir: string, scripts: Record<string, string> }} PlantContext
- * @typedef {{ files: (c: PlantContext) => Record<string, string>, means: string }} StepControl
+ * @typedef {{ files: (c: PlantContext) => Record<string, string>, means: string, meansIn?: Record<string, string> }} StepControl `meansIn` says the plant in a language where it differs
  */
 
 /** One planted file, typed as the record a control returns. @param {string} path @param {string} text @returns {Record<string, string>} */
@@ -158,8 +158,9 @@ export const STEP_CONTROLS = {
     // One violation per common rule set, so the plant is caught by whichever the repository
     // extends: a bare `debugger` went unseen by Next's stock config, which has no
     // eslint:recommended, and the lint step read as one never watched failing.
-    means:
-      "a debugger statement, an unused any and a hook called conditionally (an unused import for Python)",
+    // Said in the repository's language: a JavaScript repository read about a Python import.
+    means: "a debugger statement, an unused variable and a hook called conditionally",
+    meansIn: { python: "an unused import" },
     // In the repository's own language: a .ts plant in a JavaScript repository is a file plain
     // eslint never reads, and the working lint step read as absent.
     files: ({ pack, dir }) =>

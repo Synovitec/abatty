@@ -27,6 +27,12 @@ npm and pnpm. A new repository starts on the **minimal** profile: thirteen rules
 to. The full catalog of eighty is one team's standard (`synovitec`), a profile you add when you
 want it; the engine depends on neither, and a waiver sets any rule aside with its reason on record.
 
+What a control shows is exact and narrow: the check went red on one known violation and green again
+without it. That a check can fail is shown; that it catches every violation of its kind, that the
+rule is the right one, or that a repository whose checks all went red is safe, is not. A check
+that stayed green on its planted violation, though, is shown not to be checking what its name
+says.
+
 ## Why
 
 Most teams already agree on how they want to build. The agreement lives in a document, and the

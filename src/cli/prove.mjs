@@ -26,8 +26,12 @@ export async function proveCommand(cx, preset) {
     // What is running, as it runs: a test suite can take minutes, and a silent screen reads hung.
     log: json ? undefined : (line) => out(`  ${t.gray(line)}\n`),
   });
-  const red = r.steps.filter((s) => s.outcome === "red");
+  // The repository's own checks are counted; abatty's built-in scans are said apart: "2 of 2"
+  // on a repository with one test script counted the secret scan this package brings as its own.
+  const own = r.steps.filter((s) => !s.builtin);
+  const red = own.filter((s) => s.outcome === "red");
   const green = r.steps.filter((s) => s.outcome === "green");
+  const builtins = r.steps.filter((s) => s.builtin && s.outcome === "red");
   if (json) out(JSON.stringify(r, null, 2) + "\n");
   else {
     out("\n");
@@ -42,11 +46,17 @@ export async function proveCommand(cx, preset) {
     // A step that runs here and could not be judged (red before its plant, its tool missing) is
     // named on the summary: "3 of 3" read as everything proven while five steps were not.
     const unjudged = r.steps.filter((s) => s.outcome === "skipped" && UNJUDGED.test(s.detail));
+    // What is shown is said exactly: each went red on ONE planted violation and green again
+    // without it. That a check can fail is shown; that it catches every violation is not.
     out(
       judged
-        ? `\n${green.length ? t.glyph.fail : t.glyph.ok} ${red.length} of ${judged} check(s) went red on a planted violation${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can stop a bad change"}\n`
+        ? `\n${green.length ? t.glyph.fail : t.glyph.ok} ${red.length} of ${judged} of your check(s) went red on a planted violation and green again without it${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can fail on at least that"}\n`
         : `\n${t.glyph.skip} nothing to prove: no gate step of the ${preset.id} preset runs here (no script or config for any of them)\n`,
     );
+    if (builtins.length)
+      out(
+        `  ${t.gray(`and abatty's own ${builtins.map((s) => s.label).join(", ")}, which needs no setup here`)}\n`,
+      );
     if (unjudged.length)
       out(
         `${t.glyph.warn} ${t.yellow(`${unjudged.length} more could not be judged here (${unjudged.map((s) => s.label).join(", ")}): each was red before its plant, or its tool is missing; what they printed is kept`)}\n`,

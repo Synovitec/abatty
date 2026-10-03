@@ -24,8 +24,22 @@ test("a test script that runs the tests is proven, and nothing is written in the
   const r = cli(["prove", dir, "--stack", "node"], dir);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /✓ unit tests \(TEST\.1\)\s+went red on a test that throws/);
+  // One check is the repository's; the secret scan is abatty's own and is said apart. "2 of 2"
+  // counted it as the repository's.
+  assert.match(r.out, /1 of 1 of your check\(s\) went red on a planted violation and green again/);
+  assert.match(r.out, /and abatty's own secret scan/);
   assert.equal(git(dir, "status", "--porcelain"), "", "the repository is as it was");
   assert.equal(copies(), before, "the copy is removed");
+});
+
+test("the lint plant is said in the repository's language", () => {
+  const dir = tempRepo("prove-lint-js", {
+    "package.json": JSON.stringify({ name: "p", scripts: { lint: "node -e 0" } }),
+    "src/a.js": "export const a = 1;\n",
+  });
+  const r = cli(["prove", dir, "--stack", "node"], dir);
+  assert.match(r.out, /planting a debugger statement/);
+  assert.doesNotMatch(r.out, /Python/, "a JavaScript repository reads about JavaScript");
 });
 
 test("a test script that can never fail is named as absent, and the run exits 3", () => {
