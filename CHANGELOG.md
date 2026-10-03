@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`valid.utcDay` reads an instant built for its day as safe (probe v2).** A design
+  repository's three dates anchored at local noon (`d + "T12:00:00"`, the same day in UTC for any
+  offset under twelve hours) and one built with `Date.UTC` read as four findings of a HARD metric.
+  Built that way on the same line, the day is no longer counted; a bare instant still is.
+
 - **A repository with no package.json is the docs preset.** A design repository (documents, a
   mockup's scripts, a schema) was refused by `prove` and `init` with "no preset" and a
   package.json named that did not exist. With no package.json, abatty takes the docs preset; a
