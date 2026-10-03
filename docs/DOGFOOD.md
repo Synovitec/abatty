@@ -8,7 +8,7 @@ tags: ["dogfood", "evidence", "negative-results"]
 related: ["./CATALOG.md", "./STANDARDS_PROGRESS.md", "./SECRET_SCAN_BENCHMARK.md", "./PLAN.md"]
 source_truth: ["../CLAUDE.md", "../README.md"]
 scope: synovitec
-last_verified: "2026-10-02"
+last_verified: "2026-10-03"
 ---
 
 # Running abatty on abatty

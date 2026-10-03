@@ -212,10 +212,7 @@ export function runStepControls(o) {
     }
     const pack = preset.pack || "javascript";
     const means = control.meansIn?.[pack] || control.means;
-    const files = plantedIn(
-      control.files({ deps, pack, dir: repoDir, scripts }),
-      folders[key],
-    );
+    const files = plantedIn(control.files({ deps, pack, dir: repoDir, scripts }), folders[key]);
     const clash = Object.keys(files).find((f) => existsSync(join(repoDir, f)));
     if (clash) {
       steps.push({ label, outcome: "skipped", detail: `${clash} exists already; remove it` });
