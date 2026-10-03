@@ -5,8 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-**Upgrading:** `docs.behindCode` is redefined (v6) to count fewer false findings; `abatty update`
-rewrites its floor.
+## [0.8.0-rc.4] - 2026-10-04
+
+The fourth candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.3 replays on a
+bun monorepo and a Next product found, and a first page a stranger can read in a minute:
+`prove` runs on a faithful copy of the repository (its history, its branch, its ignored env
+files), `update` measures a redefined probe rather than carrying an old count, a dependency bump
+no longer puts the documents citing the manifest behind, and the README leads with what `prove`
+finds. **Upgrading:** `docs.behindCode` is redefined (v6) to count fewer false findings;
+`abatty update` rewrites its floor. No config key, command or `--json` field moves.
 
 ### Added
 
