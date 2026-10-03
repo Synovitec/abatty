@@ -59,6 +59,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **On the minimal profile, a fresh Next.js app's first gate runs.** A new app ships with no
+  test script, and a step the preset requires stopped the gate ("could not run", exit 4) right
+  after `init`; a monorepo's root, with no tsconfig of its own, did the same for its typecheck.
+  Under minimal such a step is skipped and named, and the headline counts it among the steps
+  not run. The synovitec standard keeps the stricter rule.
+
 - **`init` no longer tells a minimal repository to make its linter ignore `.claude/`.** The
   minimal profile installs no agent harness, and `.claude/` holds only the harness lock, a JSON
   file no linter reads; the hint now applies where the harness's scripts are installed.

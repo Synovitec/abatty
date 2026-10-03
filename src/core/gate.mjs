@@ -37,6 +37,7 @@ import { explainFailure } from "./flake.mjs";
 import { markHollow, markNoTests } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { couldNotRun } from "./could-not-run.mjs";
+import { strictSteps } from "./init-scope.mjs";
 import { fastNote } from "../ci/day-one.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
@@ -119,6 +120,8 @@ export function runGate(o) {
   const nodeEnv = nodeEnvLine(o.nodeEnv);
   if (nodeEnv) log(nodeEnv);
 
+  // A required step with no script stops the gate under the standard, is named under minimal.
+  const strict = strictSteps(repoDir);
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(
       (s) => typeof s === "string" && typeof pkgScripts[s] === "string",
@@ -173,7 +176,7 @@ export function runGate(o) {
     // whose every step was skipped for want of a script read "gate green" and exited 0; the
     // reviewer who found it called it the other half of the false green, and it was.
     const absent = (/** @type {string} */ what) => {
-      if (!s.required) return false;
+      if (!s.required || !strict) return false;
       events.push({
         label: prefix + s.label,
         outcome: "errored",

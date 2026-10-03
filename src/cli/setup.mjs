@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { gateTools } from "../presets/index.mjs";
 import { finishSteps } from "./init-steps.mjs";
+import { strictSteps } from "../core/init-scope.mjs";
 import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
@@ -55,6 +56,8 @@ export async function initCommand(cx, preset) {
   out(t.heading(apply ? "Taken now, the steps a machine can take" : "By hand, in this order"));
   /** @type {import("./init-steps.mjs").InitStep[]} */
   const steps = [];
+  // Under the standard a missing required script stops the gate; under minimal it is a note.
+  const strict = strictSteps(dir);
   /** A step to say, with the command that takes it where `--apply` may. @param {string} text @param {string[]} [run] */
   const say = (text, run) => steps.push({ text, run });
   /** What the gate will skip until the repository adds it: said, but not a step to take. @param {string} text */
@@ -161,9 +164,9 @@ export async function initCommand(cx, preset) {
       )
         // A required step that cannot run is a step to take; one the gate skips is a note,
         // and one already noted for its missing config is not said twice.
-        (s.required ? say : note)(
+        (s.required && strict ? say : note)(
           t.gray(
-            `the gate ${s.required ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required ? ` (${s.label} is required)` : ""}, run on its own runner`,
+            `the gate ${s.required && strict ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required && strict ? ` (${s.label} is required)` : ""}, run on its own runner`,
           ),
         );
   }

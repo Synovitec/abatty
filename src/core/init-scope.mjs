@@ -53,3 +53,16 @@ export function scopedTools(scope, repoDir, preset) {
   );
   return { knip, scripts, devDependencies };
 }
+
+/**
+ * Whether a step the preset requires stops the gate when its script is absent ("could not run")
+ * or is skipped and named like any other. The synovitec standard holds the first: a repository
+ * whose every step was skipped once read green. The minimal profile takes the second, because a
+ * fresh Next.js app ships with no test script, and the gate it was promised would end green
+ * refused to run instead; the headline still counts the steps that did not run.
+ * @param {string} repoDir @returns {boolean}
+ */
+export function strictSteps(repoDir) {
+  const config = readJsonFile(repoDir, CONFIG_FILE) || readJsonFile(repoDir, LEGACY_CONFIG);
+  return profileNames(config).includes("synovitec");
+}

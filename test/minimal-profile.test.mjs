@@ -81,3 +81,33 @@ test("minimal sets up no dead-code step and no compiler for plain JavaScript, an
   cli(["init", full, "--yes", "--profile", "synovitec"], full);
   assert.ok(existsSync(join(full, "knip.jsonc")));
 });
+
+test("under minimal a required step with no script is skipped and named; under the standard it stops the gate", () => {
+  // A fresh Next.js app ships with no test script: under the standard the gate could not run,
+  // which broke the minimal profile's promise of a green first gate. The headline still says it.
+  const files = {
+    "package.json": JSON.stringify({
+      name: "g",
+      private: true,
+      scripts: { typecheck: "node -e 0", standards: "node -e 0 --" },
+      dependencies: { next: "15.0.0" },
+    }),
+    "package-lock.json": "{}\n",
+    "src/a.ts": "export const a = 1;\n",
+  };
+  const minimal = tempRepo("gate-minimal", {
+    ...files,
+    "abatty.config.json": JSON.stringify({ profiles: ["minimal"] }),
+  });
+  const r = cli(["gate", minimal, "--fast", "--stack", "next"], minimal);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /skipped unit tests \(TEST\.1\)/);
+  assert.match(r.out, /gate green with \d+ of \d+ step\(s\) not run \([^)]*unit tests/);
+  const standard = tempRepo("gate-standard", {
+    ...files,
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
+  });
+  const s = cli(["gate", standard, "--fast", "--stack", "next"], standard);
+  assert.equal(s.code, 4, s.out);
+  assert.match(s.out, /unit tests \(TEST\.1\) could not run: no "test" script/);
+});
