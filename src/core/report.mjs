@@ -84,8 +84,16 @@ function nightFacts(repoDir) {
 function bypassOf(repoDir) {
   try {
     const range = pushRange(repoDir);
+    // git's own error stays out of the screen: a one-commit repository with no main has no
+    // HEAD~1, and `status` printed git's raw "ambiguous argument" above its own reading.
     const git = (/** @type {string[]} */ ...a) =>
-      String(execFileSync("git", a, { cwd: repoDir, encoding: "utf8" }) || "").trim();
+      String(
+        execFileSync("git", a, {
+          cwd: repoDir,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        }) || "",
+      ).trim();
     const commits = commitsOf(git, range);
     // The pair as the ratchet resolves it, from the same config: the changelog's name lives
     // under `files`, and handing the raw config here made the `then` side null, so every source

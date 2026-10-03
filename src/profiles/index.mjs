@@ -14,6 +14,7 @@ import { pathToFileURL } from "node:url";
 import { validate } from "../rules/index.mjs";
 import { synovitec } from "./synovitec.mjs";
 import { cra } from "./cra.mjs";
+import { minimal } from "./minimal.mjs";
 
 /**
  * @typedef {import("../rules/index.mjs").Rule} Rule
@@ -33,7 +34,7 @@ import { cra } from "./cra.mjs";
  */
 
 /** The built-in profiles. @type {Profile[]} */
-export const PROFILES = [synovitec, cra];
+export const PROFILES = [synovitec, minimal, cra];
 /** The profile a repository is measured against when its config names none. */
 export const DEFAULT_PROFILES = ["synovitec"];
 
@@ -122,6 +123,8 @@ export async function loadProfiles(repoDir, config) {
   /** @type {string[]} */
   const problems = [];
   const ruleOwner = new Map();
+  /** The check each owned rule runs: a profile may repeat a rule, never change it. */
+  const ruleCheck = new Map();
   for (const name of profileNames(config)) {
     const r = await loadProfile(repoDir, name);
     if (!r.profile) {
@@ -134,6 +137,9 @@ export async function loadProfiles(repoDir, config) {
     }
     const rules = r.profile.rules.filter((rule) => {
       const owner = ruleOwner.get(rule.id);
+      // `minimal` beside `synovitec` names rules the other already holds, with the same check:
+      // the rule is read once, and naming both is not a problem to report.
+      if (owner && ruleCheck.get(rule.id) === rule.check) return false;
       if (owner) {
         problems.push(
           `profiles: ${rule.id} is a rule of ${owner} already; ${r.profile?.id} does not redefine it`,
@@ -141,6 +147,7 @@ export async function loadProfiles(repoDir, config) {
         return false;
       }
       ruleOwner.set(rule.id, r.profile?.id);
+      ruleCheck.set(rule.id, rule.check);
       return true;
     });
     profiles.push({ ...r.profile, rules });

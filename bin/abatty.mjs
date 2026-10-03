@@ -3,7 +3,7 @@
  * abatty - the engineering standard as a command.
  *
  *   abatty [status] [dir] [--fresh]                                    the repository at a glance
- *   abatty init [dir] --stack <next|astro|vite-react|node> [--stage design|build|run] [--agent <id,id>] [--force] [--dry-run]
+ *   abatty init [dir] --stack <next|astro|vite-react|node> [--stage design|build|run] [--agent <id,id>] [--force] [--dry-run] [--apply]
  *   abatty agents [dir]                                                the agent adapters: what each gives, what this repository loses
  *   abatty mcp [dir]                                                   the MCP server over stdio: measure, ratchet, gate, scrub, report, explain as tools
  *   abatty night-report [dir] [--date YYYY-MM-DD] [--json] [--out <file>]   the night's facts and the lessons they propose
@@ -50,6 +50,7 @@ const KNOWN = [
   "measure",
   "gate",
   "doctor",
+  "prove",
   "update",
   "config",
   "agents",
@@ -103,6 +104,7 @@ if (flag("--plain")) process.env.ABATTY_PLAIN = "1";
 if (process.env.ABATTY_PLAIN === "1") t.setPlain(true);
 const VALUE_FLAGS = [
   "--stack",
+  "--profile",
   "--out",
   "--range",
   "--base",
@@ -154,9 +156,14 @@ async function choosePreset(required) {
   const p = id
     ? presetById(id)
     : detectPreset(dependencyNames(dir), buildContext(dir).files) ||
-      (!existsSync(join(dir, "package.json")) && buildContext(dir).stack.docsOnly
-        ? presetById("docs")
-        : null);
+      (!existsSync(join(dir, "package.json"))
+        ? buildContext(dir).stack.docsOnly
+          ? presetById("docs")
+          : null
+        : // A package no framework claims is a Node package: a plain library or CLI was refused
+          // with "no preset" until --stack node was passed. Here, not in detectPreset, which also
+          // reads each workspace, where a plain package is not one to gate.
+          presetById("node"));
   // A language no preset covers is said, never taken for documents (src/presets/foreign.mjs).
   const { foreignLanguage } = await import("../src/presets/foreign.mjs");
   const foreign = !id && p?.id === "docs" ? foreignLanguage(buildContext(dir).files) : "";
@@ -289,6 +296,13 @@ switch (command) {
     if (!preset) break;
     const { gateCommand } = await import("../src/cli/verdict.mjs");
     await gateCommand(ctx, preset);
+    break;
+  }
+  case "prove": {
+    const { proveCommand } = await import("../src/cli/prove.mjs");
+    const preset = await choosePreset(true);
+    if (!preset) break;
+    await proveCommand(ctx, preset);
     break;
   }
   case "doctor": {

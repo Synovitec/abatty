@@ -5,12 +5,27 @@
 [![node](https://img.shields.io/node/v/abatty.svg)](package.json)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-An engineering standard you install rather than circulate. `abatty` puts a gate in front of your
-main branch, measures the debt behind it, and proves that every step of the gate is capable of
-failing.
+**Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove
+those controls work.**
 
-It has no runtime dependencies and runs on Node 20 and later. Linux and Windows are covered by CI
-on every push, against both npm and pnpm.
+Most repositories have a lint step, tests and a CI pipeline. Few can show that each of those checks
+would stop a bad change today, or that the debt they carry is not growing. `abatty` is the policy
+and enforcement layer above the tools you already use (eslint, your test runner, tsc, a scanner,
+your CI): it does not replace them, it decides what a change must pass, holds the line on debt,
+and checks that every guard still bites. The same rules hold whoever writes the change, a person
+or a coding agent.
+
+|             | What `abatty` does                                                                                                                                                        | Commands                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Define**  | The rules a repository follows, as data: a built-in catalog, your own rules and probes, waivers with a reason and an expiry date                                          | `rules`, `explain`           |
+| **Enforce** | One gate run by the pre-push hook, by CI and by an agent's stop check, so the three cannot disagree; a ratchet that blocks new debt and never makes you fix the old first | `gate`, `ratchet`            |
+| **Prove**   | Plants a violation in each gate step and probe, and reports any check that stays green as **absent**, on a copy, nothing written                                          | `prove`, `doctor --controls` |
+| **Improve** | Where the repository stands, what to fix first, and floors that only ever fall                                                                                            | `status`, `measure`, `fix`   |
+
+No runtime dependencies, Node 20 and later, Linux and Windows covered by CI on every push against
+npm and pnpm. A new repository starts on the **minimal** profile: thirteen rules any stack agrees
+to. The full catalog of eighty is one team's standard (`synovitec`), a profile you add when you
+want it; the engine depends on neither, and a waiver sets any rule aside with its reason on record.
 
 ## Why
 
@@ -36,21 +51,26 @@ npm i -D abatty
 ```
 
 `pnpm`, `yarn` and `bun` work the same way. The package reads no credential and installs nothing
-on your behalf: when a stack needs a tool, the tool is named and you decide.
+on your behalf unless you ask: when a stack needs a tool, the tool is named and you decide, and
+`init --apply` runs the install it names for you.
 
 ## Quick start
 
 ```sh
+npx abatty prove             # which of your checks can fail: on a copy, nothing written, no setup
 npx abatty init              # detects the stack and installs the instrument
 npm run gate                 # the gate, which the pre-push hook also runs
 npx abatty doctor --controls # proves each gate step can fail
 npx abatty                   # where the repository stands
 ```
 
-1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet with today's numbers
-   as its floor, CI generated from the same gate definition, and the day-0 documents. Pass
-   `--stack` to name a stack instead of detecting one, or `--stage design` for a repository that
-   has no application yet.
+1. **`init`** writes the gate, the git hooks that run it, the ratchet and a CI workflow from the
+   same gate definition, about ten files on the default **minimal** profile, then lists what is
+   left by hand in order (the installs, the hooks, today's numbers as the ratchet's floor).
+   `--agent <id>` adds the harness that holds a coding agent to the gate; `--profile synovitec`
+   adds the full standard, its documents and a changelog line per commit. `--apply` takes the steps a
+   machine safely can and leaves only the ones that need you. Pass `--stack` to name a stack
+   instead of detecting one, or `--stage design` for a repository that has no application yet.
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
    unattended run's stop check. It refuses the work rather than describing it.
 3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever
@@ -62,6 +82,36 @@ npx abatty                   # where the repository stands
    one's, so a verdict can be read back.
 4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
    it.
+
+## Already built in
+
+Reviewers of the release candidates asked for each of these as missing. Each is one command or one
+key away:
+
+| You need                                            | Where it is                                        | What it does                                                                                                                                          |
+| --------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adopt on an existing codebase without stopping work | `abatty baseline`                                  | Records today's numbers as the floor; the ratchet refuses only a rise, so old debt never blocks a push and new debt always does                       |
+| An exception with a reason and an expiry            | `rules.waived` in `abatty.config.json`             | `{ "CODE-SIZE-300": { "reason": "...", "until": "2026-12-31" } }`; an expired waiver stops applying, and `abatty rules` prints the waiver rate        |
+| A dependency advisory accepted for now              | `security.audit.allow`                             | Package or advisory id, a reason and an `until` date; it stops allowing when the date passes                                                          |
+| Server-side enforcement, not only a local hook      | `abatty ci`                                        | Generates the pipeline from the same gate definition, so a skipped hook meets the same steps in CI                                                    |
+| Findings on the pull request                        | the generated GitHub workflow                      | Uploads SARIF, so findings appear on the changed lines                                                                                                |
+| Machine-readable output                             | `--json` on `measure`, `ratchet`, `rules`, `check` | Exit codes 0 / 2 / 3 / 4 are a contract (below)                                                                                                       |
+| A dashboard over time                               | `abatty serve`, `abatty publish`                   | The readings of one or many repositories                                                                                                              |
+| Coding agents held to the same rules                | `abatty mcp`, the harness hooks                    | Serves the measurement, the ratchet, the gate and the rule explanations to an MCP client; an unattended agent run cannot stop until the gate is green |
+| Your own rules and metrics                          | `abatty.rules.mjs`, `abatty.probes.mjs`            | Pure functions of the repository, with control cases; a profile packages them for many repositories                                                   |
+| Proof that a check can fail                         | `abatty prove`                                     | Plants a violation in each gate step of a copy of the repository and reports a step that stays green as absent; nothing written, no setup             |
+
+## Words used here
+
+| Word        | Means                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| **gate**    | The ordered checks a change must pass, the same locally, in the hook and in CI         |
+| **ratchet** | Numbers that may only fall; **floor** is today's number for a metric or a file         |
+| **probe**   | One measured metric (a count of oversized files, of clones, of raw env reads)          |
+| **control** | A planted violation that proves a gate step or a probe can go red                      |
+| **rule**    | One requirement of the catalog, with how it is insured: hard, ratchet, review or prose |
+| **harness** | The hooks and settings that hold a coding agent to the gate                            |
+| **night**   | An unattended agent run on a branch, gated before it may stop                          |
 
 ## How it works
 
@@ -159,34 +209,35 @@ by mutation.
 
 ## Commands
 
-| Command               | What it does                                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `abatty`              | Where the repository stands: the phase, the score, the trend                                                              |
-| `abatty init`         | Install the instrument for the detected or named stack                                                                    |
-| `abatty gate`         | The gate. `--fast` omits the heavy suites; `--preflight` says what each step needs, runs none                             |
-| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases                                           |
-| `abatty baseline`     | Record today's numbers as the floor                                                                                       |
-| `abatty raises`       | The floors loosened against the base, and the review that can land them                                                   |
-| `abatty mutate`       | One mutant per changed line of product code, run on the repository's runner against the nearest tests; a survivor exits 3 |
-| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps                                   |
-| `abatty measure`      | The gap analysis: every check, with next steps by phase; the reading before names this one                                |
-| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document                               |
-| `abatty explain <ID>` | One rule, its reason, and its finding here                                                                                |
-| `abatty check <ID>`   | One rule as an exit code, for a script                                                                                    |
-| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                                            |
-| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it                                     |
-| `abatty ci`           | Generate CI from the gate; one you keep is judged, never overwritten. `--ruleset` prints a ruleset                        |
-| `abatty update`       | Bring the harness to the package's version, keeping your edits                                                            |
-| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                                                  |
-| `abatty presets`      | The stacks, and which repository proved each                                                                              |
-| `abatty profiles`     | The standards this repository follows                                                                                     |
-| `abatty attest`       | The conformance statement, ready to sign                                                                                  |
-| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                                                  |
-| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here                                            |
-| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                                                |
-| `abatty serve`        | Host that dashboard, so CI can post each report to it                                                                     |
-| `abatty night`        | The unattended run, with its pre-flight and canary session                                                                |
-| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests                                         |
+| Command               | What it does                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `abatty`              | Where the repository stands: the phase, the score, the trend                                                                    |
+| `abatty init`         | Install the instrument for the detected or named stack                                                                          |
+| `abatty gate`         | The gate. `--fast` omits the heavy suites; `--preflight` says what each step needs, runs none                                   |
+| `abatty ratchet`      | Every probe against the committed baseline. `--controls` runs the control cases                                                 |
+| `abatty baseline`     | Record today's numbers as the floor                                                                                             |
+| `abatty raises`       | The floors loosened against the base, and the review that can land them                                                         |
+| `abatty mutate`       | One mutant per changed line of product code, run on the repository's runner against the nearest tests; a survivor exits 3       |
+| `abatty prove`        | Which of the repository's checks can fail: each gate step planted with a violation, on a copy; nothing written, no setup needed |
+| `abatty doctor`       | The harness self-test and drift against the package. `--controls` proves the gate steps                                         |
+| `abatty measure`      | The gap analysis: every check, with next steps by phase; the reading before names this one                                      |
+| `abatty rules`        | The rule catalog. Filter by family, level or phase; `--md` regenerates the catalog document                                     |
+| `abatty explain <ID>` | One rule, its reason, and its finding here                                                                                      |
+| `abatty check <ID>`   | One rule as an exit code, for a script                                                                                          |
+| `abatty fix`          | What a phase asks for that a machine can write. Prints a plan unless `--write`                                                  |
+| `abatty secrets`      | The secret scan over the tree, the staged files or a range. `--benchmark` measures it                                           |
+| `abatty ci`           | Generate CI from the gate; one you keep is judged, never overwritten. `--ruleset` prints a ruleset                              |
+| `abatty update`       | Bring the harness to the package's version, keeping your edits                                                                  |
+| `abatty config`       | The configuration file, its problems against the schema, and `--migrate`                                                        |
+| `abatty presets`      | The stacks, and which repository proved each                                                                                    |
+| `abatty profiles`     | The standards this repository follows                                                                                           |
+| `abatty attest`       | The conformance statement, ready to sign                                                                                        |
+| `abatty evidence`     | The regulatory requirement mapping, for a person to read                                                                        |
+| `abatty validate`     | Whether the files a rule reports are the files somebody later had to fix, here                                                  |
+| `abatty dashboard`    | One HTML page over the reports of one or many repositories                                                                      |
+| `abatty serve`        | Host that dashboard, so CI can post each report to it                                                                           |
+| `abatty night`        | The unattended run, with its pre-flight and canary session                                                                      |
+| `abatty scrub`        | Opt-in: remove tool, vendor and model names from files, commits and pull requests                                               |
 
 Every command accepts `--plain` for ASCII markers and no colour, which is what a log parser wants.
 It reaches the commands abatty starts in turn (the gate's steps) through `ABATTY_PLAIN=1`, which
@@ -313,8 +364,11 @@ enabled or not. A multi-tenant repository whose tenant column is not `tenant_id`
 `tenantKeys` so DATA-TENANT can see it.
 
 Rules can also arrive as a **profile**: a standard packaged as a unit of rules, adoption phases,
-presets and harness files. The built-in profile is one company's standard. A repository that names
-only its own carries only its own, with the same instrument underneath.
+presets and harness files. Three are built in: `minimal`, the default of a new repository;
+`synovitec`, one company's full standard, and the profile of any config that names none, so an
+upgrade moves nobody; and `cra`, a lens that maps another profile onto a regulation's
+requirements. They combine (`"profiles": ["minimal", "acme"]`), and a repository that names only
+its own carries only its own, with the same instrument underneath.
 
 ## What it does not claim
 

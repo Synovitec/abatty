@@ -122,7 +122,7 @@ test("every step has a control that means something; planted, run, removed: a st
 
 test("doctor --controls prints the verdict per step and is not ok while a step is absent; the rule is present once every step went red", () => {
   const dir = fixture("controls-doctor");
-  cli(["init", dir, "--stack", "node"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "node"], dir);
   const r = cli(["doctor", dir, "--skip-self-test", "--controls"], dir);
   assert.equal(r.code, 3, r.out);
   assert.match(r.out, /Controls/);
@@ -135,7 +135,7 @@ test("doctor --controls prints the verdict per step and is not ok while a step i
   assert.ok(preset);
   const none = analyze(fresh).findings.find((f) => f.id === "INST-CONTROLS");
   assert.equal(none?.status, "missing", "no ratchet script at all");
-  cli(["init", fresh, "--stack", "next"], fresh);
+  cli(["init", "--profile", "synovitec", fresh, "--stack", "next"], fresh);
   const unrun = analyze(fresh).findings.find((f) => f.id === "INST-CONTROLS");
   assert.equal(unrun?.status, "partial");
   assert.match(unrun?.evidence || "", /controls not run yet \(abatty doctor --controls\)/);
@@ -207,13 +207,23 @@ test("the plant follows the repository: the typecheck's own extension and the te
   assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(folderCtx) || {}), [
     "tests/abatty-control.__.test.mjs",
   ]);
-  const tsCtx = { ...ctx, dir: process.cwd() + "/no-such-dir", scripts: { test: "vitest run" } };
+  const tsDir = tempRepo("plant-ts", { "tsconfig.json": "{}\n", "src/a.ts": "export {};\n" });
+  const tsCtx = { ...ctx, dir: tsDir, scripts: { test: "vitest run" } };
   assert.deepEqual(Object.keys(STEP_CONTROLS.typecheck?.files(tsCtx) || {}), [
     "src/abatty-control.__.ts",
   ]);
   assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(tsCtx) || {}), [
     "src/abatty-control.__.test.ts",
   ]);
+  // and plain JavaScript, with no tsconfig and no TypeScript source: a module file, never .ts,
+  // which `node --test` would not run and a working suite would read as absent
+  const jsDir = tempRepo("plant-js", { "src/a.js": "module.exports = 1;\n" });
+  assert.deepEqual(
+    Object.keys(
+      STEP_CONTROLS.test?.files({ ...ctx, dir: jsDir, scripts: { test: "node --test" } }) || {},
+    ),
+    ["src/abatty-control.__.test.mjs"],
+  );
 });
 
 test("against a narrow typecheck and a one-folder test runner, both steps go red: the control the old plant could not reach", () => {

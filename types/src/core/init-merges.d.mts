@@ -25,9 +25,11 @@ export function added(after: Record<string, unknown>, before: Record<string, unk
  */
 export function packageName(folder: string): string;
 /**
- * A preset's scripts less an eslint `lint` the folder has nothing to run: no eslint installed and
- * no configuration. An Astro site was given `eslint .` and the gate's lint step could not run;
- * without the script it is skipped by name, and the gap analysis says what is missing.
+ * A preset's scripts less the ones the folder has nothing to run: an eslint `lint` with no
+ * eslint installed and no configuration, and a `tsc` typecheck with neither a tsconfig nor
+ * TypeScript. An Astro site was given `eslint .` and a plain JavaScript package `tsc --noEmit`,
+ * and each gate step could not run; without the script it is skipped by name, and the gap
+ * analysis says what is missing.
  * @param {string} dir the folder whose package.json gets the scripts
  * @param {Record<string, string>} scripts @returns {Record<string, string>}
  */

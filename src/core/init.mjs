@@ -35,12 +35,13 @@ import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { gateTools, presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere, packageName, runnableScripts } from "./init-merges.mjs";
-import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
+import { writeRecords } from "./init-records.mjs";
 import { depcruiseFor, graphRoots, knipForRoots } from "./source-roots.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
 import { SHIM_DIR, SHIM_FILES } from "./shim.mjs";
+import { initScope, scopedTools } from "./init-scope.mjs";
 
 /** The templates `init` and `update` copy from, read as files: nothing under `src/` imports them (CLAUDE.md §3). */
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
@@ -130,6 +131,7 @@ function walk(dir, base = dir, acc = []) {
  * @param {string[]} [o.agents] the adapters to write for (the config's `agents` when absent)
  * @param {string[]} [o.ci] the CI providers to generate for (the config's `ci.providers` when absent)
  * @param {string} [o.stage] the stage to record in the config (design, build, run)
+ * @param {string} [o.profile] the profiles to follow, comma-separated (`minimal` for a new config)
  * @param {{ path: string, preset: import("../presets/index.mjs").Preset | null }[]} [o.workspaces] the workspaces with a preset: each gets its preset's scripts in its own package.json
  */
 export function initRepo(o) {
@@ -166,49 +168,57 @@ export function initRepo(o) {
   };
   const tpl = (/** @type {string} */ rel) => readFileSync(join(TEMPLATES, rel), "utf8");
 
-  // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
-  for (const f of walk(join(TEMPLATES, "harness", "hooks")))
-    put(`.claude/hooks/${f}`, tpl(`harness/hooks/${f}`));
-  // The bypass layer outside the agent: a `git` the shell finds before the real one, so the two
-  // things the guard refuses inside the agent's session are refused in a terminal and a script
-  // too. shim.mjs is read by node, never executed, so only the wrappers carry the mode.
-  for (const f of SHIM_FILES)
-    put(`${SHIM_DIR}/${f}`, tpl(`harness/bin/${f}`), {
-      merge: false,
-      executable: f !== "shim.mjs",
-    });
-  // A file named `git` read as one that takes over git: it is said what it does and where. Only
-  // the night puts this folder first on PATH (src/core/shim.mjs shimmedPath); a shell of yours
-  // meets it only where you put it there yourself.
-  const shim = events.find((e) => e.file === `${SHIM_DIR}/git` && e.action !== "kept");
-  if (shim)
-    shim.detail =
-      "a git wrapper the night puts first on its PATH: refuses force push, --no-verify and moving core.hooksPath, hands everything else to git; your shell's git is untouched unless you add .claude/bin to PATH (ABATTY_SHIM=off passes all)";
-  // The skill, in the open agent-skills format, at every configured adapter's skills folder.
-  const skillText = tpl("skills/adopt-standards/SKILL.md");
-  const skillAdapters = configuredAdapters(
-    o.agents?.length
-      ? { agents: o.agents }
-      : readJsonFile(repoDir, CONFIG_FILE) || readJsonFile(repoDir, LEGACY_CONFIG),
-  );
-  for (const a of skillAdapters.adapters.length ? skillAdapters.adapters : [PRIMARY])
-    if (a.skillsDir) put(`${a.skillsDir}/adopt-standards/SKILL.md`, skillText);
-  for (const f of ["standards-reviewer.md", "standards-adopter.md"])
-    put(`.claude/agents/${f}`, tpl(`harness/agents/${f}`));
-  put(".claude/settings.json", tpl("harness/settings.project.json"));
-  put(".claude/mcp.night.json", tpl("harness/mcp.night.json"));
-  // Gated the way the catalog's rules are: a file about one library is not written where the
-  // repository does not depend on it, and the skip is reported rather than silent.
+  // What the profile brings (init-scope.mjs): under `minimal`, no harness unless an agent is
+  // asked for, and none of the standard's documents.
+  const scope = initScope(repoDir, o);
   const rules = presetRules(preset, ruleFacts(repoDir));
-  for (const r of rules) {
-    if (!existsSync(join(TEMPLATES, "harness", "rules", r.file))) continue;
-    if (r.applies) put(`.claude/rules/${r.file}`, tpl(`harness/rules/${r.file}`));
-    else
-      events.push({
-        file: `.claude/rules/${r.file}`,
-        action: "n/a",
-        detail: `no ${r.needs.slice(0, 3).map(needLabel).join(", ")} in this repository`,
+  const tools = scopedTools(scope, repoDir, preset);
+  // 1. The harness: hooks, skill, agents, settings, the night's MCP config.
+  if (scope.harness) writeHarness();
+  /** The agent harness, as one step: the hooks, the shim, the skill, the agents, the rules. */
+  function writeHarness() {
+    for (const f of walk(join(TEMPLATES, "harness", "hooks")))
+      put(`.claude/hooks/${f}`, tpl(`harness/hooks/${f}`));
+    // The bypass layer outside the agent: a `git` the shell finds before the real one, so the two
+    // things the guard refuses inside the agent's session are refused in a terminal and a script
+    // too. shim.mjs is read by node, never executed, so only the wrappers carry the mode.
+    for (const f of SHIM_FILES)
+      put(`${SHIM_DIR}/${f}`, tpl(`harness/bin/${f}`), {
+        merge: false,
+        executable: f !== "shim.mjs",
       });
+    // A file named `git` read as one that takes over git: it is said what it does and where. Only
+    // the night puts this folder first on PATH (src/core/shim.mjs shimmedPath); a shell of yours
+    // meets it only where you put it there yourself.
+    const shim = events.find((e) => e.file === `${SHIM_DIR}/git` && e.action !== "kept");
+    if (shim)
+      shim.detail =
+        "a git wrapper the night puts first on its PATH: refuses force push, --no-verify and moving core.hooksPath, hands everything else to git; your shell's git is untouched unless you add .claude/bin to PATH (ABATTY_SHIM=off passes all)";
+    // The skill, in the open agent-skills format, at every configured adapter's skills folder.
+    const skillText = tpl("skills/adopt-standards/SKILL.md");
+    const skillAdapters = configuredAdapters(
+      o.agents?.length
+        ? { agents: o.agents }
+        : readJsonFile(repoDir, CONFIG_FILE) || readJsonFile(repoDir, LEGACY_CONFIG),
+    );
+    for (const a of skillAdapters.adapters.length ? skillAdapters.adapters : [PRIMARY])
+      if (a.skillsDir) put(`${a.skillsDir}/adopt-standards/SKILL.md`, skillText);
+    for (const f of ["standards-reviewer.md", "standards-adopter.md"])
+      put(`.claude/agents/${f}`, tpl(`harness/agents/${f}`));
+    put(".claude/settings.json", tpl("harness/settings.project.json"));
+    put(".claude/mcp.night.json", tpl("harness/mcp.night.json"));
+    // Gated the way the catalog's rules are: a file about one library is not written where the
+    // repository does not depend on it, and the skip is reported rather than silent.
+    for (const r of rules) {
+      if (!existsSync(join(TEMPLATES, "harness", "rules", r.file))) continue;
+      if (r.applies) put(`.claude/rules/${r.file}`, tpl(`harness/rules/${r.file}`));
+      else
+        events.push({
+          file: `.claude/rules/${r.file}`,
+          action: "n/a",
+          detail: `no ${r.needs.slice(0, 3).map(needLabel).join(", ")} in this repository`,
+        });
+    }
   }
 
   // 2. The config: abatty.config.json at the root, the template with the preset's commands and
@@ -230,6 +240,9 @@ export function initRepo(o) {
     // The version this repository follows, recorded where a human reads it; update moves it.
     abatty: packageVersion(),
     ...(o.stage ? { stage: o.stage } : {}),
+    ...(scope.name ? { profiles: scope.profiles } : {}),
+    // The per-commit changelog line is the synovitec standard's, not every repository's.
+    ...(scope.full ? {} : { changelogRequiredFor: [] }),
   };
   // The commands the hooks and the night run, in the manager's own words (the presets write npm's).
   if (defaults.commands && typeof defaults.commands === "object")
@@ -252,7 +265,7 @@ export function initRepo(o) {
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)
     put(".dependency-cruiser.cjs", depcruiseFor(repoDir, tpl("tooling/.dependency-cruiser.cjs")));
-  if (preset.tooling.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
+  if (tools.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
 
   // The graph reads every source folder that exists (src/core/source-roots.mjs).
   const roots = graphRoots(repoDir);
@@ -274,7 +287,7 @@ export function initRepo(o) {
         name: packageName(basename(repoDir)),
         private: true,
         scripts: Object.fromEntries(
-          Object.entries(runnableScripts(repoDir, preset.scripts)).map(([k, v]) => [k, rooted(v)]),
+          Object.entries(runnableScripts(repoDir, tools.scripts)).map(([k, v]) => [k, rooted(v)]),
         ),
       });
     events.push({ file: "package.json", action: "written" });
@@ -283,7 +296,7 @@ export function initRepo(o) {
   // The package just written is not also "kept": one file, one line.
   if (!fresh && existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    for (const [k, v] of Object.entries(runnableScripts(repoDir, preset.scripts)))
+    for (const [k, v] of Object.entries(runnableScripts(repoDir, tools.scripts)))
       if (!(k in scripts) || force) scripts[k] = rooted(v);
     const what = added(scripts, pkg.scripts || {}, "scripts");
     if (what) {
@@ -339,69 +352,48 @@ export function initRepo(o) {
   // 6. Day-0 documents, only when absent. The context file goes to every configured adapter:
   //    the primary's name, and AGENTS.md for the others, the primary importing it when both
   //    exist so there is one source; a Cursor adapter gets the preset's rules as .mdc files.
-  const configured = configuredAdapters(o.agents?.length ? { agents: o.agents } : merged);
-  const adapters = configured.adapters.length ? configured.adapters : [PRIMARY];
-  const others = adapters.filter((a) => a.id !== PRIMARY.id);
-  // The interoperable file is written always, not only when another adapter asked for it. It
-  // costs one file, and it is the only way an agent this repository never configured can read the
-  // context; the primary's file imports it so there is one source rather than two copies that
-  // drift. A rule that reads the context follows that import.
-  // What a machine can fill, it fills: the name is the package's or the folder's. The rest are
-  // the questions; DOC-CONTEXT names every one still standing until somebody answers them.
-  const context = tpl("harness/agent-context.md.template").replaceAll(
-    "<project name>",
-    String(readPackage(repoDir).name || basename(repoDir)),
-  );
-  // A repository that already wrote its context file keeps it as the one source: the template
-  // beside it, unfilled, was a second context that read as the real one to every other agent.
-  // The interoperable file then points at the existing one instead of competing with it.
-  // The import line init writes is not the repository's own context, and a file the repository
-  // wrote is never written over, not even under --force: `init --force` once turned CLAUDE.md
-  // into an import of an AGENTS.md that pointed back at it, and the context was gone.
-  const primary = join(repoDir, PRIMARY.contextFile);
-  const own = existsSync(primary) && readFileSync(primary, "utf8").trim() !== "@AGENTS.md";
-  if (!own) {
-    put("AGENTS.md", context);
-    put(PRIMARY.contextFile, "@AGENTS.md\n");
-  } else if (!existsSync(join(repoDir, "AGENTS.md")))
-    put(
-      "AGENTS.md",
-      `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`,
+  if (scope.harness) writeContext();
+  if (scope.full) writeRecords(put, repoDir, events, dryRun);
+  /** The context file an agent reads, for every configured adapter. */
+  function writeContext() {
+    const configured = configuredAdapters(o.agents?.length ? { agents: o.agents } : merged);
+    const adapters = configured.adapters.length ? configured.adapters : [PRIMARY];
+    const others = adapters.filter((a) => a.id !== PRIMARY.id);
+    // The interoperable file is written always, not only when another adapter asked for it. It
+    // costs one file, and it is the only way an agent this repository never configured can read the
+    // context; the primary's file imports it so there is one source rather than two copies that
+    // drift. A rule that reads the context follows that import.
+    // What a machine can fill, it fills: the name is the package's or the folder's. The rest are
+    // the questions; DOC-CONTEXT names every one still standing until somebody answers them.
+    const context = tpl("harness/agent-context.md.template").replaceAll(
+      "<project name>",
+      String(readPackage(repoDir).name || basename(repoDir)),
     );
-  for (const a of others)
-    if (a.rulesDir && a.rulesFormat === "mdc")
-      for (const r of rules)
-        if (r.applies && existsSync(join(TEMPLATES, "harness", "rules", r.file)))
-          put(
-            `${a.rulesDir}/${r.file.replace(/\.md$/, ".mdc")}`,
-            toMdc(tpl(`harness/rules/${r.file}`)),
-          );
-  put(
-    "CHANGELOG.md",
-    "# Changelog\n\nKeep a Changelog, SemVer. Every commit that touches source, tests, scripts, CI, migrations or docs adds a line under Unreleased in the same commit (CHANGE.1, CHANGE.2).\n\n## [Unreleased]\n\n### Added\n\n- The engineering standard's instrument: harness, gate, import graph, dead code (`abatty init`).\n",
-  );
-  const indexWritten = put(
-    "docs/README.md",
-    // With the front matter the ratchet's own docs.frontMatter probe asks of every document: an
-    // index written without it made every freshly initialised repository red on its first clean
-    // ratchet, and a controls pass that read that red as a proof.
-    '---\ntitle: "Documentation index"\ndescription: "Every document under docs/ with what it is for, its category and its status; the one entry point, kept equal to the tree by the ratchet."\ncategory: reference\nstatus: living\naudience: ["developer", "agent"]\ntags: ["index", "docs"]\n---\n\n' +
-      "# Documentation index\n\nEvery document under docs/ is listed here (DOC.3): what it is for, its category and status.\n\n| Document | What it is for | Category | Status |\n|---|---|---|---|\n| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |\n| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |\n" +
-      // The documents the repository already had, from their own front matter: listed without
-      // them, each read as missing from the index and the first baseline was refused.
-      existingDocRows(repoDir, ["STANDARDS_PROGRESS.md", "ADOPTION_DECISIONS.md"]),
-  );
-  put(
-    "docs/STANDARDS_PROGRESS.md",
-    '---\ntitle: "Standards progress"\ndescription: "The scoreboard of the engineering standard on this repository: what each metric measures, the ratchet that holds it, the phases open, and the dated log of every deliberate change of a floor. Numbers only, never \'improved\'."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "ratchet", "scoreboard"]\nrelated: ["./README.md", "./ADOPTION_DECISIONS.md"]\n---\n\n# Standards progress\n\n## Scoreboard\n\n| Metric | Day 0 | Now | Target | Held by | Rule |\n|---|---|---|---|---|---|\n\n## Phase status\n\n| # | Phase | Status |\n|---|---|---|\n\n## Log\n\n',
-  );
-  put(
-    "docs/ADOPTION_DECISIONS.md",
-    '---\ntitle: "Adoption decisions"\ndescription: "The decisions taken alone by the unattended adoption nights (/adopt-standards): date, phase, situation, the default taken, the alternative set aside, what the morning must re-read."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "adoption", "decisions"]\nrelated: ["./README.md", "./STANDARDS_PROGRESS.md"]\n---\n\n# Adoption decisions\n\n',
-  );
-  // An index the repository already kept learns of the two documents written beside it: left
-  // out, each read as missing from it, and the first baseline was refused (docs.indexDrift).
-  if (!indexWritten) indexOwnDocs(repoDir, events, dryRun);
+    // A repository that already wrote its context file keeps it as the one source: the template
+    // beside it, unfilled, was a second context that read as the real one to every other agent.
+    // The interoperable file then points at the existing one instead of competing with it.
+    // The import line init writes is not the repository's own context, and a file the repository
+    // wrote is never written over, not even under --force: `init --force` once turned CLAUDE.md
+    // into an import of an AGENTS.md that pointed back at it, and the context was gone.
+    const primary = join(repoDir, PRIMARY.contextFile);
+    const own = existsSync(primary) && readFileSync(primary, "utf8").trim() !== "@AGENTS.md";
+    if (!own) {
+      put("AGENTS.md", context);
+      put(PRIMARY.contextFile, "@AGENTS.md\n");
+    } else if (!existsSync(join(repoDir, "AGENTS.md")))
+      put(
+        "AGENTS.md",
+        `# ${String(readPackage(repoDir).name || basename(repoDir))}\n\nThis repository's context is \`${PRIMARY.contextFile}\`: read it first. It is the one source; this file points at it.\n`,
+      );
+    for (const a of others)
+      if (a.rulesDir && a.rulesFormat === "mdc")
+        for (const r of rules)
+          if (r.applies && existsSync(join(TEMPLATES, "harness", "rules", r.file)))
+            put(
+              `${a.rulesDir}/${r.file.replace(/\.md$/, ".mdc")}`,
+              toMdc(tpl(`harness/rules/${r.file}`)),
+            );
+  }
 
   // 6b. CI from the gate, for the providers the repository names (init --ci, or ci.providers).
   const providers = o.ci?.length ? o.ci : (merged.ci?.providers || []).map(String);
@@ -428,7 +420,7 @@ export function initRepo(o) {
   // abatty itself, at the version that wrote the harness: the scripts init adds call it and the
   // config reads its files, and run from a global install it was in no manifest, so knip read the
   // binary as unlisted and a clone had no abatty to run.
-  const missingDeps = [...preset.devDependencies, `abatty@${packageVersion()}`].filter(
+  const missingDeps = [...tools.devDependencies, `abatty@${packageVersion()}`].filter(
     (d) => !(pkg.devDependencies || {})[nameOf(d)] && !(pkg.dependencies || {})[nameOf(d)],
   );
   return { events, missingDeps, preset, notExecutable };

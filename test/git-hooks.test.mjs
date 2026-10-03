@@ -15,7 +15,7 @@ function installed(/** @type {string} */ name) {
     "package.json": NEXT_PKG,
     "pnpm-lock.yaml": "lockfileVersion: 9\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: init");
   return dir;
@@ -60,7 +60,7 @@ test("a hook the repository edited is kept, with the new version beside it; no .
     "pnpm-lock.yaml": "lockfileVersion: 9\n",
     ".githooks/pre-push": "#!/bin/sh\necho no gate here\n",
   });
-  cli(["init", own, "--stack", "next"], own);
+  cli(["init", "--profile", "synovitec", own, "--stack", "next"], own);
   assert.match(cli(["update", own], own).out, /conflict\s+\.githooks\/pre-push/);
   assert.match(read(own, ".githooks/pre-push.abatty-new"), /gate --refs/);
   const husky = installed("hooks-elsewhere");

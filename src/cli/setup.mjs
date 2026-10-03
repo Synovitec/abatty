@@ -6,6 +6,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { gateTools } from "../presets/index.mjs";
+import { finishSteps } from "./init-steps.mjs";
+import { strictSteps } from "../core/init-scope.mjs";
 import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
@@ -30,6 +32,7 @@ export async function initCommand(cx, preset) {
     force: flag("--force"),
     dryRun: flag("--dry-run"),
     stage: opt("--stage") || undefined,
+    profile: opt("--profile") || undefined,
     workspaces: detectWorkspaces(dir, readAdoption(dir)),
     agents: opt("--agent")
       ? opt("--agent")
@@ -49,27 +52,37 @@ export async function initCommand(cx, preset) {
     out(
       `  ${e.action === "kept" || e.action === "n/a" ? t.glyph.skip : e.action === "merged" ? t.glyph.warn : t.glyph.ok} ${t.gray(e.action.padEnd(11))} ${e.file}${e.detail ? t.gray(" · " + e.detail) : ""}\n`,
     );
-  out(t.heading("By hand, in this order"));
-  let n = 1;
+  const apply = flag("--apply") && !flag("--dry-run");
+  out(t.heading(apply ? "Taken now, the steps a machine can take" : "By hand, in this order"));
+  /** @type {import("./init-steps.mjs").InitStep[]} */
+  const steps = [];
+  // Under the standard a missing required script stops the gate; under minimal it is a note.
+  const strict = strictSteps(dir);
+  /** A step to say, with the command that takes it where `--apply` may. @param {string} text @param {string[]} [run] */
+  const say = (text, run) => steps.push({ text, run });
+  /** What the gate will skip until the repository adds it: said, but not a step to take. @param {string} text */
+  const note = (text) => steps.push({ text, note: true });
   // In the manager the repository committed: a bun-only repository was told to run npm.
   const pm = managerFor(dir);
   const addDev = { npm: "npm i -D", pnpm: "pnpm add -D", yarn: "yarn add -D", bun: "bun add -d" }[
     pm.id
   ];
-  if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  if (r.missingDeps.length)
+    say(`${addDev} ${r.missingDeps.join(" ")}`, [...String(addDev).split(" "), ...r.missingDeps]);
   // The tools a gate runs as commands are no package's dependency: a Python repository was told
   // nothing about ruff or pytest, and every step could not run.
   const tools = gateTools(preset);
   if (preset.pack === "python" && tools.length)
-    out(
-      `  ${n++}. pip install ${tools.join(" ")}  ${t.gray("· in this repository's .venv, where the gate finds them without activating it, or on the PATH")}\n`,
+    say(
+      `pip install ${tools.join(" ")}  ${t.gray("· in this repository's .venv, where the gate finds them without activating it, or on the PATH")}`,
     );
   // Once, as one command: this filesystem keeps no executable bit, and git skips a hook without it.
   if (r.notExecutable.length)
-    out(
-      `  ${n++}. git add --chmod=+x ${r.notExecutable.join(" ")}  ${t.gray("· this filesystem keeps no executable bit, and git runs a hook only with it")}\n`,
+    say(
+      `git add --chmod=+x ${r.notExecutable.join(" ")}  ${t.gray("· this filesystem keeps no executable bit, and git runs a hook only with it")}`,
+      ["git", "add", "--chmod=+x", ...r.notExecutable],
     );
-  out(`  ${n++}. ${pm.run("hooks:install").join(" ")}\n`);
+  say(pm.run("hooks:install").join(" "), pm.run("hooks:install"));
   // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
   // documents repository was being told to fill a dependency-cruiser config it has no reason to
   // own and no copy of, which is the first thing its reader would go looking for and not find.
@@ -86,25 +99,43 @@ export async function initCommand(cx, preset) {
       : "";
   // Two steps, not one sentence: "was kept, then .dependency-cruiser.cjs" read as one thing, and
   // a repository's own context file has no §3 to point at; the template's boundary map does.
-  if (fill) out(`  ${n++}. ${fill}\n`);
-  if (graph)
-    out(
-      `  ${n++}. Edit .dependency-cruiser.cjs: one rule per ${ctx.own ? "boundary this repository forbids" : `arrow of ${ctx.file} §3`}\n`,
+  if (fill) say(fill);
+  // With no context file (the minimal profile writes none) there is no boundary map to turn into
+  // rules first: the template's own rules (no cycles, no orphans) hold, and the baseline is a step
+  // --apply can take. A context file asks for its rules before the baseline is taken.
+  const mapped = existsSync(join(dir, ctx.file));
+  if (graph && mapped)
+    say(
+      `Edit .dependency-cruiser.cjs: one rule per ${ctx.own ? "boundary this repository forbids" : `arrow of ${ctx.file} §3`}`,
     );
+  if (graph && !mapped)
+    note(
+      "the import graph holds no cycles and no orphans; add a rule to .dependency-cruiser.cjs for each boundary this repository forbids, then take its baseline again",
+    );
+  // Every repository, not only an existing one: without the file the graph step cannot start.
+  const baseline = [
+    ...pm.exec("depcruise"),
+    ...graphRoots(dir).split(" "),
+    "--config",
+    ".dependency-cruiser.cjs",
+    "--baseline",
+  ];
   if (graph)
-    out(
-      // Every repository, not only an existing one: without the file the graph step cannot start.
-      `  ${n++}. ${pm.exec("depcruise").join(" ")} ${graphRoots(dir)} --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
+    say(
+      `${baseline.join(" ")} (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}`,
+      mapped ? undefined : baseline,
     );
   const lint = harnessLintHint(dir);
-  if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
+  if (lint) say(harnessLintSays(lint));
   // A step the gate will skip for want of its config, said here: init writes .prettierignore and
   // no prettier config, and the gate's "no .prettierrc" read as init forgetting its own file.
   // The config is the repository's decision to hold formatting, so it is named, not written.
   for (const s of preset.gate.always)
     if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
-      out(
-        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it${s.label === "format" ? `, then ${pm.exec("prettier").join(" ")} --write . once, so the files init wrote take its style` : ""}`)}\n`,
+      note(
+        t.gray(
+          `the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it${s.label === "format" ? `, then ${pm.exec("prettier").join(" ")} --write . once, so the files init wrote take its style` : ""}`,
+        ),
       );
   // A gate step whose script only the repository can write (the changed lines' coverage runs on
   // its own runner), named here: doctor said it was absent and init had said nothing.
@@ -126,27 +157,46 @@ export async function initCommand(cx, preset) {
   for (const h of homes) {
     const scripts = readJsonFile(h.at, "package.json")?.scripts || {};
     for (const s of h.steps)
-      if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
-        out(
-          `  ${n++}. ${t.gray(`the gate ${s.required ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required ? ` (${s.label} is required)` : ""}, run on its own runner`)}\n`,
+      if (
+        s.script &&
+        ![s.script, ...(s.alternatives || [])].some((k) => k in scripts) &&
+        !(s.requires && !s.requires.some((f) => existsSync(join(h.at, f))))
+      )
+        // A required step that cannot run is a step to take; one the gate skips is a note,
+        // and one already noted for its missing config is not said twice.
+        (s.required && strict ? say : note)(
+          t.gray(
+            `the gate ${s.required && strict ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required && strict ? ` (${s.label} is required)` : ""}, run on its own runner`,
+          ),
         );
   }
   // CI from the first day: the workflow init just wrote is committed with the rest, and where it
   // wrote none (another forge) the gap is named rather than left for a hand run to find.
   if (wrote(DAY_ONE))
-    out(
-      `  ${n++}. Commit ${DAY_ONE} with the rest  ${t.gray("· from then on every push runs the fast gate, the audit and the secret scan included")}\n`,
+    say(
+      `Commit ${DAY_ONE} with the rest  ${t.gray("· from then on every push runs the fast gate, the audit and the secret scan included")}`,
     );
   else {
     const ci = ciGate(dir);
-    if (ci.state === "none" || ci.state === "no-gate") out(`  ${n++}. ${ciSays(ci)}\n`);
+    if (ci.state === "none" || ci.state === "no-gate") say(ciSays(ci));
   }
   // The ratchet's floor: init writes none, and the first gate read NO FLOOR on every finding.
+  // Taken under --apply: a floor only falls, so one written before the steps left by hand is
+  // never one they have to raise.
   if (!existsSync(join(dir, ratchetSetup(dir).baselineRel)))
-    out(
-      `  ${n++}. ${pm.run("standards:baseline").join(" ")}  ${t.gray("· today's numbers as the floor, once the steps above are done; until then the ratchet has none")}\n`,
+    say(
+      `${pm.run("standards:baseline").join(" ")}  ${t.gray("· today's numbers as the floor, once the steps above are done; until then the ratchet has none")}`,
+      pm.run("standards:baseline"),
     );
-  out(`  ${n++}. abatty doctor · abatty measure · ${pm.run("gate").join(" ")}\n\n`);
+  // The first gate, taken by --apply: a fresh app whose own dependencies carry an advisory met it
+  // at the first push, after init had said nothing was left to do.
+  say(
+    `${pm.run("gate:fast").join(" ")}  ${t.gray("· the first gate, so its verdict is read now rather than at the first push")}`,
+    pm.run("gate:fast"),
+  );
+  say(`abatty doctor · abatty measure · ${pm.run("gate").join(" ")}`);
+  const failed = finishSteps(steps, { dir, apply, out });
+  if (failed) process.exitCode = failed === EXIT.findings ? EXIT.findings : EXIT.error;
   return;
 }
 

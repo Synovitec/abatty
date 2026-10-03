@@ -1,7 +1,7 @@
 {
   "name": "abatty",
-  "version": "0.7.0-rc.12",
-  "description": "abatty - the Synovitec engineering standard as an installable instrument: init a repository per stack, measure it, gate it, run the unattended adoption nights, keep the harness in step.",
+  "version": "0.8.0-rc.1",
+  "description": "Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove those controls work: the policy layer above your linters, tests, scanners and CI, for people and coding agents alike.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -17,7 +17,12 @@
     "harness",
     "agents",
     "ci",
-    "code-quality"
+    "code-quality",
+    "quality-gate",
+    "technical-debt",
+    "pre-push",
+    "policy-as-code",
+    "ci-gate"
   ],
   "publishConfig": {
     "access": "public",

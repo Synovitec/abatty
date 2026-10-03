@@ -83,7 +83,7 @@ test("SEC-AGENT-PERMISSIONS is partial when an env file is readable, whatever th
 
 test("doctor names a narrowed deny and fails on an env file the agent may read", () => {
   const dir = tempRepo("doctor-secrets", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   writeFileSync(join(dir, ".claude/settings.json"), JSON.stringify(narrowed(), null, 2) + "\n");
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");

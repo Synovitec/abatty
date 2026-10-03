@@ -153,7 +153,10 @@ test("abatty ci writes the providers' files from the gate, --check says when the
   assert.match(written, /# lint: no "lint" script in package\.json; the gap analysis names it/);
   assert.ok(!/npm run -s lint/.test(written), "a script the package lacks is not a step");
   const fresh = tempRepo("ci-init", { "package.json": NEXT_PKG });
-  const init = cli(["init", fresh, "--stack", "next", "--ci", "github"], fresh);
+  const init = cli(
+    ["init", "--profile", "synovitec", fresh, "--stack", "next", "--ci", "github"],
+    fresh,
+  );
   assert.equal(init.code, 0, init.out);
   assert.ok(existsSync(join(fresh, ".github/workflows/checks.yml")));
   assert.match(init.out, /written\s+\.github\/workflows\/checks\.yml/);

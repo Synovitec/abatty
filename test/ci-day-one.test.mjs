@@ -21,7 +21,7 @@ function onGithub(name, files = {}) {
 
 test("on GitHub with no pipeline, init writes the fast gate on every push, in the repo's manager", () => {
   const dir = onGithub("day-one-npm");
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const yml = readFileSync(join(dir, WORKFLOW), "utf8");
   assert.match(yml, /^on:\n {2}push:\n {2}pull_request:/m);
   assert.match(yml, /actions\/checkout@[0-9a-f]{40}/, "the actions are pinned");
@@ -29,7 +29,7 @@ test("on GitHub with no pipeline, init writes the fast gate on every push, in th
   assert.match(r.out, /\d+\. Commit \.github\/workflows\/abatty-gate\.yml with the rest/);
   assert.equal(ciGate(dir).state, "fast", "what it wrote is read as the fast gate");
   const pnpm = onGithub("day-one-pnpm", { "pnpm-lock.yaml": "lockfileVersion: '9.0'\n" });
-  cli(["init", pnpm, "--stack", "next"], pnpm);
+  cli(["init", "--profile", "synovitec", pnpm, "--stack", "next"], pnpm);
   assert.match(
     readFileSync(join(pnpm, WORKFLOW), "utf8"),
     /pnpm\/action-setup@[\s\S]*pnpm run -s gate:fast/,
@@ -40,14 +40,14 @@ test("a pipeline that already runs the gate is left alone, and no second one is 
   const dir = onGithub("day-one-kept", {
     ".github/workflows/ci.yml": "on: push\njobs:\n  a:\n    steps:\n      - run: npx abatty gate\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(existsSync(join(dir, WORKFLOW)), false);
   assert.equal(ciGate(dir).state, "gate");
 });
 
 test("off GitHub nothing is written, and init and doctor both name the gap", () => {
   const dir = tempRepo("day-one-elsewhere", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(existsSync(join(dir, WORKFLOW)), false);
   assert.match(r.out, /\d+\. no CI pipeline: the gate runs only when somebody runs it/);
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
@@ -56,7 +56,7 @@ test("off GitHub nothing is written, and init and doctor both name the gap", () 
 
 test("a pipeline that runs the fast gate holds INST-CI-STEPS, and the fast gate says who runs the suites", async () => {
   const dir = onGithub("day-one-steps");
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const { runCatalog } = await import("../src/rules/index.mjs");
   const { buildContext } = await import("../src/rules/context.mjs");
   const ci = runCatalog(buildContext(dir)).find((f) => f.id === "INST-CI-STEPS");

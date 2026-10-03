@@ -5,8 +5,10 @@
  * is the practice without the tool. Each source file is reduced to its meaningful lines (comments
  * gone, whitespace collapsed, a line of brackets or an import dropped), every run of WINDOW such
  * lines is hashed, and a run that appears in two places is a clone. Adjacent windows merge into
- * one clone, charged once, to the lexicographically smaller of its two places, so a rename does
- * not move the debt. Opt-in (`ratchet.enable`); every code preset enables it.
+ * one clone, charged to every place it appears. Charged once, to the place whose path sorted
+ * first, a block moved out of one file put the charge on an untouched copy, and a split that
+ * lowered the total read as a rise in files nobody edited. Opt-in (`ratchet.enable`); every code
+ * preset enables it.
  */
 import { codeOnly } from "./lex.mjs";
 import { matchesAny, regexes } from "./lib.mjs";
@@ -28,13 +30,26 @@ const TEST_FILE =
  */
 function meaningful(f, text) {
   const py = /\.py$/.test(f);
+  // The names of an import or a re-export written over several lines are the statement's, not
+  // logic: eight AlertDialog names imported in two files read as a clone.
+  let listing = false;
   return codeOnly(text, { strings: "keep" })
     .split("\n")
     .map((raw, i) => ({
       text: (py ? raw.replace(/(^|\s)#.*$/, "") : raw).replace(/\s+/g, " ").trim(),
       line: i + 1,
     }))
-    .filter((l) => l.text && !TRIVIAL.test(l.text));
+    .filter((l) => {
+      if (listing) {
+        if (/^\}|\bfrom\b/.test(l.text)) listing = false;
+        return false;
+      }
+      if (/^(?:import|export)(?:\s+type)?\s*(?:[\w$]+\s*,\s*)?\{[^}]*$/.test(l.text)) {
+        listing = true;
+        return false;
+      }
+      return l.text && !TRIVIAL.test(l.text);
+    });
 }
 
 /** @type {Probe[]} */
@@ -42,10 +57,12 @@ export const probes = [
   {
     metric: "code.clones",
     kind: "ratchet",
+    // 2: a clone is charged to every place it appears, not to the first by path.
+    version: 2,
     optIn: true,
     standard: ["CODE.12"],
     title: "Blocks of code that appear in two places",
-    why: "Two copies of a block fix one bug twice, or once. The count is the repeated blocks of at least six meaningful lines in the sources (tests and the exempt paths left out), each counted once; it may only fall.",
+    why: "Two copies of a block fix one bug twice, or once. The count is the repeated blocks of at least six meaningful lines in the sources (tests and the exempt paths left out), each place it appears counted; it may only fall.",
     approximates:
       "stands in for a token-level clone detector, which would be a dependency: a line-level reading, comments removed, whitespace collapsed and literals kept, with brackets, imports and lone keywords dropped. A copy whose names were changed on every line is not seen; one with a comment or blank lines added is.",
     axis: "navigability",
@@ -88,9 +105,10 @@ export const probes = [
           }
           if (inRun) continue;
           inRun = true;
-          // Charged once: to the smaller of the two places, the other place stays quiet.
+          // Charged to this place, as to every other place the block appears: a move between
+          // files then changes the files the move touched and no other.
           const first = others[0];
-          if (!first || first.file < f || (first.file === f && first.at < i)) continue;
+          if (!first) continue;
           const at = lines.get(first.file)?.[first.at]?.line ?? 1;
           findings.push({
             path: f,
@@ -103,12 +121,22 @@ export const probes = [
     },
     controls: [
       {
-        name: "the same eight-line block in two files is one clone, charged once",
+        name: "the same eight-line block in two files is one clone, charged to each copy",
         files: {
           "src/a.ts": `export function checkA(input: Record<string, unknown>) {\n${Array.from({ length: 8 }, (_, i) => `  if (input.f${i} === undefined) throw new Error("f${i} is required");`).join("\n")}\n  return input;\n}\n`,
           "src/b.ts": `// a copy, with a comment the reading ignores\nexport function checkB(input: Record<string, unknown>) {\n${Array.from({ length: 8 }, (_, i) => `  if (input.f${i} === undefined)   throw new Error("f${i} is required");`).join("\n")}\n  return input;\n}\n`,
         },
-        expect: 1,
+        expect: 2,
+      },
+      {
+        name: "the same names imported over several lines in two files are not a clone",
+        files: Object.fromEntries(
+          ["src/a.tsx", "src/b.tsx"].map((f, n) => [
+            f,
+            `import {\n${Array.from({ length: 8 }, (_, i) => `  AlertDialog${i},`).join("\n")}\n} from "./ui";\nexport const view${n} = AlertDialog0;\n`,
+          ]),
+        ),
+        expect: 0,
       },
       {
         name: "shared imports and brackets are not a clone, and a test copying a source is not read",

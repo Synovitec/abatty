@@ -358,3 +358,13 @@ at once every file slowed, the sum rose to 3,324 s, because the night tests spaw
 git by the hundred and the machine saturates. The suite is spawn-bound, not serial, so the next
 cut is fewer spawns (the harness self-test runs one process per guard case), not more files. The
 coverage `npm test` now measures costs about five per cent of the run.
+
+### 2026-10-03 - `code.clones` redefined: 20 under definition 1, 43 under definition 2
+
+Not a rise in the code: the same tree read two ways. Definition 1 charged each clone to the copy
+whose path sorted first, so a monorepo adopter's split by responsibility, which lowered its total
+from 1236 to 1221, read as rises in six files nobody had touched. Definition 2 charges every
+place a block appears, so a move changes only the files it touched; each pair now counts twice,
+three-way copies three times, which is 20 to 43 here. The multi-line import lists the old
+reading took for clones are no longer counted. The floor is rewritten under the new definition,
+not raised, and readability moves from 95 to 94 for the same reason.

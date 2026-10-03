@@ -19,7 +19,7 @@ import { CONTROLS_VERSION } from "../src/core/step-controls.mjs";
  */
 function nightRepo(name, phases = ["11"]) {
   const dir = tempRepo(name, { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   // The gate the Stop hook runs is the repository's npm script (the self-test requires a script
   // or a file, never a bare command); here a no-op that any shell runs.
   setGate(dir, 'node -e "process.exit(0)"');

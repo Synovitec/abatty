@@ -102,7 +102,19 @@ test("a path-scoped rule becomes a Cursor .mdc rule: the paths as globs, never a
 
 test("init --agent writes AGENTS.md for the open convention, the primary importing it, and the preset's rules as .mdc for Cursor", () => {
   const dir = tempRepo("agents-init", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next", "--agent", "cursor,agents-md," + PRIMARY.id], dir);
+  const r = cli(
+    [
+      "init",
+      "--profile",
+      "synovitec",
+      dir,
+      "--stack",
+      "next",
+      "--agent",
+      "cursor,agents-md," + PRIMARY.id,
+    ],
+    dir,
+  );
   assert.equal(r.code, 0, r.out);
   assert.ok(existsSync(join(dir, "AGENTS.md")));
   assert.equal(
@@ -127,7 +139,7 @@ test("init --agent writes AGENTS.md for the open convention, the primary importi
 
 test("a repository whose adapters have no hook protocol gets no night, and the reason names what is lost", () => {
   const dir = tempRepo("agents-no-night", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const cfgPath = join(dir, "abatty.config.json");
   const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
   cfg.agents = ["agents-md"];

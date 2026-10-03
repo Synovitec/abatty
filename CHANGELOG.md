@@ -5,6 +5,138 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.1] - 2026-10-03
+
+The first candidate for 1.0's promise, under `next` (`npm i -D abatty@next`) until its replays come back clean. Six outside
+reviews found the engineering strong and the purpose buried: a stranger met thirty-six files, an
+agent harness and one company's eighty rules before a single check bit. A new repository now
+starts on a **minimal** profile of thirteen rules and about ten files (`--profile synovitec` for
+the full standard, `--agent <id>` for the harness), `init --apply` takes the safe steps itself and
+ends with the first gate, and `abatty prove` shows which of any repository's checks can fail,
+on a copy, writing nothing. Every check on by default is out of probation. Replayed from the
+packed package on fresh JavaScript, TypeScript, Next.js and Next.js monorepo projects until two
+rounds in a row found no must-level miss. **Upgrading:** a config that names no profile keeps
+`synovitec`, so no reading moves; `change.testTamper` is opt-in (add it to `ratchet.enable` to
+keep it); `code.clones` and `docs.behindCode` are redefined, and `abatty update` rewrites their
+floors.
+
+### Added
+
+- **`abatty prove`: which of a repository's checks can actually fail, with nothing written in
+  it.** Each gate step of the detected preset is planted with a violation and run, on a copy of
+  the repository (its files as they are now, its dependencies linked, not copied), and the copy
+  is removed. No config, no `init`, no commit: the first thing to run on a repository, and the
+  one six outside reviews asked for. A check that stays green is named as absent and the run
+  exits 3; `--suites` adds the build, browser and database suites; `--json` for a script.
+- **`init` on the minimal profile ends green.** Replayed from the packed package on a fresh
+  JavaScript project: `init --apply` took the installs, the executable bits, the hooks, the
+  import graph's baseline and the ratchet's floor in nine seconds, the commit went through every
+  hook, and the gate was green in under four seconds. Under minimal no dead-code step is set up
+  (its zero-issue default turned an existing codebase red on its first gate), TypeScript is
+  installed only where there is a tsconfig, and the graph's baseline is a step `--apply` takes.
+  What the gate will skip until the repository adds it (a formatter config, a lint or typecheck
+  script) is listed apart under "Not in the gate yet", no longer numbered among the steps.
+- **A minimal profile, the default of a new repository.** Thirteen rules any stack agrees to: the
+  gate, CI running it, the ratchet and the controls, a linter, a formatter and tests, the secret
+  scan, the audit, a committed lockfile, no tracked `.env`, and the 800-line cap. `init` on it
+  writes about ten files (the config, the scripts, the git hooks, the ignore files, the tool
+  configs and the day-one workflow) where it wrote thirty-six, and asks for no changelog line per
+  commit. `--agent <id>` adds the agent harness; `--profile synovitec` the full standard, its
+  documents and its changelog rule. A repository whose config names no profile keeps
+  `synovitec`, so an upgrade changes nobody's reading. `minimal` and `synovitec` can be named
+  together.
+- **`abatty init --apply` takes the steps a machine safely can.** `init` ends with the steps it
+  leaves by hand; with `--apply` it runs the dependency install, the executable bits, the hooks
+  install and the ratchet's first floor itself, in that order, and stops at the first that
+  fails. What needs a person (filling the context file, writing the graph's rules and its
+  baseline, committing) is left, numbered from one. `init` without the flag prints what it
+  printed before. Lifted from the 1.0 freeze by an amendment to decision 0002.
+
+### Changed
+
+- **Every check on by default is out of probation.** `docs.frontMatterSyntax` and
+  `docs.danglingRefs` now fail a run like any other ratchet metric: read over twenty-eight local
+  repositories, every finding they left was real. `change.testTamper` becomes opt-in: its
+  findings were real too, but failing a push on a suppression with no reason given is a team's
+  policy, not every repository's default. **Upgrading:** a repository that relied on it adds
+  `"change.testTamper"` to `ratchet.enable`; enabled, it fails like any other. The probes still
+  on probation are all opt-in, which is what decision 0002 asks of 1.0.
+- **The README and the package description say what abatty is for, first.** Four outside
+  reviews found the engineering strong and the purpose buried under philosophy and vocabulary.
+  The README now opens with one promise (turn your engineering rules into enforceable controls,
+  prevent new debt, and continuously prove those controls work), places abatty as the policy
+  layer above the linters, tests, scanners and CI a team already has, and shows what it does
+  under Define, Enforce, Prove and Improve. An "Already built in" table gives the command or key
+  for each thing reviewers asked for and the tool already does (adopting on existing debt,
+  waivers with an expiry, audit allowances, CI as the server-side gate, SARIF on pull requests,
+  JSON, a dashboard, the MCP server, your own rules), and a short glossary follows. The package description no longer reads as
+  one company's standard, and the Quick start no longer says `init` writes the ratchet's floor.
+
+### Fixed
+
+- **A red audit says what to do next.** It named the advisory and stopped; a fresh Next.js
+  app's owner met it on the first push with no way forward named. It now gives the two ways out,
+  as the ratchet does: update the package, or accept it for now in `security.audit.allow` with a
+  reason and a date to look again.
+
+- **`init --apply` ends with the first gate, so its verdict is read at once.** A fresh
+  Next.js app pulls in a dependency with a high-severity advisory today, and its owner met that
+  red audit at the first push, after `init` had said nothing was left to do. The fast gate is
+  now the last step `--apply` takes; a red gate leaves `init` exiting 3 (found), not 4 (broken).
+  A gate whose test step ran no test no longer calls it "a coverage step measured nothing".
+
+- **On the minimal profile, a fresh Next.js app's first gate runs.** A new app ships with no
+  test script, and a step the preset requires stopped the gate ("could not run", exit 4) right
+  after `init`; a monorepo's root, with no tsconfig of its own, did the same for its typecheck.
+  Under minimal such a step is skipped and named, and the headline counts it among the steps
+  not run. The synovitec standard keeps the stricter rule.
+
+- **`init` no longer tells a minimal repository to make its linter ignore `.claude/`.** The
+  minimal profile installs no agent harness, and `.claude/` holds only the harness lock, a JSON
+  file no linter reads; the hint now applies where the harness's scripts are installed.
+
+- **A JavaScript repository's test control plants a test its runner runs.** With no tsconfig
+  the plant was a `.ts` file, which `node --test` never runs, so a working test suite read as
+  absent. Where there is neither a tsconfig nor a TypeScript source, the plant is `.mjs`.
+- **OBS-TRACKER credits a tracker configured through the repository's env module.** It read
+  only a raw `process.env` access, which VALID-ENV penalises, so a repository that moved its
+  OpenTelemetry endpoint to `serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT")` went from present to
+  partial. A tracker variable named through an accessor (`serverEnv("…")`, `env.SENTRY_DSN`)
+  counts; a literal DSN still does not.
+- **A package no framework claims is a Node package.** `init` refused a plain library or CLI
+  with "no preset" until `--stack node` was passed; it now takes the node preset. Sources with
+  no package.json and no preset still refuse and name the presets.
+- **A plain JavaScript package gets a gate it can run.** `init` wrote `tsc --noEmit` into a
+  package with no tsconfig and no TypeScript, and the typecheck step could not run; that script
+  is now left out, as an eslint `lint` with no eslint already is. The lint control planted a
+  `.ts` file that plain eslint never reads, so a working lint step read as absent; in a
+  repository with no tsconfig it now plants the same violations as `.js`.
+- **`status` no longer prints git's raw error on a one-commit repository.** With no `main` to
+  fork from and no previous commit (a fresh `git init` on `master`), `status` printed
+  `fatal: ambiguous argument 'HEAD~1..HEAD'` above its own reading. The call that let git's
+  error through now keeps it, as every other git call does.
+- **`docs.behindCode` reads a Next route folder as a folder (probe v5).** A `source_truth` entry
+  under `app/(app)/[siteSlug]/haccp/` was cut at the `[`, read as glob syntax, so the document
+  watched the whole route group above it and any change beside the cited folder put it behind.
+  A bracketed segment that exists as a folder is now that folder, and git is given it literally.
+  The floor is rewritten under the new definition by `abatty update`.
+- **`code.clones` charges a clone to every copy (probe v2), and an import list is not a
+  clone.** Each clone was charged to the copy whose path sorted first, so moving a block out of
+  one file put its charge on an untouched copy elsewhere: a monorepo's split lowered the total
+  and read as rises in six files nobody edited. Every copy is now charged, so a move changes
+  only the files it touched; the count roughly doubles once, and `abatty update` rewrites the
+  floor. The names of an import or re-export written over several lines are no longer read as
+  a clone.
+- **Two probes on probation read real repositories without false findings (both v3).** Run
+  read-only over thirty local repositories:
+  - `change.testTamper` counted a skip on a condition (`test.skip(!odoo, "no Odoo here")`,
+    Playwright's documented form) and a suppression that states its reason (eslint's `-- why`,
+    biome's `: why`, a described expect-error) as ways out; neither is any longer. Findings went
+    from 22 in 15 repositories to 11 in 8, each a suppression with no reason given.
+  - `docs.danglingRefs` read records written at a point in time (an archive, an ADR or decision
+    folder, sprint plans, retrospectives, a decided decision record) as documents gone stale.
+    Findings went from 15 to 2, both confirmed real.
+
 ## [0.7.0-rc.12] - 2026-10-03
 
 The twelfth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

@@ -121,3 +121,23 @@ test("the logger's own censor is configuration, and a tracker read by bracket in
   });
   assert.equal(of(byHand, "OBS-REDACTION").status, "partial");
 });
+
+test("a tracker configured through the repository's env module is from the environment; a literal is not", () => {
+  // Read through the env module, as VALID-ENV asks, the tracker read as partial: the rule
+  // rewarded the raw read the other rule penalises.
+  const viaModule = read("obs-tracker-env-module", {
+    "package.json": PKG({ "@opentelemetry/sdk-node": "0.5" }),
+    "instrumentation.ts":
+      'import { serverEnv } from "./lib/env";\nexport const url = serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT");\n',
+  });
+  assert.equal(
+    of(viaModule, "OBS-TRACKER").status,
+    "present",
+    of(viaModule, "OBS-TRACKER").evidence,
+  );
+  const literal = read("obs-tracker-literal", {
+    "package.json": PKG({ "@sentry/node": "8" }),
+    "instrumentation.ts": 'Sentry.init({ dsn: "https://key@o1.ingest.example/1" });\n',
+  });
+  assert.equal(of(literal, "OBS-TRACKER").status, "partial");
+});

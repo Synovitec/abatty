@@ -18,7 +18,7 @@ test("the index init writes names the documents already there, from their front 
     "docs/runbooks/onboarding-a-bank.md": FM("Onboarding", "Bringing a bank on"),
     "docs/notes.md": "# Notes without front matter\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const index = readFileSync(join(dir, "docs/README.md"), "utf8");
   assert.match(
     index,
@@ -38,7 +38,7 @@ test("an index the repository already had learns of the two documents init write
     "docs/README.md": "# Our docs\n\n| Doc | What |\n|---|---|\n| `guide.md` | the guide |\n",
     "docs/guide.md": FM("Guide", "How to use it"),
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.match(
     r.out,
     /merged\s+docs\/README\.md · rows added for STANDARDS_PROGRESS\.md, ADOPTION_DECISIONS\.md/,

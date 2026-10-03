@@ -17,7 +17,7 @@ function kept(/** @type {string} */ name) {
     "package.json": NEXT_PKG,
     [SETTINGS]: JSON.stringify({ permissions: { allow: ["Bash(ls)"] } }, null, 2) + "\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   // Another clone: the installed copies under .abatty/ are not there.
   rmSync(join(dir, ".abatty"), { recursive: true, force: true });
   return dir;

@@ -170,7 +170,7 @@ test("the gate composes: the root's steps, then each workspace's preset in its o
 
 test("init writes each workspace's preset scripts in its own package.json; the status screen lists the workspaces; the report carries them", () => {
   const dir = monorepo("ws-init");
-  const init = cli(["init", dir, "--stack", "node"], dir);
+  const init = cli(["init", "--profile", "synovitec", dir, "--stack", "node"], dir);
   assert.equal(init.code, 0, init.out);
   const web = JSON.parse(readFileSync(join(dir, "apps/web/package.json"), "utf8"));
   assert.equal(web.scripts.lint, "true", "an existing script is kept");
@@ -201,7 +201,7 @@ test("the docs preset: chosen for a repository with no package and no sources, i
     "README.md": "# A standard\n",
     "docs/decisions.md": "# Decisions\n",
   });
-  const init = cli(["init", dir], dir);
+  const init = cli(["init", "--profile", "synovitec", dir], dir);
   assert.equal(init.code, 0, init.out);
   assert.match(init.out, /Documents \(design stage/);
   assert.match(init.out, /not yet proven/);

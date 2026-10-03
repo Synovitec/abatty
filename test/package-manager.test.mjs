@@ -76,7 +76,7 @@ test("init writes a bun repository's hooks and commands in bun's words", () => {
     }),
     "bun.lock": "{}\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const hooks = ["pre-commit", "pre-push", "commit-msg"].map((h) =>
     readFileSync(join(dir, ".githooks", h), "utf8"),
   );

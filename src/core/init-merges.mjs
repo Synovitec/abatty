@@ -82,14 +82,15 @@ const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts"]
   .concat([".eslintrc", ".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs", ".eslintrc.yml"]);
 
 /**
- * A preset's scripts less an eslint `lint` the folder has nothing to run: no eslint installed and
- * no configuration. An Astro site was given `eslint .` and the gate's lint step could not run;
- * without the script it is skipped by name, and the gap analysis says what is missing.
+ * A preset's scripts less the ones the folder has nothing to run: an eslint `lint` with no
+ * eslint installed and no configuration, and a `tsc` typecheck with neither a tsconfig nor
+ * TypeScript. An Astro site was given `eslint .` and a plain JavaScript package `tsc --noEmit`,
+ * and each gate step could not run; without the script it is skipped by name, and the gap
+ * analysis says what is missing.
  * @param {string} dir the folder whose package.json gets the scripts
  * @param {Record<string, string>} scripts @returns {Record<string, string>}
  */
 export function runnableScripts(dir, scripts) {
-  if (!/\beslint\b/.test(scripts.lint || "")) return scripts;
   let pkg = {};
   try {
     pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
@@ -100,7 +101,10 @@ export function runnableScripts(dir, scripts) {
     .../** @type {any} */ (pkg).dependencies,
     .../** @type {any} */ (pkg).devDependencies,
   };
-  if (deps.eslint || ESLINT_CONFIGS.some((f) => existsSync(join(dir, f)))) return scripts;
-  const { lint: _unrunnable, ...rest } = scripts;
-  return rest;
+  const out = { ...scripts };
+  const linted = deps.eslint || ESLINT_CONFIGS.some((f) => existsSync(join(dir, f)));
+  if (/\beslint\b/.test(out.lint || "") && !linted) delete out.lint;
+  const typed = deps.typescript || existsSync(join(dir, "tsconfig.json"));
+  if (/\btsc\b/.test(out.typecheck || "") && !typed) delete out.typecheck;
+  return out;
 }

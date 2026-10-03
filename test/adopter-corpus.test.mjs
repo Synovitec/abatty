@@ -344,6 +344,47 @@ const CASES = [
       assert.equal(r?.findings.length, 0, JSON.stringify(r?.findings));
     },
   },
+  {
+    report: "monorepo · 2026-10-03 · rc.12, a tracker read through the env module",
+    claim: "OBS-TRACKER credits a tracker configured through the repository's env accessor",
+    run: () => {
+      const dir = monorepoAdopter();
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      pkg.dependencies = { express: "4", "@opentelemetry/sdk-node": "0.5" };
+      writeFileSync(join(dir, "package.json"), JSON.stringify(pkg));
+      writeFileSync(
+        join(dir, "apps/web/instrumentation.ts"),
+        'export const url = serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT");\n',
+      );
+      git(dir, "add", "-A");
+      const f = runCatalog(buildContext(dir), RULES).find((r) => r.id === "OBS-TRACKER");
+      assert.equal(f?.status, "present", f?.evidence);
+    },
+  },
+  {
+    report: "monorepo · 2026-10-02 · rc.10, route folders read as glob syntax",
+    claim: "a document citing a Next route folder is not put behind by a change beside that folder",
+    run: () => {
+      const dir = monorepoAdopter();
+      const route = "apps/web/app/(app)/[siteSlug]";
+      mkdirSync(join(dir, route, "haccp"), { recursive: true });
+      mkdirSync(join(dir, route, "team"), { recursive: true });
+      writeFileSync(join(dir, route, "haccp/page.tsx"), "export default 1;\n");
+      writeFileSync(join(dir, route, "team/page.tsx"), "export default 1;\n");
+      mkdirSync(join(dir, "docs"), { recursive: true });
+      writeFileSync(
+        join(dir, "docs/haccp.md"),
+        `---\ntitle: "H"\ndescription: "D"\ncategory: reference\nstatus: living\nlast_verified: "2020-01-01"\nsource_truth:\n  - "${route}/haccp/**/*.tsx"\n---\n\n# H\n`,
+      );
+      git(dir, "add", "-A");
+      git(dir, "commit", "-qm", "docs: haccp");
+      writeFileSync(join(dir, route, "team/page.tsx"), "export default 2;\n");
+      git(dir, "commit", "-qam", "feat: team");
+      const probe = BUILTIN_PROBES.find((p) => p.metric === "docs.behindCode");
+      const r = probe?.scan(buildContext(dir), SCAN);
+      assert.equal(r?.findings.length, 0, JSON.stringify(r?.findings));
+    },
+  },
 ];
 
 for (const c of CASES) test(`${c.report}: ${c.claim}`, c.run);

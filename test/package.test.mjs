@@ -73,10 +73,14 @@ test("the tarball a third party installs: what the CLI needs and nothing of the 
   });
   assert.equal(version.status, 0, version.stderr);
   assert.match(version.stdout, /\d+\.\d+\.\d+/);
-  const init = spawnSync(process.execPath, [bin, "init", project, "--stack", "node"], {
-    cwd: project,
-    encoding: "utf8",
-  });
+  const init = spawnSync(
+    process.execPath,
+    [bin, "init", project, "--stack", "node", "--profile", "synovitec"],
+    {
+      cwd: project,
+      encoding: "utf8",
+    },
+  );
   assert.equal(init.status, 0, init.stdout + init.stderr);
   assert.ok(
     existsSync(join(project, "abatty.config.json")),

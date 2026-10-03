@@ -13,7 +13,7 @@ test("init --stack next writes the harness, the tooling, the scripts and the day
     "package.json": NEXT_PKG,
     "src/app/page.tsx": "export default function Page() { return null; }\n",
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
   for (const f of [
     ".claude/settings.json",
@@ -54,29 +54,34 @@ test("init --stack next writes the harness, the tooling, the scripts and the day
 
 test("init is idempotent: a second run keeps every file, --force overwrites", () => {
   const dir = tempRepo("init2", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   writeFileSync(join(dir, ".claude/hooks/guard.mjs"), "// edited locally\n");
-  const again = cli(["init", dir, "--stack", "next"], dir);
+  const again = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(again.code, 0, again.out);
   assert.equal(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), "// edited locally\n");
   assert.match(again.out, /kept\s+\.claude\/hooks\/guard\.mjs/);
-  const forced = cli(["init", dir, "--stack", "next", "--force"], dir);
+  const forced = cli(["init", "--profile", "synovitec", dir, "--stack", "next", "--force"], dir);
   assert.equal(forced.code, 0, forced.out);
   assert.match(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), /PreToolUse/);
 });
 
-test("init without a detectable stack refuses and names the presets", () => {
-  const dir = tempRepo("init3", {
+test("a package no framework claims is a Node package; sources with no package still refuse", () => {
+  // An outside review's plain Node package was refused with "no preset" until --stack node.
+  const plain = tempRepo("init3", {
     "package.json": JSON.stringify({ name: "x", dependencies: {} }),
   });
-  const r = cli(["init", dir], dir);
-  assert.equal(r.code, 2);
-  assert.match(r.out, /--stack <next\|astro\|vite-react\|node\|python\|docs>/);
+  const r = cli(["init", "--profile", "synovitec", plain, "--dry-run"], plain);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /init · Node service/);
+  const loose = tempRepo("init3-loose", { "src/a.ts": "export const a = 1;\n" });
+  const refused = cli(["init", "--profile", "synovitec", loose], loose);
+  assert.equal(refused.code, 2);
+  assert.match(refused.out, /--stack <next\|astro\|vite-react\|node\|python\|docs>/);
 });
 
 test("init --dry-run writes nothing", () => {
   const dir = tempRepo("init4", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next", "--dry-run"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next", "--dry-run"], dir);
   assert.equal(r.code, 0, r.out);
   assert.equal(existsSync(join(dir, ".claude")), false);
 });
@@ -93,7 +98,7 @@ test("init merges the config at every depth: a repository that set one key of a 
       scrub: { enabled: true },
     }),
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
   const cfg = JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8"));
   assert.equal(cfg.files.baseline, "ci/floor.json", "the value the repository set wins");
@@ -105,7 +110,7 @@ test("init merges the config at every depth: a repository that set one key of a 
   assert.equal(typeof cfg.commands.typecheck, "string");
   assert.equal(cfg.scrub.enabled, true);
   // And it settles: a second run over the merged file changes nothing.
-  const again = cli(["init", dir, "--stack", "next"], dir);
+  const again = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(again.code, 0, again.out);
   assert.match(again.out, /kept\s+abatty\.config\.json/);
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")), cfg);
@@ -118,7 +123,7 @@ test("the git hooks init writes are executable where they are installed, and not
   // carry the bit, and in a repository several sessions share the next commit of any of them
   // swept the staged files in: `abatty hooks`, which hooks:install runs, sets the bit instead.
   const dir = tempRepo("init-hook-mode", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
   assert.equal(git(dir, "diff", "--cached", "--name-only"), "", "init stages nothing");
   const installed = cli(["hooks", dir], dir);
@@ -141,7 +146,7 @@ test("the git hooks init writes are executable where they are installed, and not
   // A repository that already has one keeps its content, and the mode is repaired anyway.
   writeFileSync(join(dir, ".githooks/pre-push"), "#!/bin/sh\nnpm run -s gate\n# ours\n");
   spawnSync("git", ["update-index", "--chmod=-x", "--", ".githooks/pre-push"], { cwd: dir });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.match(readFileSync(join(dir, ".githooks/pre-push"), "utf8"), /# ours/, "content kept");
   assert.match(git(dir, "ls-files", "-s", "--", ".githooks/pre-push"), /^100755 /, "mode repaired");
 });
@@ -161,7 +166,7 @@ test("a preset's library rule files are written only where the repository depend
     }),
     "src/main.jsx": "export default 1;\n",
   });
-  const r = cli(["init", plain, "--stack", "vite-react"], plain);
+  const r = cli(["init", "--profile", "synovitec", plain, "--stack", "vite-react"], plain);
   assert.equal(r.code, 0, r.out);
   for (const f of ["testing.md", "i18n.md", "a11y.md", "size-limits.md"])
     assert.ok(existsSync(join(plain, ".claude/rules", f)), `the practice file ${f} is written`);
@@ -183,7 +188,10 @@ test("a preset's library rule files are written only where the repository depend
     }),
     "src/main.jsx": "export default 1;\n",
   });
-  assert.equal(cli(["init", full, "--stack", "vite-react"], full).code, 0);
+  assert.equal(
+    cli(["init", "--profile", "synovitec", full, "--stack", "vite-react"], full).code,
+    0,
+  );
   for (const f of ["graphql.md", "sequelize.md", "mui.md"])
     assert.ok(existsSync(join(full, ".claude/rules", f)), `${f} is written where the library is`);
 
@@ -203,7 +211,7 @@ test("the context file is not the template: init fills the name, and DOC-CONTEXT
   // A trial repository ran two days on an AGENTS.md that was the unfilled template, `<project
   // name>` and all, and every check said present because the sections were all there.
   const dir = tempRepo("init-placeholders", { "package.json": NEXT_PKG });
-  assert.equal(cli(["init", dir, "--stack", "next"], dir).code, 0);
+  assert.equal(cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir).code, 0);
   const written = readFileSync(join(dir, "AGENTS.md"), "utf8");
   assert.match(written, /^# [A-Z]+\.md - fixture-next$/m, "the name a machine can fill is filled");
   assert.ok(!written.includes("<project name>"));
@@ -243,7 +251,7 @@ test("a monorepo gets a graph over the folders its sources are in, and keeps its
     "packages/db/package.json": JSON.stringify({ name: "db" }),
     "CLAUDE.md": "# mono\n\nOur own context, written before abatty came.\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
   assert.match(scripts.graph, /^depcruise apps packages /, "no src here: the workspace folders");
   assert.equal(
@@ -254,7 +262,7 @@ test("a monorepo gets a graph over the folders its sources are in, and keeps its
   assert.match(agents, /context is `CLAUDE.md`/, "a pointer, not an unfilled template");
   assert.doesNotMatch(agents, /<[a-z ]+>/, "no placeholder left to read as the real context");
   // --force rewrites the harness, never the repository's own context
-  cli(["init", dir, "--stack", "next", "--force"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next", "--force"], dir);
   assert.equal(
     readFileSync(join(dir, "CLAUDE.md"), "utf8"),
     "# mono\n\nOur own context, written before abatty came.\n",
@@ -265,8 +273,8 @@ test("a monorepo gets a graph over the folders its sources are in, and keeps its
 
 test("init --force on its own install keeps the template as the context and the import beside it", () => {
   const dir = tempRepo("init-force-own", { "package.json": JSON.stringify({ name: "p" }) });
-  cli(["init", dir, "--stack", "node"], dir);
-  cli(["init", dir, "--stack", "node", "--force"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "node"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "node", "--force"], dir);
   assert.equal(readFileSync(join(dir, "CLAUDE.md"), "utf8"), "@AGENTS.md\n");
   assert.doesNotMatch(readFileSync(join(dir, "AGENTS.md"), "utf8"), /context is `CLAUDE.md`/);
 });
@@ -282,7 +290,7 @@ test("the database suite is selected by a migration in a workspace, not only at 
 
 test("the executable bit a filesystem would not keep is said once, as one command, and never for a .cmd", () => {
   const dir = tempRepo("init-chmod", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(r.code, 0, r.out);
   const lines = r.out.split("\n").filter((l) => l.includes("--chmod=+x"));
   if (process.platform === "win32") {
@@ -294,7 +302,7 @@ test("the executable bit a filesystem would not keep is said once, as one comman
 
 test("the PWA rule file is written where the catalog reads a PWA, and skipped, said, where it does not", () => {
   const plain = tempRepo("init-nopwa", { "package.json": NEXT_PKG });
-  const r = cli(["init", plain, "--stack", "next"], plain);
+  const r = cli(["init", "--profile", "synovitec", plain, "--stack", "next"], plain);
   assert.equal(existsSync(join(plain, ".claude/rules/pwa.md")), false, r.out);
   assert.match(
     r.out,
@@ -304,16 +312,20 @@ test("the PWA rule file is written where the catalog reads a PWA, and skipped, s
     "package.json": NEXT_PKG,
     "public/manifest.webmanifest": '{ "name": "app" }\n',
   });
-  cli(["init", pwa, "--stack", "next"], pwa);
+  cli(["init", "--profile", "synovitec", pwa, "--stack", "next"], pwa);
   assert.equal(existsSync(join(pwa, ".claude/rules/pwa.md")), true);
 });
 
-test("a gate step that will be skipped for want of its config is named among the steps by hand", () => {
+test("a gate step that will be skipped for want of its config is named, apart from the steps to take", () => {
   const bare = tempRepo("init-noprettier", { "package.json": NEXT_PKG });
-  const r = cli(["init", bare, "--stack", "next"], bare);
-  assert.match(r.out, /\d+\. the gate skips format until a \.prettierrc/);
+  const r = cli(["init", "--profile", "synovitec", bare, "--stack", "next"], bare);
+  assert.match(r.out, /Not in the gate yet[\s\S]*the gate skips format until a \.prettierrc/);
+  assert.doesNotMatch(r.out, /\d+\. the gate skips format/, "a note, not a numbered step");
   const held = tempRepo("init-prettier", { "package.json": NEXT_PKG, ".prettierrc": "{}\n" });
-  assert.doesNotMatch(cli(["init", held, "--stack", "next"], held).out, /the gate skips format/);
+  assert.doesNotMatch(
+    cli(["init", "--profile", "synovitec", held, "--stack", "next"], held).out,
+    /the gate skips format/,
+  );
 });
 
 test("a merged file says what init put in it, and a key the repository set is not named", () => {
@@ -321,7 +333,7 @@ test("a merged file says what init put in it, and a key the repository set is no
     "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), scripts: { lint: "next lint" } }),
     ".gitignore": "node_modules\n",
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkg = r.out.split("\n").find((l) => /merged\s+package\.json/.test(l)) || "";
   assert.match(pkg, /scripts added: .*\bgate\b/, r.out);
   assert.doesNotMatch(pkg, /\blint\b/, "the repository's own script is kept, so not added");
@@ -330,7 +342,7 @@ test("a merged file says what init put in it, and a key the repository set is no
 
 test("the git shim is said for what it is: the night's, refusing three bypasses, never your shell's", () => {
   const dir = tempRepo("init-shim", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const line = r.out.split("\n").find((l) => /written\s+\.claude\/bin\/git ·/.test(l)) || "";
   assert.match(line, /the night puts first on its PATH/, r.out);
   assert.match(line, /force push, --no-verify and moving core\.hooksPath/);
@@ -339,11 +351,11 @@ test("the git shim is said for what it is: the night's, refusing three bypasses,
 
 test("the install step holds typescript below 7, and a repository that has it is not asked again", () => {
   const bare = tempRepo("init-ts", { "package.json": NEXT_PKG });
-  const r = cli(["init", bare, "--stack", "next"], bare);
+  const r = cli(["init", "--profile", "synovitec", bare, "--stack", "next"], bare);
   assert.match(r.out, /\d+\. npm i -D [^\n]*\btypescript@\^6\b/, r.out);
   const pkg = { ...JSON.parse(NEXT_PKG), devDependencies: { typescript: "^5.6.0" } };
   const has = tempRepo("init-has-ts", { "package.json": JSON.stringify(pkg) });
-  const line = cli(["init", has, "--stack", "next"], has)
+  const line = cli(["init", "--profile", "synovitec", has, "--stack", "next"], has)
     .out.split("\n")
     .find((l) => /npm i -D/.test(l));
   assert.doesNotMatch(String(line), /typescript/);

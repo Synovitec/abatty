@@ -47,8 +47,8 @@ function repoWith(name, profiles, profileText = ACME) {
 test("the built-in profile is the catalog: its rules are RULES, its phases the plan's, and it is well-formed", () => {
   assert.deepEqual(
     PROFILES.map((p) => p.id),
-    ["synovitec", "cra"],
-    "the standard, and the lens that adds no rules of its own",
+    ["synovitec", "minimal", "cra"],
+    "the standard, the minimal default, and the lens that adds no rules of its own",
   );
   assert.deepEqual(validateProfile(synovitec), []);
   assert.deepEqual(
@@ -134,4 +134,19 @@ test("a repository names its profiles: a file profile on top of the built-in one
   assert.match(missing.problems.join("\n"), /not found/);
   const twice = await loadProfiles(clash, { profiles: ["synovitec", "synovitec"] });
   assert.match(twice.problems.join("\n"), /named twice/);
+});
+
+test("the minimal profile: a subset of the standard's rules, the same checks, named beside it without a problem", async () => {
+  const minimal = PROFILES.find((p) => p.id === "minimal");
+  assert.ok(minimal);
+  assert.equal(minimal.rules.length, 13);
+  const standard = new Map(RULES.map((r) => [r.id, r]));
+  for (const r of minimal.rules) assert.equal(r.check, standard.get(r.id)?.check, r.id);
+  assert.ok(
+    minimal.rules.every((r) => ["1", "2", "3"].includes(r.phase)),
+    "phased into its own plan",
+  );
+  const dir = repoWith("profiles-both", ["minimal", "synovitec"]);
+  const both = await loadProfiles(dir, { profiles: ["minimal", "synovitec"] });
+  assert.deepEqual(both.problems, [], "a rule repeated with the same check is no conflict");
 });

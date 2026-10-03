@@ -13,7 +13,7 @@ import { sampleTrailer } from "../src/core/vocabulary.mjs";
 
 test("doctor after init: the repository's self-test runs and every shipped file is in step", () => {
   const dir = tempRepo("doctor", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");
   // As hooks:install does on every clone: on a machine without file modes the commit above
@@ -29,7 +29,7 @@ test("doctor after init: the repository's self-test runs and every shipped file 
 
 test("the harness self-test holds for a repository that opted into the scrub", () => {
   const dir = tempRepo("doctor-scrub", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const cfg = join(dir, "abatty.config.json");
   const config = JSON.parse(readFileSync(cfg, "utf8"));
   writeFileSync(cfg, JSON.stringify({ ...config, scrub: { enabled: true } }, null, 2) + "\n");
@@ -50,7 +50,7 @@ test("the harness self-test holds for a repository that opted into the scrub", (
 
 test("doctor names a hook edited beyond formatting, and a missing one", () => {
   const dir = tempRepo("doctor2", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const guard = join(dir, ".claude/hooks/guard.mjs");
   writeFileSync(
     guard,
@@ -93,7 +93,7 @@ test("measure --json on a bare directory scores 0 and names what is missing; aft
   const harnessBefore = before.findings.filter(
     (f) => f.family === "Harness" && f.status === "present",
   ).length;
-  cli(["init", bare, "--stack", "next"], bare);
+  cli(["init", "--profile", "synovitec", bare, "--stack", "next"], bare);
   const after = analyze(bare);
   const harnessAfter = after.findings.filter(
     (f) => f.family === "Harness" && f.status === "present",
