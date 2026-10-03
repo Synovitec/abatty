@@ -5,6 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A repository with nothing to audit is not told to fix its audit first.** A design repository
+  with no package.json, on a preset whose gate has no audit step, read "the audit has not run
+  here" at the top of its first reading.
+
 ## [0.8.0-rc.3] - 2026-10-03
 
 The third candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.2 replays on a

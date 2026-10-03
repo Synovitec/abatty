@@ -423,6 +423,19 @@ const CASES = [
     },
   },
   {
+    report: "design · 2026-10-03 · rc.2 first reading, no package.json",
+    claim: "a repository with no audit to run is not told first thing to fix one",
+    run: () => {
+      const dir = designAdopter();
+      assert.doesNotMatch(cli(["status", dir, "--plain"], dir).out, /the audit has not run here/);
+      // The other direction: a package with no pipeline still is.
+      const pkg = tempRepo("adopter-audit-pkg", {
+        "package.json": JSON.stringify({ name: "p", private: true }),
+      });
+      assert.match(cli(["status", pkg, "--plain"], pkg).out, /the audit has not run here/);
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 replay, bun",
     claim: "update names a range on a prerelease pin, which never reaches the next minor",
     run: () => {

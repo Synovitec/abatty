@@ -7,6 +7,7 @@
  * missing follow. Each line says how old what it reports is.
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { scanSecrets } from "./secrets.mjs";
 import { stepLogPath } from "./spawn.mjs";
 import { localToday } from "./today.mjs";
@@ -42,9 +43,12 @@ export function fixFirst(repoDir, findings) {
 /** The last gate's audit, as its step log left it: failed with its advisories, could not run, or not run. @param {string} repoDir */
 function auditLines(repoDir) {
   const log = stepLogPath(repoDir, AUDIT_STEP);
-  // Not run here is urgent only where nothing else runs it: CI that runs the gate does.
+  // Not run here is urgent only where nothing else runs it: CI that runs the gate does. And only
+  // where the gate has an audit to run: a repository with no package.json is on a preset without
+  // one, and a design repository was told first thing to fix an audit nothing could run.
   if (!existsSync(log))
-    return ["gate", "fast"].includes(ciGate(repoDir).state)
+    return !existsSync(join(repoDir, "package.json")) ||
+      ["gate", "fast"].includes(ciGate(repoDir).state)
       ? []
       : ["the audit has not run here: the gate runs it (and CI, once a pipeline runs the gate)"];
   const text = readFileSync(log, "utf8").trim();
