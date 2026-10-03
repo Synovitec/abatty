@@ -16,6 +16,12 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **A monorepo's workspace is told the script its gate needs.** `init` gave `apps/web` its
+  preset's scripts, but not `test`, which only the workspace's runner can write; the gate then
+  said it could not run and that "init writes the preset's", which it had not. `init`'s steps now
+  name each script a preset workspace lacks, and whether the gate cannot run or only skips the
+  step; the ratchet, which runs once at the root, is not asked of a workspace. The gate's message
+  says which `package.json` and who writes a test script.
 - **The changelog rule covers a Next app's folders and spares abatty's own records.** A `feat:`
   commit under `app/` needed no changelog line, since the Next preset named `src/` alone; it now
   names `app/`, `components/`, `lib/` and `pages/` too. And committing the baseline `init` asks

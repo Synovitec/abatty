@@ -174,7 +174,7 @@ export function runGate(o) {
         detail: `${what}: a step the ${presetId} preset requires`,
       });
       log(
-        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write the script (init writes the preset's), or the gate cannot run. This is the instrument, not the work.`,
+        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write it in ${prefix ? "the workspace's" : "the"} package.json (init writes the scripts the preset defines; a test script runs the ${prefix ? "workspace's" : "repository's"} own runner, which only it knows), or the gate cannot run. This is the instrument, not the work.`,
       );
       return true;
     };

@@ -100,12 +100,29 @@ export async function initCommand(cx, preset) {
       );
   // A gate step whose script only the repository can write (the changed lines' coverage runs on
   // its own runner), named here: doctor said it was absent and init had said nothing.
-  const scripts = readJsonFile(dir, "package.json")?.scripts || {};
-  for (const s of preset.gate.always)
-    if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
-      out(
-        `  ${n++}. ${t.gray(`the gate skips ${s.label} until package.json has a "${s.script}" script, run on this repository's own runner`)}\n`,
-      );
+  // A workspace with a preset of its own is gated in its folder, on its own package.json: there
+  // it read "could not run" for a test script nobody had mentioned.
+  const homes = [
+    { where: "package.json", at: dir, steps: preset.gate.always },
+    ...detectWorkspaces(dir, readAdoption(dir))
+      .filter((w) => w.preset)
+      .map((w) => ({
+        where: `${w.path}/package.json`,
+        at: join(dir, w.path),
+        // Less what the gate runs once at the root: the ratchet over the range.
+        steps: /** @type {import("../presets/index.mjs").Preset} */ (w.preset).gate.always.filter(
+          (s) => !s.rangeArg,
+        ),
+      })),
+  ];
+  for (const h of homes) {
+    const scripts = readJsonFile(h.at, "package.json")?.scripts || {};
+    for (const s of h.steps)
+      if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
+        out(
+          `  ${n++}. ${t.gray(`the gate ${s.required ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required ? ` (${s.label} is required)` : ""}, run on its own runner`)}\n`,
+        );
+  }
   // CI from the first day: the workflow init just wrote is committed with the rest, and where it
   // wrote none (another forge) the gap is named rather than left for a hand run to find.
   if (wrote(DAY_ONE))
