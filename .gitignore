@@ -6,3 +6,6 @@ test/tmp/
 .claude/night/
 # the dated reading measure writes; the report under .abatty/reports is the record
 docs/GAP_ANALYSIS_*.md
+
+# A local `npm pack` (the replays) is never committed.
+*.tgz
