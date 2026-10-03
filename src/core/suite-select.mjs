@@ -153,3 +153,18 @@ export function suiteHomes(repoDir, preset, gated) {
     gated.map((w) => w.path),
   );
 }
+
+/**
+ * Every suite recorded as skipped by `--fast`, the root's and each gated workspace's, so the
+ * report counts them rather than leaving them out.
+ * @param {import("../presets/index.mjs").Preset} preset
+ * @param {{ path: string, preset: import("../presets/index.mjs").Preset | null }[]} gated
+ * @param {import("./gate.mjs").GateEvent[]} events
+ */
+export function skipSuitesFast(preset, gated, events) {
+  for (const suite of preset.gate.suites)
+    events.push({ label: suite.name, outcome: "skipped", detail: "--fast" });
+  for (const w of gated)
+    for (const suite of w.preset?.gate.suites || [])
+      events.push({ label: `${w.path} · ${suite.name}`, outcome: "skipped", detail: "--fast" });
+}

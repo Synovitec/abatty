@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A workspace's suite runs the root's script when the workspace has none.** In a monorepo
+  whose Next app is a workspace, the browser suite selected under `apps/web` looked for `e2e`
+  in that workspace alone and reported no script, while the root's `test:e2e` was the one that
+  worked. It now runs the root's script from the root, and says so.
 - **`doctor --controls` plants where the repository's own tools look.** The lint plant was a
   bare `debugger`, which Next's stock config does not refuse (it has no `eslint:recommended`),
   so a working lint step read as never watched failing. It now also carries an unused `any` and

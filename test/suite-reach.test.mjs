@@ -152,3 +152,38 @@ test("a suite with one of its testing scripts still runs it: the database suite 
   });
   assert.ok(ran.includes("test:integration"), ran.join(", "));
 });
+
+test("a workspace's suite whose script is the root's runs it from the root, and says so", () => {
+  // The app's workspace had no e2e script; the root's test:e2e was the one that worked, and the
+  // suite read as having no script at all.
+  const dir = tempRepo("reach-root-script", {
+    "package.json": JSON.stringify({ name: "mono", private: true, scripts }),
+    "apps/web/package.json": JSON.stringify({ name: "web", scripts: { test: "vitest run" } }),
+    "apps/web/next.config.ts": "export default {};\n",
+    "apps/web/app/page.tsx": "export default function P() { return null; }\n",
+  });
+  const base = git(dir, "rev-parse", "HEAD");
+  writeFileSync(join(dir, "apps/web/app/page.tsx"), "export default function P() { return 1; }\n");
+  git(dir, "commit", "-qam", "feat: the page");
+  /** @type {[string, string][]} */
+  const ran = [];
+  /** @type {string[]} */
+  const lines = [];
+  const preset = /** @type {any} */ ({ ...next, gate: { always: [], suites: next?.gate.suites } });
+  runGate({
+    repoDir: dir,
+    preset: /** @type {any} */ ({ ...next, id: "node", gate: { always: [], suites: [] } }),
+    range: `${base}..HEAD`,
+    workspaces: [{ path: "apps/web", preset }],
+    log: (l) => lines.push(l),
+    run: (cwd, script) => {
+      ran.push([cwd, String(script)]);
+      return 0;
+    },
+    dockerUp: () => true,
+  });
+  const e2e = ran.find(([, s]) => s === "test:e2e");
+  assert.ok(e2e, `${JSON.stringify(ran)}\n${lines.join("\n")}`);
+  assert.equal(e2e[0], dir, "run from the root, where the script is");
+  assert.match(lines.join("\n"), /the workspace has no "test:e2e" script; the root's runs/);
+});
