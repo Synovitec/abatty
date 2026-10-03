@@ -36,7 +36,7 @@ import {
 import { explainFailure } from "./flake.mjs";
 import { markHollow, markNoTests } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
-import { couldNotRun } from "./could-not-run.mjs";
+import { couldNotRun, requiredAbsent } from "./could-not-run.mjs";
 import { strictSteps } from "./init-scope.mjs";
 import { fastNote } from "../ci/day-one.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
@@ -171,19 +171,13 @@ export function runGate(o) {
         // A range the gate could not trust is not handed on, as it is not to a script step.
         range: blind ? "" : range,
       });
-    // A step the preset requires is the instrument itself: without its script or its config the
-    // gate cannot run, and says so, rather than passing with the step skipped. A repository
-    // whose every step was skipped for want of a script read "gate green" and exited 0; the
-    // reviewer who found it called it the other half of the false green, and it was.
+    // A required step with nothing to run stops the gate (could-not-run.mjs requiredAbsent).
     const absent = (/** @type {string} */ what) => {
       if (!s.required || !strict) return false;
-      events.push({
-        label: prefix + s.label,
-        outcome: "errored",
-        detail: `${what}: a step the ${presetId} preset requires`,
-      });
-      log(
-        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write it in ${prefix ? "the workspace's" : "the"} package.json (init writes the scripts the preset defines; a test script runs the ${prefix ? "workspace's" : "repository's"} own runner, which only it knows), or the gate cannot run. This is the instrument, not the work.`,
+      requiredAbsent(
+        { label: prefix + s.label, what, presetId, workspace: Boolean(prefix) },
+        events,
+        log,
       );
       return true;
     };

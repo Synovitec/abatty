@@ -36,3 +36,23 @@ export function couldNotRun(res, logFile) {
   const hit = NOTHING.find(([re]) => re.test(text));
   return hit ? { ...res, errored: true, detail: hit[1] } : res;
 }
+
+/**
+ * A step the preset requires, with no script or config to run: the instrument itself is missing,
+ * so the gate cannot run, and says what to write. A repository whose every step was skipped for
+ * want of a script read "gate green" and exited 0; the reviewer who found it called it the other
+ * half of the false green. Recorded as errored, and said once.
+ * @param {{ label: string, what: string, presetId: string, workspace: boolean }} step
+ * @param {import("./gate.mjs").GateEvent[]} events @param {(line: string) => void} log
+ */
+export function requiredAbsent(step, events, log) {
+  const { label, what, presetId, workspace } = step;
+  events.push({
+    label,
+    outcome: "errored",
+    detail: `${what}: a step the ${presetId} preset requires`,
+  });
+  log(
+    `\n✗ ${label} could not run: ${what}, and the ${presetId} preset requires this step. Write it in ${workspace ? "the workspace's" : "the"} package.json (init writes the scripts the preset defines; a test script runs the ${workspace ? "workspace's" : "repository's"} own runner, which only it knows), or the gate cannot run. This is the instrument, not the work.`,
+  );
+}
