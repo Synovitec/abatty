@@ -6,6 +6,7 @@
  * never turns the gate's own verdict.
  */
 import { appendFileSync } from "node:fs";
+import { stepSummaryFromEnv } from "../core/env.mjs";
 
 /** @type {Record<string, string>} */
 const MARK = { ok: "✅", failed: "❌", errored: "⚠️", deferred: "⏭️", skipped: "➖" };
@@ -33,10 +34,9 @@ export function stepSummary(headline, events) {
 /**
  * Append the summary where the CI provider reads it, when it names a file.
  * @param {string} headline @param {import("../core/gate.mjs").GateEvent[]} events
- * @param {NodeJS.ProcessEnv} [env]
+ * @param {string} [file] where the provider reads it; the environment says, else nothing is written
  */
-export function writeStepSummary(headline, events, env = process.env) {
-  const file = env.GITHUB_STEP_SUMMARY;
+export function writeStepSummary(headline, events, file = stepSummaryFromEnv()) {
   if (!file) return;
   try {
     appendFileSync(file, stepSummary(headline, events) + "\n");

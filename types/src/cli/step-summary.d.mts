@@ -6,6 +6,6 @@ export function stepSummary(headline: string, events: import("../core/gate.mjs")
 /**
  * Append the summary where the CI provider reads it, when it names a file.
  * @param {string} headline @param {import("../core/gate.mjs").GateEvent[]} events
- * @param {NodeJS.ProcessEnv} [env]
+ * @param {string} [file] where the provider reads it; the environment says, else nothing is written
  */
-export function writeStepSummary(headline: string, events: import("../core/gate.mjs").GateEvent[], env?: NodeJS.ProcessEnv): void;
+export function writeStepSummary(headline: string, events: import("../core/gate.mjs").GateEvent[], file?: string): void;
