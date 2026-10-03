@@ -24,6 +24,13 @@ under Unreleased in the same commit.
   watched the whole route group above it and any change beside the cited folder put it behind.
   A bracketed segment that exists as a folder is now that folder, and git is given it literally.
   The floor is rewritten under the new definition by `abatty update`.
+- **`code.clones` charges a clone to every copy (probe v2), and an import list is not a
+  clone.** Each clone was charged to the copy whose path sorted first, so moving a block out of
+  one file put its charge on an untouched copy elsewhere: a monorepo's split lowered the total
+  and read as rises in six files nobody edited. Every copy is now charged, so a move changes
+  only the files it touched; the count roughly doubles once, and `abatty update` rewrites the
+  floor. The names of an import or re-export written over several lines are no longer read as
+  a clone.
 
 ## [0.7.0-rc.12] - 2026-10-03
 

@@ -217,7 +217,7 @@
     "change.refactorTests": "hard opt-in v1",
     "change.testTamper": "ratchet probation v2",
     "code.barrels": "ratchet v1",
-    "code.clones": "ratchet opt-in v1",
+    "code.clones": "ratchet opt-in v2",
     "code.undocumentedExports": "ratchet opt-in probation v1",
     "context.overCap": "ratchet v1",
     "context.unsourcedGrowth": "hard v1",
