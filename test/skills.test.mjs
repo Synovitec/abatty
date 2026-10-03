@@ -47,3 +47,20 @@ test("init writes the skill to every configured adapter's skills folder, identic
     "only the configured adapters",
   );
 });
+
+test("the context file's table names only the skills and agents abatty installs, beside namespaced plugins", () => {
+  // It listed /verify-change and an architect agent that init never wrote, and an agent went
+  // looking for them.
+  const text = readFileSync(join(TEMPLATES, "harness/agent-context.md.template"), "utf8");
+  const section = text.slice(text.indexOf("## 8. Skills"), text.indexOf("\n## 9."));
+  const rows = section.split(/\r?\n/).filter((l) => /^\| `[^`]+`/.test(l));
+  assert.ok(rows.length >= 3);
+  for (const row of rows) {
+    const name = String(row.match(/^\| `\/?([^` ]+)/)?.[1]);
+    if (name.includes(":")) continue; // a plugin's skill, installed by its own command
+    const shipped = /\(agent\)/.test(row)
+      ? existsSync(join(TEMPLATES, `harness/agents/${name}.md`))
+      : existsSync(join(TEMPLATES, `skills/${name}/SKILL.md`));
+    assert.ok(shipped, `${name} is named in the table and not shipped`);
+  }
+});

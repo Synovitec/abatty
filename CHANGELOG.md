@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The context file `init` writes names no skill it does not install.** Its skills table listed
+  `/verify-change`, `/code-review` and an architect agent that nothing installs, and an agent
+  reading it went looking for them. The table keeps what abatty ships and the plugin skills
+  installed by their own command, and says to add a row for a skill the repository installs. A
+  test holds it.
 - **A green ratchet names the probe on probation that would have failed it.** A probe on
   probation never fails a run, and its finding sat in the metric list while the headline read
   plain green. The headline now ends with the probes on probation that would fail, not failing.
