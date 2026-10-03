@@ -24,6 +24,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A reading saves its markdown with its JSON.** `status` measuring again rewrote the day's
+  JSON and left the day's `.md` that an earlier version had written, and an adopter quoted that
+  file's evidence as the new version's. Every saved reading now writes the dated JSON, the latest
+  and the dated markdown together, from the cache too.
+
 - **VALID-ENV names every env module.** A monorepo with one env module per workspace read only
   the first one found, beside its raw reads, so the other five looked uncounted. The evidence now
   gives how many there are and names the first four.
