@@ -253,4 +253,30 @@ export const BEHIND_CODE_CONTROLS = [
     // package.json (a script beside the pin) and tool/package.json (a bin keyed abatty)
     expect: 2,
   },
+  {
+    // A dependency bumped for an advisory put four documents citing the manifest behind, and
+    // three needed no change (an adopter's rc.2 upgrade). A dependency added still moves it.
+    name: "a dependency whose version alone moved moves no manifest; a dependency added does",
+    files: {
+      "docs/web.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "web/package.json"\n`),
+      "docs/api.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "api/package.json"\n`),
+      "web/package.json":
+        '{\n  "name": "web",\n  "version": "1.0.0",\n  "dependencies": {\n    "next": "16.3.5"\n  }\n}\n',
+      "api/package.json":
+        '{\n  "name": "api",\n  "dependencies": {\n    "hono": "^4.6.0"\n  }\n}\n',
+    },
+    commits: [
+      {
+        files: {
+          "web/package.json":
+            '{\n  "name": "web",\n  "version": "1.0.1",\n  "dependencies": {\n    "next": "16.3.8"\n  }\n}\n',
+          "api/package.json":
+            '{\n  "name": "api",\n  "dependencies": {\n    "hono": "^4.6.0",\n    "zod": "^4.1.0"\n  }\n}\n',
+        },
+        message: "fix: next out of an advisory; zod for the api",
+      },
+    ],
+    // api/package.json (zod added); web/package.json moved its versions alone
+    expect: 1,
+  },
 ];

@@ -5,6 +5,9 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+**Upgrading:** `docs.behindCode` is redefined (v6) to count fewer false findings; `abatty update`
+rewrites its floor.
+
 ### Added
 
 - **`status` says the policy and its proof.** Two lines open the Harness block: the profiles the
@@ -13,6 +16,11 @@ under Unreleased in the same commit.
   `prove` shows it on a copy. A run planted by an older version is named as such.
 
 ### Changed
+
+- **A dependency bump no longer puts every document citing `package.json` behind.**
+  `docs.behindCode` passes over a manifest line whose version alone changed, as it already passed
+  over the abatty pin; a dependency added or removed, a script, a bin still move the manifest. An
+  adopter's advisory fix put four documents behind and three needed no change.
 
 - **The README leads with what `prove` finds.** The headline is "Find the CI checks that can't
   fail", followed by real `prove` output on a project whose test script can never fail. The front

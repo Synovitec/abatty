@@ -1,6 +1,6 @@
 {
   "abatty": "0.8.0-rc.3",
-  "installedAt": "2026-10-03",
+  "installedAt": "2026-10-04",
   "files": {
     ".claude/hooks/check-direction.mjs": "33553875bf51bef3c1f9dfc92ed1ab467444ecaab0717fe71107cd3d718d8652",
     ".claude/hooks/guard.mjs": "9114773e1c9d6427eb27bd066f14a983511183ff2f4d2b5fcf20ed3445995e08",
@@ -23,7 +23,11 @@
     ".claude/rules/testing.md": "7490d620208222b0f0b416b7db6179ff8f1c24877c07c79a59b6669de414f0dc",
     ".claude/rules/size-limits.md": "21def85fa82a7d3841b6dba7f5c91efb0ed5280515981ef45cf2f34ee668abc5"
   },
-  "offered": {},
+  "offered": {
+    ".githooks/pre-commit": "cee168e19d7114bff9bb59f85dc0a30ed304099129d308672ae36ba0f342c12b",
+    ".githooks/pre-push": "801521153d566abd6885c3fd0b564cdcbeaf9939d9e584de690ec0e48d901c6b",
+    ".githooks/commit-msg": "7ddd7b5706c53025e7ae66da05911b6d6b5256dcb1366b30688449d7b75b00d8"
+  },
   "scripts": [
     "dead",
     "format:check",

@@ -50,9 +50,14 @@ export function lastChange(c, path, o = {}) {
     const loose = c.git("show", "--format=", "-U0", "-w", sha, "--", path, ...indented);
     const strict = c.git("show", "--format=", "-U0", sha, "--", path);
     const body = o.bodyOnly ? frontMatterEnds(c, sha) : null;
+    // In source mode, a manifest line whose version alone moved: a dependency bumped put every
+    // document citing package.json behind, and three of an adopter's four needed no change.
+    const bumped = o.bodyOnly ? versionBumps(strict) : new Set();
+    const ownOrBump = (/** @type {string} */ f, /** @type {string} */ l) =>
+      own(f, l) || bumped.has(`${f} ${manifestKey(f, l)}`);
     if (
-      moved(loose, () => true, body, own) ||
-      moved(strict, (f) => INDENTED_FILE.test(f), body, own)
+      moved(loose, () => true, body, ownOrBump) ||
+      moved(strict, (f) => INDENTED_FILE.test(f), body, ownOrBump)
     )
       return sha;
   }
@@ -129,6 +134,34 @@ const HARNESS_LOCK = ".claude/harness.lock.json";
  */
 function recordFiles(c) {
   return new Set([baselinePath(c.adoption).replace(/^\.\//, ""), HARNESS_LOCK]);
+}
+
+/** A manifest's `"name": "<version or range>"` line, its name captured. */
+const VERSION_LINE =
+  /^[+-]\s*"([^"]+)"\s*:\s*"(?:[\^~]|[<>]=?|=)?\s*v?\d+(?:\.\d+){0,2}[\w.+-]*",?\s*$/;
+
+/** The key of a manifest's version line, or "" for any other line. @param {string} file @param {string} line */
+function manifestKey(file, line) {
+  if (!/(?:^|\/)package\.json$/.test(file)) return "";
+  return VERSION_LINE.exec(line)?.[1] || "";
+}
+
+/**
+ * The manifest keys whose version alone changed in a zero-context diff: a removed and an added
+ * version line with the same name in the same file. A dependency added or removed has no pair
+ * and still moves the manifest; so does a changed value that is not a version (a script, a bin).
+ * @param {string} diff @returns {Set<string>} `file key`, a space between (no path has one at its end)
+ */
+function versionBumps(diff) {
+  /** @type {Set<string>} */
+  const gone = new Set();
+  /** @type {Set<string>} */
+  const came = new Set();
+  for (const [file, l] of contentLines(diff)) {
+    const key = manifestKey(file, l);
+    if (key) (l[0] === "-" ? gone : came).add(`${file} ${key}`);
+  }
+  return new Set([...gone].filter((k) => came.has(k)));
 }
 
 /** Whether a diff line is the version pin in a file that carries one. @param {string} file @param {string} line */
