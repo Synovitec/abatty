@@ -24,9 +24,19 @@ const CASE =
  * A case or a suite set aside, or every other case set aside by `only`, in each runner's
  * spelling: the method forms, the x/f prefixes, pytest's marks, Go's `t.Skip`, and the platform
  * runner's options (`test("a", { skip: true }, fn)`) and context (`t.skip()`, `t.todo()`).
+ * A skip on a condition (`test.skip(!odoo, "no Odoo on this stack")`, Playwright's documented
+ * form) decides at run time and says why, so the method form counts only a title or nothing.
  */
 const PARKED =
-  /(?<![.\w$])(?:it|test|describe|suite)\.(?:skip|only|todo)\s*\(|(?<![.\w$])[xf](?:it|describe|test)\s*\(|(?<![.\w$])(?:test|it|describe|suite)\s*\([^)]*\{[^}]*\b(?:skip|todo|only)\s*:\s*(?!false\b)|\bt\.(?:skip|todo)\s*\(|@pytest\.mark\.(?:skip|xfail)|\bt\.Skip(?:Now)?\(/;
+  /(?<![.\w$])(?:it|test|describe|suite)\.(?:skip|only|todo)\s*\(\s*(?:["'`]|\))|(?<![.\w$])[xf](?:it|describe|test)\s*\(|(?<![.\w$])(?:test|it|describe|suite)\s*\([^)]*\{[^}]*\b(?:skip|todo|only)\s*:\s*(?!false\b)|\bt\.(?:skip|todo)\s*\(|@pytest\.mark\.(?:skip|xfail)|\bt\.Skip(?:Now)?\(/;
+/**
+ * A suppression that states its reason in the checker's own syntax (eslint's `-- why`, biome's
+ * `: why`, TypeScript's expect-error directive with a description): a decision on record, as a `tests-changed:` line is
+ * for a snapshot. Over thirty local repositories, about half the suppressions a feature commit
+ * added said why, and counting them buried the half that did not.
+ */
+const REASONED =
+  /(?:eslint-disable\S*[^\n]*?\s--\s+\S|biome-ignore\s+\S+\s*:\s*\S|@ts-expect-error\s*[:-]?\s+\w)/;
 /** Prose, where naming a suppression is writing about it. */
 const PROSE = /\.(md|mdx|markdown|txt|rst|adoc)$|(^|\/)CHANGELOG[^/]*$/i;
 /**
@@ -81,7 +91,7 @@ function waysOut(subject, body, diff) {
     const text = l.slice(1);
     if (TEST_FILE.test(file) && CASE.test(text) && !PARKED.test(text)) f.cases += sign;
     if (TEST_FILE.test(file) && PARKED.test(text)) f.parked += sign;
-    if (!PROSE.test(file) && SILENCE.test(bare(text))) f.silenced += sign;
+    if (!PROSE.test(file) && SILENCE.test(bare(text)) && !REASONED.test(text)) f.silenced += sign;
     if (SNAPSHOT.test(file)) f.snapshot = true;
     const t = THRESHOLD.exec(text);
     if (t && !TEST_FILE.test(file)) {
@@ -162,7 +172,8 @@ export const probes = [
     kind: "ratchet",
     probation: true,
     // v2: netted over the range, so a commit that undoes another's way out clears both.
-    version: 2,
+    // v3: a skip on a condition, and a suppression that states its reason, are not counted.
+    version: 3,
     standard: ["TEST.1", "TEST.5"],
     title: "Commits in the pushed range that weakened the tests or the checks they are judged by",
     why: "A change that makes the tests pass by changing the tests has made the claim easier, not the code better: a case removed, skipped or focused, a snapshot rewritten, a checker silenced, a threshold lowered. Each can be right, and each is the first thing to read in a review, above all in a change nobody watched being made. Say why on a `tests-changed:` line, or put the test back.",
@@ -222,6 +233,25 @@ export const probes = [
         range: "HEAD~1..HEAD",
         expect: 1,
       })),
+      {
+        name: "a skip on a condition with its reason, and a suppression that states why, are not ways out",
+        files: {
+          "test/a.test.ts": "test('one', () => {});\n",
+          "src/a.ts": "export const a = 1;\n",
+        },
+        commits: [
+          {
+            files: {
+              "test/a.test.ts":
+                "test('one', () => {\n  test.skip(!hasStorage, 'no storage on this stack');\n});\n",
+              "src/a.ts": `// ${["eslint", "disable"].join("-")}-next-line no-console -- the CLI's own output\nexport const a = 1;\n`,
+            },
+            message: "feat: storage-aware",
+          },
+        ],
+        range: "HEAD~1..HEAD",
+        expect: 0,
+      },
       {
         name: "a case removed and put back, and a skip added and taken out, in the same range",
         files: { "test/a.test.ts": "test('one', () => {});\ntest('two', () => {});\n" },

@@ -42,6 +42,15 @@ under Unreleased in the same commit.
   only the files it touched; the count roughly doubles once, and `abatty update` rewrites the
   floor. The names of an import or re-export written over several lines are no longer read as
   a clone.
+- **Two probes on probation read real repositories without false findings (both v3).** Run
+  read-only over thirty local repositories:
+  - `change.testTamper` counted a skip on a condition (`test.skip(!odoo, "no Odoo here")`,
+    Playwright's documented form) and a suppression that states its reason (eslint's `-- why`,
+    biome's `: why`, a described expect-error) as ways out; neither is any longer. Findings went
+    from 22 in 15 repositories to 11 in 8, each a suppression with no reason given.
+  - `docs.danglingRefs` read records written at a point in time (an archive, an ADR or decision
+    folder, sprint plans, retrospectives, a decided decision record) as documents gone stale.
+    Findings went from 15 to 2, both confirmed real.
 
 ## [0.7.0-rc.12] - 2026-10-03
 
