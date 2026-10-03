@@ -53,7 +53,7 @@
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 200,
+    "code.clones": 202,
     "context.overCap": 1,
     "docs.behindCode": 8,
     "docs.citations": 81,
@@ -61,13 +61,13 @@
     "docs.frontMatter": 35,
     "docs.frontMatterSyntax": 35,
     "docs.indexDrift": 34,
-    "size.excessCode": 200,
-    "size.overBudget": 200,
-    "size.overRaw": 222,
-    "types.escapes": 200,
-    "valid.rawEnv": 199,
-    "valid.utcDay": 200,
-    "valid.wholeEnv": 199
+    "size.excessCode": 202,
+    "size.overBudget": 202,
+    "size.overRaw": 224,
+    "types.escapes": 202,
+    "valid.rawEnv": 201,
+    "valid.utcDay": 202,
+    "valid.wholeEnv": 201
   },
   "debt": {
     "code.clones": {
@@ -102,7 +102,7 @@
     "change.changelogMissing": 1,
     "change.coupledMissing": 1,
     "change.refactorTests": 1,
-    "change.testTamper": 1,
+    "change.testTamper": 2,
     "code.barrels": 1,
     "code.clones": 1,
     "code.undocumentedExports": 1,
