@@ -64,12 +64,14 @@ export const python = {
       },
       {
         label: "typecheck (CODE.3)",
-        command: ["mypy", "."],
+        // A virtual environment in the tree is the libraries', not this repository's: read, it
+        // was thousands of findings that are not this code's.
+        command: ["mypy", ".", "--exclude", "(^|/)(\\.?venv|\\.tox|build|dist|node_modules)/"],
         requires: ["mypy.ini", ".mypy.ini", "pyproject.toml"],
       },
       {
         label: "dead code (CODE.6)",
-        command: ["vulture", "."],
+        command: ["vulture", ".", "--exclude", ".venv,venv,.tox,build,dist,node_modules"],
         requires: ["vulture.toml", "pyproject.toml"],
       },
       {

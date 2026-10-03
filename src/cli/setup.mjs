@@ -56,6 +56,15 @@ export async function initCommand(cx, preset) {
     pm.id
   ];
   if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  // The tools a gate runs as commands are no package's dependency: a Python repository was told
+  // nothing about ruff or pytest, and every step could not run.
+  const tools = [
+    ...new Set(preset.gate.always.flatMap((s) => (s.command ? [String(s.command[0])] : []))),
+  ].filter((c) => c !== "npx");
+  if (preset.pack === "python" && tools.length)
+    out(
+      `  ${n++}. pip install ${tools.join(" ")}  ${t.gray("· in this repository's .venv, where the gate finds them without activating it, or on the PATH")}\n`,
+    );
   // Once, as one command: this filesystem keeps no executable bit, and git skips a hook without it.
   if (r.notExecutable.length)
     out(

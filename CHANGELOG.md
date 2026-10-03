@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The Python preset runs on a Python repository as it is set up.** The gate's command steps
+  use the tool in the repository's `.venv` (or `venv`) when it is there, where every step could
+  not run until the shell was activated by hand. mypy and vulture no longer read a virtual
+  environment in the tree as this repository's code. `init` names the tools to install (ruff,
+  mypy, vulture, pytest). SEC-AUDIT no longer credits the gate's built-in audit where there is
+  no JavaScript lockfile for it to read, which is every Python repository: its gate has no
+  audit step. The preset stays unproven until a named repository runs it.
 - **A workspace's suite runs the root's script when the workspace has none.** In a monorepo
   whose Next app is a workspace, the browser suite selected under `apps/web` looked for `e2e`
   in that workspace alone and reported no script, while the root's `test:e2e` was the one that

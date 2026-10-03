@@ -303,9 +303,12 @@ test("SEC-AUDIT reads for the scoping, not for the word: an unscoped audit is pa
   assert.equal(scoped.status, "present");
   assert.match(scoped.evidence, /production only, a severity floor/);
   // a repository whose CI runs the gate has the built-in audit, which is scoped by construction
-  const viaGate = find(wf("npx abatty gate"));
+  const viaGate = find({ ...wf("npx abatty gate"), "package-lock.json": "{}\n" });
   assert.equal(viaGate.status, "present");
   assert.match(viaGate.evidence, /built-in audit/);
+  // and only where it has a lockfile to read: a Python repository's gate has no audit step
+  const python = find({ ...wf("npx abatty gate"), "pyproject.toml": "[project]\nname = 'a'\n" });
+  assert.notEqual(python.status, "present", python.evidence);
 });
 
 test("bun's banner after its report does not hide the report, so its allowances apply", () => {

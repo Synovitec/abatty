@@ -79,7 +79,13 @@ export const rules = [
       // The gate's own audit step is scoped by construction: production dependencies, a severity
       // floor, and allowances that expire. A repository whose CI runs the gate has it, and a rule
       // that could not see that would be reading for a flag rather than for the practice.
-      if (/abatty(\.mjs)? gate\b/.test([c.ciText, ...Object.values(c.scripts || {})].join("\n")))
+      // It reads a JavaScript lockfile: a Python repository's gate has no audit step, and was
+      // credited with one.
+      const audited = c.files(/^(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?)$/);
+      if (
+        audited.length &&
+        /abatty(\.mjs)? gate\b/.test([c.ciText, ...Object.values(c.scripts || {})].join("\n"))
+      )
         return {
           status: "present",
           evidence: `the gate's built-in audit: production only, a severity floor${Array.isArray(allow) && allow.length ? `, ${allow.length} allowance(s)` : ""}`,

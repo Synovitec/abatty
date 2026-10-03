@@ -37,6 +37,13 @@ export function notInstalled(res: RunResult, repoDir: string, script: string, pl
 export function runCommand(repoDir: string, argv: string[], o?: {
     log?: string;
 }): RunResult;
+/**
+ * A tool installed in the repository's virtual environment (`.venv`, or `venv`), by its path: a
+ * Python repository installs ruff and pytest there, never on the PATH, and every step of the gate
+ * could not run until the shell had been activated by hand. "" when it is not there.
+ * @param {string} repoDir @param {string} tool @returns {string}
+ */
+export function venvTool(repoDir: string, tool: string): string;
 /** Whether a Docker daemon answers here: the suites that need one are deferred loudly without it. */
 export function dockerRunning(): boolean;
 /**
