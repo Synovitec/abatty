@@ -162,3 +162,17 @@ test("a workspace whose lint script lints nothing keeps the rule partial, named"
   assert.equal(of(repo("all", "eslint . --max-warnings=0"), "CODE-MAXWARN").status, "present");
   assert.equal(of(repo("next", "next lint --max-warnings=0"), "CODE-MAXWARN").status, "present");
 });
+
+test("a TypeScript library is not read as JavaScript for the tool configs at its root", () => {
+  const dir = read("ts-lib-configs", {
+    "package.json": JSON.stringify({ name: "lib", scripts: { typecheck: "tsc --noEmit" } }),
+    "tsconfig.json": '{ "compilerOptions": { "strict": true } }\n',
+    "src/a.ts": "export const a = 1;\n",
+    "src/b.ts": "export const b = 2;\n",
+    "eslint.config.js": "export default [];\n",
+    ".dependency-cruiser.cjs": "module.exports = {};\n",
+    "prettier.config.cjs": "module.exports = {};\n",
+  });
+  assert.equal(of(dir, "TYPES-CHECKJS").status, "n/a", "a TypeScript repository");
+  assert.notEqual(of(dir, "TYPES-STRICT").status, "n/a", "its strictness is judged");
+});

@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **A TypeScript library is read as TypeScript.** The repository's language was decided by
+  counting `.ts` against `.js` sources, and the tool configs at the root (`eslint.config.js`,
+  `.dependency-cruiser.cjs`, `prettier.config.cjs`) outnumbered a strict library's two sources:
+  it read as JavaScript, `TYPES-STRICT` and its kin went n/a, and the next step asked for a
+  `checkJs` it had no use for. A tool's config no longer counts as the repository's JavaScript.
 - **The readings agree with the pipeline `init` writes.** `INST-CI-STEPS` read the workflow that
   runs `gate:fast` word by word and called lint, typecheck, the ratchet and the audit missing,
   while `init` said every push runs them; and the fast gate said "CI still runs" the suites it

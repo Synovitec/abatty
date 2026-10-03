@@ -323,7 +323,12 @@ export function buildContext(repoDir, o = {}) {
     docFiles: files(/^docs\/.*\.md$/),
     tsSources,
     jsSources,
-    isTs: tsSources.length > jsSources.length,
+    // A tool's config (`eslint.config.js`, `.dependency-cruiser.cjs`) is not the repository's
+    // JavaScript: counted, three of them outweighed a strict TypeScript library's two sources,
+    // which was then read as JavaScript and its strictness never judged.
+    isTs:
+      tsSources.length >
+      jsSources.filter((f) => !/(^|\/)([\w.-]+\.config|\.[\w.-]+)\.[cm]?js$/.test(f)).length,
     contextFile,
     adoption,
     stack,
