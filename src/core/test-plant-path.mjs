@@ -234,9 +234,10 @@ export function testPlantPath(dir, script, how) {
     const w = workspaceRunning(dir, task, filter);
     if (w) return `${w.ws}/${testPlantPath(join(dir, w.ws), w.script, how)}`;
   }
-  // A folder handed to the runner (`node --test test/`, the form every Node accepts, where the
-  // glob form needs 21; `bun test src/`; `vitest run tests/unit`) is searched by the runner's
-  // own patterns, which a `.test` name meets.
+  // A folder handed to the runner (`bun test src/`, `vitest run tests/unit`, and `node --test
+  // test/` on Node 20) is searched by the runner's own patterns, which a `.test` name meets.
+  // Node 21 and later read the argument as a file and fail on a folder before any plant, which
+  // the controls report as red without a plant: true, since the script fails on its own there.
   const at = task ? -1 : tokens.findIndex((_, i) => isFolderArg(dir, tokens, i));
   const folder = at >= 0 ? inside(String(tokens[at])) : "";
   const ext = how.extOf(dir);
