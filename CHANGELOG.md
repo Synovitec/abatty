@@ -16,6 +16,13 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The import graph and dead code read every source folder, a Next app's `app/` included.** The
+  graph script read `src` alone wherever a `src/` existed, and the knip template a fixed
+  `src/ server/ lib/`: a Next App Router app with its code in `app/` had both steps judge one
+  module and read green, and an orphan file with an unused export under `app/` passed them. Both
+  now name the source folders that exist (`src`, `app`, `pages`, `components`, `lib`, `server`,
+  `hooks`, `utils`, and a monorepo's `apps`, `packages`, `services`); `init`'s baseline step and
+  the gate's missing-baseline message say the same command.
 - **`DOC-AGENTS-MD` holds when `CLAUDE.md` is exactly `@AGENTS.md`.** The rule read the context
   file its import leads to, `AGENTS.md` itself, for an `@AGENTS.md` it never holds, and called
   the single source `init` writes partial. It now reads `CLAUDE.md` as written, and also holds for

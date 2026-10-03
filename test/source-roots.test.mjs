@@ -1,0 +1,43 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
+
+// The graph read `src` alone where a src/ existed, and knip a fixed src/ server/ lib/: a Next
+// App Router app with its code in app/ had both steps judge one module and read green.
+
+const steps = (/** @type {string} */ out) => out.slice(out.indexOf("By hand"));
+
+test("the graph and dead code read every source folder there is, app/ included", () => {
+  const dir = tempRepo("roots-next", {
+    "package.json": NEXT_PKG,
+    "app/page.tsx": "export default function P() { return null; }\n",
+    "src/lib/price.ts": "export const price = 1;\n",
+    "components/card.tsx": "export const Card = () => null;\n",
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+  assert.match(pkg.scripts.graph, /^depcruise src app components --config/);
+  assert.match(
+    steps(r.out),
+    /npx depcruise src app components --config \.dependency-cruiser\.cjs --baseline/,
+  );
+  const knip = readFileSync(join(dir, "knip.jsonc"), "utf8");
+  for (const root of ["src", "app", "components"]) assert.ok(knip.includes(`"${root}/**/`), root);
+  assert.doesNotMatch(knip, /"server\/\*\*/, "a folder that does not exist is not named");
+});
+
+test("a monorepo's graph reads its workspace folders, and knip keeps its own workspace reading", () => {
+  const dir = tempRepo("roots-mono", {
+    "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), workspaces: ["apps/*"] }),
+    "apps/web/app/page.tsx": "export default function P() { return null; }\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+  assert.match(pkg.scripts.graph, /^depcruise apps --config/);
+  assert.match(
+    readFileSync(join(dir, "knip.jsonc"), "utf8"),
+    /"src\/\*\*\/\*\.\{js,jsx,mjs,cjs,ts,tsx\}"/,
+  );
+});

@@ -60,6 +60,6 @@ test("an import graph with no known-violations baseline could not run, and says 
   assert.equal(r.errored, true);
   assert.match(
     String(r.events[r.events.length - 1]?.detail),
-    /npx depcruise src --config \.dependency-cruiser\.cjs --baseline/,
+    /the graph script's depcruise command with --baseline/,
   );
 });

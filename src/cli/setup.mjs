@@ -14,6 +14,7 @@ import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
 import { contextState } from "../core/context-file.mjs";
+import { graphRoots } from "../core/source-roots.mjs";
 import { ratchetSetup } from "../ratchet/index.mjs";
 import { DAY_ONE, ciGate, ciSays } from "../ci/day-one.mjs";
 
@@ -85,7 +86,7 @@ export async function initCommand(cx, preset) {
   if (graph)
     out(
       // Every repository, not only an existing one: without the file the graph step cannot start.
-      `  ${n++}. ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
+      `  ${n++}. ${pm.exec("depcruise").join(" ")} ${graphRoots(dir)} --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);

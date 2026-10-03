@@ -15,7 +15,7 @@ const NOTHING = /** @type {[RegExp, string][]} */ ([
   ],
   [
     /Can't open '\.dependency-cruiser-known-violations\.json' for reading/,
-    "dependency-cruiser has no known-violations baseline to compare with. Record today's once: npx depcruise src --config .dependency-cruiser.cjs --baseline, and commit the file",
+    "dependency-cruiser has no known-violations baseline to compare with. Record today's once: the graph script's depcruise command with --baseline in place of its output flags (init's steps print it), and commit the file",
   ],
 ]);
 
