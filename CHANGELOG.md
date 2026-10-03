@@ -15,7 +15,9 @@ another version's numbers as today's, and the headline promises what a control a
 **Upgrading:** a repository with no `abatty.config.json` is now measured against the minimal
 profile (a config that names no profile keeps the standard, as before). Two `--json` fields are
 added, none removed: `github` on the CI state `doctor` reports, and `builtin` on the steps of
-`prove`. Every saved reading now writes its dated `.md` beside its JSON.
+`prove`. Every saved reading now writes its dated `.md` beside its JSON. Coming from a version
+without the gate's `audit` step, expect the first push to stop on any advisory the tree already
+carries; the refusal names the package, the path that pulls it in, and the two ways out.
 
 ### Added
 
@@ -42,6 +44,12 @@ added, none removed: `github` on the CI state `doctor` reports, and `builtin` on
   keeps the standard as before.
 
 ### Fixed
+
+- **`update` carries a range probe's floor to its new definition.** A probe that judges the
+  pushed commits, such as `change.testTamper`, reads skipped when `update` measures with no range,
+  so a floor written under its earlier definition was never migrated and the next push was
+  refused as `REDEFINED`, after following the upgrade note exactly. The floor is now carried
+  under the new definition as it stands, which is not a raise.
 
 - **A repository with nothing to audit is not told to fix its audit first.** A design repository
   with no package.json, on a preset whose gate has no audit step, read "the audit has not run

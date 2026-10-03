@@ -31,18 +31,19 @@ export async function migrateRedefined(repoDir, o = {}) {
     { config, range: "" },
     previous,
   );
-  // A probe on probation reads `probation` whatever its verdict would be, so its floor under an
-  // old definition was never migrated and read "would read redefined" from then on: the version
-  // the floor was written under says it as well.
+  // A probe on probation reads `probation` whatever its verdict would be, and one that judges a
+  // pushed range reads `skipped` with no range here, so neither floor under an old definition was
+  // migrated: the gate, measuring the push, then read it redefined and refused (Foodify, rc.2,
+  // change.testTamper). The version the floor was written under says it as well.
   const movedOn = (/** @type {string} */ metric) => {
     const m = measurements.find((x) => x.metric === metric);
     const wroteUnder = previous.versions?.[metric];
-    return Boolean(
-      m?.probe.probation && wroteUnder !== undefined && wroteUnder !== probeVersion(m),
-    );
+    return Boolean(m && wroteUnder !== undefined && wroteUnder !== probeVersion(m));
   };
   const redefined = compare(measurements, previous, config).filter(
-    (v) => v.status === "redefined" || (v.status === "probation" && movedOn(v.metric)),
+    (v) =>
+      v.status === "redefined" ||
+      ((v.status === "probation" || v.status === "skipped") && movedOn(v.metric)),
   );
   if (!redefined.length) return [];
   const next = JSON.parse(JSON.stringify(previous));
@@ -61,6 +62,13 @@ export async function migrateRedefined(repoDir, o = {}) {
     if (!m) continue;
     const was = Number(previous.metrics?.[v.metric] ?? 0);
     const version = probeVersion(m);
+    // Nothing to count without a range: the floor is carried under the new definition as it
+    // stands, which is not a raise, and the next push is measured against it.
+    if (m.skipped) {
+      next.versions = { ...(next.versions || {}), [v.metric]: version };
+      out.push({ metric: v.metric, was, now: was, version, written: true, why: "" });
+      continue;
+    }
     if (isHard(m) && m.value > 0) {
       out.push({
         metric: v.metric,

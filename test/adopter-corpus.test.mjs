@@ -436,6 +436,30 @@ const CASES = [
     },
   },
   {
+    report: "product · 2026-10-03 · rc.2 upgrade, testTamper enabled",
+    claim: "update carries a range probe's floor to its new definition, so the gate is not refused",
+    run: () => {
+      const dir = tempRepo("adopter-tamper", {
+        "package.json": JSON.stringify({ name: "p", private: true }),
+        "abatty.config.json": JSON.stringify({ ratchet: { enable: ["change.testTamper"] } }),
+        "src/a.mjs": "export const a = 1;\n",
+      });
+      assert.equal(cli(["baseline", dir], dir).code, 0);
+      const rel = join(dir, "scripts/ci/standards-baseline.json");
+      const b = JSON.parse(readFileSync(rel, "utf8"));
+      // Written under definition 1, as the adopter's was.
+      b.metrics["change.testTamper"] = 0;
+      b.versions = { ...(b.versions || {}), "change.testTamper": 1 };
+      writeFileSync(rel, JSON.stringify(b, null, 2));
+      const up = cli(["update", dir], dir);
+      const after = JSON.parse(readFileSync(rel, "utf8"));
+      assert.notEqual(after.versions["change.testTamper"], 1, up.out);
+      assert.equal(after.metrics["change.testTamper"], 0, "carried, not raised");
+      // The other direction: a floor already under the current definition is left alone.
+      assert.doesNotMatch(cli(["update", dir], dir).out, /change\.testTamper/);
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 replay, bun",
     claim: "update names a range on a prerelease pin, which never reaches the next minor",
     run: () => {
