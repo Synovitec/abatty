@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **SEC-SECRETS counts a CI workflow that runs the gate as the secret scan's CI step.** Every
+  preset's gate carries the scan, fast or whole, yet the rule looked only for a scanner's name, so
+  a design repository with the workflow `init` wrote (running `gate:fast`) read partial, "no CI
+  step", and was sent back to `init` for a hook it had already run.
+- **A second `init` with nothing to do keeps the harness lock**, where it reported it as written.
+
 ## [0.8.0-rc.2] - 2026-10-03
 
 The second candidate for 1.0, under `next` (`npm i -D abatty@next`). What the first replay of
