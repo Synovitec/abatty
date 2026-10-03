@@ -7,7 +7,7 @@
  * above zero is not written: that is a finding, and a person decides what it means.
  */
 import { readAdoption, writeJsonFile } from "../core/repo.mjs";
-import { pushRange } from "../core/range.mjs";
+import { pushRangeInfo } from "../core/range.mjs";
 import { buildContext } from "../rules/context.mjs";
 import { readBaseline, probeVersion } from "./baseline.mjs";
 import { compare, loadProbes, measureAll, ratchetSetup } from "./index.mjs";
@@ -29,11 +29,16 @@ export async function migrateRedefined(repoDir, o = {}) {
   // Over the push range, as `abatty baseline` measures: a probe that judges the pushed commits
   // read skipped with none, and its floor was carried under the new definition as a count of the
   // old one's question (Foodify, rc.3: 2 carried where the new definition read 0).
-  const base = String(readAdoption(repoDir)?.baseBranch || "main");
+  // Only a range found and holding commits: an empty one (nothing pushed) counts zero of nothing,
+  // and the last-commit guess with no upstream and no base counts one commit of many, and either
+  // written as measured would claim a count nobody took. Without one the probe reads skipped and
+  // its floor is carried, said to be.
+  const pushed = pushRangeInfo(repoDir, String(readAdoption(repoDir)?.baseBranch || "main"));
+  const range = pushed.how !== "unknown" && pushed.commits > 0 ? pushed.range : "";
   const measurements = measureAll(
     probes,
     buildContext(repoDir, { tracked: true }),
-    { config, range: pushRange(repoDir, base) },
+    { config, range },
     previous,
   );
   // A probe on probation reads `probation` whatever its verdict would be, and one that judges a

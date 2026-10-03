@@ -441,25 +441,40 @@ const CASES = [
     claim:
       "update measures a range probe's floor under its new definition, so the gate is not refused",
     run: () => {
-      const dir = tempRepo("adopter-tamper", {
-        "package.json": JSON.stringify({ name: "p", private: true }),
-        "abatty.config.json": JSON.stringify({ ratchet: { enable: ["change.testTamper"] } }),
-        "src/a.mjs": "export const a = 1;\n",
-      });
-      assert.equal(cli(["baseline", dir], dir).code, 0);
-      const rel = join(dir, "scripts/ci/standards-baseline.json");
-      const b = JSON.parse(readFileSync(rel, "utf8"));
-      // Written under definition 1, as the adopter's was: 2 by the old question, 0 by today's
-      // over the pushed commits (rc.3 carried the 2, and the next ratchet run went red).
-      b.metrics["change.testTamper"] = 2;
-      b.versions = { ...(b.versions || {}), "change.testTamper": 1 };
-      writeFileSync(rel, JSON.stringify(b, null, 2));
-      const up = cli(["update", dir], dir);
-      const after = JSON.parse(readFileSync(rel, "utf8"));
-      assert.notEqual(after.versions["change.testTamper"], 1, up.out);
-      assert.equal(after.metrics["change.testTamper"], 0, `measured, not carried: ${up.out}`);
+      /** The adopter's baseline, written under definition 1: 2 by the old question. @param {string} name */
+      const tampered = (name) => {
+        const dir = tempRepo(name, {
+          "package.json": JSON.stringify({ name: "p", private: true }),
+          "abatty.config.json": JSON.stringify({ ratchet: { enable: ["change.testTamper"] } }),
+          "src/a.mjs": "export const a = 1;\n",
+        });
+        assert.equal(cli(["baseline", dir], dir).code, 0);
+        const rel = join(dir, "scripts/ci/standards-baseline.json");
+        const b = JSON.parse(readFileSync(rel, "utf8"));
+        b.metrics["change.testTamper"] = 2;
+        b.versions = { ...(b.versions || {}), "change.testTamper": 1 };
+        writeFileSync(rel, JSON.stringify(b, null, 2));
+        git(dir, "add", "-A");
+        git(dir, "commit", "-q", "-m", "chore: the baseline under definition 1");
+        return { dir, read: () => JSON.parse(readFileSync(rel, "utf8")) };
+      };
+      // On a branch with a pushed commit, the floor is measured over it: 0 by today's question
+      // (rc.3 carried the 2, and the next ratchet run went red).
+      const branch = tampered("adopter-tamper");
+      git(branch.dir, "checkout", "-q", "-b", "chore/upgrade");
+      writeFileSync(join(branch.dir, "src/a.mjs"), "export const a = 2;\n");
+      git(branch.dir, "commit", "-qam", "feat: a is two");
+      const up = cli(["update", branch.dir], branch.dir);
+      assert.notEqual(branch.read().versions["change.testTamper"], 1, up.out);
+      assert.equal(branch.read().metrics["change.testTamper"], 0, `measured: ${up.out}`);
+      assert.doesNotMatch(up.out, /carried, not measured/);
       // The other direction: a floor already under the current definition is left alone.
-      assert.doesNotMatch(cli(["update", dir], dir).out, /change\.testTamper/);
+      assert.doesNotMatch(cli(["update", branch.dir], branch.dir).out, /change\.testTamper/);
+      // On the base with nothing pushed there is nothing to count: carried, and said to be.
+      const base = tampered("adopter-tamper-base");
+      const carried = cli(["update", base.dir], base.dir);
+      assert.equal(base.read().metrics["change.testTamper"], 2, carried.out);
+      assert.match(carried.out, /carried, not measured: no pushed commit to count/);
     },
   },
   {
