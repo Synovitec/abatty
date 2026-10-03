@@ -16,6 +16,10 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The import graph starts on a monorepo root with no `tsconfig.json`.** The dependency-cruiser
+  config `init` writes named `tsconfig.json`, which a monorepo root often does not have, and
+  depcruise refused to start (TS5083). Where the root has none, the option is written commented
+  out, with a line saying to point it at one for its path aliases.
 - **A monorepo's workspace is told the script its gate needs.** `init` gave `apps/web` its
   preset's scripts, but not `test`, which only the workspace's runner can write; the gate then
   said it could not run and that "init writes the preset's", which it had not. `init`'s steps now

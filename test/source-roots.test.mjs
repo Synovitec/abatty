@@ -54,3 +54,19 @@ test("a client-only Vite app's graph names no server/ it does not have", () => {
     "depcruise src --config .dependency-cruiser.cjs --ignore-known --output-type err",
   );
 });
+
+test("a root with no tsconfig.json gets a graph config that does not ask for one", () => {
+  const dir = tempRepo("roots-notsconfig", {
+    "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), workspaces: ["apps/*"] }),
+    "apps/web/app/page.tsx": "export default function P() { return null; }\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const config = readFileSync(join(dir, ".dependency-cruiser.cjs"), "utf8");
+  assert.match(config, /\/\/ tsConfig: \{ fileName: "tsconfig\.json" \},/);
+  const withTs = tempRepo("roots-tsconfig", { "package.json": NEXT_PKG, "tsconfig.json": "{}\n" });
+  cli(["init", withTs, "--stack", "next"], withTs);
+  assert.match(
+    readFileSync(join(withTs, ".dependency-cruiser.cjs"), "utf8"),
+    /^\s+tsConfig: \{ fileName/m,
+  );
+});

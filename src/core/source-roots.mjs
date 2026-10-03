@@ -38,3 +38,17 @@ export function knipForRoots(repoDir, template) {
   const list = roots.map((r) => `    "${r}/**/*.{js,jsx,mjs,cjs,ts,tsx}"`).join(",\n");
   return template.replace(/"project": \[[^\]]*\]/, `"project": [\n${list}\n  ]`);
 }
+
+/**
+ * The dependency-cruiser config for this repository: the template, less its `tsConfig` where the
+ * root has no tsconfig.json. A monorepo root keeps its tsconfigs in the workspaces, and depcruise
+ * refused to start (TS5083: cannot read file 'tsconfig.json').
+ * @param {string} repoDir @param {string} template @returns {string}
+ */
+export function depcruiseFor(repoDir, template) {
+  if (existsSync(join(repoDir, "tsconfig.json"))) return template;
+  return template.replace(
+    /^(\s*)tsConfig: \{ fileName: "tsconfig\.json" \},$/m,
+    '$1// No tsconfig.json at the root: point this at one to resolve its paths aliases.\n$1// tsConfig: { fileName: "tsconfig.json" },',
+  );
+}

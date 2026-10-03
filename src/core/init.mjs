@@ -36,7 +36,7 @@ import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere } from "./init-merges.mjs";
 import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
-import { graphRoots, knipForRoots } from "./source-roots.mjs";
+import { depcruiseFor, graphRoots, knipForRoots } from "./source-roots.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
@@ -251,7 +251,7 @@ export function initRepo(o) {
 
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)
-    put(".dependency-cruiser.cjs", tpl("tooling/.dependency-cruiser.cjs"));
+    put(".dependency-cruiser.cjs", depcruiseFor(repoDir, tpl("tooling/.dependency-cruiser.cjs")));
   if (preset.tooling.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
 
   // The graph reads every source folder that exists (src/core/source-roots.mjs).
