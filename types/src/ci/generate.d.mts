@@ -25,6 +25,16 @@ export function y(s: string): string;
 /** A step's name as an identifier. @param {string} name */
 export function ident(name: string): string;
 /**
+ * The steps of a pipeline by the job they run in: always-on, the database suite's, the browser
+ * suite's. One reading for every renderer.
+ * @param {CiStep[]} steps
+ */
+export function byJob(steps: CiStep[]): {
+    always: CiStep[];
+    db: CiStep[];
+    browser: CiStep[];
+};
+/**
  * @typedef {import("../presets/index.mjs").Preset} Preset
  * @typedef {import("../presets/index.mjs").GateStep} GateStep
  * @typedef {import("../core/package-manager.mjs").PackageManager} PackageManager

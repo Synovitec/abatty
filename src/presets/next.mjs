@@ -6,6 +6,8 @@
 import { COMMON_PROBES } from "./probes.mjs";
 import { CHANGED_COVERAGE } from "./steps.mjs";
 
+/** Where a Next app's code lives: src/, and the App Router's own folders beside it. */
+const APP_FOLDERS = ["src/", "app/", "components/", "lib/", "pages/"];
 /** @type {import("./index.mjs").Preset} */
 export const next = {
   id: "next",
@@ -24,11 +26,7 @@ export const next = {
     },
     // The App Router's own folders beside src/: a feat commit under app/ needed no changelog line.
     sourceGlobs: [
-      "src/",
-      "app/",
-      "components/",
-      "lib/",
-      "pages/",
+      ...APP_FOLDERS,
       "scripts/",
       "tests/",
       "e2e/",
@@ -37,11 +35,7 @@ export const next = {
       ".woodpecker",
     ],
     changelogRequiredFor: [
-      "src/",
-      "app/",
-      "components/",
-      "lib/",
-      "pages/",
+      ...APP_FOLDERS,
       "scripts/",
       "drizzle/",
       "prisma/",

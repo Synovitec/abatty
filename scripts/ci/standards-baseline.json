@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-29",
+  "measuredAt": "2026-10-03",
   "note": "Written by `abatty baseline`. A number here may only fall; raising one needs a reason in docs/STANDARDS_PROGRESS.md and `--reason` on the command.",
   "score": 95,
   "hard": [
@@ -27,7 +27,7 @@
     "change.refactorTests": 0,
     "change.testTamper": 0,
     "code.barrels": 0,
-    "code.clones": 21,
+    "code.clones": 20,
     "code.undocumentedExports": 0,
     "context.overCap": 0,
     "context.unsourcedGrowth": 0,
@@ -53,27 +53,26 @@
   },
   "scanned": {
     "code.barrels": 7,
-    "code.clones": 182,
+    "code.clones": 200,
     "context.overCap": 1,
     "docs.behindCode": 8,
-    "docs.citations": 80,
+    "docs.citations": 81,
     "docs.danglingSource": 17,
     "docs.frontMatter": 35,
     "docs.frontMatterSyntax": 35,
     "docs.indexDrift": 34,
-    "size.excessCode": 182,
-    "size.overBudget": 182,
-    "size.overRaw": 204,
-    "types.escapes": 185,
-    "valid.rawEnv": 181,
-    "valid.utcDay": 182,
-    "valid.wholeEnv": 181
+    "size.excessCode": 200,
+    "size.overBudget": 200,
+    "size.overRaw": 222,
+    "types.escapes": 200,
+    "valid.rawEnv": 199,
+    "valid.utcDay": 200,
+    "valid.wholeEnv": 199
   },
   "debt": {
     "code.clones": {
       ".dependency-cruiser.cjs": 3,
       "src/agents/index.mjs": 1,
-      "src/ci/github.mjs": 1,
       "src/ci/woodpecker.mjs": 1,
       "src/core/scrub.mjs": 2,
       "src/night/preflight.mjs": 1,
