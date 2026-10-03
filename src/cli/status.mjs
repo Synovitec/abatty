@@ -77,14 +77,16 @@ export async function statusCommand(c, preset) {
     ) + "\n",
   );
   out(
+    // The coding-agent harness, not the git hooks: under the minimal profile there is none by
+    // choice, and "hooks missing · abatty init" read as init having failed at what it had done.
     t.kv(
-      "hooks",
+      "agent harness",
       r.harness.present
         ? r.harness.drift || r.harness.missing
           ? t.status("differs") +
             t.gray(` · ${r.harness.drift} differ, ${r.harness.missing} missing`)
           : t.status("in step")
-        : t.status("missing") + t.gray(" · abatty init"),
+        : t.gray("none · init --agent <id> adds one"),
     ) + "\n",
   );
   out(

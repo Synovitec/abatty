@@ -7,7 +7,11 @@ import { doctor } from "../src/core/doctor.mjs";
 // in one check for minutes saw nothing at all and could not say where it was.
 
 test("doctor names each check before it starts, in the order it runs them", () => {
-  const dir = tempRepo("doctor-steps", { "package.json": NEXT_PKG });
+  // With a harness installed, so every check runs, the harness's own included.
+  const dir = tempRepo("doctor-steps", {
+    "package.json": NEXT_PKG,
+    ".claude/hooks/guard.mjs": "export {};\n",
+  });
   /** @type {string[]} */
   const seen = [];
   doctor({ repoDir: dir, preset: null, skipSelfTest: true, step: (s) => seen.push(s) });

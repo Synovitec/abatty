@@ -223,8 +223,8 @@
     "context.overCap": "ratchet v1",
     "context.unsourcedGrowth": "hard v1",
     "docs.behindCode": "ratchet v5",
-    "docs.citations": "ratchet v1",
-    "docs.danglingRefs": "ratchet v3",
+    "docs.citations": "ratchet v2",
+    "docs.danglingRefs": "ratchet v4",
     "docs.danglingSource": "hard v1",
     "docs.frontMatter": "ratchet v1",
     "docs.frontMatterSyntax": "ratchet v1",
@@ -244,7 +244,7 @@
     "valid.rawEnv": "ratchet v1",
     "valid.sqlCurrentDate": "ratchet opt-in probation v1",
     "valid.unparsedBoundary": "ratchet opt-in v1",
-    "valid.utcDay": "hard v1",
+    "valid.utcDay": "hard v2",
     "valid.wholeEnv": "ratchet opt-in v1"
   },
   "rules": {

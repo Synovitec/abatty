@@ -5,6 +5,54 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.2] - 2026-10-03
+
+The second candidate for 1.0, under `next` (`npm i -D abatty@next`). What the first replay of
+rc.1 found on a design-stage repository that had never met abatty: it was refused with "no
+preset", its first baseline was refused outright by one HARD metric, and `doctor` and `status`
+judged an agent harness the minimal profile never installs. A repository with no package.json
+is now the docs preset, a first baseline holds HARD debt already there as a ratchet until it
+reaches zero, and the harness is judged only where it is installed. **Upgrading:**
+`valid.utcDay` (v2), `docs.citations` (v2) and `docs.danglingRefs` (v4) are redefined, each to
+count fewer false findings; `abatty update` rewrites their floors. No config key, command or
+`--json` field moves.
+
+### Fixed
+
+- **`docs.citations` and `docs.danglingRefs` read a design repository's documents right
+  (v2 and v4).** An archive cites what it archived on purpose, and one named as an archive
+  (`MODULE-ARCHIVE.md`), not only kept in an archive folder, is no longer read by either. A short
+  path written from the folder it lives under (`css/07-ergonomie.css` for
+  `mockups/css/07-ergonomie.css`) resolves by the end of the file it names. A citation of another
+  repository still does not resolve from this one: `citationsExempt` in the config is its place.
+
+- **A docs repository's config names only the commands it has, and `init` says the git setting
+  it changes.** The config listed `npm test`, a typecheck and eslint a design repository has none
+  of; a preset's command list now replaces the template's. The hooks step now says it points
+  git's `core.hooksPath` at `.githooks`, local config that holds for every branch of the clone.
+
+- **`doctor` and `status` judge no agent harness the minimal profile never installed.**
+  Right after a minimal `init`, `doctor` read the harness's eighteen files as missing and said NOT
+  ok, and `status` said "hooks missing · abatty init". The harness is judged only where it is
+  installed; otherwise `status` says "agent harness: none · init --agent <id> adds one".
+
+- **A first baseline is written even where a HARD metric already reads above zero.** One
+  HARD metric with findings refused the whole baseline, every other floor with it, so a
+  repository's first gate read NO FLOOR on every ratchet and could never go green; the table
+  even printed the metric as a ratchet before refusing it. At the first baseline, debt already
+  there on a HARD metric is held as a ratchet (it may only fall) and becomes HARD at zero; the
+  baseline says so on that line. Later baselines refuse as before.
+
+- **`valid.utcDay` reads an instant built for its day as safe (probe v2).** A design
+  repository's three dates anchored at local noon (`d + "T12:00:00"`, the same day in UTC for any
+  offset under twelve hours) and one built with `Date.UTC` read as four findings of a HARD metric.
+  Built that way on the same line, the day is no longer counted; a bare instant still is.
+
+- **A repository with no package.json is the docs preset.** A design repository (documents, a
+  mockup's scripts, a schema) was refused by `prove` and `init` with "no preset" and a
+  package.json named that did not exist. With no package.json, abatty takes the docs preset; a
+  language no preset covers is still refused by name.
+
 ## [0.8.0-rc.1] - 2026-10-03
 
 The first candidate for 1.0's promise, under `next` (`npm i -D abatty@next`) until its replays come back clean. Six outside

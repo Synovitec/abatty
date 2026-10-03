@@ -87,6 +87,7 @@ export function doctor(o: {
         files: number;
     }[];
 };
+export function harnessInstalled(repoDir: string): boolean;
 export type DriftEvent = {
     file: string;
     state: "in step" | "differs" | "missing";

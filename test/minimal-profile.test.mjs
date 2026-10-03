@@ -111,3 +111,26 @@ test("under minimal a required step with no script is skipped and named; under t
   assert.equal(s.code, 4, s.out);
   assert.match(s.out, /unit tests \(TEST\.1\) could not run: no "test" script/);
 });
+
+test("on the minimal profile doctor judges no agent harness it never installed, and status names it as a choice", () => {
+  // A design repository's doctor read eighteen harness files as missing and said NOT ok right
+  // after init, and its status said "hooks missing · abatty init".
+  const dir = tempRepo("minimal-doctor", { "package.json": PKG });
+  cli(["init", dir, "--yes"], dir);
+  const d = cli(["doctor", dir], dir);
+  assert.doesNotMatch(d.out, /missing\s+\.claude\//);
+  assert.match(d.out, /0 missing/);
+  assert.doesNotMatch(d.out, /^Hooks/m);
+  const s = cli(["status", dir, "--fresh"], dir);
+  assert.match(s.out, /agent harness\s+none · init --agent <id> adds one/);
+  assert.doesNotMatch(s.out, /hooks\s+missing/);
+});
+
+test("a docs repository's config names only the commands it has, and init says the git setting it changes", () => {
+  // A design repository's config listed `npm test`, a typecheck and eslint, and init set git's
+  // core.hooksPath without saying so, though it holds for every branch of the clone.
+  const dir = tempRepo("minimal-docs-config", { "docs/a.md": "# a\n" });
+  const r = cli(["init", dir, "--yes"], dir);
+  assert.deepEqual(Object.keys(config(dir).commands).sort(), ["gate", "gateFull", "standards"]);
+  assert.match(r.out, /points git's core\.hooksPath at \.githooks/);
+});

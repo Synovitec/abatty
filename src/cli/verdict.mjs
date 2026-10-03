@@ -236,12 +236,15 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.warn} gate scripts absent from package.json: ${r.missingScripts.join(", ")}\n`,
     );
-  out(
-    t.heading(
-      "Hooks",
-      "what each one does here, by day and at night, from the settings and the config",
-    ),
-  );
+  // The agent harness's hooks, where there is one: under the minimal profile there is none, and
+  // an empty "Hooks" section read as hooks gone missing.
+  if (r.hooks.length)
+    out(
+      t.heading(
+        "Hooks",
+        "what each one does here, by day and at night, from the settings and the config",
+      ),
+    );
   for (const h of r.hooks) {
     out(
       `  ${h.warn ? t.glyph.warn : t.glyph.ok} ${h.hook}${t.gray("  · " + (h.wired.join(", ") || "unwired"))}\n`,
@@ -264,7 +267,7 @@ export async function doctorCommand(cx, preset) {
   // believes the hook is the policy is the reader this line is for.
   const adoption = readAdoption(dir);
   const base = adoption?.baseBranch || "main";
-  if (adoption?.directPushToBase !== true)
+  if (adoption?.directPushToBase !== true && r.hooks.length)
     out(
       `  ${t.glyph.warn} PR-only on ${base} is held here by a regex over one shell, which is defence in depth and not the control. Branch protection on the forge is the control, and this machine cannot see whether it is on: ${t.gray("abatty ci --ruleset prints the rules to import")}\n`,
     );

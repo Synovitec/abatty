@@ -26,6 +26,8 @@ const DAY_OFF_IT =
   "(?:\\.(?:slice|substring|substr)\\(\\s*0\\s*,\\s*10\\s*\\)" +
   "|\\.split\\(\\s*[\"'`]T[\"'`]\\s*\\)\\s*\\[\\s*0\\s*\\])";
 const UTC_DAY = new RegExp(INSTANT + DAY_OFF_IT, "g");
+/** An instant built for its day: with Date.UTC, or at local noon. */
+const SAFE_INSTANT = /Date\.UTC\s*\(|["'`]T12:00(?::00)?["'`]/;
 
 /**
  * The 1-based line an offset falls on. WHY it matters: a finding without a line is placed at the
@@ -204,6 +206,8 @@ export const probes = [
   {
     metric: "valid.utcDay",
     kind: "hard",
+    // 2: an instant built with Date.UTC, or anchored at local noon, on the same line is not read.
+    version: 2,
     standard: ["VALID.5"],
     title: "Calendar days taken off a UTC instant",
     why: "A day sliced off a UTC instant is a different day from the one the machine's user is having, for the length of their offset either side of midnight. Compared against a local day - a commit date, a date somebody typed, a deadline - it is wrong on purpose for half the planet and right at Greenwich, so the suite that would catch it passes. It shipped here: a hard metric failed a gate in CEST that was green in UTC. Derive the day from the clock it will be compared to, in one function the whole repository calls; a repository that genuinely needs a UTC day names the metric in `ratchet.ratchet` so the count stays visible rather than absent.",
@@ -217,12 +221,19 @@ export const probes = [
       const findings = [];
       for (const f of files) {
         const text = c.read(f);
-        for (const m of text.matchAll(UTC_DAY))
+        for (const m of text.matchAll(UTC_DAY)) {
+          // An instant built to land on the right day is not the bug: one made with Date.UTC is
+          // exact, and one anchored at local noon (`d + "T12:00:00"`) is the same day in UTC for
+          // any offset under twelve hours. Read where the same line built it; a design
+          // repository's three noon anchors and one Date.UTC read as four findings.
+          const before = text.slice(text.lastIndexOf("\n", m.index ?? 0) + 1, m.index);
+          if (SAFE_INSTANT.test(before)) continue;
           findings.push({
             path: f,
             line: lineAt(text, m.index ?? 0),
             detail: `calendar day off a UTC instant: ${m[0].trim()}`,
           });
+        }
       }
       return { scanned: files.length, findings };
     },
@@ -254,6 +265,19 @@ export const probes = [
           "src/a.ts": 'import { localToday } from "./today";\nexport const today = localToday();\n',
         },
         expect: 0,
+      },
+      {
+        name: "an instant built with Date.UTC or anchored at local noon holds; one built bare on the same line does not",
+        files: {
+          "src/a.ts":
+            "export const exact = new Date(Date.UTC(y, m, 15)).toISOString()" +
+            ".slice(0, 10);\n" +
+            "export const plus = (d) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + 1); return x.toISOString()" +
+            ".slice(0, 10); };\n" +
+            "export const bare = (d) => { const x = new Date(d); x.setMonth(1); return x.toISOString()" +
+            ".slice(0, 10); };\n",
+        },
+        expect: 1,
       },
       {
         name: "a slice of something that is not an instant holds",

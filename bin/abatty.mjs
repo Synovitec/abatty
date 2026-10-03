@@ -151,15 +151,16 @@ async function choosePreset(required) {
   const { detectPreset, presetById, presets } = await import("../src/presets/index.mjs");
   const { buildContext } = await import("../src/rules/context.mjs");
   const id = opt("--stack") || readAdoption(dir)?.stack;
-  // A repository with no package and no sources is documents: the docs preset, never detected
-  // from dependencies since there are none.
+  // A repository with no package is documents, mockups and a schema at the design stage: the
+  // docs preset, never detected from dependencies since there are none. It once took only a tree
+  // with no sources at all, and a design repository with a mockup's scripts was refused with "no
+  // preset" and a package.json named that did not exist. A language no preset covers is still
+  // refused by name (below).
   const p = id
     ? presetById(id)
     : detectPreset(dependencyNames(dir), buildContext(dir).files) ||
       (!existsSync(join(dir, "package.json"))
-        ? buildContext(dir).stack.docsOnly
-          ? presetById("docs")
-          : null
+        ? presetById("docs")
         : // A package no framework claims is a Node package: a plain library or CLI was refused
           // with "no preset" until --stack node was passed. Here, not in detectPreset, which also
           // reads each workspace, where a plain package is not one to gate.
@@ -175,7 +176,7 @@ async function choosePreset(required) {
   }
   if (!p && required) {
     err(
-      `${t.glyph.fail} no preset: pass --stack <${presets.map((x) => x.id).join("|")}> (none detected from ${join(dir, "package.json")})\n`,
+      `${t.glyph.fail} no preset: pass --stack <${presets.map((x) => x.id).join("|")}> (${existsSync(join(dir, "package.json")) ? `none detected from ${join(dir, "package.json")}` : `no package.json in ${dir}`})\n`,
     );
     process.exit(2);
   }

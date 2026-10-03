@@ -58,7 +58,7 @@
  * @typedef {"ok" | "improved" | "regressed" | "hard-fail" | "scanned-zero" | "unbaselined" | "redefined" | "probation" | "skipped"} VerdictStatus
  * @typedef {{ metric: string, kind: Kind, status: VerdictStatus, value: number, floor: number | null, scanned: number, messages: string[], findings: Finding[], floorNote?: string, approximates?: string }} Verdict
  * @typedef {{ at: string, was: number, now: number, reason: string, owner: string }} BaselineEntry
- * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
+ * @typedef {{ measuredAt: string, note?: string, score?: number, hard?: string[], held?: string[], metrics: Record<string, number>, scanned?: Record<string, number>, debt: Record<string, Record<string, number>>, versions?: Record<string, number>, entries?: Record<string, BaselineEntry>, [k: string]: unknown }} Baseline
  */
 /**
  * Validate a probe's shape. Returns the problems; an empty list is a valid probe.
@@ -267,6 +267,7 @@ export type Baseline = {
     note?: string;
     score?: number;
     hard?: string[];
+    held?: string[];
     metrics: Record<string, number>;
     scanned?: Record<string, number>;
     debt: Record<string, Record<string, number>>;

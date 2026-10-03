@@ -82,7 +82,12 @@ export async function initCommand(cx, preset) {
       `git add --chmod=+x ${r.notExecutable.join(" ")}  ${t.gray("· this filesystem keeps no executable bit, and git runs a hook only with it")}`,
       ["git", "add", "--chmod=+x", ...r.notExecutable],
     );
-  say(pm.run("hooks:install").join(" "), pm.run("hooks:install"));
+  // A git setting, said: it is local config, not a file in the list above, and it holds for every
+  // branch of this clone, the ones without the hooks included.
+  say(
+    `${pm.run("hooks:install").join(" ")}  ${t.gray("· points git's core.hooksPath at .githooks, for every branch of this clone")}`,
+    pm.run("hooks:install"),
+  );
   // The steps are what THIS init wrote, not what a JavaScript one would have. A python or a
   // documents repository was being told to fill a dependency-cruiser config it has no reason to
   // own and no copy of, which is the first thing its reader would go looking for and not find.
