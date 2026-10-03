@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **A repository with no config is read against the minimal profile.** Bare `abatty`, `status`
+  and `measure` on an untouched repository showed the whole standard (44 checks, the Harness and
+  Documents families), then 13 checks once `init` had set up the minimal profile: a stranger's
+  first picture was of a standard nobody had chosen. The reading now matches what `init` would
+  set up; `rules` and `explain` still list the whole catalog, and a config that names no profile
+  keeps the standard as before.
+
 ### Fixed
 
 - **The reading is measured again after an update.** `abatty` showed a report the previous

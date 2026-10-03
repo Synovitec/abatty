@@ -338,7 +338,12 @@ test("docs/CATALOG.md is the catalog: abatty rules --md, committed", () => {
 });
 
 test("the markdown report carries the level and the insurance of every check", () => {
-  const dir = tempRepo("md", { "package.json": NEXT_PKG, "src/a.ts": "export const a = 1;\n" });
+  const dir = tempRepo("md", {
+    "package.json": NEXT_PKG,
+    // CODE-DEADCODE is the standard's: with no config the reading is minimal's.
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
+    "src/a.ts": "export const a = 1;\n",
+  });
   const { result: r, days } = aroundToday(() => cli(["measure", dir, "--quiet"], dir));
   assert.equal(r.code, 0, r.out);
   const reports = days.map((d) => join(dir, ".abatty", "reports", `${d}.md`)).filter(existsSync);

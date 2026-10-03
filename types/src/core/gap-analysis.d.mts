@@ -12,7 +12,10 @@ export function analyze(repoDir: string, o?: {
 }): GapResult;
 /**
  * Measure a repository with its full catalog: the built-in rules, its own rules file, its
- * waivers. The form every command uses. @param {string} repoDir @param {{ today?: string }} [o]
+ * waivers. The form every command uses. A repository with no config at all is read against the
+ * profile `init` would set up: a stranger's bare first reading showed 44 checks and the Harness
+ * and Documents families, then 13 after init, a first picture of a standard nobody had chosen.
+ * The catalog commands still list every rule. @param {string} repoDir @param {{ today?: string }} [o]
  */
 export function measure(repoDir: string, o?: {
     today?: string;

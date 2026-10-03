@@ -13,6 +13,7 @@ import { phaseOf, reopened, standing } from "../rules/phases.mjs";
 import { synovitec } from "../profiles/synovitec.mjs";
 import { detectPreset, presetById } from "../presets/index.mjs";
 import { dependencyNames, readAdoption } from "./repo.mjs";
+import { UNCONFIGURED_PROFILES } from "../profiles/index.mjs";
 import { applyTruth } from "./truth.mjs";
 
 /**
@@ -75,10 +76,14 @@ export function analyze(repoDir, o = {}) {
 
 /**
  * Measure a repository with its full catalog: the built-in rules, its own rules file, its
- * waivers. The form every command uses. @param {string} repoDir @param {{ today?: string }} [o]
+ * waivers. The form every command uses. A repository with no config at all is read against the
+ * profile `init` would set up: a stranger's bare first reading showed 44 checks and the Harness
+ * and Documents families, then 13 after init, a first picture of a standard nobody had chosen.
+ * The catalog commands still list every rule. @param {string} repoDir @param {{ today?: string }} [o]
  */
 export async function measure(repoDir, o = {}) {
-  const catalog = await loadCatalog(repoDir, { today: o.today });
+  const adoption = readAdoption(repoDir) || { profiles: UNCONFIGURED_PROFILES };
+  const catalog = await loadCatalog(repoDir, { today: o.today, adoption });
   return analyze(repoDir, {
     today: o.today,
     catalog: catalog.rules,

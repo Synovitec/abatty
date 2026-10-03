@@ -66,6 +66,9 @@ export async function surface() {
 
   const dir = tempRepo("contract", {
     "package.json": JSON.stringify({ name: "c", scripts: { test: "node -e 0" } }),
+    // The whole catalog, so every shape a finding can take is in the contract: with no config
+    // the reading is minimal's, whose rules carry no `where`.
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
     "src/a.ts": "export const a = 1;\n",
   });
   const report = await buildReport(dir, { write: false, cache: false });
