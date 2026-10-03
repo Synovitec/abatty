@@ -414,8 +414,15 @@ export function initRepo(o) {
 
   // 7. The lock: the package version and the hash of every shipped file as installed, and the
   //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.
+  // Said as kept when nothing in it moved: a second init with nothing to do read as rewriting it.
+  const lockBefore = existsSync(join(repoDir, LOCK))
+    ? readFileSync(join(repoDir, LOCK), "utf8")
+    : "";
   if (!dryRun) writeLock(repoDir, preset);
-  events.push({ file: LOCK, action: "written" });
+  const lockAfter = existsSync(join(repoDir, LOCK))
+    ? readFileSync(join(repoDir, LOCK), "utf8")
+    : "";
+  events.push({ file: LOCK, action: !dryRun && lockBefore === lockAfter ? "kept" : "written" });
 
   // A preset may pin a range (`typescript@^6`): the install line carries it, the check reads the
   // name alone, so a repository that already has the package is not asked to install it again.
