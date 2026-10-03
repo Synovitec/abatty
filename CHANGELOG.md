@@ -24,7 +24,8 @@ rewrites its floor.
 
 - **A dependency bump no longer puts every document citing `package.json` behind.**
   `docs.behindCode` passes over a manifest line whose version alone changed, as it already passed
-  over the abatty pin; a dependency added or removed, a script, a bin still move the manifest. An
+  over the abatty pin; a dependency added, removed or moved to another section, an `engines`
+  floor, a script or a bin still move the manifest. An
   adopter's advisory fix put four documents behind and three needed no change.
 
 - **The README leads with what `prove` finds.** The headline is "Find the CI checks that can't
