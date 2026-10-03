@@ -75,3 +75,32 @@ export function packageName(folder) {
     .slice(0, 214);
   return name || "repository";
 }
+
+/** Where an eslint configuration lives, flat or legacy. */
+const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts"]
+  .map((e) => `eslint.config.${e}`)
+  .concat([".eslintrc", ".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs", ".eslintrc.yml"]);
+
+/**
+ * A preset's scripts less an eslint `lint` the folder has nothing to run: no eslint installed and
+ * no configuration. An Astro site was given `eslint .` and the gate's lint step could not run;
+ * without the script it is skipped by name, and the gap analysis says what is missing.
+ * @param {string} dir the folder whose package.json gets the scripts
+ * @param {Record<string, string>} scripts @returns {Record<string, string>}
+ */
+export function runnableScripts(dir, scripts) {
+  if (!/\beslint\b/.test(scripts.lint || "")) return scripts;
+  let pkg = {};
+  try {
+    pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+  } catch {
+    /* no package yet: nothing is installed */
+  }
+  const deps = {
+    .../** @type {any} */ (pkg).dependencies,
+    .../** @type {any} */ (pkg).devDependencies,
+  };
+  if (deps.eslint || ESLINT_CONFIGS.some((f) => existsSync(join(dir, f)))) return scripts;
+  const { lint: _unrunnable, ...rest } = scripts;
+  return rest;
+}

@@ -34,7 +34,7 @@ import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { gateTools, presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
-import { added, appendLines, ignoredHere, packageName } from "./init-merges.mjs";
+import { added, appendLines, ignoredHere, packageName, runnableScripts } from "./init-merges.mjs";
 import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
 import { depcruiseFor, graphRoots, knipForRoots } from "./source-roots.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
@@ -273,7 +273,9 @@ export function initRepo(o) {
       writeJsonFile(repoDir, "package.json", {
         name: packageName(basename(repoDir)),
         private: true,
-        scripts: Object.fromEntries(Object.entries(preset.scripts).map(([k, v]) => [k, rooted(v)])),
+        scripts: Object.fromEntries(
+          Object.entries(runnableScripts(repoDir, preset.scripts)).map(([k, v]) => [k, rooted(v)]),
+        ),
       });
     events.push({ file: "package.json", action: "written" });
   }
@@ -281,7 +283,7 @@ export function initRepo(o) {
   // The package just written is not also "kept": one file, one line.
   if (!fresh && existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    for (const [k, v] of Object.entries(preset.scripts))
+    for (const [k, v] of Object.entries(runnableScripts(repoDir, preset.scripts)))
       if (!(k in scripts) || force) scripts[k] = rooted(v);
     const what = added(scripts, pkg.scripts || {}, "scripts");
     if (what) {
@@ -297,7 +299,7 @@ export function initRepo(o) {
     const wp = readPackage(join(repoDir, w.path));
     const ws = { ...(wp.scripts || {}) };
     let n = 0;
-    for (const [k, v] of Object.entries(w.preset.scripts))
+    for (const [k, v] of Object.entries(runnableScripts(join(repoDir, w.path), w.preset.scripts)))
       if (
         !["gate", "gate:fast", "standards", "standards:baseline", "hooks:install"].includes(k) &&
         (!(k in ws) || force)

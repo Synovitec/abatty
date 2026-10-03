@@ -87,3 +87,43 @@ test("a config FlatCompat loads by name is not called an unused dependency", () 
   assert.match(knip, /"ignoreDependencies": \["eslint-config-next", "eslint-plugin-react"\]/);
   assert.ok(knip.includes('"app/**/'), "the roots are still written");
 });
+
+test("an Astro site's dead-code project reads its .astro pages, and no lint script is written with nothing to run it", () => {
+  // A component imported only from .astro pages read as unused, and `eslint .` was written into
+  // a site with no eslint, so the gate's lint step could not run.
+  const pkg = JSON.stringify({ name: "site", private: true, dependencies: { astro: "5" } });
+  const dir = tempRepo("roots-astro", {
+    "package.json": pkg,
+    "src/pages/index.astro": "---\nimport Card from '../components/Card.astro';\n---\n<Card />\n",
+    "src/components/Card.astro": "<div />\n",
+  });
+  cli(["init", dir, "--stack", "astro"], dir);
+  assert.match(
+    readFileSync(join(dir, "knip.jsonc"), "utf8"),
+    /"src\/\*\*\/\*\.\{[^}]*astro[^}]*\}"/,
+  );
+  const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+  assert.equal(scripts.lint, undefined);
+  // the other direction: with eslint installed the script is written, and a Next app's knip
+  // names no framework file it does not have
+  const linted = tempRepo("roots-astro-eslint", {
+    "package.json": JSON.stringify({
+      name: "site",
+      private: true,
+      dependencies: { astro: "5" },
+      devDependencies: { eslint: "9" },
+    }),
+    "src/pages/index.astro": "<div />\n",
+  });
+  cli(["init", linted, "--stack", "astro"], linted);
+  assert.match(
+    JSON.parse(readFileSync(join(linted, "package.json"), "utf8")).scripts.lint,
+    /eslint/,
+  );
+  const next = tempRepo("roots-next-ext", {
+    "package.json": NEXT_PKG,
+    "app/page.tsx": "export default 1;\n",
+  });
+  cli(["init", next, "--stack", "next"], next);
+  assert.doesNotMatch(readFileSync(join(next, "knip.jsonc"), "utf8"), /astro|svelte|vue/);
+});

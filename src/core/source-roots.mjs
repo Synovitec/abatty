@@ -44,7 +44,20 @@ export function knipForRoots(repoDir, template) {
     : template;
   const { roots, mono } = sourceRoots(repoDir);
   if (mono || !roots.length) return named;
-  const list = roots.map((r) => `    "${r}/**/*.{js,jsx,mjs,cjs,ts,tsx}"`).join(",\n");
+  // A framework's own files are sources too: a component imported only from `.astro` pages read
+  // as unused while the pages that import it were never in the project.
+  const pkg = readJsonFile(repoDir, "package.json") || {};
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const exts = [
+    "js",
+    "jsx",
+    "mjs",
+    "cjs",
+    "ts",
+    "tsx",
+    ...["astro", "vue", "svelte"].filter((f) => f in deps),
+  ];
+  const list = roots.map((r) => `    "${r}/**/*.{${exts.join(",")}}"`).join(",\n");
   return named.replace(/"project": \[[^\]]*\]/, `"project": [\n${list}\n  ]`);
 }
 

@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **An Astro site's dead-code check reads its `.astro` files, and `init` writes no lint script
+  with nothing to run it.** knip's project list named script files only, so a component
+  imported only from `.astro` pages read as unused; `.astro`, `.vue` and `.svelte` are now in
+  it where the framework is a dependency. `init` wrote `eslint .` into a site with no eslint and
+  no eslint config, and the gate's lint step could not run; that script is now left out, and
+  the gate skips lint by name until a linter is installed.
 - **The Python preset runs on a Python repository as it is set up.** The gate's command steps
   use the tool in the repository's `.venv` (or `venv`) when it is there, where every step could
   not run until the shell was activated by hand. mypy and vulture no longer read a virtual
