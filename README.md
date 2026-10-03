@@ -13,7 +13,7 @@ would stop a bad change today, or that the debt they carry is not growing. `abat
 and enforcement layer above the tools you already use (eslint, your test runner, tsc, a scanner,
 your CI): it does not replace them, it decides what a change must pass, holds the line on debt,
 and checks that every guard still bites. The same rules hold whoever writes the change, a person
-or an AI coding agent.
+or a coding agent.
 
 |             | What `abatty` does                                                                                                                                                        | Commands                   |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
@@ -91,7 +91,7 @@ key away:
 | Findings on the pull request                        | the generated GitHub workflow                      | Uploads SARIF, so findings appear on the changed lines                                                                                                |
 | Machine-readable output                             | `--json` on `measure`, `ratchet`, `rules`, `check` | Exit codes 0 / 2 / 3 / 4 are a contract (below)                                                                                                       |
 | A dashboard over time                               | `abatty serve`, `abatty publish`                   | The readings of one or many repositories                                                                                                              |
-| AI agents held to the same rules                    | `abatty mcp`, the harness hooks                    | Serves the measurement, the ratchet, the gate and the rule explanations to an MCP client; an unattended agent run cannot stop until the gate is green |
+| Coding agents held to the same rules                | `abatty mcp`, the harness hooks                    | Serves the measurement, the ratchet, the gate and the rule explanations to an MCP client; an unattended agent run cannot stop until the gate is green |
 | Your own rules and metrics                          | `abatty.rules.mjs`, `abatty.probes.mjs`            | Pure functions of the repository, with control cases; a profile packages them for many repositories                                                   |
 | Proof that a check can fail                         | `abatty doctor --controls`                         | Plants a violation in each gate step and reports a step that stays green as absent                                                                    |
 
@@ -104,7 +104,7 @@ key away:
 | **probe**   | One measured metric (a count of oversized files, of clones, of raw env reads)          |
 | **control** | A planted violation that proves a gate step or a probe can go red                      |
 | **rule**    | One requirement of the catalog, with how it is insured: hard, ratchet, review or prose |
-| **harness** | The hooks and settings that hold an AI agent to the gate                               |
+| **harness** | The hooks and settings that hold a coding agent to the gate                            |
 | **night**   | An unattended agent run on a branch, gated before it may stop                          |
 
 ## How it works
