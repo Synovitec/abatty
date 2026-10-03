@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **`doctor` is green on a fresh install of a preset that protects no migrations.** The harness
+  self-test expected a write to `migrations/` to be denied at night, and the astro and docs
+  presets protect no `migrations/`, so `doctor` read red on a fresh install. The self-test now runs
+  those cases with `migrations/` added to the repository's own protected paths, as it already runs
+  them with the push policy set: they prove the hooks deny a protected path, whatever the list.
 - **The pipeline `abatty ci` writes is least-privilege, and its suites get a working database.**
   An adopter refused it on three counts: the workflow granted `id-token`, `attestations` and
   `security-events` write to every job, the database job set no `TEST_DATABASE_URL`, and the

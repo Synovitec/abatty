@@ -55,8 +55,14 @@ const ownConfig = (() => {
     return {};
   }
 })();
+// The migration cases prove the hooks deny a protected path. A preset whose repository has no
+// migrations (astro, docs) protects none, and doctor read red on a fresh install: the cases now
+// run with migrations/ added to the repository's own list, as they run with the push policy set.
+const protectedPaths = Array.isArray(ownConfig.protectedPaths)
+  ? [...new Set([...ownConfig.protectedPaths, "migrations/"])]
+  : undefined;
 const policyCfg = join(tmp, "policy.json");
-writeFileSync(policyCfg, JSON.stringify({ ...ownConfig, directPushToBase: false }));
+writeFileSync(policyCfg, JSON.stringify({ ...ownConfig, directPushToBase: false, ...(protectedPaths && { protectedPaths }) }));
 const directCfg = join(tmp, "direct.json");
 writeFileSync(directCfg, JSON.stringify({ ...ownConfig, directPushToBase: true }));
 const baseEnv = { ADOPTION_RUN: "", ADOPTION_BRANCH: "", ADOPTION_PHASE: "", ADOPTION_BASE: "", ADOPTION_NIGHT_DIR: nightDir, ADOPTION_CONFIG: policyCfg };
