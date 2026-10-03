@@ -18,3 +18,9 @@ export function ignoredHere(repoDir: string): string[];
  * @returns {string} "" when nothing changed
  */
 export function added(after: Record<string, unknown>, before: Record<string, unknown>, kind: string): string;
+/**
+ * A folder's name as npm takes a package name: lower case, no spaces, nothing npm refuses. The
+ * folder `My Go_Svc` was written as the name verbatim, and npm refused every command after.
+ * @param {string} folder @returns {string}
+ */
+export function packageName(folder: string): string;

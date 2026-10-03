@@ -18,4 +18,11 @@ export function runnerOf(repoDir: string): Runner;
  * @param {string} repoDir @returns {string}
  */
 export function testFilesCommand(repoDir: string): string;
+/**
+ * The node flags a `node --test` script runs its files with (`--experimental-strip-types`,
+ * `--import tsx`), less the run-wide ones. mutate ran `node --test {files}` bare, so a repository
+ * whose tests needed a loader read every mutant as `tests red` and judged nothing.
+ * @param {string} script @returns {string[]}
+ */
+export function nodeFlags(script: string): string[];
 export type Runner = "vitest" | "bun test" | "jest" | "node --test" | "";
