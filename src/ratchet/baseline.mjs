@@ -67,6 +67,12 @@ export function writeBaseline(o) {
   /** @type {{ metric: string, file: string, was: number, now: number }[]} */
   const fileRisen = [];
   const hard = new Set(previous?.hard || []);
+  // A HARD metric the repository already carried debt on at its first baseline is held as a
+  // ratchet until it reaches zero, then becomes HARD (index.mjs kindOf). Refused, it blocked every
+  // other floor too: a design repository's six old dates left it no baseline at all, and a gate
+  // that could never go green. Held is only ever granted by the first write.
+  const held = new Set(Array.isArray(previous?.held) ? previous.held.map(String) : []);
+  const first = !previous;
   /** @type {Record<string, number>} */
   const metrics = {};
   /** @type {Record<string, number>} */
@@ -98,8 +104,17 @@ export function writeBaseline(o) {
     // A probe on probation never blocks: not promoted to HARD at zero, so a finding later cannot
     // refuse this write and with it the locking of every other floor.
     const onProbation = Boolean(m.probe.probation);
+    if (
+      first &&
+      m.value > 0 &&
+      m.probe.kind === "hard" &&
+      !config.hard.includes(m.metric) &&
+      !onProbation
+    )
+      held.add(m.metric);
     const isHard =
       !onProbation &&
+      !held.has(m.metric) &&
       (config.hard.includes(m.metric) ||
         hard.has(m.metric) ||
         (m.probe.kind === "hard" && !forcedRatchet));
@@ -136,7 +151,9 @@ export function writeBaseline(o) {
     versions[m.metric] = probeVersion(m);
     if (!m.probe.emptyScanOk) scanned[m.metric] = m.scanned;
     if (m.value === 0 && !forcedRatchet && !onProbation) {
-      if (!hard.has(m.metric) && m.probe.kind !== "hard") promoted.push(m.metric);
+      if ((!hard.has(m.metric) && m.probe.kind !== "hard") || held.has(m.metric))
+        promoted.push(m.metric);
+      held.delete(m.metric);
       hard.add(m.metric);
     } else {
       hard.delete(m.metric);
@@ -181,6 +198,7 @@ export function writeBaseline(o) {
     note: BASELINE_NOTE,
     score,
     hard: [...hard].sort(),
+    held: [...held].sort(),
     metrics: Object.fromEntries(Object.entries(metrics).sort()),
     scanned: Object.fromEntries(Object.entries(scanned).sort()),
     debt: Object.fromEntries(Object.entries(debt).sort()),

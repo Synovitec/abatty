@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A first baseline is written even where a HARD metric already reads above zero.** One
+  HARD metric with findings refused the whole baseline, every other floor with it, so a
+  repository's first gate read NO FLOOR on every ratchet and could never go green; the table
+  even printed the metric as a ratchet before refusing it. At the first baseline, debt already
+  there on a HARD metric is held as a ratchet (it may only fall) and becomes HARD at zero; the
+  baseline says so on that line. Later baselines refuse as before.
+
 - **`valid.utcDay` reads an instant built for its day as safe (probe v2).** A design
   repository's three dates anchored at local noon (`d + "T12:00:00"`, the same day in UTC for any
   offset under twelve hours) and one built with `Date.UTC` read as four findings of a HARD metric.

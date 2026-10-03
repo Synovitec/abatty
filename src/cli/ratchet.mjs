@@ -243,8 +243,9 @@ export async function ratchetCommand(command, c) {
       for (const m of measurements) {
         if (m.skipped) continue;
         const hard = r.baseline.hard?.includes(m.metric);
+        const held = Array.isArray(r.baseline.held) && r.baseline.held.includes(m.metric);
         out(
-          `  ${t.glyph.dot} ${t.bold(m.metric.padEnd(24))} ${String(m.value).padStart(5)}  ${t.gray(hard ? "hard" : "ratchet")}${r.promoted.includes(m.metric) ? t.green("  promoted to HARD (zero today)") : ""}${m.value > 0 ? t.gray(`  · ${Object.keys(m.debt).length} file(s) on the list`) : ""}\n`,
+          `  ${t.glyph.dot} ${t.bold(m.metric.padEnd(24))} ${String(m.value).padStart(5)}  ${t.gray(hard ? "hard" : "ratchet")}${r.promoted.includes(m.metric) ? t.green("  promoted to HARD (zero today)") : ""}${held ? t.yellow("  a HARD metric held as a ratchet: the debt was here at the first baseline; HARD once it reaches zero") : ""}${m.value > 0 ? t.gray(`  · ${Object.keys(m.debt).length} file(s) on the list`) : ""}\n`,
         );
       }
       for (const x of r.refusals) out(`\n  ${t.glyph.fail} ${t.red(x)}\n`);

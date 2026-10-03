@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { cli, git } from "./helpers.mjs";
+import { cli, git, tempRepo } from "./helpers.mjs";
 import { docsAdopter, monorepoAdopter, productAdopter } from "./adopters/fixtures.mjs";
 import { testRunEnv } from "../src/core/env.mjs";
 import { narrowFallbacks } from "../src/ci/fallback.mjs";
@@ -385,6 +385,59 @@ const CASES = [
       assert.equal(r?.findings.length, 0, JSON.stringify(r?.findings));
     },
   },
+  {
+    report: "design · 2026-10-03 · rc.1 first contact, no package.json",
+    claim: "a design repository with no package is the docs preset, and prove runs on it unasked",
+    run: () => {
+      const dir = designAdopter();
+      const r = cli(["prove", dir], dir);
+      assert.equal(r.code, 0, r.out);
+      assert.match(r.out, /prove · Documents/);
+      assert.doesNotMatch(r.out, /no preset/);
+    },
+  },
+  {
+    report: "design · 2026-10-03 · rc.1 first contact, a noon anchor and Date.UTC",
+    claim: "valid.utcDay reads the day of an instant built at local noon or with Date.UTC as safe",
+    run: () => {
+      const dir = designAdopter();
+      const probe = BUILTIN_PROBES.find((p) => p.metric === "valid.utcDay");
+      const r = probe?.scan(buildContext(dir), SCAN);
+      assert.deepEqual(
+        r?.findings.map((f) => f.path),
+        ["mockups/js/150-series.js"],
+        "only the bare instant",
+      );
+    },
+  },
+  {
+    report: "design · 2026-10-03 · rc.1 first contact, the baseline refused",
+    claim: "a first baseline with HARD debt already there is written, the debt held as a ratchet",
+    run: () => {
+      const dir = designAdopter();
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "design", private: true }));
+      const r = cli(["baseline", dir, "--stack", "docs"], dir);
+      assert.equal(r.code, 0, r.out);
+      assert.match(r.out, /baseline written/);
+      assert.match(r.out, /held as a ratchet/);
+    },
+  },
 ];
+
+/** A design-stage repository as the design adopter's is: documents, a mockup's scripts, no package. */
+function designAdopter() {
+  return tempRepo("adopter-design", {
+    "docs/a.md": "---\ntitle: A\ndescription: D\ncategory: reference\nstatus: living\n---\n\n# A\n",
+    "mockups/js/177-echeance.js":
+      "const echeance = d => { const x = new Date(d + 'T12:00:00'); x.setMonth(x.getMonth() + 1); return x.toISOString()" +
+      ".slice(0, 10); };\n",
+    "mockups/js/026-revue.js":
+      "const mois = x => new Date(Date.UTC(x.getFullYear(), x.getMonth() + 1, 15)).toISOString()" +
+      ".slice(0, 10);\n",
+    "mockups/js/150-series.js":
+      "const garantie = d => { const x = new Date(d); x.setMonth(x.getMonth() + 24); return x.toISOString()" +
+      ".slice(0, 10); };\n",
+  });
+}
 
 for (const c of CASES) test(`${c.report}: ${c.claim}`, c.run);
