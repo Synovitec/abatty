@@ -72,3 +72,27 @@ and lands in a pull request of its own, so it can be declined without touching a
   install, the executable bits, the hooks, the ratchet's first floor) and stops at the first
   that fails; the rest stay by hand. It adds no config key, probe or output field, the contract
   snapshot does not move, and `init` without it prints what it printed before.
+
+- **2026-10-03 · The 1.0 scope** (accepted by the maintainer on 2026-10-03; it also accepts the
+  `init --apply` entry above). Six outside reviews of rc.11 and rc.12 agreed on one thing the
+  freeze could not fix: the engineering held, and a stranger could not see what the tool was for
+  or get a green first run. Releases stop until 1.0, the work is replayed from a local package,
+  and these surfaces land before the freeze starts, so the contract snapshot counts its two
+  unchanged minors from the last of them:
+  1. **A minimal built-in profile, the default of a new repository.** About a dozen
+     stack-neutral rules: the gate, CI running it, the controls and the ratchet (what abatty
+     is), a linter, a formatter and unit tests, the secret scan, the audit, the lockfile, no
+     tracked `.env`, and the 800-line cap. `init` under it writes the config, the scripts, the
+     git hooks, the ignore files, the tool configs its gate steps need and the day-one
+     workflow; the agent harness only with `--agent`, the Synovitec documents and the
+     per-commit changelog line only under the `synovitec` profile. A repository whose config
+     names no profile keeps `synovitec`, so no adopter's reading moves.
+  2. **`init` ends green** on a fresh repository of each 1.0 preset, with `--apply`.
+  3. **`abatty prove`**: the controls run on any repository, with no config and nothing
+     written, and the verdict per step.
+  4. **`abatty check`**: the changed files only, in seconds, where it can be done without a
+     second implementation of the gate; dropped from 1.0, not delayed for, if it cannot.
+  5. **The probation decisions**: `docs.frontMatterSyntax` and `docs.danglingRefs` leave
+     probation, every finding over twenty-eight local repositories having been read and found
+     real; `change.testTamper` becomes opt-in, since failing a push on an unexplained
+     suppression is a team's policy, not a default.
