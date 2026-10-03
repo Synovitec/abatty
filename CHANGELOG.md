@@ -59,6 +59,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`init --apply` ends with the first gate, so its verdict is read at once.** A fresh
+  Next.js app pulls in a dependency with a high-severity advisory today, and its owner met that
+  red audit at the first push, after `init` had said nothing was left to do. The fast gate is
+  now the last step `--apply` takes; a red gate leaves `init` exiting 3 (found), not 4 (broken).
+  A gate whose test step ran no test no longer calls it "a coverage step measured nothing".
+
 - **On the minimal profile, a fresh Next.js app's first gate runs.** A new app ships with no
   test script, and a step the preset requires stopped the gate ("could not run", exit 4) right
   after `init`; a monorepo's root, with no tsconfig of its own, did the same for its typecheck.

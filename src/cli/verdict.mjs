@@ -81,7 +81,7 @@ export async function gateCommand(cx, preset) {
       ? t.red("gate could not run")
       : t.red("gate red");
   out(
-    `\n${r.ok ? (unrun.length || empty ? t.glyph.warn : t.glyph.ok) : t.glyph.fail} ${headline} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}${empty ? t.yellow(" · a coverage step measured nothing") : ""}\n`,
+    `\n${r.ok ? (unrun.length || empty ? t.glyph.warn : t.glyph.ok) : t.glyph.fail} ${headline} ${t.gray(`· ${ran.length} step(s) in ${t.duration(Date.now() - t0)}`)}${r.errored ? t.yellow(" · a step could not run: the instrument, not the work") : ""}${r.events.some((e) => e.outcome === "deferred") ? t.yellow(" · a suite deferred to CI") : ""}${empty ? t.yellow(" · a step ran nothing to judge (no test, or no line measured)") : ""}\n`,
   );
   for (const e of r.events)
     out(

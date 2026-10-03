@@ -23,7 +23,7 @@ const run = (
 ) => {
   /** @type {string[]} */
   const said = [];
-  const ok = finishSteps(steps, { dir, apply, out: (s) => said.push(s) });
+  const ok = finishSteps(steps, { dir, apply, out: (s) => said.push(s) }) === 0;
   return { ok, out: said.join("") };
 };
 

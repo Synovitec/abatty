@@ -188,8 +188,15 @@ export async function initCommand(cx, preset) {
       `${pm.run("standards:baseline").join(" ")}  ${t.gray("· today's numbers as the floor, once the steps above are done; until then the ratchet has none")}`,
       pm.run("standards:baseline"),
     );
+  // The first gate, taken by --apply: a fresh app whose own dependencies carry an advisory met it
+  // at the first push, after init had said nothing was left to do.
+  say(
+    `${pm.run("gate:fast").join(" ")}  ${t.gray("· the first gate, so its verdict is read now rather than at the first push")}`,
+    pm.run("gate:fast"),
+  );
   say(`abatty doctor · abatty measure · ${pm.run("gate").join(" ")}`);
-  if (!finishSteps(steps, { dir, apply, out })) process.exitCode = EXIT.error;
+  const failed = finishSteps(steps, { dir, apply, out });
+  if (failed) process.exitCode = failed === EXIT.findings ? EXIT.findings : EXIT.error;
   return;
 }
 

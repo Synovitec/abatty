@@ -7,13 +7,14 @@
  * Say the steps; with `apply`, take each one that has a command, in order, until one fails. The
  * rest are said as before, numbered from one, so the list a reader is left with is only theirs.
  * @param {InitStep[]} steps @param {{ dir: string, apply: boolean, out: (s: string) => void }} o
- * @returns {boolean} false when a step it took failed
+ * @returns {number} 0 when every step it took passed, else the failing step's exit code (4 when it
+ * could not start), so a first gate that found something reads as found (3), not as broken
  */
 export function finishSteps(steps: InitStep[], o: {
     dir: string;
     apply: boolean;
     out: (s: string) => void;
-}): boolean;
+}): number;
 /**
  * a `note` is what the gate
  * skips until the repository adds it: said apart, never numbered as something to do
