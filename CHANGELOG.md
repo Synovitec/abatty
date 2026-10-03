@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The catalog answers in the standard's own names.** `abatty explain TEST.4` names the rule
+  that carries the section (or lists them, when several do), and `rules --family TEST` finds
+  the Tests family by its rules' prefix, where both found nothing; an unknown family lists the
+  families. `rules` no longer marks every must with a pass: it states what must hold, not what
+  holds here, and only a waiver is marked.
 - **`mutate` runs a `node --test` repository's tests with the flags its test script gives
   them.** A script like `node --experimental-strip-types --test` had its mutants run with a bare
   `node --test`, so every TypeScript test failed to load and each mutant read as caught. The

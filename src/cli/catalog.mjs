@@ -70,13 +70,23 @@ export async function rulesCommand(cx) {
   const enforcement = opt("--enforcement").toLowerCase();
   // --phase N: the rules the plan's phase N installs; a rule's phase may name several ("7 / 8").
   const phase = opt("--phase");
+  // A family is asked for by its name ("Tests") or by its rules' prefix ("TEST"): `--family TEST`
+  // found nothing and said "0 of 80", as if the catalog had no test rules.
+  const inFamily = (/** @type {{ id: string, family: string }} */ r) =>
+    r.family.toLowerCase() === family || r.id.toLowerCase().startsWith(`${family}-`);
   const list = catalog.rules.filter(
     (r) =>
-      (!family || r.family.toLowerCase() === family) &&
+      (!family || inFamily(r)) &&
       (!level || r.level === level) &&
       (!enforcement || r.enforcement === enforcement) &&
       (!phase || r.phase.split(/\s*\/\s*/).includes(phase)),
   );
+  if (family && !list.some(inFamily)) {
+    err(
+      `no family ${family}; the families are ${[...new Set(catalog.rules.map((r) => r.family))].join(", ")}\n`,
+    );
+    process.exit(EXIT.input);
+  }
   if (flag("--json")) {
     // Every rule says which kind of control it is, so the balance of feedforward and feedback is
     // readable rather than accidental.
@@ -100,7 +110,9 @@ export async function rulesCommand(cx) {
     out(t.heading(fam));
     for (const r of list.filter((x) => x.family === fam))
       out(
-        `  ${r.waived && !r.waived.expired ? t.glyph.skip : r.level === "must" ? t.glyph.ok : t.glyph.warn} ${t.bold(r.id.padEnd(22))} ${t.gray(r.level.padEnd(7))} ${t.gray(r.enforcement.padEnd(8))} ${t.gray(("phase " + r.phase).padEnd(12))} ${r.waived ? t.gray(r.title + (r.waived.expired ? ` · waiver expired ${r.waived.until}` : " · waived")) : stdIds(r.title)}${r.source && r.source !== "abatty" ? t.gray(" · " + r.source) : ""}\n`,
+        // The catalog says what must hold, not what holds here: a pass mark beside every must
+        // read as a verdict nobody had run. Only a waiver, which is this repository's, is marked.
+        `  ${r.waived && !r.waived.expired ? t.glyph.skip : " "} ${t.bold(r.id.padEnd(22))} ${t.gray(r.level.padEnd(7))} ${t.gray(r.enforcement.padEnd(8))} ${t.gray(("phase " + r.phase).padEnd(12))} ${r.waived ? t.gray(r.title + (r.waived.expired ? ` · waiver expired ${r.waived.until}` : " · waived")) : stdIds(r.title)}${r.source && r.source !== "abatty" ? t.gray(" · " + r.source) : ""}\n`,
       );
   }
   const counts = ["hard", "ratchet", "review", "prose"].map(
@@ -129,7 +141,21 @@ export async function rulesCommand(cx) {
 export async function explainCommand(cx, id) {
   const { dir, opt, flag, out, err, VERSION } = cx;
   const catalog = await loadCatalog(dir);
-  const rule = id ? ruleById(id, catalog.rules) : null;
+  // A standard section (TEST.4) is what a reader has after reading the standard; the rule that
+  // carries it is named, or the several that do are listed.
+  const key = String(id || "").toUpperCase();
+  const carriers = catalog.rules.filter((r) =>
+    (r.standard || []).some((s) => s.toUpperCase() === key),
+  );
+  const rule = id
+    ? ruleById(id, catalog.rules) || (carriers.length === 1 ? carriers[0] : null)
+    : null;
+  if (!rule && carriers.length > 1) {
+    err(
+      `${key} is the standard's section; its rules are ${carriers.map((r) => r.id).join(", ")}\n`,
+    );
+    process.exit(EXIT.input);
+  }
   if (!rule) {
     err(
       `${t.glyph.fail} ${id ? `no rule ${id}` : "abatty explain <ID>"}; abatty rules lists the catalog\n`,
