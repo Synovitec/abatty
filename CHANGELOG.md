@@ -16,6 +16,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Off GitHub, `init` and `doctor` no longer say `init` writes a GitHub workflow.** Where no
+  pipeline runs the gate, the hint named `.github/workflows/abatty-gate.yml` as what `init`
+  writes, on a repository where it had written none because the remote is not GitHub. There it
+  now names `abatty ci --provider <name>`.
+
 - **`prove` says exactly what it showed.** On a repository with one test script it said "2 of 2
   checks went red", counting the secret scan abatty brings as one of the repository's own; the
   built-in scans are now said on a line of their own. The summary says each check went red on a

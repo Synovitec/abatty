@@ -38,16 +38,20 @@ export function pipelinesOf(repoDir) {
  * best one runs it without its suites, `no-gate` when pipelines exist and none runs it, `none`
  * when there is no pipeline at all.
  * @param {string} repoDir
- * @returns {{ state: "gate" | "fast" | "no-gate" | "none", pipelines: string[] }}
+ * @returns {{ state: "gate" | "fast" | "no-gate" | "none", pipelines: string[], github: boolean }}
  */
 export function ciGate(repoDir) {
   const pipelines = pipelinesOf(repoDir);
-  if (!pipelines.length) return { state: "none", pipelines };
+  // Whether init would write the day-one workflow here: what to say about a missing gate in CI
+  // turns on it, since a repository off GitHub was told init writes one it never did.
+  const github = onGithub(repoDir);
+  if (!pipelines.length) return { state: "none", pipelines, github };
   const scripts = readJsonFile(repoDir, "package.json")?.scripts || {};
   const read = pipelines.map((p) => runsGate(readFileSync(join(repoDir, p), "utf8"), scripts));
-  if (read.some((r) => r.runs)) return { state: "gate", pipelines };
-  if (read.some((r) => /leaves out the suites/.test(r.how))) return { state: "fast", pipelines };
-  return { state: "no-gate", pipelines };
+  if (read.some((r) => r.runs)) return { state: "gate", pipelines, github };
+  if (read.some((r) => /leaves out the suites/.test(r.how)))
+    return { state: "fast", pipelines, github };
+  return { state: "no-gate", pipelines, github };
 }
 
 /** Whether the repository's forge is GitHub: a GitHub remote, or a .github folder. @param {string} repoDir */
@@ -92,7 +96,9 @@ export function dayOneWorkflow(repoDir, pyTools = []) {
  * @param {ReturnType<typeof ciGate>} ci @returns {string}
  */
 export function ciSays(ci) {
-  const write = `abatty init writes ${DAY_ONE} (the fast gate on every push), abatty ci the full pipeline`;
+  const write = ci.github
+    ? `abatty init writes ${DAY_ONE} (the fast gate on every push), abatty ci the full pipeline`
+    : "abatty ci --provider <name> writes the pipeline (init writes a GitHub workflow only where the remote is GitHub)";
   if (ci.state === "none")
     return `no CI pipeline: the gate runs only when somebody runs it · ${write}`;
   if (ci.state === "no-gate")

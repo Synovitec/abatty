@@ -5,11 +5,12 @@ export function pipelinesOf(repoDir: string): string[];
  * best one runs it without its suites, `no-gate` when pipelines exist and none runs it, `none`
  * when there is no pipeline at all.
  * @param {string} repoDir
- * @returns {{ state: "gate" | "fast" | "no-gate" | "none", pipelines: string[] }}
+ * @returns {{ state: "gate" | "fast" | "no-gate" | "none", pipelines: string[], github: boolean }}
  */
 export function ciGate(repoDir: string): {
     state: "gate" | "fast" | "no-gate" | "none";
     pipelines: string[];
+    github: boolean;
 };
 /** Whether the repository's forge is GitHub: a GitHub remote, or a .github folder. @param {string} repoDir */
 export function onGithub(repoDir: string): boolean;

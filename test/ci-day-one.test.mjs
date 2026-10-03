@@ -50,6 +50,9 @@ test("off GitHub nothing is written, and init and doctor both name the gap", () 
   const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(existsSync(join(dir, WORKFLOW)), false);
   assert.match(r.out, /\d+\. no CI pipeline: the gate runs only when somebody runs it/);
+  // It said "abatty init writes .github/workflows/abatty-gate.yml" where init had written none.
+  assert.doesNotMatch(r.out, /abatty init writes \.github/);
+  assert.match(r.out, /abatty ci --provider <name> writes the pipeline/);
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(doc.out, /no CI pipeline: the gate runs only when somebody runs it/);
 });
