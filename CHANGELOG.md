@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`doctor --controls` plants where the repository's own tools look.** The lint plant was a
+  bare `debugger`, which Next's stock config does not refuse (it has no `eslint:recommended`),
+  so a working lint step read as never watched failing. It now also carries an unused `any` and
+  a hook called conditionally, one for each common rule set; checked against the stock Next
+  config, the old plant passed and the new one is refused. The test plant read the runner's
+  config only when the script named it: `vitest run` reads `vitest.config.mts` unasked, and the
+  plant landed outside its `include`. The runner's default config is now read too.
 - **The rules read the lint configuration a repository imports, not only the file it imports
   from.** A monorepo's `eslint.config.js` was one line importing its shared
   `@acme/eslint-config` workspace, so CODE-SHAPE and OBS-CONSOLE read missing although the
