@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`prove` reads cleanly to a stranger.** Its live lines named log files inside the copy it had
+  already removed (the summary names the folder they are kept in), the secret plant was "a planted
+  cloud access key", and the opt-in scrub read "no control declared" on a repository that never
+  turned it on; it now reads "scrub.enabled is off", as the gate says it.
+
 ## [0.8.0-rc.3] - 2026-10-03
 
 The third candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.2 replays on a

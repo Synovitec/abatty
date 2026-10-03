@@ -24,7 +24,11 @@ export async function proveCommand(cx, preset) {
     preset,
     suites: flag("--suites"),
     // What is running, as it runs: a test suite can take minutes, and a silent screen reads hung.
-    log: json ? undefined : (line) => out(`  ${t.gray(line)}\n`),
+    // A live line's log path is inside the copy, gone by the end of the run: the summary names
+    // the folder they are kept in instead.
+    log: json
+      ? undefined
+      : (line) => out(`  ${t.gray(line.replace(/;? ?what it printed: \S+/, ""))}\n`),
   });
   // The repository's own checks are counted; abatty's built-in scans are said apart: "2 of 2"
   // on a repository with one test script counted the secret scan this package brings as its own.

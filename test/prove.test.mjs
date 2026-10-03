@@ -28,6 +28,11 @@ test("a test script that runs the tests is proven, and nothing is written in the
   // counted it as the repository's.
   assert.match(r.out, /1 of 1 of your check\(s\) went red on a planted violation and green again/);
   assert.match(r.out, /and abatty's own secret scan/);
+  // The demo a stranger reads: no live log path into the removed copy, the plant said once, and
+  // the opt-in scrub said off rather than missing a control.
+  assert.doesNotMatch(r.out, /\.abatty\/steps\/controls/);
+  assert.match(r.out, /planting a cloud access key/);
+  assert.match(r.out, /no trace of the tools \(scrub\)\s+scrub\.enabled is off/);
   assert.equal(git(dir, "status", "--porcelain"), "", "the repository is as it was");
   assert.equal(copies(), before, "the copy is removed");
 });

@@ -28,6 +28,7 @@ import { dockerRunning, launch } from "./spawn.mjs";
 import { managerFor } from "./package-manager.mjs";
 import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
+import { scrubConfig } from "./scrub.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 import { testRunEnv } from "./env.mjs";
 import { liveDevServer } from "./suite-select.mjs";
@@ -189,6 +190,12 @@ export function runStepControls(o) {
     // A built-in step is this package's own code, with its control in the suite; the ones with
     // no planted file say why rather than reading as a step with no script.
     if (s.builtin && s.builtin !== "secrets") {
+      // The scrub is opt-in, and the gate skips it where it is off: said as the gate says it,
+      // where "no control declared" read as a gap in a step the repository never turned on.
+      if (s.builtin === "scrub" && !scrubConfig(repoDir).enabled) {
+        steps.push({ label, outcome: "skipped", detail: "scrub.enabled is off" });
+        return;
+      }
       steps.push({
         label,
         outcome: "none",
