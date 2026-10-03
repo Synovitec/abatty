@@ -72,12 +72,17 @@ export function shippedFiles() {
   return pairs;
 }
 
+/** Whether the agent harness is installed here (its hooks folder). @param {string} repoDir */
+export const harnessInstalled = (repoDir) => existsSync(join(repoDir, ".claude", "hooks"));
+
 /**
  * @param {string} repoDir
  * @returns {DriftEvent[]}
  */
 export function drift(repoDir) {
-  const templates = shippedFiles().map(
+  // The agent harness is judged only where it is installed: the minimal profile writes none, and
+  // doctor read its eighteen files as missing and the repository as not ok right after init.
+  const templates = (harnessInstalled(repoDir) ? shippedFiles() : []).map(
     ([tpl, rel]) => /** @type {DriftEvent} */ ({ file: rel, state: driftState(repoDir, tpl, rel) }),
   );
   // The git hooks, against what this version would write in this repository's manager: they are
@@ -156,7 +161,12 @@ export function doctor(o) {
       : null;
   const st = o.skipSelfTest
     ? { code: 0, output: "self-test skipped\n" }
-    : at("self-test", () => selfTest(repoDir));
+    : !harnessInstalled(repoDir)
+      ? {
+          code: 0,
+          output: "no agent harness here (init --agent <id> adds one): nothing to self-test\n",
+        }
+      : at("self-test", () => selfTest(repoDir));
   const d = at("drift against the templates", () => drift(repoDir));
   const missing = d.filter((x) => x.state === "missing");
   const differs = d.filter((x) => x.state === "differs");
@@ -165,7 +175,7 @@ export function doctor(o) {
   const optIn = at("opt-in probes", () => offProbes(repoDir));
   const problems = at("config", () => configProblems(repoDir));
   // What each hook does here, day and night; one that does nothing it seems to fails --strict.
-  const hooks = at("hook modes", () => hookModes(repoDir));
+  const hooks = harnessInstalled(repoDir) ? at("hook modes", () => hookModes(repoDir)) : [];
   // A hook git records as 100644 is skipped by git on every machine but the one it was written on.
   const notExecutable = at("hook file modes", () => hooksNotExecutable(repoDir));
   // The repository's eslint reading the harness as product code: said, never a failure.

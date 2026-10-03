@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`doctor` and `status` judge no agent harness the minimal profile never installed.**
+  Right after a minimal `init`, `doctor` read the harness's eighteen files as missing and said NOT
+  ok, and `status` said "hooks missing · abatty init". The harness is judged only where it is
+  installed; otherwise `status` says "agent harness: none · init --agent <id> adds one".
+
 - **A first baseline is written even where a HARD metric already reads above zero.** One
   HARD metric with findings refused the whole baseline, every other floor with it, so a
   repository's first gate read NO FLOOR on every ratchet and could never go green; the table
