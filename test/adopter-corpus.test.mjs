@@ -438,7 +438,8 @@ const CASES = [
   },
   {
     report: "product · 2026-10-03 · rc.2 upgrade, testTamper enabled",
-    claim: "update measures a range probe's floor under its new definition, so the gate is not refused",
+    claim:
+      "update measures a range probe's floor under its new definition, so the gate is not refused",
     run: () => {
       const dir = tempRepo("adopter-tamper", {
         "package.json": JSON.stringify({ name: "p", private: true }),
