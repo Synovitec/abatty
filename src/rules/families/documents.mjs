@@ -280,11 +280,11 @@ export const rules = [
       // CLAUDE.md read as written: the context file is the one its import leads to, AGENTS.md
       // itself, which never imports AGENTS.md, so `@AGENTS.md` alone read as partial. One source
       // the other way round holds too: a short AGENTS.md that points at CLAUDE.md, as init writes.
-      const claude = c.exists("CLAUDE.md") ? c.read("CLAUDE.md") : "";
+      const primary = c.exists("CLAUDE.md") ? c.read("CLAUDE.md") : "";
       const pointer = agents ? c.read("AGENTS.md") : "";
       const imported =
-        /@AGENTS\.md/.test(claude) ||
-        (/\bCLAUDE\.md\b/.test(pointer) && pointer.trim().split("\n").length <= 5);
+        primary.includes("@AGENTS.md") ||
+        (pointer.includes("CLAUDE.md") && pointer.trim().split("\n").length <= 5);
       return {
         status: agents ? (imported ? "present" : "partial") : "n/a",
         evidence: agents ? "AGENTS.md present" : "no AGENTS.md (fine)",
