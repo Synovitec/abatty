@@ -5,8 +5,9 @@
  * orphan file with an unused export under `app/` passed them. The roots are now the source
  * folders that exist, framework conventions included.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readJsonFile } from "./repo.mjs";
 
 /** Source folders by convention, a single package's then a monorepo's. */
 const SINGLE = ["src", "app", "pages", "components", "lib", "server", "hooks", "utils"];
@@ -33,10 +34,18 @@ export function graphRoots(repoDir) {
  * @param {string} repoDir @param {string} template the knip.jsonc text @returns {string}
  */
 export function knipForRoots(repoDir, template) {
+  // The configs a flat config loads by name: knip does not follow FlatCompat's strings.
+  const compat = compatConfigs(repoDir);
+  const named = compat.length
+    ? template.replace(
+        /"ignoreDependencies": \[\]/,
+        `"ignoreDependencies": [${compat.map((d) => `"${d}"`).join(", ")}]`,
+      )
+    : template;
   const { roots, mono } = sourceRoots(repoDir);
-  if (mono || !roots.length) return template;
+  if (mono || !roots.length) return named;
   const list = roots.map((r) => `    "${r}/**/*.{js,jsx,mjs,cjs,ts,tsx}"`).join(",\n");
-  return template.replace(/"project": \[[^\]]*\]/, `"project": [\n${list}\n  ]`);
+  return named.replace(/"project": \[[^\]]*\]/, `"project": [\n${list}\n  ]`);
 }
 
 /**
@@ -51,4 +60,32 @@ export function depcruiseFor(repoDir, template) {
     /^(\s*)tsConfig: \{ fileName: "tsconfig\.json" \},$/m,
     '$1// No tsconfig.json at the root: point this at one to resolve its paths aliases.\n$1// tsConfig: { fileName: "tsconfig.json" },',
   );
+}
+
+/**
+ * The eslint configs a flat config loads by name through FlatCompat (`compat.extends("next/
+ * core-web-vitals")`), as the packages that ship them. knip reads a flat config's imports, not
+ * these strings, and called `eslint-config-next` unused in create-next-app's own setup.
+ * @param {string} repoDir @returns {string[]} the installed packages named that way
+ */
+export function compatConfigs(repoDir) {
+  const file = ["eslint.config.mjs", "eslint.config.js", "eslint.config.cjs", "eslint.config.ts"]
+    .map((f) => join(repoDir, f))
+    .find((f) => existsSync(f));
+  if (!file) return [];
+  const text = readFileSync(file, "utf8");
+  const names = [...text.matchAll(/extends\(([^)]*)\)/g)].flatMap((m) =>
+    [...String(m[1]).matchAll(/["']([^"']+)["']/g)].map((n) => String(n[1])),
+  );
+  /** The package a FlatCompat name loads. @param {string} n */
+  const packageOf = (n) => {
+    const head = String(n.replace(/^plugin:/, "").split("/")[0]);
+    if (n.startsWith("plugin:")) return `eslint-plugin-${head}`;
+    return head.startsWith("eslint-config-") || head.startsWith("@")
+      ? head
+      : `eslint-config-${head}`;
+  };
+  const pkg = readJsonFile(repoDir, "package.json") || {};
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  return [...new Set(names.map(packageOf))].filter((d) => d in deps);
 }

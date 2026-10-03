@@ -21,3 +21,10 @@ export function knipForRoots(repoDir: string, template: string): string;
  * @param {string} repoDir @param {string} template @returns {string}
  */
 export function depcruiseFor(repoDir: string, template: string): string;
+/**
+ * The eslint configs a flat config loads by name through FlatCompat (`compat.extends("next/
+ * core-web-vitals")`), as the packages that ship them. knip reads a flat config's imports, not
+ * these strings, and called `eslint-config-next` unused in create-next-app's own setup.
+ * @param {string} repoDir @returns {string[]} the installed packages named that way
+ */
+export function compatConfigs(repoDir: string): string[];

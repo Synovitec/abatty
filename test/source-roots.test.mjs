@@ -70,3 +70,20 @@ test("a root with no tsconfig.json gets a graph config that does not ask for one
     /^\s+tsConfig: \{ fileName/m,
   );
 });
+
+test("a config FlatCompat loads by name is not called an unused dependency", () => {
+  const pkg = {
+    ...JSON.parse(NEXT_PKG),
+    devDependencies: { eslint: "9", "eslint-config-next": "15", "eslint-plugin-react": "7" },
+  };
+  const dir = tempRepo("roots-compat", {
+    "package.json": JSON.stringify(pkg),
+    "eslint.config.mjs":
+      'const compat = new FlatCompat({});\nexport default [...compat.extends("next/core-web-vitals", "next/typescript", "plugin:react/recommended")];\n',
+    "app/page.tsx": "export default function P() { return null; }\n",
+  });
+  cli(["init", dir, "--stack", "next"], dir);
+  const knip = readFileSync(join(dir, "knip.jsonc"), "utf8");
+  assert.match(knip, /"ignoreDependencies": \["eslint-config-next", "eslint-plugin-react"\]/);
+  assert.ok(knip.includes('"app/**/'), "the roots are still written");
+});

@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **Dead code no longer calls `eslint-config-next` unused in create-next-app's own setup.** That
+  setup loads it by name through FlatCompat (`compat.extends("next/core-web-vitals")`), a string
+  knip does not follow, so the dead-code step was red on day 0 for no fault of the code. `init`
+  now reads the names a flat config loads that way and lists the installed packages behind them
+  in knip's `ignoreDependencies`.
 - **The import graph starts on a monorepo root with no `tsconfig.json`.** The dependency-cruiser
   config `init` writes named `tsconfig.json`, which a monorepo root often does not have, and
   depcruise refused to start (TS5083). Where the root has none, the option is written commented
