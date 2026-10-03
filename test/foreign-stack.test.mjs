@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { cli, tempRepo } from "./helpers.mjs";
+import { cli, git, tempRepo } from "./helpers.mjs";
 import { packageName } from "../src/core/init-merges.mjs";
 import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 
@@ -43,7 +43,12 @@ test("a plain JavaScript package gets no typecheck it cannot run, and a lint pla
   assert.equal(cli(["init", js, "--yes"], js).code, 0);
   const scripts = JSON.parse(readFileSync(join(js, "package.json"), "utf8")).scripts;
   assert.equal(scripts.typecheck, undefined);
-  const plant = STEP_CONTROLS.lint?.files({ deps: new Set(), pack: "javascript", dir: js, scripts });
+  const plant = STEP_CONTROLS.lint?.files({
+    deps: new Set(),
+    pack: "javascript",
+    dir: js,
+    scripts,
+  });
   assert.match(Object.keys(plant || {})[0] || "", /\.js$/);
   assert.doesNotMatch(Object.values(plant || {})[0] || "", /: (any|boolean)/);
   // the other direction: a TypeScript package keeps both
@@ -60,4 +65,18 @@ test("a plain JavaScript package gets no typecheck it cannot run, and a lint pla
     scripts: {},
   });
   assert.match(Object.keys(tsPlant || {})[0] || "", /\.ts$/);
+});
+
+test("a one-commit repository on another branch name reads without git's raw error", () => {
+  // `status` printed "fatal: ambiguous argument 'HEAD~1..HEAD'" above its own reading: no main to
+  // fork from and no HEAD~1, on the master branch a fresh `git init` makes on many machines.
+  const dir = tempRepo("one-commit-master", {
+    "package.json": JSON.stringify({ name: "x", scripts: { test: "node --test" } }),
+  });
+  git(dir, "branch", "-m", "main", "master");
+  git(dir, "reset", "-q", "--soft", "HEAD~1");
+  git(dir, "commit", "-q", "-m", "first");
+  assert.equal(git(dir, "rev-list", "--count", "HEAD"), "1");
+  const r = cli(["status", dir], dir);
+  assert.doesNotMatch(r.out, /fatal|ambiguous argument/);
 });

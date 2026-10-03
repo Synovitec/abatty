@@ -15,6 +15,10 @@ under Unreleased in the same commit.
   is now left out, as an eslint `lint` with no eslint already is. The lint control planted a
   `.ts` file that plain eslint never reads, so a working lint step read as absent; in a
   repository with no tsconfig it now plants the same violations as `.js`.
+- **`status` no longer prints git's raw error on a one-commit repository.** With no `main` to
+  fork from and no previous commit (a fresh `git init` on `master`), `status` printed
+  `fatal: ambiguous argument 'HEAD~1..HEAD'` above its own reading. The call that let git's
+  error through now keeps it, as every other git call does.
 
 ## [0.7.0-rc.12] - 2026-10-03
 
