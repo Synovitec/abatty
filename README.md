@@ -5,12 +5,15 @@
 [![node](https://img.shields.io/node/v/abatty.svg)](package.json)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Make your engineering rules enforceable, and prove every check can actually fail.**
+**Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove
+those controls work.**
 
 Most repositories have a lint step, tests and a CI pipeline. Few can show that each of those checks
-would stop a bad change today, or that the debt they carry is not growing. `abatty` adds that layer
-over the tools you already use (eslint, your test runner, tsc, your CI), for people and for AI
-coding agents alike:
+would stop a bad change today, or that the debt they carry is not growing. `abatty` is the policy
+and enforcement layer above the tools you already use (eslint, your test runner, tsc, a scanner,
+your CI): it does not replace them, it decides what a change must pass, holds the line on debt,
+and checks that every guard still bites. The same rules hold whoever writes the change, a person
+or an AI coding agent.
 
 |             | What `abatty` does                                                                                                                                                        | Commands                   |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
@@ -76,25 +79,21 @@ npx abatty                   # where the repository stands
 
 ## Already built in
 
-Reviewers of the release candidates asked for several of these as missing. They are here:
+Reviewers of the release candidates asked for each of these as missing. Each is one command or one
+key away:
 
-- **Adopt on an existing codebase without stopping work.** The ratchet records today's numbers
-  and refuses only a rise: old debt does not block a push, new debt does. A floor falls by itself
-  as the debt is paid.
-- **Exceptions with a reason and an expiry.** `rules.waived` in `abatty.config.json` sets a rule
-  aside with a reason and an `until` date; an expired waiver stops applying and the rule is
-  measured again. Audit advisories take the same form (`security.audit.allow`). The waiver rate is
-  printed with the catalog, so a rule everybody waives shows up as the rule that is wrong.
-- **CI is the wall, the hook is the convenience.** `abatty ci` generates the pipeline from the
-  same gate definition, so a bypassed local hook still meets the same steps on the server; the
-  agent guard refuses `--no-verify` and a push to `main`.
-- **Findings where the review happens.** The generated GitHub workflow uploads SARIF, so findings
-  appear on the changed lines of a pull request; `--json` on the reading commands (`measure`, `ratchet`, `rules`, `check`), and
-  `abatty serve` / `abatty publish` for a dashboard.
-- **A loop for AI agents.** `abatty mcp` serves the measurement, the ratchet, the gate and the rule
-  explanations to an MCP client; an unattended agent run cannot stop until the gate is green.
-- **Your own rules.** `abatty.rules.mjs` and `abatty.probes.mjs` add rules and metrics as pure
-  functions of the repository; a profile packages them for many repositories.
+| You need                                            | Where it is                                        | What it does                                                                                                                                          |
+| --------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adopt on an existing codebase without stopping work | `abatty baseline`                                  | Records today's numbers as the floor; the ratchet refuses only a rise, so old debt never blocks a push and new debt always does                       |
+| An exception with a reason and an expiry            | `rules.waived` in `abatty.config.json`             | `{ "CODE-SIZE-300": { "reason": "...", "until": "2026-12-31" } }`; an expired waiver stops applying, and `abatty rules` prints the waiver rate        |
+| A dependency advisory accepted for now              | `security.audit.allow`                             | Package or advisory id, a reason and an `until` date; it stops allowing when the date passes                                                          |
+| Server-side enforcement, not only a local hook      | `abatty ci`                                        | Generates the pipeline from the same gate definition, so a skipped hook meets the same steps in CI                                                    |
+| Findings on the pull request                        | the generated GitHub workflow                      | Uploads SARIF, so findings appear on the changed lines                                                                                                |
+| Machine-readable output                             | `--json` on `measure`, `ratchet`, `rules`, `check` | Exit codes 0 / 2 / 3 / 4 are a contract (below)                                                                                                       |
+| A dashboard over time                               | `abatty serve`, `abatty publish`                   | The readings of one or many repositories                                                                                                              |
+| AI agents held to the same rules                    | `abatty mcp`, the harness hooks                    | Serves the measurement, the ratchet, the gate and the rule explanations to an MCP client; an unattended agent run cannot stop until the gate is green |
+| Your own rules and metrics                          | `abatty.rules.mjs`, `abatty.probes.mjs`            | Pure functions of the repository, with control cases; a profile packages them for many repositories                                                   |
+| Proof that a check can fail                         | `abatty doctor --controls`                         | Plants a violation in each gate step and reports a step that stays green as absent                                                                    |
 
 ## Words used here
 

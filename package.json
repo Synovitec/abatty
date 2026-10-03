@@ -1,7 +1,7 @@
 {
   "name": "abatty",
   "version": "0.7.0-rc.12",
-  "description": "Make your engineering rules enforceable, and prove every check can fail: one gate for hooks, CI and AI agents, a ratchet that stops new debt, and controls that plant a violation in each step.",
+  "description": "Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove those controls work: the policy layer above your linters, tests, scanners and CI, for people and AI agents alike.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
