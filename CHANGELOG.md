@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **Two observability rules read a correct setup as a gap.** OBS-REDACTION counted the
+  logger's own `censor: "[REDACTED]"` as masking by hand and said partial; the replacement value
+  is the configuration. OBS-TRACKER missed a tracker configured by bracket access
+  (`process.env["SENTRY_DSN"]`) and in Next's `instrumentation.ts`; it reads both now.
 - **`init` says when a repository is written in a language abatty has no preset for.** A Go
   service was taken for documents and given the docs preset silently, a gate with none of Go's
   build, test or lint. Go, Rust, the JVM, .NET, Ruby, PHP, Swift, Elixir and C or C++ are now
