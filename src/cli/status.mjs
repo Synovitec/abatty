@@ -124,7 +124,7 @@ export async function statusCommand(c, preset) {
         `  ${t.gray("phase " + String(f.phase).padEnd(4))} ${t.bold(f.id)} ${t.gray((f.level || "").padEnd(6))} ${t.gray(f.next.slice(0, 84))}\n`,
       );
   }
-  out(`\n${t.gray("abatty measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
+  out(`\n${t.gray("abatty prove · measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
 }
 
 /**

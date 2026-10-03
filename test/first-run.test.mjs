@@ -25,6 +25,8 @@ test("a repository with nothing gets a reading, a stage and a next step, with no
   assert.match(r.out, /INST-CI/);
   assert.doesNotMatch(r.out, /DOC-CONTEXT/, "no rule of the full standard nobody chose");
   assert.match(r.out, /abatty explain <ID>/);
+  // And the command a stranger runs first, named on the first screen.
+  assert.match(r.out, /abatty prove · measure/);
 });
 
 test("measure needs no configuration either, and says what it would do next", () => {
