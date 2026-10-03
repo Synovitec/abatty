@@ -1,7 +1,7 @@
 {
   "name": "abatty",
   "version": "0.8.0-rc.3",
-  "description": "Turn your engineering rules into enforceable controls, prevent new debt, and verify that each control can still fail: the policy layer above your linters, tests, scanners and CI, for people and coding agents alike.",
+  "description": "Find the CI checks that can't fail. Turn your engineering rules into enforceable controls, prevent new debt, and verify that each control can still fail: the policy layer above your linters, tests, scanners and CI, for people and coding agents alike.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

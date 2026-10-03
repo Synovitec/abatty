@@ -5,6 +5,18 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The README leads with what `prove` finds.** The headline is "Find the CI checks that can't
+  fail", followed by real `prove` output on a project whose test script can never fail. The front
+  page is half its length (2,000 words from 4,800): how the gate, the ratchet and the controls
+  work moved to `docs/HOW_IT_WORKS.md`, every command and the output flags to
+  `docs/COMMANDS.md`, rules, probes, opt-in probes, probation and profiles to `docs/EXTENDING.md`.
+  The move corrected two lists that had drifted: the opt-in table lacked `change.testTamper`, and
+  three probes named as on probation had left it. Both lists are now held to the code by a test.
+  `HOW_IT_WORKS.md` also writes down the rebase recipe: take the base branch's baseline and config,
+  then run `update` and `baseline` again.
+
 ### Fixed
 
 - **`update` measures a redefined range probe rather than carrying its old count.** rc.3 carried
