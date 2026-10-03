@@ -16,6 +16,12 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The readings agree with the pipeline `init` writes.** `INST-CI-STEPS` read the workflow that
+  runs `gate:fast` word by word and called lint, typecheck, the ratchet and the audit missing,
+  while `init` said every push runs them; and the fast gate said "CI still runs" the suites it
+  skipped, where that pipeline runs the fast gate too. A pipeline that runs the gate, whole or
+  fast, now holds `INST-CI-STEPS` (the six steps are the gate's own), and the fast gate says
+  whether a pipeline here runs the suites or that `abatty ci` writes one that does.
 - **An index the repository already had learns of the two documents `init` writes.** Where
   `docs/README.md` existed, `init` kept it and wrote `STANDARDS_PROGRESS.md` and
   `ADOPTION_DECISIONS.md` beside it unlisted: two `docs.indexDrift` findings abatty created

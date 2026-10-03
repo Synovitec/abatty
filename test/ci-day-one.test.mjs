@@ -51,3 +51,19 @@ test("off GitHub nothing is written, and init and doctor both name the gap", () 
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(doc.out, /no CI pipeline: the gate runs only when somebody runs it/);
 });
+
+test("a pipeline that runs the fast gate holds INST-CI-STEPS, and the fast gate says who runs the suites", async () => {
+  const dir = onGithub("day-one-steps");
+  cli(["init", dir, "--stack", "next"], dir);
+  const { runCatalog } = await import("../src/rules/index.mjs");
+  const { buildContext } = await import("../src/rules/context.mjs");
+  const ci = runCatalog(buildContext(dir)).find((f) => f.id === "INST-CI-STEPS");
+  assert.equal(ci?.status, "present", ci?.evidence);
+  assert.match(String(ci?.evidence), /six steps run inside the gate/);
+  const { fastNote } = await import("../src/ci/day-one.mjs");
+  assert.match(fastNote(dir), /no pipeline here runs them/);
+  const full = onGithub("day-one-full", {
+    ".github/workflows/ci.yml": "on: push\njobs:\n  a:\n    steps:\n      - run: npx abatty gate\n",
+  });
+  assert.match(fastNote(full), /CI runs them/);
+});

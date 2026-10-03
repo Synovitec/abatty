@@ -24,5 +24,11 @@ export function dayOneWorkflow(repoDir: string): string;
  * @param {ReturnType<typeof ciGate>} ci @returns {string}
  */
 export function ciSays(ci: ReturnType<typeof ciGate>): string;
+/**
+ * What the fast gate says about the suites it skipped: CI runs them only where a pipeline runs
+ * the whole gate. It said "CI still runs them" while the pipeline init writes runs the fast gate.
+ * @param {string} repoDir @returns {string}
+ */
+export function fastNote(repoDir: string): string;
 /** Where the day-one workflow goes. */
 export const DAY_ONE: ".github/workflows/abatty-gate.yml";

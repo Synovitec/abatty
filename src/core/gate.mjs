@@ -36,6 +36,7 @@ import { explainFailure } from "./flake.mjs";
 import { markHollow, markNoTests } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { couldNotRun } from "./could-not-run.mjs";
+import { fastNote } from "../ci/day-one.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -343,7 +344,7 @@ export function runGate(o) {
   presetId = preset.id;
 
   if (o.fast) {
-    log("\n--fast: skipped the conditional suites. CI still runs them.");
+    log(`\n${fastNote(repoDir)}`);
     for (const suite of preset.gate.suites)
       events.push({ label: suite.name, outcome: "skipped", detail: "--fast" });
     for (const w of gated)

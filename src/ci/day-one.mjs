@@ -100,3 +100,14 @@ export function ciSays(ci) {
     return "CI runs the fast gate, without its suites: abatty ci writes the pipeline that runs them";
   return "";
 }
+
+/**
+ * What the fast gate says about the suites it skipped: CI runs them only where a pipeline runs
+ * the whole gate. It said "CI still runs them" while the pipeline init writes runs the fast gate.
+ * @param {string} repoDir @returns {string}
+ */
+export function fastNote(repoDir) {
+  return ciGate(repoDir).state === "gate"
+    ? "--fast: skipped the conditional suites. CI runs them (its pipeline runs the whole gate)."
+    : "--fast: skipped the conditional suites, and no pipeline here runs them: `abatty ci` writes one that does.";
+}
