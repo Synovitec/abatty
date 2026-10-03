@@ -19,6 +19,11 @@ under Unreleased in the same commit.
   fork from and no previous commit (a fresh `git init` on `master`), `status` printed
   `fatal: ambiguous argument 'HEAD~1..HEAD'` above its own reading. The call that let git's
   error through now keeps it, as every other git call does.
+- **`docs.behindCode` reads a Next route folder as a folder (probe v5).** A `source_truth` entry
+  under `app/(app)/[siteSlug]/haccp/` was cut at the `[`, read as glob syntax, so the document
+  watched the whole route group above it and any change beside the cited folder put it behind.
+  A bracketed segment that exists as a folder is now that folder, and git is given it literally.
+  The floor is rewritten under the new definition by `abatty update`.
 
 ## [0.7.0-rc.12] - 2026-10-03
 

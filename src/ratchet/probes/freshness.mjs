@@ -18,14 +18,28 @@ const FM = (extra = "") =>
  * document's folder, any other from the root. Null when the entry leaves the repository. The
  * whole segment goes, not the text after the character: `src/core/secret*.mjs` cut at the star
  * left `src/core/secret`, a path that never exists, and a live entry read as dangling.
+ * A bracketed segment that exists as a folder is that folder, not a character class: Next names
+ * its route folders `[siteSlug]`, and an entry under one watched the whole route group above it.
  * @param {string} entry @param {string} doc the document's path
+ * @param {(p: string) => boolean} [exists] whether a path is in the tree
  */
-function prefixOf(entry, doc) {
-  const i = entry.search(/[*?{[]/);
-  const raw = (i < 0 ? entry : entry.slice(0, entry.lastIndexOf("/", i) + 1)).replace(/\/+$/, "");
-  const p = /^\.\.?\//.test(raw) ? posix.normalize(posix.join(dirname(doc), raw)) : raw;
+function prefixOf(entry, doc, exists = () => false) {
+  const base = /^\.\.?\//.test(entry) ? posix.dirname(doc) : "";
+  /** @type {string[]} */
+  const kept = [];
+  for (const segment of entry.split("/")) {
+    if (/[*?{]/.test(segment)) break;
+    const at = posix.join(base, ...kept, segment);
+    if (segment.includes("[") && !exists(at)) break;
+    kept.push(segment);
+  }
+  const raw = kept.join("/").replace(/\/+$/, "");
+  const p = base ? posix.normalize(posix.join(base, raw)) : raw;
   return p.startsWith("../") || p === ".." ? null : p;
 }
+
+/** A path as git takes it, its brackets literal rather than a pattern. @param {string} p */
+const literal = (p) => (/[[\]*?]/.test(p) ? `:(literal)${p}` : p);
 
 /** @type {import("../index.mjs").Probe[]} */
 export const probes = [
@@ -37,7 +51,7 @@ export const probes = [
     // 3: whitespace ignored outside Python and YAML, comment-only commits ignored: counted
     // differently, so a floor written under 2 is reported as redefined.
     // 4: a Markdown source moves when its body does, not its front matter.
-    version: 4,
+    version: 5,
     standard: ["DOC.5"],
     title: "Documents whose source_truth changed after the document last did",
     why: "Freshness is measured against the diff, never the calendar: when the code a doc names changed after the doc last did, the doc is unverified against what it describes, and an agent reading it confidently does the wrong thing. It is judged by commits, not by the typed date: a date that could be bumped without reading anything made the rule a habit of date-bump commits, and flagged a decision log updated in the very commit as its source. The count is a prompt to re-read, not a claim that the doc is wrong.",
@@ -87,9 +101,9 @@ export const probes = [
         const read = readOf(f);
         const behind = [];
         for (const entry of truth) {
-          const p = prefixOf(entry, f);
+          const p = prefixOf(entry, f, (x) => c.exists(x));
           if (!p || !c.exists(p)) continue;
-          const moved = lastChange(c, p, { bodyOnly: true });
+          const moved = lastChange(c, literal(p), { bodyOnly: true });
           if (!moved) continue;
           if (read) {
             if (at(moved) < at(read)) behind.push(`${entry} changed ${dateOf(moved)}`);
@@ -123,7 +137,7 @@ export const probes = [
         const fm = frontMatter(c.read(f));
         const truth = fm && Array.isArray(fm.source_truth) ? fm.source_truth : [];
         for (const entry of truth) {
-          const p = prefixOf(entry, f);
+          const p = prefixOf(entry, f, (x) => c.exists(x));
           if (p === null) continue;
           scanned++;
           if (!p || !c.exists(p))

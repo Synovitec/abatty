@@ -19,6 +19,29 @@ ${extra}---
 /** @type {import("../index.mjs").Control[]} */
 export const BEHIND_CODE_CONTROLS = [
   {
+    // Next names its route folders [slug] and (group): read as glob syntax, an entry under one
+    // watched the whole group above it, and a change beside the cited folder put the doc behind.
+    name: "a change beside a bracketed route folder moves nothing; one inside it does",
+    files: {
+      "docs/a.md": FM(
+        'last_verified: "2020-01-01"\nsource_truth:\n  - "app/(app)/[slug]/haccp/**/*.tsx"\n',
+      ),
+      "docs/b.md": FM(
+        'last_verified: "2020-01-01"\nsource_truth:\n  - "app/(app)/[slug]/team/**/*.tsx"\n',
+      ),
+      "app/(app)/[slug]/haccp/page.tsx": "export default 1;\n",
+      "app/(app)/[slug]/team/page.tsx": "export default 1;\n",
+    },
+    commits: [
+      {
+        files: { "app/(app)/[slug]/team/page.tsx": "export default 2;\n" },
+        message: "feat: team",
+        date: "2021-06-01T12:00:00Z",
+      },
+    ],
+    expect: 1,
+  },
+  {
     name: "the source moved after the doc was verified",
     files: {
       "docs/a.md": FM('last_verified: "2020-01-01"\nsource_truth:\n  - "src/x.ts"\n'),

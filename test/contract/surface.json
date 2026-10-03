@@ -221,7 +221,7 @@
     "code.undocumentedExports": "ratchet opt-in probation v1",
     "context.overCap": "ratchet v1",
     "context.unsourcedGrowth": "hard v1",
-    "docs.behindCode": "ratchet v4",
+    "docs.behindCode": "ratchet v5",
     "docs.citations": "ratchet v1",
     "docs.danglingRefs": "ratchet probation v2",
     "docs.danglingSource": "hard v1",
