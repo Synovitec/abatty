@@ -59,6 +59,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A red audit says what to do next.** It named the advisory and stopped; a fresh Next.js
+  app's owner met it on the first push with no way forward named. It now gives the two ways out,
+  as the ratchet does: update the package, or accept it for now in `security.audit.allow` with a
+  reason and a date to look again.
+
 - **`init --apply` ends with the first gate, so its verdict is read at once.** A fresh
   Next.js app pulls in a dependency with a high-severity advisory today, and its owner met that
   red audit at the first push, after `init` had said nothing was left to do. The fast gate is

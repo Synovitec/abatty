@@ -129,6 +129,11 @@ function runBuiltin(s, ctx) {
       // Whose they are: an advisory published since the last green push read as the push's own.
       const whose = auditAttribution(repoDir, ctx.range || "");
       if (whose) log(`  ${whose}`);
+      // The two ways out, as the ratchet names its own: a fresh app whose framework pulled in an
+      // advisory met a red gate on its first push and nothing that said what to do next.
+      log(
+        `  two ways out: update the package (or the one that pulls it in) to a version outside the affected range, or accept it for now in abatty.config.json, security.audit.allow: [{ "id": "<package or advisory id>", "reason": "<why>", "until": "<date to look again>" }]`,
+      );
       events.push({ label: s.label, outcome: "failed", ms: Date.now() - t0 });
       log(`\n✗ ${s.label} failed. The gate stops here.`);
       return false;

@@ -339,3 +339,26 @@ test("bun's banner after its report does not hide the report, so its allowances 
     "a",
   );
 });
+
+test("a red audit names the two ways out; a green one says nothing more", async () => {
+  // A fresh Next.js app's framework pulled in an advisory, and its first gate went red with
+  // nothing that said what to do next.
+  const { runGate } = await import("../src/core/gate.mjs");
+  const dir = locked("audit-ways-out");
+  const gate = (/** @type {number} */ status) => {
+    /** @type {string[]} */
+    const lines = [];
+    runGate({
+      repoDir: dir,
+      preset: /** @type {any} */ ({
+        id: "x",
+        gate: { always: [{ label: "audit (SEC.1)", builtin: "audit" }], suites: [] },
+      }),
+      log: (l) => lines.push(l),
+      audit: runner(status),
+    });
+    return lines.join("\n");
+  };
+  assert.match(gate(1), /two ways out: update the package[\s\S]*security\.audit\.allow/);
+  assert.doesNotMatch(gate(0), /two ways out/);
+});
