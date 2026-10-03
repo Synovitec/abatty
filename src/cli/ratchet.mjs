@@ -198,8 +198,14 @@ export async function ratchetCommand(command, c) {
       const tally = failing.length
         ? `· ${failing.length} of ${verdicts.length} metric(s) failing: ${failing.join(", ")}`
         : `· ${verdicts.length} metric(s)${problems.length ? `, ${problems.length} probe problem(s) above` : ""}`;
+      // A probe on probation would have failed this run and did not: said on the headline, or a
+      // green run reads as nothing found where a finding is waiting for the probe to be trusted.
+      const held = verdicts.filter((v) => v.status === "probation").map((v) => v.metric);
+      const onProbation = held.length
+        ? ` · ${held.length} on probation would fail, not failing: ${held.join(", ")}`
+        : "";
       out(
-        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(tally)}\n\n`,
+        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(tally)}${t.yellow(onProbation)}\n\n`,
       );
       process.exit(problems.length ? EXIT.input : red ? EXIT.findings : EXIT.clean);
     }

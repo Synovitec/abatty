@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tempRepo } from "./helpers.mjs";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { cli, tempRepo } from "./helpers.mjs";
 import { probationReadings } from "../src/core/probation.mjs";
 
 // A check leaves probation once named repositories have run it clean; the report now carries the
@@ -52,4 +54,22 @@ test("a check with nothing of its kind to read casts no vote", () => {
   assert.equal(syntax?.scanned, 0);
   assert.equal(syntax?.clean, false, "reading 0 over nothing is not a clean run");
   assert.equal(syntax?.why, "nothing of its kind to read here: no vote");
+});
+
+test("a green ratchet names the probe on probation that would have failed it", () => {
+  const dir = tempRepo("probation-headline", {
+    "package.json": JSON.stringify({ name: "p" }),
+    "docs/a.md": "---\ntitle: T\ncategory: reference\n---\n\n# T\n",
+  });
+  assert.equal(cli(["baseline", dir], dir).code, 0);
+  writeFileSync(
+    join(dir, "docs/a.md"),
+    "---\ntitle: T\ndescription: D: with a colon\ncategory: reference\n---\n\n# T\n",
+  );
+  const r = cli(["ratchet", dir], dir);
+  assert.equal(r.code, 0, r.out);
+  assert.match(
+    r.out,
+    /ratchet green .*on probation would fail, not failing: .*docs\.frontMatterSyntax/,
+  );
 });

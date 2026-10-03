@@ -7,6 +7,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A green ratchet names the probe on probation that would have failed it.** A probe on
+  probation never fails a run, and its finding sat in the metric list while the headline read
+  plain green. The headline now ends with the probes on probation that would fail, not failing.
 - **The ratchet counts a file you edited and have not committed as touched.** It measures the
   tree, yet listed only the pushed range's files as this change's, so a run that failed on an
   uncommitted file said "this change touched 0 findings" and called everything standing debt.
