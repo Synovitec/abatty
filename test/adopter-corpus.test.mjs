@@ -438,7 +438,7 @@ const CASES = [
   },
   {
     report: "product · 2026-10-03 · rc.2 upgrade, testTamper enabled",
-    claim: "update carries a range probe's floor to its new definition, so the gate is not refused",
+    claim: "update measures a range probe's floor under its new definition, so the gate is not refused",
     run: () => {
       const dir = tempRepo("adopter-tamper", {
         "package.json": JSON.stringify({ name: "p", private: true }),
@@ -448,14 +448,15 @@ const CASES = [
       assert.equal(cli(["baseline", dir], dir).code, 0);
       const rel = join(dir, "scripts/ci/standards-baseline.json");
       const b = JSON.parse(readFileSync(rel, "utf8"));
-      // Written under definition 1, as the adopter's was.
-      b.metrics["change.testTamper"] = 0;
+      // Written under definition 1, as the adopter's was: 2 by the old question, 0 by today's
+      // over the pushed commits (rc.3 carried the 2, and the next ratchet run went red).
+      b.metrics["change.testTamper"] = 2;
       b.versions = { ...(b.versions || {}), "change.testTamper": 1 };
       writeFileSync(rel, JSON.stringify(b, null, 2));
       const up = cli(["update", dir], dir);
       const after = JSON.parse(readFileSync(rel, "utf8"));
       assert.notEqual(after.versions["change.testTamper"], 1, up.out);
-      assert.equal(after.metrics["change.testTamper"], 0, "carried, not raised");
+      assert.equal(after.metrics["change.testTamper"], 0, `measured, not carried: ${up.out}`);
       // The other direction: a floor already under the current definition is left alone.
       assert.doesNotMatch(cli(["update", dir], dir).out, /change\.testTamper/);
     },

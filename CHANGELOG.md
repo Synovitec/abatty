@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`update` measures a redefined range probe rather than carrying its old count.** rc.3 carried
+  `change.testTamper`'s floor under its new definition as it stood: 2 by the old question where
+  the new one counted 0, so the next ratchet run went red once and rewrote it. `update` now
+  measures over the push range, as `baseline` does, and carries a floor only where there is no
+  pushed commit to count, saying so.
+
 - **`prove` reads cleanly to a stranger.** Its live lines named log files inside the copy it had
   already removed (the summary names the folder they are kept in), the secret plant was "a planted
   cloud access key", and the opt-in scrub read "no control declared" on a repository that never
