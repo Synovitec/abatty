@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { cli, git, tempRepo } from "./helpers.mjs";
@@ -114,4 +114,50 @@ test("a scrub the repository turned on is named as proven by its own suite, not 
   const r = cli(["prove", dir, "--stack", "node"], dir);
   assert.match(r.out, /no trace of the tools \(scrub\)\s+no control here: the scrub's vocabulary/);
   assert.doesNotMatch(r.out, /scrub\.enabled is off/);
+});
+
+test("the copy has the repository's history and its ignored env files, so steps reading them are judged", () => {
+  // A monorepo's coverage of the changed lines read `git diff HEAD` and a test read DATABASE_URL
+  // from a gitignored .env.local: on a copy with one commit and no env file both were red before
+  // the plant, and three working steps read as not judged.
+  const dir = tempRepo("prove-faithful", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+    ".gitignore": ".env.local\n",
+    "test/env.test.js": [
+      'const { test } = require("node:test");',
+      'const { execSync } = require("node:child_process");',
+      'const { readFileSync } = require("node:fs");',
+      'test("reads history and env", () => {',
+      '  execSync("git rev-parse --verify -q HEAD~1");',
+      '  if (!readFileSync(".env.local", "utf8").includes("DATABASE_URL")) throw new Error("no env");',
+      "});",
+      "",
+    ].join("\n"),
+  });
+  writeFileSync(join(dir, "README.md"), "# a second commit\n");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "docs: a second commit");
+  writeFileSync(join(dir, ".env.local"), "DATABASE_URL=postgres://local/test\n");
+  const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
+  const unit = JSON.parse(r.out).steps.find((/** @type {any} */ s) => /TEST\.1/.test(s.label));
+  assert.equal(unit?.outcome, "red", JSON.stringify(unit));
+  assert.equal(
+    readFileSync(join(dir, ".env.local"), "utf8"),
+    "DATABASE_URL=postgres://local/test\n",
+  );
+  assert.equal(git(dir, "status", "--porcelain"), "", "nothing written in the repository");
+});
+
+test("a summary with steps not judged is a warning, and says its count is of the judged ones", () => {
+  // "✓ 4 of 4 of your checks" read as everything proven while three steps were not judged.
+  const dir = tempRepo("prove-partly-judged", {
+    "package.json": JSON.stringify({
+      name: "p",
+      scripts: { test: "node --test", typecheck: "node -e process.exitCode=1" },
+    }),
+    "test/a.test.js": 'const { test } = require("node:test");\ntest("a", () => {});\n',
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
+  assert.match(r.out, /\[!\] 1 of 1 of your check\(s\) judged here went red/);
+  assert.match(r.out, /1 more could not be judged here \(typecheck \(CODE\.3\)\)/);
 });

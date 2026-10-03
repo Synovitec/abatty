@@ -40,6 +40,14 @@ rewrites its floor.
 
 ### Fixed
 
+- **`prove` runs on a faithful copy.** The copy was the files alone in a new repository with one
+  commit and no ignored env file, so a step that reads history (the changed lines' coverage, the
+  ratchet's push range) or a test that reads `.env.local` was red before anything was planted,
+  and three working steps read as not judged. The copy is now a clone sharing the repository's
+  objects, at the same commit, branch and remote-tracking refs, with the working tree's changes
+  laid over it and the ignored `.env*` files linked; nothing is written in the repository. A
+  summary with steps not judged now shows a warning and says its count is of the judged ones.
+
 - **`update` measures a redefined range probe rather than carrying its old count.** rc.3 carried
   `change.testTamper`'s floor under its new definition as it stood: 2 by the old question where
   the new one counted 0, so the next ratchet run went red once and rewrote it. `update` now
