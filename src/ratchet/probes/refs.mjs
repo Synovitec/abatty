@@ -7,7 +7,7 @@
  * another tool's option, never in the code, is never read as gone.
  */
 
-import { frontMatter } from "./lib.mjs";
+import { frontMatter, pastRecord } from "./lib.mjs";
 
 /** A backticked span that is one identifier, optionally called: `lastChange`, `lastChange()`. */
 const SPAN = /(?<!`)`([A-Za-z_$][\w$]{3,})(\(\))?`(?!`)/g;
@@ -59,12 +59,6 @@ function foundIn(c, names, at) {
 const FM = (extra = "") =>
   `---\ntitle: "T"\ndescription: "D"\ncategory: reference\nstatus: living\n${extra}---\n\n# T\n`;
 
-/** Folders of records written at a point in time: the archive, decisions, sprints, retrospectives. */
-const POINT_IN_TIME =
-  /(^|\/)_?(archived?s?|adrs?|decisions?|sprints?|retros?|retrospectives?|post-?mortems?)\//i;
-/** The statuses of a decision record once decided. */
-const DECIDED = ["accepted", "rejected", "superseded"];
-
 /** @type {import("../index.mjs").Probe[]} */
 export const probes = [
   {
@@ -73,8 +67,8 @@ export const probes = [
     // Out of probation on 2026-10-03 (decision 0002, the 1.0 scope): over twenty-eight local
     // repositories, after v3, its two findings were names the code had really lost.
     // 3: a record written at a point in time (an archive, decision or sprint folder, a decided
-    // decision record) is not read, as an archived status is not.
-    version: 3,
+    // decision record) is not read, as an archived status is not. 4: nor a file named as an archive.
+    version: 4,
     standard: ["DOC.4"],
     title: "Names a document cites that the code had and has no longer",
     why: "A document that names a function, a constant or a class tells its reader where to look; once the name is gone, the reader looks for something that does not exist, or finds the document and trusts it. Fix the document, or the code, whichever is wrong: about half such references are fixed by changing the code back.",
@@ -94,8 +88,7 @@ export const probes = [
         // local repositories, eleven of thirteen findings in one were sprint plans, audits and
         // an accepted ADR naming the code as it was, and a copy of a context file in archived/.
         const fm = frontMatter(text);
-        if (["archived", "deprecated"].includes(String(fm?.status)) || fm?.superseded_by) continue;
-        if (POINT_IN_TIME.test(doc) || DECIDED.includes(String(fm?.status).toLowerCase())) continue;
+        if (pastRecord(doc, fm)) continue;
         scanned++;
         const cited = citedNames(text);
         if (!cited.length) continue;
@@ -137,6 +130,7 @@ export const probes = [
           "docs/old.md": FM().replace("living", "archived") + "\nCall `loadOrders`.\n",
           "docs/archived/CONTEXT_2026-09-04.md": "# Context, as it was\n\nCall `loadOrders`.\n",
           "docs/sprints/001/PLAN.md": "# Sprint 1\n\nRename `loadOrders`.\n",
+          "docs/ORDERS-ARCHIVE.md": "# Orders, as they were\n\nCall `loadOrders`.\n",
           "docs/adr/0001-orders.md":
             FM().replace("living", "accepted") + "\nWe read through `loadOrders`.\n",
           "src/orders.ts": "// the orders, read\nexport function loadOrders() { return []; }\n",

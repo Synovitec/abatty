@@ -123,3 +123,27 @@ export function shippedScripts(c, o) {
 export function lines(text) {
   return text.split(/\r?\n/);
 }
+
+/** Folders of records written at a point in time: the archive, decisions, sprints, retrospectives. */
+const POINT_IN_TIME =
+  /(^|\/)_?(archived?s?|adrs?|decisions?|sprints?|retros?|retrospectives?|post-?mortems?)\//i;
+/** A file named as an archive: `MODULE-ARCHIVE.md`, `archive-2026.md`. */
+const ARCHIVE_NAME = /(^|\/)([^/]*[-_.])?archived?([-_.][^/]*)?\.[a-z]+$/i;
+/** The statuses of a decision record once decided. */
+const DECIDED = ["accepted", "rejected", "superseded"];
+
+/**
+ * Whether a document is a record of the past, which names the code as it was on purpose: by its
+ * folder (an archive, decisions, sprints), its file name (an archive), an archived, deprecated or
+ * decided status, or a successor named. Read by every probe that holds a document to today's code.
+ * @param {string} path @param {any} fm the document's front matter, or null
+ */
+export function pastRecord(path, fm) {
+  const status = String(fm?.status || "").toLowerCase();
+  return (
+    POINT_IN_TIME.test(path) ||
+    ARCHIVE_NAME.test(path) ||
+    ["archived", "deprecated", ...DECIDED].includes(status) ||
+    Boolean(fm?.superseded_by)
+  );
+}

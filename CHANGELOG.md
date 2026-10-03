@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`docs.citations` and `docs.danglingRefs` read a design repository's documents right
+  (v2 and v4).** An archive cites what it archived on purpose, and one named as an archive
+  (`MODULE-ARCHIVE.md`), not only kept in an archive folder, is no longer read by either. A short
+  path written from the folder it lives under (`css/07-ergonomie.css` for
+  `mockups/css/07-ergonomie.css`) resolves by the end of the file it names. A citation of another
+  repository still does not resolve from this one: `citationsExempt` in the config is its place.
+
 - **A docs repository's config names only the commands it has, and `init` says the git setting
   it changes.** The config listed `npm test`, a typecheck and eslint a design repository has none
   of; a preset's command list now replaces the template's. The hooks step now says it points

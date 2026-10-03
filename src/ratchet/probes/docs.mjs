@@ -3,7 +3,7 @@
  * resolve. Freshness against the diff (DOC.5) is in freshness.mjs.
  */
 import { dirname, posix } from "node:path";
-import { frontMatter, matchesAny, regexes } from "./lib.mjs";
+import { frontMatter, matchesAny, pastRecord, regexes } from "./lib.mjs";
 
 const CITATION =
   /`([^`\s]+\/[^`\s]*\.(?:mjs|cjs|js|ts|tsx|jsx|json|jsonc|md|ya?ml|sql|ps1|sh|toml|css)(?::\d+)?)`/g;
@@ -120,6 +120,8 @@ export const probes = [
   {
     metric: "docs.citations",
     kind: "ratchet",
+    // 2: a record of the past is not read, and a short path resolves by the end of a tracked one.
+    version: 2,
     standard: ["DOC.4"],
     title: "Path citations in documents that do not resolve",
     why: "A doc cites the code it describes; a citation that no longer resolves is the first sign the doc is behind, and a reader following it lands nowhere. A document that describes another repository (a standard, a guide) is exempt through citationsExempt.",
@@ -132,6 +134,8 @@ export const probes = [
       for (const f of c.docFiles) {
         if (matchesAny(f, exempt)) continue;
         const text = c.read(f);
+        // An archive cites what was there when it was written, on purpose (lib.mjs pastRecord).
+        if (pastRecord(f, frontMatter(text))) continue;
         const dir = dirname(f);
         for (const m of text.matchAll(CITATION)) {
           const raw = (m[1] || "").replace(/:\d+$/, "");
@@ -141,7 +145,11 @@ export const probes = [
             (p) => !p.startsWith("../"),
           );
           if (!candidates.length) continue;
-          if (!candidates.some((p) => c.exists(p))) {
+          // A path written from the folder it lives under (`css/07.css` for `mockups/css/07.css`)
+          // names a real file by its end; read as unresolved, a design document read as stale.
+          const tail = raw.replace(/^\.\//, "");
+          const byEnd = c.files(/./).some((p) => p === tail || p.endsWith(`/${tail}`));
+          if (!candidates.some((p) => c.exists(p)) && !byEnd) {
             const line = text.slice(0, m.index).split("\n").length;
             findings.push({ path: f, line, detail: `\`${m[1]}\` does not resolve` });
           }
@@ -160,6 +168,15 @@ export const probes = [
         files: {
           "docs/a.md": FM() + "See `src/here.ts` and `../src/here.ts`.\n",
           "src/here.ts": "export {};\n",
+        },
+        expect: 0,
+      },
+      {
+        name: "an archive citing what it archived, and a path written from the folder it lives under, hold",
+        files: {
+          "docs/MODULE-ARCHIVE.md": FM() + "This lived in `mockups/js/050-gone.js`.\n",
+          "docs/notes.md": FM() + "The rules are in `css/07-ergonomie.css`.\n",
+          "mockups/css/07-ergonomie.css": "a {}\n",
         },
         expect: 0,
       },

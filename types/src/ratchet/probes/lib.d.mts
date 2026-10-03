@@ -32,3 +32,10 @@ export function shippedScripts(c: import("../../rules/context.mjs").RepoContext,
 }): string[];
 /** Lines of a text, CRLF or LF. @param {string} text */
 export function lines(text: string): string[];
+/**
+ * Whether a document is a record of the past, which names the code as it was on purpose: by its
+ * folder (an archive, decisions, sprints), its file name (an archive), an archived, deprecated or
+ * decided status, or a successor named. Read by every probe that holds a document to today's code.
+ * @param {string} path @param {any} fm the document's front matter, or null
+ */
+export function pastRecord(path: string, fm: any): boolean;
