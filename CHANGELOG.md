@@ -5,6 +5,104 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.3] - 2026-10-03
+
+The third candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.2 replays on a
+design-stage repository and a bun monorepo found, and what four outside reviews of rc.2 found on
+a first contact: `prove` judges a monorepo's steps and counts only the repository's own checks,
+a repository with no config is read the way `init` would set it up, a reading never shows
+another version's numbers as today's, and the headline promises what a control actually shows.
+**Upgrading:** a repository with no `abatty.config.json` is now measured against the minimal
+profile (a config that names no profile keeps the standard, as before). Two `--json` fields are
+added, none removed: `github` on the CI state `doctor` reports, and `builtin` on the steps of
+`prove`. Every saved reading now writes its dated `.md` beside its JSON. Coming from a version
+without the gate's `audit` step, expect the first push to stop on any advisory the tree already
+carries; the refusal names the package, the path that pulls it in, and the two ways out.
+
+### Added
+
+- **The gate's verdict on the CI run's page.** Where `GITHUB_STEP_SUMMARY` names a file (every
+  GitHub Actions job), the gate appends its headline and one row per step, so whether the gate
+  held, and which steps did not run, is read where a pull request is decided, beside the SARIF
+  findings on the lines. `status` names `prove` first in its footer.
+
+### Changed
+
+- **The headline says "verify", and the README counts how each rule is held.** "Continuously
+  prove those controls work" claimed more than a control shows; the promise is now to verify that
+  each control can still fail, and the four verbs read Define, Enforce, Verify, Improve (the
+  command stays `abatty prove`). The README gives the split of the 80 rules (48 held by a check
+  that fails, 7 by a ratchet, 13 by a review, 12 prose only) so "80 rules" no longer reads as 80
+  automated checks, held equal to the catalog by a test, and says that profiles compose: a
+  company standard can be a file or a package many repositories name.
+
+- **A repository with no config is read against the minimal profile.** Bare `abatty`, `status`
+  and `measure` on an untouched repository showed the whole standard (44 checks, the Harness and
+  Documents families), then 13 checks once `init` had set up the minimal profile: a stranger's
+  first picture was of a standard nobody had chosen. The reading now matches what `init` would
+  set up; `rules` and `explain` still list the whole catalog, and a config that names no profile
+  keeps the standard as before.
+
+### Fixed
+
+- **`doctor` no longer asks to install a runtime's own module.** A Bun monorepo was told
+  `bun add bun k6`: `bun` is the Bun runtime's module and `k6`, `k6/http` are provided by the k6
+  binary that runs a load script. Both are read as built in, as `node:fs` is.
+
+- **`update` carries a range probe's floor to its new definition.** A probe that judges the
+  pushed commits, such as `change.testTamper`, reads skipped when `update` measures with no range,
+  so a floor written under its earlier definition was never migrated and the next push was
+  refused as `REDEFINED`, after following the upgrade note exactly. The floor is now carried
+  under the new definition as it stands, which is not a raise.
+
+- **A repository with nothing to audit is not told to fix its audit first.** A design repository
+  with no package.json, on a preset whose gate has no audit step, read "the audit has not run
+  here" at the top of its first reading.
+
+- **`update` names a range on a prerelease pin.** `"abatty": "^0.7.0-rc.12"` matches the later
+  candidates of 0.7.0, never `0.8.0-rc.1`, so the package manager kept the old version while
+  `update` moved the harness to the new one. `update` now says so and gives the exact pin.
+
+- **A reading saves its markdown with its JSON.** `status` measuring again rewrote the day's
+  JSON and left the day's `.md` that an earlier version had written, and an adopter quoted that
+  file's evidence as the new version's. Every saved reading now writes the dated JSON, the latest
+  and the dated markdown together, from the cache too.
+
+- **VALID-ENV names every env module.** A monorepo with one env module per workspace read only
+  the first one found, beside its raw reads, so the other five looked uncounted. The evidence now
+  gives how many there are and names the first four.
+
+- **Off GitHub, `init` and `doctor` no longer say `init` writes a GitHub workflow.** Where no
+  pipeline runs the gate, the hint named `.github/workflows/abatty-gate.yml` as what `init`
+  writes, on a repository where it had written none because the remote is not GitHub. There it
+  now names `abatty ci --provider <name>`.
+
+- **`prove` says exactly what it showed.** On a repository with one test script it said "2 of 2
+  checks went red", counting the secret scan abatty brings as one of the repository's own; the
+  built-in scans are now said on a line of their own. The summary says each check went red on a
+  planted violation and green again without it, which is what a control shows, rather than that
+  each "can stop a bad change"; the README says what a control does not show. The lint plant is
+  described in the repository's language: a JavaScript repository read about a Python import.
+
+- **The reading is measured again after an update.** `abatty` showed a report the previous
+  version had measured, as today's, without saying whose it was. A reading by another version is
+  measured again, as one of another commit already is, and the header names the version it
+  replaced.
+
+- **`prove` judges a monorepo's steps, and says what it could not judge.** The copy linked only
+  the root's dependencies, so in a monorepo whose workspaces keep their own `node_modules` the
+  typecheck and the tests failed before anything was planted, and five working steps read as
+  unproven while the summary said "3 of 3". Every workspace's dependencies are linked now, a step
+  that could not be judged is counted on the summary, what each step printed is kept outside the
+  repository (the verdicts named logs inside a copy already removed), and the steps run through
+  the repository's own package manager rather than npm.
+
+- **SEC-SECRETS counts a CI workflow that runs the gate as the secret scan's CI step.** Every
+  preset's gate carries the scan, fast or whole, yet the rule looked only for a scanner's name, so
+  a design repository with the workflow `init` wrote (running `gate:fast`) read partial, "no CI
+  step", and was sent back to `init` for a hook it had already run.
+- **A second `init` with nothing to do keeps the harness lock**, where it reported it as written.
+
 ## [0.8.0-rc.2] - 2026-10-03
 
 The second candidate for 1.0, under `next` (`npm i -D abatty@next`). What the first replay of

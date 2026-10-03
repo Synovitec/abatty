@@ -73,6 +73,7 @@ export function doctor(o: {
     ci: {
         state: "gate" | "fast" | "no-gate" | "none";
         pipelines: string[];
+        github: boolean;
     };
     unreachable: {
         name: string;

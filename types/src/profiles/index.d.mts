@@ -57,6 +57,8 @@ export function phasesOf(profiles: Profile[]): Phase[];
 export const PROFILES: Profile[];
 /** The profile a repository is measured against when its config names none. */
 export const DEFAULT_PROFILES: string[];
+/** The profile a repository with no config at all is read against: the one `init` sets up. */
+export const UNCONFIGURED_PROFILES: string[];
 export type Rule = import("../rules/index.mjs").Rule;
 export type Phase = {
     id: string;

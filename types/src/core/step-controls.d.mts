@@ -8,7 +8,7 @@
  */
 export function currentControls(controls: any): any;
 /**
- * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
+ * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number, builtin?: boolean }} StepOutcome `builtin` marks a step that is this package's own code, not one of the repository's checks
  */
 /**
  * A control's files moved into the folder the repository named for the step, each keeping its
@@ -47,9 +47,13 @@ export function controlLog(label: string, phase: "planted" | "clean"): string;
  * version had planted in a folder none of its workspaces scans.
  */
 export const CONTROLS_VERSION: string;
+/**
+ * `builtin` marks a step that is this package's own code, not one of the repository's checks
+ */
 export type StepOutcome = {
     label: string;
     outcome: "red" | "green" | "skipped" | "none";
     detail: string;
     ms?: number;
+    builtin?: boolean;
 };

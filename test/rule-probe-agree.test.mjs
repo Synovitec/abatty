@@ -55,6 +55,30 @@ test("VALID-ENV takes the configured env module and counts what valid.rawEnv cou
   );
 });
 
+test("VALID-ENV names every env module of a monorepo, not the first one found", () => {
+  // An adopter with one env module per workspace read only the first named, beside the raw reads.
+  const dir = tempRepo("agree-env-many", {
+    "package.json": JSON.stringify({ name: "p", dependencies: { next: "15.0.0" } }),
+    "apps/web/lib/env.ts": `export const a = ${ENV}.A;\n`,
+    "apps/mobile/lib/env.ts": `export const b = ${ENV}.B;\n`,
+    "packages/auth/src/env.ts": `export const c = ${ENV}.C;\n`,
+    "packages/crypto/src/env.ts": `export const d = ${ENV}.D;\n`,
+    "packages/mail/src/env.ts": `export const e = ${ENV}.E;\n`,
+  });
+  const { finding } = both(dir, "VALID-ENV", "valid.rawEnv");
+  const evidence = String(finding?.evidence);
+  assert.match(evidence, /^5 env modules: /);
+  const all = [
+    "apps/web/lib/env.ts",
+    "apps/mobile/lib/env.ts",
+    "packages/auth/src/env.ts",
+    "packages/crypto/src/env.ts",
+    "packages/mail/src/env.ts",
+  ];
+  assert.equal(all.filter((m) => evidence.includes(m)).length, 4, "four named, the fifth counted");
+  assert.match(evidence, /and 1 more; 0 raw process\.env read\(s\) elsewhere/);
+});
+
 test("VALID-ENV with no env module anywhere reads missing, as before", () => {
   const dir = tempRepo("agree-env-none", {
     "package.json": JSON.stringify({ name: "p", dependencies: { next: "15.0.0" } }),

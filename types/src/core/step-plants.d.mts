@@ -18,7 +18,11 @@ export type PlantContext = {
     dir: string;
     scripts: Record<string, string>;
 };
+/**
+ * `meansIn` says the plant in a language where it differs
+ */
 export type StepControl = {
     files: (c: PlantContext) => Record<string, string>;
     means: string;
+    meansIn?: Record<string, string>;
 };

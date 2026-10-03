@@ -14,6 +14,8 @@ import { applyFix, planFix } from "../src/core/fix.mjs";
 const repo = (name) =>
   tempRepo(name, {
     "package.json": JSON.stringify({ name: "app", private: true }),
+    // Phase A.1 is the standard's: with no config the reading is minimal's.
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
     "docs/README.md":
       "# Index\n\n| Document | What it is for | Category | Status |\n| --- | --- | --- | --- |\n| `OTHER.md` | something | guide | living |\n",
     "docs/OTHER.md": "---\ntitle: T\ndescription: D\ncategory: guide\nstatus: living\n---\n\n# T\n",

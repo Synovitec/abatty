@@ -43,12 +43,17 @@ export const rules = [
       const { findings, config } = probeFindings(c, "valid.rawEnv");
       const exempt = regexes(config.exempt);
       const moduleRe = new RegExp(config.envModule);
-      const envModule =
-        c.sourceFiles.find((f) => moduleRe.test(f) && !matchesAny(f, exempt)) || null;
+      // Every module, not the first: a monorepo keeps one per workspace, and naming one of six
+      // read as the other five not counting.
+      const modules = c.sourceFiles.filter((f) => moduleRe.test(f) && !matchesAny(f, exempt));
+      const named =
+        modules.length > 1
+          ? `${modules.length} env modules: ${modules.slice(0, 4).join(", ")}${modules.length > 4 ? ` and ${modules.length - 4} more` : ""}`
+          : modules[0] || "no env module";
       const raw = findings.length;
       return {
-        status: envModule && raw <= 3 ? "present" : envModule ? "partial" : "missing",
-        evidence: `${envModule || "no env module"}; ${raw} raw process.env read(s) elsewhere`,
+        status: modules.length && raw <= 3 ? "present" : modules.length ? "partial" : "missing",
+        evidence: `${named}; ${raw} raw process.env read(s) elsewhere`,
       };
     },
   },

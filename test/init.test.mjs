@@ -60,6 +60,8 @@ test("init is idempotent: a second run keeps every file, --force overwrites", ()
   assert.equal(again.code, 0, again.out);
   assert.equal(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), "// edited locally\n");
   assert.match(again.out, /kept\s+\.claude\/hooks\/guard\.mjs/);
+  // the lock too, when nothing in it moved: a second init with nothing to do read as rewriting it
+  assert.match(again.out, /kept\s+\.claude\/harness\.lock\.json/);
   const forced = cli(["init", "--profile", "synovitec", dir, "--stack", "next", "--force"], dir);
   assert.equal(forced.code, 0, forced.out);
   assert.match(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), /PreToolUse/);

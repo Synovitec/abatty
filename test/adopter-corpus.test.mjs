@@ -20,6 +20,7 @@ import { resolveConfig } from "../src/ratchet/config.mjs";
 import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
 import { probationReadings } from "../src/core/probation.mjs";
+import { undeclaredImports } from "../src/core/undeclared.mjs";
 
 /** What the ratchet hands a probe with the default config and no range. */
 const SCAN = { config: resolveConfig({}), range: "" };
@@ -420,6 +421,76 @@ const CASES = [
       assert.equal(r.code, 0, r.out);
       assert.match(r.out, /baseline written/);
       assert.match(r.out, /held as a ratchet/);
+    },
+  },
+  {
+    report: "design · 2026-10-03 · rc.2 first reading, no package.json",
+    claim: "a repository with no audit to run is not told first thing to fix one",
+    run: () => {
+      const dir = designAdopter();
+      assert.doesNotMatch(cli(["status", dir, "--plain"], dir).out, /the audit has not run here/);
+      // The other direction: a package with no pipeline still is.
+      const pkg = tempRepo("adopter-audit-pkg", {
+        "package.json": JSON.stringify({ name: "p", private: true }),
+      });
+      assert.match(cli(["status", pkg, "--plain"], pkg).out, /the audit has not run here/);
+    },
+  },
+  {
+    report: "product · 2026-10-03 · rc.2 upgrade, testTamper enabled",
+    claim: "update carries a range probe's floor to its new definition, so the gate is not refused",
+    run: () => {
+      const dir = tempRepo("adopter-tamper", {
+        "package.json": JSON.stringify({ name: "p", private: true }),
+        "abatty.config.json": JSON.stringify({ ratchet: { enable: ["change.testTamper"] } }),
+        "src/a.mjs": "export const a = 1;\n",
+      });
+      assert.equal(cli(["baseline", dir], dir).code, 0);
+      const rel = join(dir, "scripts/ci/standards-baseline.json");
+      const b = JSON.parse(readFileSync(rel, "utf8"));
+      // Written under definition 1, as the adopter's was.
+      b.metrics["change.testTamper"] = 0;
+      b.versions = { ...(b.versions || {}), "change.testTamper": 1 };
+      writeFileSync(rel, JSON.stringify(b, null, 2));
+      const up = cli(["update", dir], dir);
+      const after = JSON.parse(readFileSync(rel, "utf8"));
+      assert.notEqual(after.versions["change.testTamper"], 1, up.out);
+      assert.equal(after.metrics["change.testTamper"], 0, "carried, not raised");
+      // The other direction: a floor already under the current definition is left alone.
+      assert.doesNotMatch(cli(["update", dir], dir).out, /change\.testTamper/);
+    },
+  },
+  {
+    report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
+    claim: "a runtime's own module is not a package to add; an undeclared package still is",
+    run: () => {
+      const dir = tempRepo("adopter-runtime", {
+        "package.json": JSON.stringify({ name: "m", private: true }),
+        "src/server.ts": 'import { serve } from "bun";\nimport { test } from "bun:test";\n',
+        "load/smoke.js": 'import http from "k6/http";\nimport { sleep } from "k6";\n',
+        "src/other.ts": 'import x from "left-pad";\n',
+      });
+      assert.deepEqual(
+        undeclaredImports(dir).map((u) => u.name),
+        ["left-pad"],
+      );
+    },
+  },
+  {
+    report: "monorepo · 2026-10-03 · rc.2 replay, bun",
+    claim: "update names a range on a prerelease pin, which never reaches the next minor",
+    run: () => {
+      const pinned = (/** @type {string} */ spec) =>
+        tempRepo("adopter-pin", {
+          "package.json": JSON.stringify({ name: "m", devDependencies: { abatty: spec } }),
+        });
+      const caret = pinned("^0.7.0-rc.12");
+      const r = cli(["update", caret, "--dry-run"], caret);
+      assert.match(r.out, /pins abatty at \^0\.7\.0-rc\.12: a range on a prerelease/, r.out);
+      for (const spec of ["0.8.0-rc.2", "^0.6.1"]) {
+        const dir = pinned(spec);
+        assert.doesNotMatch(cli(["update", dir, "--dry-run"], dir).out, /a range on a prerelease/);
+      }
     },
   },
 ];

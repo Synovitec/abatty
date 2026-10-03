@@ -37,6 +37,8 @@ import { minimal } from "./minimal.mjs";
 export const PROFILES = [synovitec, minimal, cra];
 /** The profile a repository is measured against when its config names none. */
 export const DEFAULT_PROFILES = ["synovitec"];
+/** The profile a repository with no config at all is read against: the one `init` sets up. */
+export const UNCONFIGURED_PROFILES = ["minimal"];
 
 /** @param {string} id */
 export function profileById(id) {

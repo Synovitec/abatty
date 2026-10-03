@@ -56,6 +56,8 @@ export function envNames(): string[];
 export function portFromEnv(): string;
 /** True on a CI runner (every provider sets CI): a gate run there cannot read the push from git. */
 export function ciFromEnv(): boolean;
+/** The file a CI provider renders on the run's page (GitHub Actions sets it), or "". */
+export function stepSummaryFromEnv(): string;
 /** True when the pre-push hook already compared the installed abatty with the pin and said so. */
 export function pinSaidFromEnv(): boolean;
 /**

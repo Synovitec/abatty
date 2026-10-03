@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import { measure } from "./gap-analysis.mjs";
+import { measure, renderMarkdown } from "./gap-analysis.mjs";
 import { git, readAdoption, readJsonFile, readPackage } from "./repo.mjs";
 import { drift } from "./doctor.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
@@ -171,7 +171,11 @@ export async function buildReport(repoDir, o = {}) {
   // miss and the catalog runs.
   const key = o.cache === false ? null : cacheKey(repoDir, { version: o.abattyVersion });
   const cached = key ? readCache(repoDir, key) : null;
-  if (cached) return /** @type {Report} */ (cached);
+  if (cached) {
+    // Saved on a hit too: the files beside it may be another version's reading of this tree.
+    if (o.write !== false) saveReading(repoDir, /** @type {Report} */ (cached));
+    return /** @type {Report} */ (cached);
+  }
   const gap = await measure(repoDir);
   const families = gap.families.map((name) => ({
     name,
@@ -239,13 +243,26 @@ export async function buildReport(repoDir, o = {}) {
     probation: probationReadings(repoDir, disputesOf(raised)),
   };
   if (key) writeCache(repoDir, key, report);
-  if (o.write !== false) {
-    const dir = join(repoDir, REPORT_DIR);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, `${gap.date}.json`), JSON.stringify(report, null, 2) + "\n");
-    writeFileSync(join(dir, "latest.json"), JSON.stringify(report, null, 2) + "\n");
-  }
+  if (o.write !== false) saveReading(repoDir, report);
   return report;
+}
+
+/**
+ * Save a reading: the dated JSON, the latest, and the dated markdown, all three from it. A fresh
+ * status rewrote the JSON and left the day's markdown an earlier version had written, and an
+ * adopter quoted its evidence as today's.
+ * @param {string} repoDir @param {Report} report
+ */
+function saveReading(repoDir, report) {
+  const dir = join(repoDir, REPORT_DIR);
+  mkdirSync(dir, { recursive: true });
+  const json = JSON.stringify(report, null, 2) + "\n";
+  writeFileSync(join(dir, `${report.date}.json`), json);
+  writeFileSync(join(dir, "latest.json"), json);
+  writeFileSync(
+    join(dir, `${report.date}.md`),
+    renderMarkdown({ ...report, families: report.families.map((f) => f.name) }),
+  );
 }
 
 /** The newest report on disk, or null. @param {string} repoDir @returns {Report | null} */

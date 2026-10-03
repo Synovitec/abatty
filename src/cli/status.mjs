@@ -25,7 +25,10 @@ export async function statusCommand(c, preset) {
     Boolean(known) &&
     (known?.commit !== git(dir, "rev-parse", "--short", "HEAD") ||
       known?.branch !== git(dir, "rev-parse", "--abbrev-ref", "HEAD"));
-  const fresh = flag("--fresh") || !known || moved;
+  // A reading another version measured is measured again, as one of another commit is: right
+  // after an update, the screen showed the old version's numbers and did not say whose they were.
+  const other = known && known.abatty && known.abatty !== VERSION ? String(known.abatty) : "";
+  const fresh = flag("--fresh") || !known || moved || Boolean(other);
   const r = fresh || !known ? await buildReport(dir, { abattyVersion: VERSION }) : known;
   const present = r.findings.filter((f) => f.status === "present").length;
   const partial = r.findings.filter((f) => f.status === "partial").length;
@@ -35,7 +38,9 @@ export async function statusCommand(c, preset) {
   const when = fresh
     ? moved
       ? `measured now · the last reading was of ${known?.branch} @ ${known?.commit}`
-      : "measured now"
+      : other
+        ? `measured now · the last reading was abatty ${other}'s`
+        : "measured now"
     : `reading of ${r.date} · --fresh to measure`;
   out(
     `\n${t.banner(VERSION)}  ${t.bold(r.name)} ${t.gray(`${r.branch} @ ${r.commit}`)}  ${t.gray(when)}\n\n`,
@@ -119,7 +124,9 @@ export async function statusCommand(c, preset) {
         `  ${t.gray("phase " + String(f.phase).padEnd(4))} ${t.bold(f.id)} ${t.gray((f.level || "").padEnd(6))} ${t.gray(f.next.slice(0, 84))}\n`,
       );
   }
-  out(`\n${t.gray("abatty measure · gate · doctor · scrub · dashboard --open · help")}\n\n`);
+  out(
+    `\n${t.gray("abatty prove · measure · gate · doctor · scrub · dashboard --open · help")}\n\n`,
+  );
 }
 
 /**

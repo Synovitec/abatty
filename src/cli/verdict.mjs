@@ -12,6 +12,7 @@ import { managerFor } from "../core/package-manager.mjs";
 import { prerequisites } from "../core/prereqs.mjs";
 import { runGate } from "../core/gate.mjs";
 import { EXIT } from "./exit.mjs";
+import { writeStepSummary } from "./step-summary.mjs";
 import { ciFromEnv } from "../core/env.mjs";
 import { git, readAdoption } from "../core/repo.mjs";
 import { pushLines, pushPlan, refRange } from "../core/push-refs.mjs";
@@ -88,6 +89,16 @@ export async function gateCommand(cx, preset) {
       `  ${e.empty ? t.glyph.warn : e.outcome === "ok" ? t.glyph.ok : e.outcome === "failed" ? t.glyph.fail : e.outcome === "errored" ? t.glyph.warn : e.outcome === "deferred" ? t.glyph.defer : t.glyph.skip} ${e.outcome === "skipped" ? t.gray(e.label) : e.label}${e.outcome === "errored" ? t.yellow(" could not run") : ""}${e.ms ? t.gray("  " + t.duration(e.ms)) : ""}${e.detail ? t.gray("  · " + e.detail) : ""}\n`,
     );
   out("\n");
+  writeStepSummary(
+    r.ok
+      ? unrun.length
+        ? `green with ${unrun.length} of ${unrun.length + ran.length} step(s) not run`
+        : "green"
+      : r.errored
+        ? "could not run"
+        : "red",
+    r.events,
+  );
   process.exit(r.errored ? EXIT.error : r.ok ? EXIT.clean : EXIT.findings);
 }
 

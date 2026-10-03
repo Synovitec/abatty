@@ -4,6 +4,7 @@
  */
 
 import { PACKAGE } from "../applies.mjs";
+import { runsGate } from "../../ci/hand-kept.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -16,16 +17,21 @@ export const rules = [
     enforcement: "hard",
     phase: "0",
     why: "A secret in the history is a secret to rotate; the hook refuses it before the commit, CI catches what the hook was skipped for, one config so the two agree. What the scan is worth is a measurement, not an assertion: `abatty secrets --benchmark` scores it against a published corpus, and the numbers are in docs/SECRET_SCAN_BENCHMARK.md.",
-    next: "abatty init writes the pre-commit hook (abatty secrets --staged) and abatty ci the CI step; the gate runs the same scan",
+    next: "abatty init writes the pre-commit hook (abatty secrets --staged) and a CI workflow that runs the gate, which carries the same scan (abatty ci writes the whole pipeline)",
     check: (c) => {
       const scanner = c.exists(".gitleaks.toml")
         ? ".gitleaks.toml"
         : c.firstFile(/scan-secrets|secret-scan|gitleaks/) ||
           (c.script(/secret/) ? "npm script" : "") ||
           (c.script(/abatty gate/) ? "the gate's built-in scan" : "");
-      const ci = /gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets/.test(
-        c.ciText,
-      );
+      // Or a pipeline that runs the gate, fast or whole: every preset's gate carries the scan. The
+      // workflow init writes runs `gate:fast`, and the rule read it as no CI step and sent a
+      // design repository back to init for a hook it had already run.
+      const gated = runsGate(c.ciText, c.scripts || {});
+      const ci =
+        /gitleaks|scan-secrets|secret-scan|secretlint|trufflehog|abatty secrets/.test(c.ciText) ||
+        gated.runs ||
+        /leaves out the suites/.test(gated.how);
       const hook = /gitleaks|secret/.test(c.read(c.firstFile(/pre-commit/) || ""));
       return {
         status: ci && (hook || scanner) ? "present" : ci || scanner || hook ? "partial" : "missing",

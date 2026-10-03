@@ -16,6 +16,8 @@ import { buildReport } from "../src/core/report.mjs";
 function committed(name) {
   const dir = tempRepo(name, {
     "package.json": JSON.stringify({ name: "app", private: true }),
+    // The standard's rules: with no config the reading is minimal's, which has no DOC-CHANGELOG.
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
     "src/a.mjs": "export const a = 1;\n",
   });
   git(dir, "add", "-A");

@@ -25,6 +25,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { dockerRunning, launch } from "./spawn.mjs";
+import { managerFor } from "./package-manager.mjs";
 import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
@@ -85,7 +86,7 @@ export function currentControls(controls) {
 }
 
 /**
- * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number }} StepOutcome
+ * @typedef {{ label: string, outcome: "red" | "green" | "skipped" | "none", detail: string, ms?: number, builtin?: boolean }} StepOutcome `builtin` marks a step that is this package's own code, not one of the repository's checks
  */
 
 /**
@@ -137,7 +138,14 @@ export function runStepControls(o) {
     if (r.error && /** @type {NodeJS.ErrnoException} */ (r.error).code === "ENOENT") return 127;
     return r.status ?? 1;
   };
-  const run = o.run || ((cwd, script, logFile) => spawn("npm", ["run", "-s", script], logFile));
+  // In the repository's own manager: a bun monorepo's steps were run through npm.
+  const pmRun = managerFor(repoDir).run;
+  const run =
+    o.run ||
+    ((cwd, script, logFile) => {
+      const [cmd, ...args] = pmRun(script);
+      return spawn(String(cmd), args, logFile);
+    });
   const pkg = readPackage(repoDir);
   const scripts = pkg.scripts || {};
   const deps = new Set([
@@ -202,16 +210,15 @@ export function runStepControls(o) {
       });
       return;
     }
-    const files = plantedIn(
-      control.files({ deps, pack: preset.pack || "javascript", dir: repoDir, scripts }),
-      folders[key],
-    );
+    const pack = preset.pack || "javascript";
+    const means = control.meansIn?.[pack] || control.means;
+    const files = plantedIn(control.files({ deps, pack, dir: repoDir, scripts }), folders[key]);
     const clash = Object.keys(files).find((f) => existsSync(join(repoDir, f)));
     if (clash) {
       steps.push({ label, outcome: "skipped", detail: `${clash} exists already; remove it` });
       return;
     }
-    log(`▶ ${label}: planting ${control.means}`);
+    log(`▶ ${label}: planting ${means}`);
     const logs = {
       planted: join(repoDir, controlLog(label, "planted")),
       clean: join(repoDir, controlLog(label, "clean")),
@@ -255,7 +262,7 @@ export function runStepControls(o) {
       steps.push({
         label,
         outcome: "green",
-        detail: `stayed GREEN on ${control.means}: the check is absent`,
+        detail: `stayed GREEN on ${means}: the check is absent`,
         ms,
       });
       log(`  GREEN: absent (${ms} ms); what it printed: ${controlLog(label, "planted")}`);
@@ -278,7 +285,7 @@ export function runStepControls(o) {
     steps.push({
       label,
       outcome: "red",
-      detail: `went red on ${control.means}, green without it`,
+      detail: `went red on ${means}, green without it`,
       ms,
     });
     log(`  red, as it must (${ms} ms)`);
@@ -304,7 +311,12 @@ export function runStepControls(o) {
       : `${label} failed before it (exit ${code}), so nothing can be proven; what it printed: ${controlLog(label, "clean")}`;
   };
 
-  for (const s of preset.gate.always) judge(s, s.label);
+  for (const s of preset.gate.always) {
+    const before = steps.length;
+    judge(s, s.label);
+    const last = steps[steps.length - 1];
+    if (s.builtin && last && steps.length > before) last.builtin = true;
+  }
   for (const suite of o.suites === false ? [] : preset.gate.suites) {
     if (suite.docker && !dockerUp()) {
       for (const s of suite.steps)

@@ -345,7 +345,9 @@
     "enforced": {
       "atCeiling": "array",
       "hard": "number",
-      "promotable": "array",
+      "promotable": [
+        "string"
+      ],
       "prose": "number",
       "ratchet": "number",
       "review": "number",

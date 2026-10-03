@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 
@@ -29,4 +29,30 @@ test("status shows a reading of this checkout, measuring again when the commit h
     /main-ish @ \w+ +measured now · the last reading was of adopt\/standards-old @ \w+/,
   );
   assert.doesNotMatch(moved.out, /--fresh to measure/);
+});
+
+test("a reading another version of abatty measured is measured again, and says whose it was", () => {
+  // Right after an update, an adopter's status showed the previous version's numbers as today's.
+  const dir = tempRepo("status-version", { "package.json": NEXT_PKG });
+  cli(["measure", dir, "--quiet"], dir);
+  const reports = join(dir, ".abatty", "reports");
+  const file = join(
+    reports,
+    readdirSync(reports)
+      .filter((f) => f.endsWith(".json"))
+      .sort()
+      .pop() || "",
+  );
+  const report = JSON.parse(readFileSync(file, "utf8"));
+  writeFileSync(file, JSON.stringify({ ...report, abatty: "0.0.1" }));
+  // The day's markdown that version left: a fresh reading rewrote the JSON beside it and kept
+  // it, and an adopter quoted its evidence as today's.
+  const md = join(reports, `${report.date}.md`);
+  writeFileSync(md, "# the old version's reading\n");
+  const r = cli(["status", dir, "--plain"], dir);
+  assert.match(r.out, /measured now · the last reading was abatty 0\.0\.1's/);
+  assert.doesNotMatch(readFileSync(md, "utf8"), /the old version's reading/);
+  // the other direction: the same reading, as this version wrote it, stands
+  writeFileSync(file, JSON.stringify(report));
+  assert.match(cli(["status", dir, "--plain"], dir).out, /reading of/);
 });

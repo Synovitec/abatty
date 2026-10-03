@@ -134,3 +134,22 @@ test("a docs repository's config names only the commands it has, and init says t
   assert.deepEqual(Object.keys(config(dir).commands).sort(), ["gate", "gateFull", "standards"]);
   assert.match(r.out, /points git's core\.hooksPath at \.githooks/);
 });
+
+test("the workflow init writes is the secret scan's CI step: the fast gate carries the scan", () => {
+  // A design repository's SEC-SECRETS read partial, "no CI step", with the day-one workflow
+  // committed and running gate:fast, whose secret scan ran; and it pointed back at init.
+  const read = (/** @type {string} */ name, /** @type {string} */ run) => {
+    const dir = tempRepo(name, {
+      "package.json": JSON.stringify({ name: "s", scripts: { "gate:fast": "abatty gate --fast" } }),
+      ".githooks/pre-commit": "#!/bin/sh\nnpx abatty secrets --staged\n",
+      ".github/workflows/abatty-gate.yml": `on: push\njobs:\n  gate:\n    steps:\n      - run: ${run}\n`,
+    });
+    return JSON.parse(cli(["check", "SEC-SECRETS", dir, "--json"], dir).out);
+  };
+  const fast = read("secrets-ci-fast", "npm run -s gate:fast");
+  assert.equal(fast.status, "present", fast.evidence);
+  assert.match(fast.evidence, /; CI step/);
+  // the other direction: a pipeline that runs neither the gate nor a scanner is no CI step
+  const none = read("secrets-ci-none", "npm test");
+  assert.match(none.evidence, /no CI step/);
+});
