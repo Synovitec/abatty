@@ -24,6 +24,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **VALID-ENV names every env module.** A monorepo with one env module per workspace read only
+  the first one found, beside its raw reads, so the other five looked uncounted. The evidence now
+  gives how many there are and names the first four.
+
 - **Off GitHub, `init` and `doctor` no longer say `init` writes a GitHub workflow.** Where no
   pipeline runs the gate, the hint named `.github/workflows/abatty-gate.yml` as what `init`
   writes, on a repository where it had written none because the remote is not GitHub. There it
