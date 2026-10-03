@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The rules read the lint configuration a repository imports, not only the file it imports
+  from.** A monorepo's `eslint.config.js` was one line importing its shared
+  `@acme/eslint-config` workspace, so CODE-SHAPE and OBS-CONSOLE read missing although the
+  shared package held every limit. The configuration's relative imports, and the workspace
+  packages of this tree it imports by name, are now read with it, two levels deep.
 - **The probes read a pattern literal as a literal.** The lexer behind every probe knew strings,
   templates and comments but not `/…/` patterns. A quote or a backtick inside one (`/["'`]x/`)
   opened a string that ran on, so the code after it was hidden (a raw environment read went

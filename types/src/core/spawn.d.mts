@@ -37,6 +37,7 @@ export function notInstalled(res: RunResult, repoDir: string, script: string, pl
 export function runCommand(repoDir: string, argv: string[], o?: {
     log?: string;
 }): RunResult;
+/** Whether a Docker daemon answers here: the suites that need one are deferred loudly without it. */
 export function dockerRunning(): boolean;
 /**
  * Where a step's last log is, read and never removed: what a reader of the last gate opens.

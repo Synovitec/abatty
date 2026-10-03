@@ -13,6 +13,7 @@ import { readAdoption } from "../core/repo.mjs";
 import { stageOf } from "./stage.mjs";
 import { detectPacks } from "../packs/index.mjs";
 import { localToday } from "../core/today.mjs";
+import { lintConfigText } from "./lint-config.mjs";
 
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -310,7 +311,8 @@ export function buildContext(repoDir, o = {}) {
     scripts,
     script,
     lintFiles,
-    lintText: lintFiles.map(read).join("\n"),
+    // The modules a configuration imports are its rules too (src/rules/lint-config.mjs).
+    lintText: lintConfigText(lintFiles, read, files),
     tsconfigText: files(/(^|\/)tsconfig(\.base)?\.json$/)
       .map(read)
       .join("\n"),

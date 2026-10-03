@@ -176,3 +176,28 @@ test("a TypeScript library is not read as JavaScript for the tool configs at its
   assert.equal(of(dir, "TYPES-CHECKJS").status, "n/a", "a TypeScript repository");
   assert.notEqual(of(dir, "TYPES-STRICT").status, "n/a", "its strictness is judged");
 });
+
+test("the rules a lint configuration imports are its rules: a shared config package and a relative module", () => {
+  // Hygio's root config was one line importing `@acme/eslint-config` from a workspace package,
+  // and every rule that reads the configuration read missing.
+  const shared = read("lint-shared-package", {
+    ...SERVICE,
+    "eslint.config.mjs": 'import base from "@acme/eslint-config";\nexport default [...base];\n',
+    "packages/eslint-config/package.json": JSON.stringify({
+      name: "@acme/eslint-config",
+      exports: { ".": "./index.mjs" },
+    }),
+    "packages/eslint-config/index.mjs":
+      'import { shape } from "./shape.mjs";\nexport default [{ rules: { "no-console": "error", ...shape } }];\n',
+    "packages/eslint-config/shape.mjs":
+      'export const shape = { "max-lines": 1, "max-lines-per-function": 1, complexity: 1, "max-params": 1 };\n',
+  });
+  assert.equal(of(shared, "OBS-CONSOLE").status, "present", of(shared, "OBS-CONSOLE").evidence);
+  assert.equal(of(shared, "CODE-SHAPE").status, "present", of(shared, "CODE-SHAPE").evidence);
+  // The control: an import of a package that is not in the tree reads nothing.
+  const elsewhere = read("lint-shared-elsewhere", {
+    ...SERVICE,
+    "eslint.config.mjs": 'import base from "@other/eslint-config";\nexport default [...base];\n',
+  });
+  assert.equal(of(elsewhere, "OBS-CONSOLE").status, "missing");
+});
