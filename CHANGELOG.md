@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A docs repository's config names only the commands it has, and `init` says the git setting
+  it changes.** The config listed `npm test`, a typecheck and eslint a design repository has none
+  of; a preset's command list now replaces the template's. The hooks step now says it points
+  git's `core.hooksPath` at `.githooks`, local config that holds for every branch of the clone.
+
 - **`doctor` and `status` judge no agent harness the minimal profile never installed.**
   Right after a minimal `init`, `doctor` read the harness's eighteen files as missing and said NOT
   ok, and `status` said "hooks missing · abatty init". The harness is judged only where it is

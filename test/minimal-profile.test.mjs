@@ -125,3 +125,12 @@ test("on the minimal profile doctor judges no agent harness it never installed, 
   assert.match(s.out, /agent harness\s+none · init --agent <id> adds one/);
   assert.doesNotMatch(s.out, /hooks\s+missing/);
 });
+
+test("a docs repository's config names only the commands it has, and init says the git setting it changes", () => {
+  // A design repository's config listed `npm test`, a typecheck and eslint, and init set git's
+  // core.hooksPath without saying so, though it holds for every branch of the clone.
+  const dir = tempRepo("minimal-docs-config", { "docs/a.md": "# a\n" });
+  const r = cli(["init", dir, "--yes"], dir);
+  assert.deepEqual(Object.keys(config(dir).commands).sort(), ["gate", "gateFull", "standards"]);
+  assert.match(r.out, /points git's core\.hooksPath at \.githooks/);
+});

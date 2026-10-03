@@ -245,6 +245,9 @@ export function initRepo(o) {
     ...(scope.full ? {} : { changelogRequiredFor: [] }),
   };
   // The commands the hooks and the night run, in the manager's own words (the presets write npm's).
+  // The preset's list is the whole list: merged over the template's, a docs repository's config
+  // named `npm test`, a typecheck and eslint it has none of.
+  if (preset.adoption.commands) defaults.commands = { ...preset.adoption.commands };
   if (defaults.commands && typeof defaults.commands === "object")
     for (const [k, v] of Object.entries(defaults.commands))
       if (typeof v === "string") defaults.commands[k] = commandFor(v, pm);
