@@ -36,3 +36,24 @@ test("a touched file's standing debt within its floor is listed without a cross;
   const red = worse.out.split("\n").filter((l) => /^\s{4}\S+ types\.escapes\s+src\/a\.ts/.test(l));
   assert.ok(red.length && red.every((l) => l.includes("✗")), worse.out);
 });
+
+test("a file edited and not committed is touched: a run failing on it never says the change touched nothing", () => {
+  const dir = tempRepo("ratchet-pending", {
+    "package.json": JSON.stringify({ name: "t", version: "0.1.0" }),
+    "src/a.ts": ESCAPED,
+    "docs/x.md": "# x\n",
+  });
+  assert.equal(cli(["baseline", dir], dir).code, 0);
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "baseline");
+  writeFileSync(join(dir, "docs/x.md"), "# x\n\nmore\n");
+  git(dir, "commit", "-qam", "docs\n\nno-changelog: a fixture");
+  writeFileSync(join(dir, "src/a.ts"), `${ESCAPED}${ESCAPED.replace("x", "y")}`);
+  const red = cli(["ratchet", dir, "--range", "HEAD~1..HEAD"], dir);
+  assert.notEqual(red.code, 0, red.out);
+  assert.doesNotMatch(red.out, /nothing this change touched/);
+  assert.ok(
+    red.out.split("\n").some((l) => /✗ types\.escapes\s+src\/a\.ts/.test(l)),
+    red.out,
+  );
+});

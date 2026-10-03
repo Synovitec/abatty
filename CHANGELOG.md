@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The ratchet counts a file you edited and have not committed as touched.** It measures the
+  tree, yet listed only the pushed range's files as this change's, so a run that failed on an
+  uncommitted file said "this change touched 0 findings" and called everything standing debt.
+  When a red run's failures are all outside the touched files, it now names the failing metrics
+  instead of calling it all debt.
 - **A gate with nothing to push says so, instead of "nothing in the tree".** On main at the
   upstream, a skipped suite read "nothing under its paths in the push or the tree" while the
   tree held the paths; "the tree" meant uncommitted edits. It now says the pushed or uncommitted
