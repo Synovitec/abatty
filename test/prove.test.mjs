@@ -27,7 +27,7 @@ test("a test script that runs the tests is proven, and nothing is written in the
 
 test("a test script that can never fail is named as absent, and the run exits 3", () => {
   const dir = tempRepo("prove-hollow", {
-    "package.json": JSON.stringify({ name: "p", scripts: { test: "node -e process.exit(0)" } }),
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node -e 0" } }),
     "test/add.test.js": 'require("node:test")("x", () => {});\n',
   });
   const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
