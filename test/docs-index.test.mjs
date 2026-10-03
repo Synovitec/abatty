@@ -31,3 +31,21 @@ test("the index init writes names the documents already there, from their front 
   const r = cli(["ratchet", dir, "--plain"], dir);
   assert.match(r.out, /docs\.indexDrift\s+0\b/, r.out);
 });
+
+test("an index the repository already had learns of the two documents init writes beside it", () => {
+  const dir = tempRepo("docs-index-kept", {
+    "package.json": NEXT_PKG,
+    "docs/README.md": "# Our docs\n\n| Doc | What |\n|---|---|\n| `guide.md` | the guide |\n",
+    "docs/guide.md": FM("Guide", "How to use it"),
+  });
+  const r = cli(["init", dir, "--stack", "next"], dir);
+  assert.match(
+    r.out,
+    /merged\s+docs\/README\.md · rows added for STANDARDS_PROGRESS\.md, ADOPTION_DECISIONS\.md/,
+  );
+  const index = readFileSync(join(dir, "docs/README.md"), "utf8");
+  assert.match(index, /^# Our docs/, "the repository's own index is kept");
+  git(dir, "add", "-A");
+  git(dir, "commit", "-q", "-m", "chore: the instrument");
+  assert.match(cli(["ratchet", dir, "--plain"], dir).out, /docs\.indexDrift\s+0\b/);
+});

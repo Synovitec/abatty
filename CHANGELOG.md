@@ -16,6 +16,10 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **An index the repository already had learns of the two documents `init` writes.** Where
+  `docs/README.md` existed, `init` kept it and wrote `STANDARDS_PROGRESS.md` and
+  `ADOPTION_DECISIONS.md` beside it unlisted: two `docs.indexDrift` findings abatty created
+  itself. It now appends a row for each the index does not name yet, and says so.
 - **The format and lint steps no longer go red on files `init` wrote.** An adopter who followed
   every step and added a `.prettierrc` saw the format step red on `.claude/`, the workflow, the
   docs `init` wrote and `pnpm-lock.yaml`; another's eslint read `.dependency-cruiser.cjs` as a

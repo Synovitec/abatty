@@ -4,7 +4,7 @@
  * its own read them as missing from the index (docs.indexDrift, HARD) and its first `baseline`
  * was refused. Each document already says what it is in its front matter; the row reads it there.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import { frontMatter } from "../ratchet/probes/lib.mjs";
 
@@ -39,4 +39,37 @@ export function existingDocRows(repoDir, skip) {
       return `| \`${f}\` | ${cell(fm.description || fm.title)} | ${cell(fm.category)} | ${cell(fm.status)} |\n`;
     })
     .join("");
+}
+
+/** The rows of the two documents init writes under docs/, as its own index lists them. */
+const OWN = [
+  [
+    "STANDARDS_PROGRESS.md",
+    "| `STANDARDS_PROGRESS.md` | The standards scoreboard: numbers only, dated; one log entry per deliberate change of a floor | governance | living |",
+  ],
+  [
+    "ADOPTION_DECISIONS.md",
+    "| `ADOPTION_DECISIONS.md` | The decisions an unattended adoption night takes alone: date, phase, default taken, the alternative | governance | living |",
+  ],
+];
+
+/**
+ * Add init's two documents to an index the repository already had, each only where the index
+ * does not name it yet, and record what was added.
+ * @param {string} repoDir @param {import("./init.mjs").InitEvent[]} events @param {boolean} dryRun
+ */
+export function indexOwnDocs(repoDir, events, dryRun) {
+  const at = join(repoDir, "docs", "README.md");
+  if (!existsSync(at)) return;
+  const text = readFileSync(at, "utf8");
+  const rows = OWN.filter(([name]) => !text.includes(String(name))).map(([, row]) => String(row));
+  if (!rows.length) return;
+  if (!dryRun) writeFileSync(at, `${text.replace(/\s*$/, "\n")}${rows.join("\n")}\n`);
+  events.push({
+    file: "docs/README.md",
+    action: "merged",
+    detail: `rows added for ${OWN.filter(([n]) => !text.includes(String(n)))
+      .map(([n]) => n)
+      .join(", ")}`,
+  });
 }

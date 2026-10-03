@@ -35,7 +35,7 @@ import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere } from "./init-merges.mjs";
-import { existingDocRows } from "./docs-index.mjs";
+import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
@@ -378,7 +378,7 @@ export function initRepo(o) {
     "CHANGELOG.md",
     "# Changelog\n\nKeep a Changelog, SemVer. Every commit that touches source, tests, scripts, CI, migrations or docs adds a line under Unreleased in the same commit (CHANGE.1, CHANGE.2).\n\n## [Unreleased]\n\n### Added\n\n- The engineering standard's instrument: harness, gate, import graph, dead code (`abatty init`).\n",
   );
-  put(
+  const indexWritten = put(
     "docs/README.md",
     // With the front matter the ratchet's own docs.frontMatter probe asks of every document: an
     // index written without it made every freshly initialised repository red on its first clean
@@ -397,6 +397,9 @@ export function initRepo(o) {
     "docs/ADOPTION_DECISIONS.md",
     '---\ntitle: "Adoption decisions"\ndescription: "The decisions taken alone by the unattended adoption nights (/adopt-standards): date, phase, situation, the default taken, the alternative set aside, what the morning must re-read."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "adoption", "decisions"]\nrelated: ["./README.md", "./STANDARDS_PROGRESS.md"]\n---\n\n# Adoption decisions\n\n',
   );
+  // An index the repository already kept learns of the two documents written beside it: left
+  // out, each read as missing from it, and the first baseline was refused (docs.indexDrift).
+  if (!indexWritten) indexOwnDocs(repoDir, events, dryRun);
 
   // 6b. CI from the gate, for the providers the repository names (init --ci, or ci.providers).
   const providers = o.ci?.length ? o.ci : (merged.ci?.providers || []).map(String);
