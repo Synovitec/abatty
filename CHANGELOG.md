@@ -10,6 +10,11 @@ rewrites its floor.
 
 ### Added
 
+- **A typecheck red on Next's generated types says so.** After a branch switch, `.next/types`
+  still names routes the checked-out branch does not have, and the gate's typecheck failed with
+  errors that read as the code's own. When a failed step's output names errors under
+  `.next/types` or `.next/dev/types`, the gate says where they are and how to rebuild them.
+
 - **`status` says the policy and its proof.** Two lines open the Harness block: the profiles the
   reading is against with its number of checks, and what the last controls run proved (how many
   judged steps went red on their plant, which stayed green, and when), or that none has run and
