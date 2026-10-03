@@ -429,6 +429,9 @@ test("a range the gate cannot trust selects everything, never nothing: in CI an 
     !local.calls.includes("e2e"),
     "no path in the push or the tree: the browser suite is skipped",
   );
+  // On main with nothing to push, "nothing in the push or the tree" read as an empty tree.
+  assert.match(local.out, /nothing pushed and nothing uncommitted, so no suite is selected/);
+  assert.match(local.out, /nothing under its paths in the pushed or uncommitted files/);
 
   const ci = gate(true);
   assert.equal(ci.r.ok, true, ci.out);

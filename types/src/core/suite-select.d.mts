@@ -53,3 +53,14 @@ export function untestedSuite(suite: import("../presets/index.mjs").GateSuite, n
 export function suiteHomes(repoDir: string, preset: import("../presets/index.mjs").Preset, gated: {
     path: string;
 }[]): string[];
+/**
+ * Every suite recorded as skipped by `--fast`, the root's and each gated workspace's, so the
+ * report counts them rather than leaving them out.
+ * @param {import("../presets/index.mjs").Preset} preset
+ * @param {{ path: string, preset: import("../presets/index.mjs").Preset | null }[]} gated
+ * @param {import("./gate.mjs").GateEvent[]} events
+ */
+export function skipSuitesFast(preset: import("../presets/index.mjs").Preset, gated: {
+    path: string;
+    preset: import("../presets/index.mjs").Preset | null;
+}[], events: import("./gate.mjs").GateEvent[]): void;

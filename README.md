@@ -192,6 +192,9 @@ Every command accepts `--plain` for ASCII markers and no colour, which is what a
 It reaches the commands abatty starts in turn (the gate's steps) through `ABATTY_PLAIN=1`, which
 a pipeline can also set itself.
 Colour is off automatically outside a terminal and in CI. `measure` and `report` take `--json`.
+On a classic Windows console (PowerShell 5.1, cmd), which shows UTF-8 garbled, abatty's symbols
+are written in ASCII (`·` as `-`, `✓` as `ok`); `ABATTY_ASCII=1` asks for that anywhere and
+`ABATTY_ASCII=0` turns it off.
 
 Run `abatty help` for the full flag list of each.
 

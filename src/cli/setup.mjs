@@ -5,6 +5,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
+import { gateTools } from "../presets/index.mjs";
 import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
@@ -14,6 +15,7 @@ import * as t from "../ui/term.mjs";
 import { stalePatchNote, stalePatches } from "../core/patches.mjs";
 import { harnessLintHint, harnessLintSays } from "../core/harness-lint.mjs";
 import { contextState } from "../core/context-file.mjs";
+import { graphRoots } from "../core/source-roots.mjs";
 import { ratchetSetup } from "../ratchet/index.mjs";
 import { DAY_ONE, ciGate, ciSays } from "../ci/day-one.mjs";
 
@@ -55,6 +57,13 @@ export async function initCommand(cx, preset) {
     pm.id
   ];
   if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
+  // The tools a gate runs as commands are no package's dependency: a Python repository was told
+  // nothing about ruff or pytest, and every step could not run.
+  const tools = gateTools(preset);
+  if (preset.pack === "python" && tools.length)
+    out(
+      `  ${n++}. pip install ${tools.join(" ")}  ${t.gray("· in this repository's .venv, where the gate finds them without activating it, or on the PATH")}\n`,
+    );
   // Once, as one command: this filesystem keeps no executable bit, and git skips a hook without it.
   if (r.notExecutable.length)
     out(
@@ -85,7 +94,7 @@ export async function initCommand(cx, preset) {
   if (graph)
     out(
       // Every repository, not only an existing one: without the file the graph step cannot start.
-      `  ${n++}. ${pm.exec("depcruise").join(" ")} src --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
+      `  ${n++}. ${pm.exec("depcruise").join(" ")} ${graphRoots(dir)} --config .dependency-cruiser.cjs --baseline (once, and commit the file)${wrote("knip.jsonc") ? "; knip at today's count (every section it prints added up: files, dependencies, unlisted, binaries, exports, types; the last section alone is not the total)" : ""}\n`,
     );
   const lint = harnessLintHint(dir);
   if (lint) out(`  ${n++}. ${harnessLintSays(lint)}\n`);
@@ -95,16 +104,33 @@ export async function initCommand(cx, preset) {
   for (const s of preset.gate.always)
     if (s.requires && !s.requires.some((f) => existsSync(join(dir, f))))
       out(
-        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it`)}\n`,
+        `  ${n++}. ${t.gray(`the gate skips ${s.label} until a ${s.requires[0]} (or ${s.requires.slice(1, 3).join(", ")}) exists: add one when this repository holds it${s.label === "format" ? `, then ${pm.exec("prettier").join(" ")} --write . once, so the files init wrote take its style` : ""}`)}\n`,
       );
   // A gate step whose script only the repository can write (the changed lines' coverage runs on
   // its own runner), named here: doctor said it was absent and init had said nothing.
-  const scripts = readJsonFile(dir, "package.json")?.scripts || {};
-  for (const s of preset.gate.always)
-    if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
-      out(
-        `  ${n++}. ${t.gray(`the gate skips ${s.label} until package.json has a "${s.script}" script, run on this repository's own runner`)}\n`,
-      );
+  // A workspace with a preset of its own is gated in its folder, on its own package.json: there
+  // it read "could not run" for a test script nobody had mentioned.
+  const homes = [
+    { where: "package.json", at: dir, steps: preset.gate.always },
+    ...detectWorkspaces(dir, readAdoption(dir))
+      .filter((w) => w.preset)
+      .map((w) => ({
+        where: `${w.path}/package.json`,
+        at: join(dir, w.path),
+        // Less what the gate runs once at the root: the ratchet over the range.
+        steps: /** @type {import("../presets/index.mjs").Preset} */ (w.preset).gate.always.filter(
+          (s) => !s.rangeArg,
+        ),
+      })),
+  ];
+  for (const h of homes) {
+    const scripts = readJsonFile(h.at, "package.json")?.scripts || {};
+    for (const s of h.steps)
+      if (s.script && ![s.script, ...(s.alternatives || [])].some((k) => k in scripts))
+        out(
+          `  ${n++}. ${t.gray(`the gate ${s.required ? "cannot run" : "skips " + s.label} until ${h.where} has a "${s.script}" script${s.required ? ` (${s.label} is required)` : ""}, run on its own runner`)}\n`,
+        );
+  }
   // CI from the first day: the workflow init just wrote is committed with the rest, and where it
   // wrote none (another forge) the gap is named rather than left for a hand run to find.
   if (wrote(DAY_ONE))

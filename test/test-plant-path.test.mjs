@@ -51,6 +51,23 @@ test("a config's excluded globs are not where tests run; its include is", () => 
   );
 });
 
+test("a runner's default config is read when the script names none", () => {
+  // `vitest run` reads vitest.config.mts unasked; the plant went to src/ outside its include,
+  // stayed green, and a working suite read as one never watched failing.
+  const vitest = tempRepo("tpp-default-vitest", {
+    "vitest.config.mts":
+      'export default { test: { include: ["tests/unit/**/*.test.{ts,tsx}"] } };\n',
+  });
+  assert.equal(at(vitest, "vitest run"), `tests/unit/${M}.test.ts`);
+  const jest = tempRepo("tpp-default-jest", {
+    "jest.config.ts": "export default { testMatch: ['__tests__/**/*.test.ts'] };\n",
+  });
+  assert.equal(at(jest, "jest --ci"), `__tests__/${M}.test.ts`);
+  // the other direction: a named config wins over the default, and no runner reads none
+  assert.equal(at(vitest, "vitest run -c other.config.ts"), `src/${M}.test.ts`);
+  assert.equal(at(vitest, "node --test"), `src/${M}.test.ts`);
+});
+
 test("a runner config the script names is read, and a brace glob takes its first form", () => {
   const dir = tempRepo("tpp-config", {
     "vitest.int.config.ts": "export default { test: { include: ['it/**/*.spec.{ts,tsx}'] } };\n",

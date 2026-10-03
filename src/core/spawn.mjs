@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { missingTool } from "./which.mjs";
@@ -153,9 +153,32 @@ export function notInstalled(
  */
 export function runCommand(repoDir, argv, o = {}) {
   const [cmd, ...args] = argv;
-  return spawnStep(launch(String(cmd), args), repoDir, undefined, o.log);
+  const local = venvTool(repoDir, String(cmd));
+  return spawnStep(
+    local ? { file: local, args, shell: false } : launch(String(cmd), args),
+    repoDir,
+    undefined,
+    o.log,
+  );
 }
 
+/**
+ * A tool installed in the repository's virtual environment (`.venv`, or `venv`), by its path: a
+ * Python repository installs ruff and pytest there, never on the PATH, and every step of the gate
+ * could not run until the shell had been activated by hand. "" when it is not there.
+ * @param {string} repoDir @param {string} tool @returns {string}
+ */
+export function venvTool(repoDir, tool) {
+  if (!/^[\w.-]+$/.test(tool)) return "";
+  const win = process.platform === "win32";
+  for (const env of [".venv", "venv"]) {
+    const file = join(repoDir, env, win ? "Scripts" : "bin", win ? `${tool}.exe` : tool);
+    if (existsSync(file)) return file;
+  }
+  return "";
+}
+
+/** Whether a Docker daemon answers here: the suites that need one are deferred loudly without it. */
 export function dockerRunning() {
   return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
 }

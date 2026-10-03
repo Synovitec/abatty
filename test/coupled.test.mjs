@@ -247,3 +247,24 @@ test("the commit-msg hook: abatty changelog --message refuses the commit init's 
   assert.equal(cli(["changelog", dir, "--message", msg], dir).code, 0, "the line is staged");
   assert.equal(cli(["changelog", dir], dir).code, 2, "the hook's form is the only one");
 });
+
+test("abatty's own records need no changelog line, and the code beside them still does", () => {
+  const pairs = changelogPairs({
+    changelog: "CHANGELOG.md",
+    changelogRequiredFor: ["scripts/", "app/"],
+  });
+  assert.equal(
+    stagedVerdict(["scripts/ci/standards-baseline.json"], pairs).ok,
+    true,
+    "the baseline",
+  );
+  assert.equal(stagedVerdict([".claude/harness.lock.json"], pairs).ok, true);
+  assert.equal(
+    stagedVerdict(["scripts/ci/standards-baseline.json", "app/actions.ts"], pairs).ok,
+    false,
+  );
+  const commits = [
+    { sha: "a1", subject: "chore: the floor", files: ["scripts/ci/standards-baseline.json"] },
+  ];
+  assert.deepEqual(coupledFindings(commits, pairs), []);
+});

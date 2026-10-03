@@ -5,7 +5,7 @@
 import { EXIT } from "./exit.mjs";
 import { join } from "node:path";
 import { buildContext } from "../rules/context.mjs";
-import { changedPaths, pushRange } from "../core/range.mjs";
+import { changedPaths, pendingPaths, pushRange } from "../core/range.mjs";
 import { ciFromEnv } from "../core/env.mjs";
 import {
   BUILTIN_PROBES,
@@ -142,7 +142,9 @@ export async function ratchetCommand(command, c) {
       // reports both in one list teaches its reader to scroll past both.
       if (range) {
         const { splitByRange } = await import("../ratchet/index.mjs");
-        const split = splitByRange(verdicts, changedPaths(dir, range));
+        // The tree is what was measured, so a file edited and not yet committed is touched too:
+        // without it a run failed on that very file and said this change touched nothing.
+        const split = splitByRange(verdicts, [...changedPaths(dir, range), ...pendingPaths(dir)]);
         if (split.introduced.length || split.standing.length) {
           // A cross is for what fails the run: a finding in a touched file whose metric held its
           // floor is debt the file already carried. Both marked alike, an adopter's session read a
@@ -157,7 +159,13 @@ export async function ratchetCommand(command, c) {
               `    ${failing.has(metric) ? t.glyph.fail : t.glyph.skip} ${t.gray(metric.padEnd(24))} ${finding.path}${finding.line ? t.gray(":" + finding.line) : ""}${finding.detail ? t.gray(" · " + finding.detail) : ""}\n`,
             );
           if (!split.introduced.length)
-            out(`    ${t.gray("nothing this change touched; every finding is standing debt")}\n`);
+            out(
+              `    ${t.gray(
+                failing.size
+                  ? `nothing in the files this change touched; what fails is ${[...failing].join(", ")}, above`
+                  : "nothing this change touched; every finding is standing debt",
+              )}\n`,
+            );
         }
       }
       const red = failed(verdicts);
@@ -190,8 +198,14 @@ export async function ratchetCommand(command, c) {
       const tally = failing.length
         ? `· ${failing.length} of ${verdicts.length} metric(s) failing: ${failing.join(", ")}`
         : `· ${verdicts.length} metric(s)${problems.length ? `, ${problems.length} probe problem(s) above` : ""}`;
+      // A probe on probation would have failed this run and did not: said on the headline, or a
+      // green run reads as nothing found where a finding is waiting for the probe to be trusted.
+      const held = verdicts.filter((v) => v.status === "probation").map((v) => v.metric);
+      const onProbation = held.length
+        ? ` · ${held.length} on probation would fail, not failing: ${held.join(", ")}`
+        : "";
       out(
-        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(tally)}\n\n`,
+        `\n${red || problems.length ? t.glyph.fail : t.glyph.ok} ${red || problems.length ? t.red("ratchet red") : t.green("ratchet green")} ${t.gray(tally)}${t.yellow(onProbation)}\n\n`,
       );
       process.exit(problems.length ? EXIT.input : red ? EXIT.findings : EXIT.clean);
     }

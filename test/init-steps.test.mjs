@@ -79,3 +79,30 @@ test("the knip step says the count is every section added up, and the env rule s
   const rules = readFileSync(join(dir, ".dependency-cruiser.cjs"), "utf8");
   assert.match(rules, /pathNot: "\^src\/lib\/env\/public\[\.\]ts\$"/);
 });
+
+test("the format step is told to rewrite once, and the instrument and lockfiles are not formatted", () => {
+  const dir = tempRepo("steps-prettier", { "package.json": NEXT_PKG });
+  const out = steps(cli(["init", dir, "--stack", "next"], dir).out);
+  assert.match(out, /add one when this repository holds it, then npx prettier --write \. once/);
+  const ignore = readFileSync(join(dir, ".prettierignore"), "utf8");
+  for (const line of [".claude/", "pnpm-lock.yaml", "package-lock.json"])
+    assert.match(ignore, new RegExp(`^${line.replace(/\./g, "\.")}$`, "m"), line);
+});
+
+test("a preset workspace's missing test script is named in init's steps, as the gate will need it", () => {
+  const dir = tempRepo("steps-ws", {
+    "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), workspaces: ["apps/*"] }),
+    "apps/web/package.json": JSON.stringify({ name: "web", dependencies: { next: "15.0.0" } }),
+    "apps/web/app/page.tsx": "export default function P() { return null; }\n",
+  });
+  const out = steps(cli(["init", dir, "--stack", "next"], dir).out);
+  assert.match(
+    out,
+    /cannot run until apps\/web\/package\.json has a "test" script \(unit tests \(TEST\.1\) is required\)/,
+  );
+  assert.doesNotMatch(
+    out,
+    /apps\/web\/package\.json has a "standards"/,
+    "the ratchet runs at the root",
+  );
+});

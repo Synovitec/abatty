@@ -13,7 +13,7 @@ import { missingGateScripts } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
 import { suiteEnvGaps } from "../src/core/suite-env.mjs";
 import { offProbes } from "../src/core/opt-in.mjs";
-import { RULES } from "../src/rules/index.mjs";
+import { RULES, runCatalog } from "../src/rules/index.mjs";
 import { buildContext } from "../src/rules/context.mjs";
 import { BUILTIN_PROBES } from "../src/ratchet/index.mjs";
 import { resolveConfig } from "../src/ratchet/config.mjs";
@@ -274,6 +274,74 @@ const CASES = [
       const step = r.steps.find((s) => s.label.startsWith("unit tests"));
       assert.equal(step?.outcome, "red", JSON.stringify(r.steps));
       assert.equal(existsSync(join(dir, want)), false, "and removed after");
+    },
+  },
+  {
+    report: "monorepo · 2026-10-02 · rc.10, a shared lint config",
+    claim: "the rules read the shared config package the root eslint config imports",
+    run: () => {
+      const dir = monorepoAdopter();
+      writeFileSync(
+        join(dir, "eslint.config.mjs"),
+        'import base from "@acme/eslint-config";\nexport default [...base];\n',
+      );
+      mkdirSync(join(dir, "packages/eslint-config"), { recursive: true });
+      writeFileSync(
+        join(dir, "packages/eslint-config/package.json"),
+        JSON.stringify({ name: "@acme/eslint-config", main: "index.mjs" }),
+      );
+      writeFileSync(
+        join(dir, "packages/eslint-config/index.mjs"),
+        'export default [{ rules: { "max-lines": 1, "max-lines-per-function": 1, complexity: 1, "max-params": 1 } }];\n',
+      );
+      git(dir, "add", "-A");
+      const shape = runCatalog(buildContext(dir), RULES).find((f) => f.id === "CODE-SHAPE");
+      assert.equal(shape?.status, "present", shape?.evidence);
+    },
+  },
+  {
+    report: "monorepo · 2026-10-02 · rc.10, observability readings",
+    claim:
+      "the logger's censor value is configuration, and a DSN read by bracket is from the environment",
+    run: () => {
+      const dir = monorepoAdopter();
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      pkg.dependencies = { express: "4", pino: "9", "@sentry/node": "8" };
+      writeFileSync(join(dir, "package.json"), JSON.stringify(pkg));
+      writeFileSync(
+        join(dir, "apps/web/lib/logger.ts"),
+        'export const log = pino({ redact: { paths: ["password"], censor: "[REDACTED]" } });\n',
+      );
+      writeFileSync(
+        join(dir, "apps/web/instrumentation.ts"),
+        'Sentry.init({ dsn: process.env["SENTRY_DSN"] });\n',
+      );
+      git(dir, "add", "-A");
+      const found = runCatalog(buildContext(dir), RULES);
+      for (const id of ["OBS-REDACTION", "OBS-TRACKER"]) {
+        const x = found.find((r) => r.id === id);
+        assert.equal(x?.status, "present", `${id}: ${x?.evidence}`);
+      }
+    },
+  },
+  {
+    report: "monorepo · 2026-10-02 · rc.10, tamper per commit",
+    claim:
+      "a test case removed in one commit and restored in the next is not a way out the push took",
+    run: () => {
+      const dir = monorepoAdopter();
+      const file = join(dir, "apps/web/lib/b.test.ts");
+      const both = "test('one', () => {});\ntest('two', () => {});\n";
+      writeFileSync(file, both);
+      git(dir, "add", "-A");
+      git(dir, "commit", "-qm", "test: two");
+      writeFileSync(file, "test('one', () => {});\n");
+      git(dir, "commit", "-qam", "wip");
+      writeFileSync(file, both);
+      git(dir, "commit", "-qam", "back");
+      const probe = BUILTIN_PROBES.find((p) => p.metric === "change.testTamper");
+      const r = probe?.scan(buildContext(dir), { ...SCAN, range: "HEAD~2..HEAD" });
+      assert.equal(r?.findings.length, 0, JSON.stringify(r?.findings));
     },
   },
 ];

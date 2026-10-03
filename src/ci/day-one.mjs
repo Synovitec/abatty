@@ -61,9 +61,10 @@ export function onGithub(repoDir) {
 /**
  * The day-one workflow: the repository's own install, then the fast gate, on every push and pull
  * request, with read-only permissions and the actions pinned as the full pipeline pins them.
- * @param {string} repoDir @returns {string}
+ * @param {string} repoDir @param {string[]} [pyTools] the tools a Python gate runs, installed first
+ * @returns {string}
  */
-export function dayOneWorkflow(repoDir) {
+export function dayOneWorkflow(repoDir, pyTools = []) {
   const t = tooling({ pm: packageManager(repoDir) });
   return [
     "# Written by `abatty init`: the gate on every push and pull request, the audit and the secret",
@@ -80,7 +81,7 @@ export function dayOneWorkflow(repoDir) {
     "  gate:",
     "    runs-on: ubuntu-latest",
     "    steps:",
-    ...githubSetup(t, "22"),
+    ...githubSetup(t, "22", pyTools),
     `      - run: ${t.run("gate:fast")}`,
     "",
   ].join("\n");
@@ -99,4 +100,16 @@ export function ciSays(ci) {
   if (ci.state === "fast")
     return "CI runs the fast gate, without its suites: abatty ci writes the pipeline that runs them";
   return "";
+}
+
+/**
+ * What the fast gate says about the suites it skipped: CI runs them only where a pipeline runs
+ * the whole gate. It said "CI still runs them" while the pipeline init writes runs the fast gate.
+ * @param {string} repoDir
+ * @returns {string}
+ */
+export function fastNote(repoDir) {
+  return ciGate(repoDir).state === "gate"
+    ? "--fast: skipped the conditional suites. CI runs them (its pipeline runs the whole gate)."
+    : "--fast: skipped the conditional suites, and no pipeline here runs them: `abatty ci` writes one that does.";
 }

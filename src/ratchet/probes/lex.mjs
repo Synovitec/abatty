@@ -24,6 +24,7 @@ function literalEnd(text, i) {
     const close = text.indexOf("*/", i + 2);
     return close < 0 ? text.length : close + 1;
   }
+  if (ch === "/") return patternEnd(text, i);
   if (ch !== "'" && ch !== '"' && ch !== "`") return null;
   let j = i + 1;
   for (; j < text.length && text[j] !== ch; j++) {
@@ -31,6 +32,31 @@ function literalEnd(text, i) {
     else if (text[j] === "\n" && ch !== "`") return null;
   }
   return j;
+}
+
+/** What a pattern literal can follow; after anything else a slash divides. */
+const BEFORE_PATTERN =
+  /(?:^|[(,=:[!&|?{};+\-*%~^]|=>|\b(?:return|typeof|case|in|of|void|delete|yield|await|throw|else|do))\s*$/;
+
+/**
+ * The index of the slash that closes a pattern literal opening at `i`, or null where the slash is
+ * a division or a JSX closing tag. Unread, a quote or a backtick inside a pattern (`/["'`]x/`)
+ * opened a string that swallowed the code after it, both hiding reads and inventing them.
+ * @param {string} text @param {number} i @returns {number | null}
+ */
+function patternEnd(text, i) {
+  const line = text.lastIndexOf("\n", i - 1) + 1;
+  if (!BEFORE_PATTERN.test(text.slice(line, i))) return null;
+  let inClass = false;
+  for (let j = i + 1; j < text.length; j++) {
+    const c = text[j];
+    if (c === "\n") return null;
+    if (c === "\\") j++;
+    else if (c === "[") inClass = true;
+    else if (c === "]") inClass = false;
+    else if (c === "/" && !inClass) return j;
+  }
+  return null;
 }
 
 /**
@@ -55,7 +81,8 @@ export function codeOnly(text, o = {}) {
     // Always forward: an unterminated literal runs to the end of the text, never back.
     if (last < 0 || last >= text.length) last = text.length - 1;
     const piece = text.slice(i, last + 1);
-    if (text[i] === "/") out.push(o.comments === "keep" ? piece : blank(piece));
+    const comment = text[i] === "/" && (text[i + 1] === "/" || text[i + 1] === "*");
+    if (comment) out.push(o.comments === "keep" ? piece : blank(piece));
     else if (o.strings === "keep") out.push(piece);
     else out.push(piece[0] + blank(piece.slice(1, -1)) + (piece.length > 1 ? piece.slice(-1) : ""));
     i = last + 1;

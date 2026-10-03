@@ -135,8 +135,25 @@ export function tamperIn(git, range) {
       ),
     ),
   );
-  return { scanned: shas.length, findings };
+  // Netted over the range: a case removed in one commit and put back in the next, or a skip
+  // added and taken out, is not a way out the push took. Each commit's finding stands only when
+  // the range as a whole still shows that kind in that file (Hygio counted a restore as tamper).
+  const base = range.includes("...") ? range : range.replace("..", "...");
+  const whole = waysOut(
+    "",
+    "",
+    git("-c", "core.quotePath=false", "diff", "-U0", "--no-color", "--no-ext-diff", base),
+  );
+  const kept = new Set(whole.map((f) => `${f.path}|${kindOf(f.detail)}`));
+  return {
+    scanned: shas.length,
+    findings: findings.filter((f) => kept.has(`${f.path}|${kindOf(f.detail)}`)),
+  };
 }
+
+/** The way out a finding names, without its count or its commit. @param {string} detail */
+const kindOf = (detail) =>
+  (detail.match(/removed|skipped or focused|suppression|snapshot|threshold/) || [""])[0];
 
 /** @type {Probe[]} */
 export const probes = [
@@ -144,11 +161,13 @@ export const probes = [
     metric: "change.testTamper",
     kind: "ratchet",
     probation: true,
+    // v2: netted over the range, so a commit that undoes another's way out clears both.
+    version: 2,
     standard: ["TEST.1", "TEST.5"],
     title: "Commits in the pushed range that weakened the tests or the checks they are judged by",
     why: "A change that makes the tests pass by changing the tests has made the claim easier, not the code better: a case removed, skipped or focused, a snapshot rewritten, a checker silenced, a threshold lowered. Each can be right, and each is the first thing to read in a review, above all in a change nobody watched being made. Say why on a `tests-changed:` line, or put the test back.",
     approximates:
-      "stands in for reading every test edit for intent, which no text reading can do: per commit in the range, the test cases lost across the commit's test files (net, so cases moved from one file to another cancel, and so do cases removed in one file while as many are added in another), the skip, todo and only markers a test file gained, the suppression comments a code file gained outside its strings, the snapshots rewritten without a reason, and a coverage or quality threshold whose number fell. A case rewritten to assert something weaker, with the count unchanged, is not seen; a shallow clone is not judged.",
+      "stands in for reading every test edit for intent, which no text reading can do: per commit in the range, the test cases lost across the commit's test files (net, so cases moved from one file to another cancel, and so do cases removed in one file while as many are added in another), the skip, todo and only markers a test file gained, the suppression comments a code file gained outside its strings, the snapshots rewritten without a reason, and a coverage or quality threshold whose number fell. A finding stands only where the range as a whole still shows it, so a commit that undoes another's way out clears both. A case rewritten to assert something weaker, with the count unchanged, is not seen; a shallow clone is not judged.",
     emptyScanOk: true,
     scan: (c, o) => {
       if (!o.range)
@@ -203,6 +222,23 @@ export const probes = [
         range: "HEAD~1..HEAD",
         expect: 1,
       })),
+      {
+        name: "a case removed and put back, and a skip added and taken out, in the same range",
+        files: { "test/a.test.ts": "test('one', () => {});\ntest('two', () => {});\n" },
+        commits: [
+          { files: { "test/a.test.ts": "test('one', () => {});\n" }, message: "fix: wip" },
+          {
+            files: { "test/a.test.ts": "test.skip('one', () => {});\ntest('two', () => {});\n" },
+            message: "fix: back",
+          },
+          {
+            files: { "test/a.test.ts": "test('one', () => {});\ntest('two', () => {});\n" },
+            message: "fix: done",
+          },
+        ],
+        range: "HEAD~3..HEAD",
+        expect: 0,
+      },
       {
         name: "a case added, a moved case, a reasoned snapshot, a raised threshold, a tighter size budget, and a suppression named in prose or in a string",
         files: {

@@ -116,3 +116,40 @@ test("a pull-request template the repository wrote is kept, and the generated on
   assert.match(theirs, /The gate is green \(`pnpm run gate`\)/);
   assert.ok(!/npm run gate/.test(theirs.replace(/pnpm run gate/g, "")));
 });
+
+test("a pipeline only named after the gate does not run it, and a run line under that name does", () => {
+  const named =
+    "name: abatty gate\njobs:\n  a:\n    name: abatty gate on push\n    steps:\n      - name: abatty gate\n        run: npm test\n";
+  assert.equal(runsGate(named, { test: "node --test" }).runs, false);
+  const ran =
+    "name: ci\njobs:\n  a:\n    steps:\n      - name: the gate\n        run: npx abatty gate\n";
+  assert.equal(runsGate(ran, {}).runs, true);
+});
+
+test("the generated pipeline grants writes to the signing job only, and gives the suites a database", () => {
+  const next = presetById("next");
+  assert.ok(next);
+  const scripts = {
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx seed.ts",
+    e2e: "playwright test",
+    build: "next build",
+    "test:integration": "vitest",
+    coverage: "vitest --coverage",
+  };
+  const yml = renderGithubActions(next, { scripts });
+  const head = yml.slice(0, yml.indexOf("jobs:"));
+  assert.doesNotMatch(head, /write/, "the workflow's own permissions are read-only");
+  const checks = yml.slice(yml.indexOf("  checks:"), yml.indexOf("  floors:"));
+  assert.match(checks, /id-token: write[\s\S]*attestations: write[\s\S]*security-events: write/);
+  const database = yml.slice(yml.indexOf("  database:"), yml.indexOf("  browser:"));
+  assert.match(database, /TEST_DATABASE_URL: postgres:\/\//);
+  const browser = yml.slice(yml.indexOf("  browser:"));
+  assert.match(browser, /services:[\s\S]*postgres:16/);
+  assert.match(browser, /run: npm run -s db:migrate\n {6}- run: npm run -s db:seed\n/);
+  // No migrate script: no database to stand up for the browser job.
+  const plain = renderGithubActions(next, {
+    scripts: { e2e: "playwright test", build: "next build" },
+  });
+  assert.doesNotMatch(plain.slice(plain.indexOf("  browser:")), /services:/);
+});

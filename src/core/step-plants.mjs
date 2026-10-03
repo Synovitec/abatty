@@ -142,11 +142,18 @@ export const STEP_CONTROLS = {
         : file(`${plantRoot(dir)}/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
   },
   lint: {
-    means: "a debugger statement (an unused import for Python)",
+    // One violation per common rule set, so the plant is caught by whichever the repository
+    // extends: a bare `debugger` went unseen by Next's stock config, which has no
+    // eslint:recommended, and the lint step read as one never watched failing.
+    means:
+      "a debugger statement, an unused any and a hook called conditionally (an unused import for Python)",
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "import os\n")
-        : file(`${plantRoot(dir)}/${MARK}.ts`, "debugger;\nexport const abattyControl = 1;\n"),
+        : file(
+            `${plantRoot(dir)}/${MARK}.ts`,
+            "debugger;\nconst abattyUnused: any = 1;\nexport function useAbattyControl(flag: boolean) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",
+          ),
   },
   typecheck: {
     means: "a type error",

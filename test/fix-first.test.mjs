@@ -37,6 +37,19 @@ test("the last gate's failed audit is named with its day and its advisories", ()
   );
 });
 
+test("an audit that could not run is named, never read as nothing to fix", () => {
+  const dir = tempRepo("ff-audit-errored", { "package.json": NEXT_PKG });
+  mkdirSync(join(dir, ".abatty/steps"), { recursive: true });
+  writeFileSync(
+    join(dir, ".abatty/steps/audit_SEC.1_.log"),
+    "▶ audit (SEC.1)\n\n✗ audit (SEC.1) could not run: no lockfile. The gate stops here.\nerrored: no lockfile\n",
+  );
+  assert.match(
+    fixFirst(dir, []).join("\n"),
+    /the audit could not run at the last gate .*: no lockfile/,
+  );
+});
+
 test("a passed audit, or one CI runs, adds nothing", () => {
   const dir = tempRepo("ff-clean", {
     "package.json": NEXT_PKG,

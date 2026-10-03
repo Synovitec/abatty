@@ -18,3 +18,17 @@ export function ignoredHere(repoDir: string): string[];
  * @returns {string} "" when nothing changed
  */
 export function added(after: Record<string, unknown>, before: Record<string, unknown>, kind: string): string;
+/**
+ * A folder's name as npm takes a package name: lower case, no spaces, nothing npm refuses. The
+ * folder `My Go_Svc` was written as the name verbatim, and npm refused every command after.
+ * @param {string} folder @returns {string}
+ */
+export function packageName(folder: string): string;
+/**
+ * A preset's scripts less an eslint `lint` the folder has nothing to run: no eslint installed and
+ * no configuration. An Astro site was given `eslint .` and the gate's lint step could not run;
+ * without the script it is skipped by name, and the gap analysis says what is missing.
+ * @param {string} dir the folder whose package.json gets the scripts
+ * @param {Record<string, string>} scripts @returns {Record<string, string>}
+ */
+export function runnableScripts(dir: string, scripts: Record<string, string>): Record<string, string>;

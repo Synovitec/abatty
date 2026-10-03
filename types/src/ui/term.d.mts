@@ -26,6 +26,16 @@ export function kv(k: string, v: string): string;
 export function duration(ms: number): string;
 /** The product's one-line banner. @param {string} version */
 export function banner(version: string): string;
+/**
+ * Whether this console can show UTF-8. abatty writes UTF-8 always, and a classic Windows console
+ * (PowerShell 5.1, cmd) decodes it in its OEM code page: an adopter read "Ô£ù gate red ┬À". The
+ * terminals known to show it are trusted (Windows Terminal, VS Code, an MSYS shell such as Git
+ * Bash, any CI log); `ABATTY_ASCII=1` or `=0` settles it either way.
+ * @param {NodeJS.ProcessEnv} env @param {string} platform @returns {boolean}
+ */
+export function asciiOnly(env: NodeJS.ProcessEnv, platform: string): boolean;
+/** A screen's text with abatty's symbols written in ASCII; everything else as it was. @param {string} s */
+export function toAscii(s: string): string;
 export function bold(s: string): string;
 export function red(s: string): string;
 export function green(s: string): string;

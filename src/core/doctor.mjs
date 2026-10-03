@@ -10,6 +10,8 @@ import { spawnSync } from "node:child_process";
 import { harnessLintHint } from "./harness-lint.mjs";
 import { ciGate } from "../ci/day-one.mjs";
 import { unreachableSuites } from "./suite-reach.mjs";
+import { splitPairs } from "./version-pairs.mjs";
+import { undeclaredImports } from "./undeclared.mjs";
 import { TEMPLATES } from "./init.mjs";
 import { missingGateScripts } from "./gate.mjs";
 import { packageVersion, readLock } from "./update.mjs";
@@ -173,6 +175,10 @@ export function doctor(o) {
   const ci = at("CI and the gate", () => ciGate(repoDir));
   // A suite the repository has and the gate can never select (src/core/suite-reach.mjs).
   const unreachable = at("suites the gate can reach", () => unreachableSuites(repoDir, preset));
+  // Packages released together, installed at different versions (src/core/version-pairs.mjs).
+  const split = at("versions released together", () => splitPairs(repoDir));
+  // Imported, declared nowhere: one line per package, where the gate reads one per file.
+  const undeclared = at("imports declared nowhere", () => undeclaredImports(repoDir));
   const ok =
     st.code === 0 &&
     missing.length === 0 &&
@@ -204,5 +210,7 @@ export function doctor(o) {
     harnessLint,
     ci,
     unreachable,
+    split,
+    undeclared,
   };
 }

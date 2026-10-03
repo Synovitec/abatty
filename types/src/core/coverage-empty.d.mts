@@ -17,6 +17,11 @@ export function measuredNothing(output: string): {
  */
 export function markHollow(file: string, events: import("./gate.mjs").GateEvent[], log: (line: string) => void): void;
 /**
+ * Mark a green unit step whose output says it ran no test, as markHollow does for coverage.
+ * @param {string} file @param {import("./gate.mjs").GateEvent[]} events @param {(line: string) => void} log
+ */
+export function markNoTests(file: string, events: import("./gate.mjs").GateEvent[], log: (line: string) => void): void;
+/**
  * How the coverage tools a profile may name say they measured nothing, each by the tool that
  * prints it. A tool missing here reads as a step that measured something, which is today's
  * behaviour, never a new red.

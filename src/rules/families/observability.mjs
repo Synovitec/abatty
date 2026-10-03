@@ -82,7 +82,13 @@ export const rules = [
     check: (c) => {
       const text = serverText(c);
       const configured = /\bredact\b|\bcensor\b|redactPaths|maskFields/i.test(text);
-      const byHand = (text.match(/\*{3,}|\[redacted\]|\bmask\(/gi) || []).length;
+      // The logger's own replacement (`censor: "[REDACTED]"`) is the configuration, not a mask by
+      // hand: an adopter's correct pino setup read as partial for it.
+      const calls = text
+        .split("\n")
+        .filter((l) => !/\bcensor\b|\bredact\b/i.test(l))
+        .join("\n");
+      const byHand = (calls.match(/\*{3,}|\[redacted\]|\bmask\(/gi) || []).length;
       if (!configured)
         return {
           status: "missing",
@@ -202,7 +208,17 @@ export const rules = [
     check: (c) => {
       const dep = TRACKERS.find((t) => c.has(t));
       if (!dep) return { status: "missing", evidence: "no error tracker" };
-      const fromEnv = /process\.env\.[A-Z_]*(SENTRY|BUGSNAG|ROLLBAR|OTEL|DSN)/.test(serverText(c));
+      // Dot or bracket access, and Next's instrumentation files, where a tracker is initialised:
+      // the DSN read by bracket in `instrumentation.ts` read as not from the environment.
+      const text = [
+        serverText(c),
+        ...c
+          .files(/(^|\/)(instrumentation(-client)?|sentry\.[\w-]+\.config)\.(ts|js|mjs)$/)
+          .map((f) => c.read(f)),
+      ].join("\n");
+      const fromEnv =
+        /process\.env(\.|\[\s*["'`])[A-Z_]*(SENTRY|BUGSNAG|ROLLBAR|OTEL|DSN)/.test(text) ||
+        /import\.meta\.env\.[A-Z_]*(SENTRY|DSN)/.test(text);
       return {
         status: fromEnv ? "present" : "partial",
         evidence: fromEnv

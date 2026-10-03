@@ -99,11 +99,8 @@ honest answer; a number nobody measures is not one.>
 | Name | Use it when | It must not |
 |---|---|---|
 | `/adopt-standards --phase N` | Running one phase of the adoption programme (unattended-safe) | Push to `main`, merge, raise a floor, install a dependency |
-| `/verify-change` | After any non-trivial change to source: runs the gate and drives the real flow | Replace the gate |
-| `/code-review` | Reviewing a diff or a PR for correctness | - |
 | `standards-reviewer` (agent) | Before every phase commit and any refactor claiming to preserve behaviour; read-only | Edit anything |
 | `standards-adopter` (agent) | Daytime: one territory (directory, phase, metric) of the programme | Work outside its territory |
-| `<project>-architect` (agent) | Design questions, schema and API shape; read-only | Write code |
 | `mattpocock-skills:codebase-design` (model-invoked) | Choosing a seam before a split: deep module, small interface, the deletion test | Justify a split by line count |
 | `mattpocock-skills:tdd` | Any new guard, probe or behaviour: red before green, at a pre-agreed seam | Write production code before the failing test |
 | `mattpocock-skills:writing-for-agents` | Editing this file, a `.claude/rules/*.md`, a skill or an agent | Grow this file past 200 lines |
@@ -112,7 +109,8 @@ honest answer; a number nobody measures is not one.>
 | `mattpocock-skills:resolving-merge-conflicts` / `:diagnosing-bugs` / `:wizard` | The morning merge of an adoption branch; a `behaviour-risk` or blocked phase; a human-only runbook step (restore drill, key generation) | - |
 | `/mattpocock-skills:improve-codebase-architecture`, `/mattpocock-skills:grill-with-docs` (day, user-invoked) | The morning after a night that recorded `seam-unclear`: the deletion-test scan over those files, the report, the grilling; before phase 0 of a repository (the `adoption.json` choices) or a feature spec. The ADRs they write go where the repository keeps decisions, with the house front matter, or the docs gate is red | Run unattended |
 
-An agent or skill not in this table is not to be invented mid-task. Agent memory lives in
+An agent or skill not in this table is not to be invented mid-task; add a row when this repository
+installs one of its own (a verify or review skill, an architect agent). Agent memory lives in
 `.claude/agent-memory/<agent>/`, one pattern per file. The `mattpocock-skills:` rows apply
 once `claude plugin install mattpocock-skills@claude-plugins-official` (user scope; the
 plugin carries all 25 skills, this table says which ones a run uses) and

@@ -5,6 +5,197 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.12] - 2026-10-03
+
+The twelfth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the replays of every preset from npm found, fixed in one pass. On the node and
+next presets: the import graph and dead code read every source folder (`app/` included), init
+says which workspace needs a test script, the day-one workflow is written, the ratchet counts
+uncommitted files as touched and names a probe on probation that would fail, the controls plant
+where the repository's own lint and test runner look, a workspace's suite runs the root's script,
+and the probes' lexer reads a `/…/` pattern as a literal. On the experimental presets: a language
+with no preset is named instead of taken for documents, and the Python and Astro presets run as
+those repositories are set up. `rules --family` with an unknown family now exits 2 and lists the
+families; `change.testTamper` is redefined (v2, still on probation). No config key or `--json`
+field moves.
+
+### Fixed
+
+- **An Astro site's dead-code check reads its `.astro` files, and `init` writes no lint script
+  with nothing to run it.** knip's project list named script files only, so a component
+  imported only from `.astro` pages read as unused; `.astro`, `.vue` and `.svelte` are now in
+  it where the framework is a dependency. `init` wrote `eslint .` into a site with no eslint and
+  no eslint config, and the gate's lint step could not run; that script is now left out, and
+  the gate skips lint by name until a linter is installed.
+- **The Python preset runs on a Python repository as it is set up.** The gate's command steps
+  use the tool in the repository's `.venv` (or `venv`) when it is there, where every step could
+  not run until the shell was activated by hand. mypy and vulture no longer read a virtual
+  environment in the tree as this repository's code. `init` names the tools to install (ruff,
+  mypy, vulture, pytest). SEC-AUDIT no longer credits the gate's built-in audit where there is
+  no JavaScript lockfile for it to read, which is every Python repository: its gate has no
+  audit step. The generated pipelines (`abatty ci`, and the day-one workflow `init` writes) set
+  up Python and install those tools in every job, where the runner had neither. The preset stays
+  unproven until a named repository runs it.
+- **A workspace's suite runs the root's script when the workspace has none.** In a monorepo
+  whose Next app is a workspace, the browser suite selected under `apps/web` looked for `e2e`
+  in that workspace alone and reported no script, while the root's `test:e2e` was the one that
+  worked. It now runs the root's script from the root, and says so.
+- **`doctor --controls` plants where the repository's own tools look.** The lint plant was a
+  bare `debugger`, which Next's stock config does not refuse (it has no `eslint:recommended`),
+  so a working lint step read as never watched failing. It now also carries an unused `any` and
+  a hook called conditionally, one for each common rule set; checked against the stock Next
+  config, the old plant passed and the new one is refused. The test plant read the runner's
+  config only when the script named it: `vitest run` reads `vitest.config.mts` unasked, and the
+  plant landed outside its `include`. The runner's default config is now read too.
+- **The rules read the lint configuration a repository imports, not only the file it imports
+  from.** A monorepo's `eslint.config.js` was one line importing its shared
+  `@acme/eslint-config` workspace, so CODE-SHAPE and OBS-CONSOLE read missing although the
+  shared package held every limit. The configuration's relative imports, and the workspace
+  packages of this tree it imports by name, are now read with it, two levels deep.
+- **The probes read a pattern literal as a literal.** The lexer behind every probe knew strings,
+  templates and comments but not `/…/` patterns. A quote or a backtick inside one (`/["'`]x/`)
+  opened a string that ran on, so the code after it was hidden (a raw environment read went
+  uncounted) or a comment was read as code (one was invented). Reading abatty itself with the
+  fix found an export with no doc comment that the old reading had hidden.
+- **`change.testTamper` nets over the pushed range (probe v2).** A test removed in one commit
+  and put back in the next, or a skip added and taken out, counted as a way out the push took.
+  A commit's finding now stands only where the range as a whole still shows it in that file. A
+  new control holds the undone case at zero; the probe stays on probation.
+- **Two observability rules read a correct setup as a gap.** OBS-REDACTION counted the
+  logger's own `censor: "[REDACTED]"` as masking by hand and said partial; the replacement value
+  is the configuration. OBS-TRACKER missed a tracker configured by bracket access
+  (`process.env["SENTRY_DSN"]`) and in Next's `instrumentation.ts`; it reads both now.
+- **`init` says when a repository is written in a language abatty has no preset for.** A Go
+  service was taken for documents and given the docs preset silently, a gate with none of Go's
+  build, test or lint. Go, Rust, the JVM, .NET, Ruby, PHP, Swift, Elixir and C or C++ are now
+  named and `init` stops; `--stack docs` installs the harness and the documents rules on purpose.
+  The package.json `init` writes takes a name npm accepts (`My Go_Svc` was written verbatim), and
+  is reported once instead of as both written and kept.
+- **The context file `init` writes names no skill it does not install.** Its skills table listed
+  `/verify-change`, `/code-review` and an architect agent that nothing installs, and an agent
+  reading it went looking for them. The table keeps what abatty ships and the plugin skills
+  installed by their own command, and says to add a row for a skill the repository installs. A
+  test holds it.
+- **A green ratchet names the probe on probation that would have failed it.** A probe on
+  probation never fails a run, and its finding sat in the metric list while the headline read
+  plain green. The headline now ends with the probes on probation that would fail, not failing.
+- **The ratchet counts a file you edited and have not committed as touched.** It measures the
+  tree, yet listed only the pushed range's files as this change's, so a run that failed on an
+  uncommitted file said "this change touched 0 findings" and called everything standing debt.
+  When a red run's failures are all outside the touched files, it now names the failing metrics
+  instead of calling it all debt.
+- **A gate with nothing to push says so, instead of "nothing in the tree".** On main at the
+  upstream, a skipped suite read "nothing under its paths in the push or the tree" while the
+  tree held the paths; "the tree" meant uncommitted edits. It now says the pushed or uncommitted
+  files, and an empty range adds that no suite is selected and how `--range` judges committed
+  work. `--fast` no longer says uncommitted files select suites it does not run.
+- **The catalog answers in the standard's own names.** `abatty explain TEST.4` names the rule
+  that carries the section (or lists them, when several do), and `rules --family TEST` finds
+  the Tests family by its rules' prefix, where both found nothing; an unknown family lists the
+  families. `rules` no longer marks every must with a pass: it states what must hold, not what
+  holds here, and only a waiver is marked.
+- **`mutate` runs a `node --test` repository's tests with the flags its test script gives
+  them.** A script like `node --experimental-strip-types --test` had its mutants run with a bare
+  `node --test`, so every TypeScript test failed to load and each mutant read as caught. The
+  script's node flags (`--import tsx` included) are kept; a reporter or a coverage pass is not.
+- **An audit that answers with no report could not run; it did not fail.** npm once printed the
+  bare word `undefined` after a slow registry answer, and the gate counted that as red work with
+  `undefined` as its finding. An audit that exits red with neither a report nor a severity in its
+  text is now "could not run", with what the tool said. The fix-first block names an audit that
+  could not run, with its reason, where it said nothing before.
+- **A pipeline named after the gate is not read as running it.** `ci --check`, `doctor` and
+  `init` read a pipeline by its commands, but a `name: abatty gate` (the workflow's, a job's or a
+  step's) matched as one, so a pipeline running only `npm test` under that name read as running
+  the gate. Names are now left out of the reading, as comments already were.
+- **`doctor` names packages released together and installed at different versions.** A lockfile
+  refresh moved an adopter's `@playwright/test` to 1.63 while an override held `playwright-core`
+  at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
+  reads the installed versions of families that expect one shared version (Playwright, Prisma,
+  React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **Dead code no longer calls `eslint-config-next` unused in create-next-app's own setup.** That
+  setup loads it by name through FlatCompat (`compat.extends("next/core-web-vitals")`), a string
+  knip does not follow, so the dead-code step was red on day 0 for no fault of the code. `init`
+  now reads the names a flat config loads that way and lists the installed packages behind them
+  in knip's `ignoreDependencies`.
+- **The import graph starts on a monorepo root with no `tsconfig.json`.** The dependency-cruiser
+  config `init` writes named `tsconfig.json`, which a monorepo root often does not have, and
+  depcruise refused to start (TS5083). Where the root has none, the option is written commented
+  out, with a line saying to point it at one for its path aliases.
+- **A monorepo's workspace is told the script its gate needs.** `init` gave `apps/web` its
+  preset's scripts, but not `test`, which only the workspace's runner can write; the gate then
+  said it could not run and that "init writes the preset's", which it had not. `init`'s steps now
+  name each script a preset workspace lacks, and whether the gate cannot run or only skips the
+  step; the ratchet, which runs once at the root, is not asked of a workspace. The gate's message
+  says which `package.json` and who writes a test script.
+- **The changelog rule covers a Next app's folders and spares abatty's own records.** A `feat:`
+  commit under `app/` needed no changelog line, since the Next preset named `src/` alone; it now
+  names `app/`, `components/`, `lib/` and `pages/` too. And committing the baseline `init` asks
+  for was refused by the commit-msg hook for want of a line, though the file is abatty's own
+  record: the baseline and the harness lock are now spared, at commit time and over the range.
+- **The import graph and dead code read every source folder, a Next app's `app/` included.** The
+  graph script read `src` alone wherever a `src/` existed, and the knip template a fixed
+  `src/ server/ lib/`: a Next App Router app with its code in `app/` had both steps judge one
+  module and read green, and an orphan file with an unused export under `app/` passed them. Both
+  now name the source folders that exist (`src`, `app`, `pages`, `components`, `lib`, `server`,
+  `hooks`, `utils`, and a monorepo's `apps`, `packages`, `services`); `init`'s baseline step and
+  the gate's missing-baseline message say the same command. The same reading replaces every
+  folder a preset names, so a client-only Vite app is no longer given a `server/` it does not
+  have, which depcruise refused and the gate called failed work.
+- **`DOC-AGENTS-MD` holds when `CLAUDE.md` is exactly `@AGENTS.md`.** The rule read the context
+  file its import leads to, `AGENTS.md` itself, for an `@AGENTS.md` it never holds, and called
+  the single source `init` writes partial. It now reads `CLAUDE.md` as written, and also holds for
+  the other single source `init` writes: a short `AGENTS.md` pointing at the repository's own
+  `CLAUDE.md`.
+- **A TypeScript library is read as TypeScript.** The repository's language was decided by
+  counting `.ts` against `.js` sources, and the tool configs at the root (`eslint.config.js`,
+  `.dependency-cruiser.cjs`, `prettier.config.cjs`) outnumbered a strict library's two sources:
+  it read as JavaScript, `TYPES-STRICT` and its kin went n/a, and the next step asked for a
+  `checkJs` it had no use for. A tool's config no longer counts as the repository's JavaScript.
+- **The readings agree with the pipeline `init` writes.** `INST-CI-STEPS` read the workflow that
+  runs `gate:fast` word by word and called lint, typecheck, the ratchet and the audit missing,
+  while `init` said every push runs them; and the fast gate said "CI still runs" the suites it
+  skipped, where that pipeline runs the fast gate too. A pipeline that runs the gate, whole or
+  fast, now holds `INST-CI-STEPS` (the six steps are the gate's own), and the fast gate says
+  whether a pipeline here runs the suites or that `abatty ci` writes one that does.
+- **An index the repository already had learns of the two documents `init` writes.** Where
+  `docs/README.md` existed, `init` kept it and wrote `STANDARDS_PROGRESS.md` and
+  `ADOPTION_DECISIONS.md` beside it unlisted: two `docs.indexDrift` findings abatty created
+  itself. It now appends a row for each the index does not name yet, and says so.
+- **The format and lint steps no longer go red on files `init` wrote.** An adopter who followed
+  every step and added a `.prettierrc` saw the format step red on `.claude/`, the workflow, the
+  docs `init` wrote and `pnpm-lock.yaml`; another's eslint read `.dependency-cruiser.cjs` as a
+  module and called `module` undefined. `.prettierignore` now holds `.claude/` and the managers'
+  lockfiles, the format step says to run `prettier --write .` once after adding the config so
+  the written files take the repository's style, and the dependency-cruiser template declares the
+  one CommonJS global it uses.
+- **A unit step that ran no test says so.** `node --test` with no test file exits 0 and prints
+  `# tests 0`, and the unit step read green having judged nothing. The step stays a pass, as
+  the coverage step that measured nothing does, and its line and its event now say it ran no test.
+- **`doctor` is green on a fresh install of a preset that protects no migrations.** The harness
+  self-test expected a write to `migrations/` to be denied at night, and the astro and docs
+  presets protect no `migrations/`, so `doctor` read red on a fresh install. The self-test now runs
+  those cases with `migrations/` added to the repository's own protected paths, as it already runs
+  them with the push policy set: they prove the hooks deny a protected path, whatever the list.
+- **The pipeline `abatty ci` writes is least-privilege, and its suites get a working database.**
+  An adopter refused it on three counts: the workflow granted `id-token`, `attestations` and
+  `security-events` write to every job, the database job set no `TEST_DATABASE_URL`, and the
+  browser job neither migrated nor seeded the database its pages read, so every end-to-end test
+  failed before it ran. The writes now go to the one job that signs and uploads; the database
+  jobs set `TEST_DATABASE_URL` beside `DATABASE_URL` (GitHub and Woodpecker); and where the
+  repository has a migrate script (`db:migrate`, `migrate`, `prisma:migrate`), the browser job
+  gets the same Postgres and runs it, then the seed script if there is one, before the build.
+- **A classic Windows console reads abatty's symbols in ASCII.** abatty writes UTF-8, and
+  PowerShell 5.1 or `cmd` decodes it in the console's old code page: an adopter read
+  `Ô£ù gate red ┬À 1 step(s)`. On Windows, outside Windows Terminal, VS Code, an MSYS shell (Git
+  Bash) and CI, the symbols are now written in ASCII (`·` as `-`, `✓` as `ok`, `✗` as `x`, the
+  bars as `#` and `.`); `ABATTY_ASCII=1` or `0` settles it either way.
+- **`doctor` names a package the code imports and no `package.json` declares, once.** An adopter
+  imported `server-only` from 13 files without declaring it, and the gate read 13 import-graph
+  errors and 13 dead-code findings, one per file, with nothing saying to install it. `doctor` now
+  names each such package with how many files import it, and the install command in the
+  repository's manager. Builtins, framework virtual modules, tsconfig aliases, the repository's
+  own workspaces, and imports inside strings or comments are not counted.
+
 ## [0.7.0-rc.11] - 2026-10-02
 
 The eleventh release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

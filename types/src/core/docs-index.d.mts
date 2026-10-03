@@ -5,3 +5,9 @@
  * @returns {string} the rows, each ending in a newline; "" when there is none
  */
 export function existingDocRows(repoDir: string, skip: string[]): string;
+/**
+ * Add init's two documents to an index the repository already had, each only where the index
+ * does not name it yet, and record what was added.
+ * @param {string} repoDir @param {import("./init.mjs").InitEvent[]} events @param {boolean} dryRun
+ */
+export function indexOwnDocs(repoDir: string, events: import("./init.mjs").InitEvent[], dryRun: boolean): void;

@@ -80,3 +80,13 @@ export function presetRules(preset, deps) {
     return { file: r.file, applies: r.needs.some((d) => deps.has(d)), needs: r.needs };
   });
 }
+
+/**
+ * The tools a preset's gate runs as commands rather than as package scripts (ruff, mypy, pytest
+ * for Python): no package manager installs them, so init names them and CI installs them.
+ * @param {Preset} preset @returns {string[]}
+ */
+export function gateTools(preset) {
+  const tools = preset.gate.always.flatMap((s) => (s.command ? [String(s.command[0])] : []));
+  return [...new Set(tools)].filter((c) => c !== "npx");
+}

@@ -24,18 +24,20 @@ import { preflightLine } from "./prereqs.mjs";
 import { stepDatabase, suiteDatabase } from "./hermetic.mjs";
 import { suiteEnvGaps, suiteEnvOf } from "./suite-env.mjs";
 import { builtinStep } from "./builtins.mjs";
-import { pinSaidFromEnv, unexpectedNodeEnv } from "./env.mjs";
+import { nodeEnvLine, pinSaidFromEnv } from "./env.mjs";
 import {
   commentOnly,
   liveDevServer,
   selectedByPath,
   suiteHomes,
   untestedSuite,
+  skipSuitesFast,
 } from "./suite-select.mjs";
 import { explainFailure } from "./flake.mjs";
-import { markHollow } from "./coverage-empty.mjs";
+import { markHollow, markNoTests } from "./coverage-empty.mjs";
 import { couldNotRead, graphReadNothing } from "./graph-empty.mjs";
 import { couldNotRun } from "./could-not-run.mjs";
+import { fastNote } from "../ci/day-one.mjs";
 import { pinBehindLine, runningVersion } from "./pin-behind.mjs";
 
 /**
@@ -87,7 +89,7 @@ export function runGate(o) {
             ? `no upstream and no ${o.base || "main"} to fork from`
             : "in CI the push is the event, not a diff against the upstream"
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
-      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
+      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted${o.fast ? "" : ", both select suites"}` : ""}${!o.fast && !changed.length && !pending.length ? " · nothing pushed and nothing uncommitted, so no suite is selected; --range <sha>..HEAD judges work already committed" : ""}`,
   );
   const wider = blind ? null : narrowerThanBranch(repoDir, o.base || "main", info);
   if (wider)
@@ -114,18 +116,23 @@ export function runGate(o) {
   // The pre-push hook compares in shell first, where a stale copy cannot hide it, and says so.
   const behind = pinSaidFromEnv() ? "" : pinBehindLine(repoDir, o.version || runningVersion());
   if (behind) log(behind);
-  // Said, not overridden: a repository may set it on purpose, and a gate that quietly changed
-  // it would be judging something else. What it must never be is invisible.
-  const nodeEnv = o.nodeEnv ?? unexpectedNodeEnv();
-  if (nodeEnv)
-    log(
-      `! environment: NODE_ENV=${nodeEnv} is inherited from this shell, and every step runs under it; a test or a script that expects development or test behaviour will fail for that reason alone (unset it for the push)`,
-    );
+  const nodeEnv = nodeEnvLine(o.nodeEnv);
+  if (nodeEnv) log(nodeEnv);
 
   const resolveScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
     [step.script, ...(step.alternatives || [])].find(
       (s) => typeof s === "string" && typeof pkgScripts[s] === "string",
     ) || null;
+  // A workspace's suite whose script is the root's (a monorepo's `test:e2e` at the top) runs it
+  // there: read in the workspace alone, a working browser suite reported no script at all.
+  let inSuite = false;
+  const rootScript = (/** @type {import("../presets/index.mjs").GateStep} */ step) =>
+    (inSuite &&
+      prefix &&
+      [step.script, ...(step.alternatives || [])].find(
+        (s) => typeof s === "string" && typeof rootScripts[s] === "string",
+      )) ||
+    null;
 
   /**
    * The outcome of a step that ran, recorded and logged, and whether the gate goes on. One
@@ -173,7 +180,7 @@ export function runGate(o) {
         detail: `${what}: a step the ${presetId} preset requires`,
       });
       log(
-        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write the script (init writes the preset's), or the gate cannot run. This is the instrument, not the work.`,
+        `\n✗ ${prefix}${s.label} could not run: ${what}, and the ${presetId} preset requires this step. Write it in ${prefix ? "the workspace's" : "the"} package.json (init writes the scripts the preset defines; a test script runs the ${prefix ? "workspace's" : "repository's"} own runner, which only it knows), or the gate cannot run. This is the instrument, not the work.`,
       );
       return true;
     };
@@ -194,7 +201,11 @@ export function runGate(o) {
       return settle(prefix + s.label, res, Date.now() - t0, s.command.join(" "));
     }
     if (s.rangeArg && prefix) return true; // the ratchet runs once, at the root
-    const script = resolveScript(s);
+    const own = resolveScript(s);
+    const script = own || rootScript(s);
+    const at = own ? cwd : repoDir;
+    if (script && !own)
+      log(`· ${prefix}${s.label}: the workspace has no "${script}" script; the root's runs`);
     if (!script) {
       if (absent(`no "${s.script}" script`)) return false;
       events.push({
@@ -216,12 +227,13 @@ export function runGate(o) {
     // The output is kept as well as shown, so a red test step can say whose failure it is.
     const stepLog = stepLogAt(repoDir, prefix + s.label);
     const res = couldNotRun(
-      asResult(run(cwd, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog })),
+      asResult(run(at, script, s.rangeArg ? ["--range", range] : [], env, { log: stepLog })),
       stepLog,
     );
     const passed = settle(prefix + s.label, res, Date.now() - t0, `npm run ${script}`);
     // By the step's own label, not its suite's: "database suite + coverage (TEST.4)" names both.
     if (passed && /^coverage [^·]*\(TEST\.4\)/.test(s.label)) markHollow(stepLog, events, log);
+    if (passed && /\(TEST\.1\)/.test(s.label)) markNoTests(stepLog, events, log);
     const unread = passed && /\(CODE\.5\)/.test(s.label) && graphReadNothing(repoDir, stepLog);
     if (unread) return couldNotRead(events, log, unread);
     if (!passed && !res.errored)
@@ -265,13 +277,15 @@ export function runGate(o) {
         events.push({
           label: name,
           outcome: "skipped",
-          detail: "no matching path in the push or the tree",
+          detail: "no matching path in the pushed or uncommitted files",
         });
-        log(`\n· skipped ${name}: nothing under its paths in the push or the tree`);
+        log(`\n· skipped ${name}: nothing under its paths in the pushed or uncommitted files`);
         continue;
       }
       // A suite with no testing script runs nothing, said loudly (suite-select.mjs).
-      const untested = untestedSuite(suite, name, (s) => Boolean(resolveScript(s)));
+      const untested = untestedSuite(suite, name, (s) =>
+        Boolean(resolveScript(s) || rootScript(s)),
+      );
       if (untested) {
         events.push(untested.event);
         log(untested.says);
@@ -342,15 +356,12 @@ export function runGate(o) {
   presetId = preset.id;
 
   if (o.fast) {
-    log("\n--fast: skipped the conditional suites. CI still runs them.");
-    for (const suite of preset.gate.suites)
-      events.push({ label: suite.name, outcome: "skipped", detail: "--fast" });
-    for (const w of gated)
-      for (const suite of /** @type {any} */ (w.preset).gate.suites)
-        events.push({ label: `${w.path} · ${suite.name}`, outcome: "skipped", detail: "--fast" });
+    log(`\n${fastNote(repoDir)}`);
+    skipSuitesFast(preset, gated, events);
     return done(true);
   }
 
+  inSuite = true;
   if (!suites(preset, "")) return done(false);
   for (const w of gated) {
     cwd = join(repoDir, w.path);

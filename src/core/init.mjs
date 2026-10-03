@@ -32,10 +32,11 @@ import { SCHEMA_URL } from "./config.mjs";
 import { commandFor, managerFor } from "./package-manager.mjs";
 import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
-import { presetRules } from "../presets/index.mjs";
+import { gateTools, presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
-import { added, appendLines, ignoredHere } from "./init-merges.mjs";
-import { existingDocRows } from "./docs-index.mjs";
+import { added, appendLines, ignoredHere, packageName, runnableScripts } from "./init-merges.mjs";
+import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
+import { depcruiseFor, graphRoots, knipForRoots } from "./source-roots.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
 import { writeCi } from "../cli/ci.mjs";
 import { LOCK, packageVersion, writeLock } from "./update.mjs";
@@ -250,18 +251,15 @@ export function initRepo(o) {
 
   // 3. The tooling: the import graph and dead code.
   if (preset.tooling.dependencyCruiser)
-    put(".dependency-cruiser.cjs", tpl("tooling/.dependency-cruiser.cjs"));
-  if (preset.tooling.knip) put("knip.jsonc", tpl("tooling/knip.jsonc"));
+    put(".dependency-cruiser.cjs", depcruiseFor(repoDir, tpl("tooling/.dependency-cruiser.cjs")));
+  if (preset.tooling.knip) put("knip.jsonc", knipForRoots(repoDir, tpl("tooling/knip.jsonc")));
 
-  // The graph's roots are the folders the sources are in: `src` where there is one, the monorepo's
-  // workspace folders or the framework's own folders where there is not. A monorepo was given
-  // `depcruise src` over a folder it does not have.
-  const roots = ["src"].filter((d) => existsSync(join(repoDir, d))).length
-    ? "src"
-    : ["app", "lib", "server", "apps", "packages", "services"]
-        .filter((d) => existsSync(join(repoDir, d)))
-        .join(" ") || ".";
-  const rooted = (/** @type {string} */ v) => v.replace(/\bdepcruise src\b/, `depcruise ${roots}`);
+  // The graph reads every source folder that exists (src/core/source-roots.mjs).
+  const roots = graphRoots(repoDir);
+  // Every folder the preset names before its first flag is replaced: vite-react named
+  // `src server`, and a client-only app had depcruise refuse a server/ it does not have.
+  const rooted = (/** @type {string} */ v) =>
+    v.replace(/\bdepcruise (?:[\w./][\w./-]* )+(?=--)/, `depcruise ${roots} `);
 
   // 4. The pre-push hook that calls the gate, and the scripts. The hooks speak the manager the
   //    repository committed: a bun-only repository was given npx and npm run in all three.
@@ -269,19 +267,23 @@ export function initRepo(o) {
     put(rel, text, { merge: false, executable: true });
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
   // `npm run hooks:install` are how the instrument is called, whatever the stack.
-  if (!existsSync(join(repoDir, "package.json"))) {
+  const fresh = !existsSync(join(repoDir, "package.json"));
+  if (fresh) {
     if (!dryRun)
       writeJsonFile(repoDir, "package.json", {
-        name: basename(repoDir),
+        name: packageName(basename(repoDir)),
         private: true,
-        scripts: Object.fromEntries(Object.entries(preset.scripts).map(([k, v]) => [k, rooted(v)])),
+        scripts: Object.fromEntries(
+          Object.entries(runnableScripts(repoDir, preset.scripts)).map(([k, v]) => [k, rooted(v)]),
+        ),
       });
     events.push({ file: "package.json", action: "written" });
   }
   const pkg = readPackage(repoDir);
-  if (existsSync(join(repoDir, "package.json"))) {
+  // The package just written is not also "kept": one file, one line.
+  if (!fresh && existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
-    for (const [k, v] of Object.entries(preset.scripts))
+    for (const [k, v] of Object.entries(runnableScripts(repoDir, preset.scripts)))
       if (!(k in scripts) || force) scripts[k] = rooted(v);
     const what = added(scripts, pkg.scripts || {}, "scripts");
     if (what) {
@@ -297,7 +299,7 @@ export function initRepo(o) {
     const wp = readPackage(join(repoDir, w.path));
     const ws = { ...(wp.scripts || {}) };
     let n = 0;
-    for (const [k, v] of Object.entries(w.preset.scripts))
+    for (const [k, v] of Object.entries(runnableScripts(join(repoDir, w.path), w.preset.scripts)))
       if (
         !["gate", "gate:fast", "standards", "standards:baseline", "hooks:install"].includes(k) &&
         (!(k in ws) || force)
@@ -320,7 +322,16 @@ export function initRepo(o) {
   appendLines(
     repoDir,
     ".prettierignore",
-    [".dependency-cruiser-known-violations.json", ".claude/night/"],
+    // The instrument and the managers' lockfiles are nobody's code to format: an adopter who
+    // added a .prettierrc saw the format step red on .claude/ and pnpm-lock.yaml.
+    [
+      ".dependency-cruiser-known-violations.json",
+      ".claude/",
+      "pnpm-lock.yaml",
+      "package-lock.json",
+      "yarn.lock",
+      "bun.lock",
+    ],
     events,
     dryRun,
   );
@@ -369,7 +380,7 @@ export function initRepo(o) {
     "CHANGELOG.md",
     "# Changelog\n\nKeep a Changelog, SemVer. Every commit that touches source, tests, scripts, CI, migrations or docs adds a line under Unreleased in the same commit (CHANGE.1, CHANGE.2).\n\n## [Unreleased]\n\n### Added\n\n- The engineering standard's instrument: harness, gate, import graph, dead code (`abatty init`).\n",
   );
-  put(
+  const indexWritten = put(
     "docs/README.md",
     // With the front matter the ratchet's own docs.frontMatter probe asks of every document: an
     // index written without it made every freshly initialised repository red on its first clean
@@ -388,6 +399,9 @@ export function initRepo(o) {
     "docs/ADOPTION_DECISIONS.md",
     '---\ntitle: "Adoption decisions"\ndescription: "The decisions taken alone by the unattended adoption nights (/adopt-standards): date, phase, situation, the default taken, the alternative set aside, what the morning must re-read."\ncategory: governance\nstatus: living\naudience: ["developer", "agent"]\ntags: ["standards", "adoption", "decisions"]\nrelated: ["./README.md", "./STANDARDS_PROGRESS.md"]\n---\n\n# Adoption decisions\n\n',
   );
+  // An index the repository already kept learns of the two documents written beside it: left
+  // out, each read as missing from it, and the first baseline was refused (docs.indexDrift).
+  if (!indexWritten) indexOwnDocs(repoDir, events, dryRun);
 
   // 6b. CI from the gate, for the providers the repository names (init --ci, or ci.providers).
   const providers = o.ci?.length ? o.ci : (merged.ci?.providers || []).map(String);
@@ -401,7 +415,7 @@ export function initRepo(o) {
       events.push({ file: e.file, action: e.action === "written" ? "written" : "kept" });
   // 6c. No provider named: the gate in CI from the first day where nothing runs it.
   if (!providers.length && onGithub(repoDir) && ["none", "no-gate"].includes(ciGate(repoDir).state))
-    put(DAY_ONE, dayOneWorkflow(repoDir));
+    put(DAY_ONE, dayOneWorkflow(repoDir, preset.pack === "python" ? gateTools(preset) : []));
 
   // 7. The lock: the package version and the hash of every shipped file as installed, and the
   //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.

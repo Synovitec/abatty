@@ -135,8 +135,10 @@ const positional = rest.filter(
 // the directory first.
 const dirArg = command === "explain" || command === "check" ? positional[1] : positional[0];
 const dir = repoRoot(dirArg || process.cwd());
-const out = (/** @type {string} */ s) => process.stdout.write(s);
-const err = (/** @type {string} */ s) => process.stderr.write(s);
+// A console that cannot show UTF-8 gets abatty's symbols in ASCII (term.mjs asciiOnly).
+const ascii = t.asciiOnly(process.env, process.platform);
+const out = (/** @type {string} */ s) => process.stdout.write(ascii ? t.toAscii(s) : s);
+const err = (/** @type {string} */ s) => process.stderr.write(ascii ? t.toAscii(s) : s);
 const VERSION = String(
   readJsonFile(resolve(dirname(fileURLToPath(import.meta.url)), ".."), "package.json")?.version ||
     "",
@@ -155,6 +157,15 @@ async function choosePreset(required) {
       (!existsSync(join(dir, "package.json")) && buildContext(dir).stack.docsOnly
         ? presetById("docs")
         : null);
+  // A language no preset covers is said, never taken for documents (src/presets/foreign.mjs).
+  const { foreignLanguage } = await import("../src/presets/foreign.mjs");
+  const foreign = !id && p?.id === "docs" ? foreignLanguage(buildContext(dir).files) : "";
+  if (foreign && required) {
+    err(
+      `${t.glyph.fail} abatty has no preset for ${foreign}: its checks read JavaScript, TypeScript and Python, and none of ${foreign}'s build, test or lint would be in the gate.\n  --stack docs installs the harness, the hooks and the documents rules alone; write in CLAUDE.md that the language's own checks are not abatty's.\n`,
+    );
+    process.exit(2);
+  }
   if (!p && required) {
     err(
       `${t.glyph.fail} no preset: pass --stack <${presets.map((x) => x.id).join("|")}> (none detected from ${join(dir, "package.json")})\n`,

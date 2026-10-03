@@ -58,3 +58,10 @@ export function portFromEnv(): string;
 export function ciFromEnv(): boolean;
 /** True when the pre-push hook already compared the installed abatty with the pin and said so. */
 export function pinSaidFromEnv(): boolean;
+/**
+ * The line the gate says about an inherited NODE_ENV, or "" when there is none to say. Said, not
+ * overridden: a repository may set it on purpose, and a gate that quietly changed it would be
+ * judging something else. What it must never be is invisible.
+ * @param {string} [given] the value a caller passes instead of this process's
+ */
+export function nodeEnvLine(given?: string): string;

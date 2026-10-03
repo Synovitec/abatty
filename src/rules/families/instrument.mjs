@@ -4,6 +4,7 @@
  */
 
 import { currentControls } from "../../core/step-controls.mjs";
+import { runsGate } from "../../ci/hand-kept.mjs";
 
 /**
  * The package scripts a pipeline's text invokes (`npm run x`, `pnpm run x`, `yarn x`, `bun run
@@ -237,6 +238,11 @@ export const rules = [
       // Commands, not comments: a generated pipeline writes the step it could not emit as a
       // comment that names it, and a word in a comment is not a step that runs.
       const text = c.ciText.replace(/^\s*#.*$/gm, "");
+      // A pipeline that runs the gate, whole or fast, runs all six: they are the gate's own
+      // steps. Read word by word, the workflow init writes (`gate:fast`) read as missing four.
+      const gate = runsGate(c.ciText, c.scripts);
+      if (c.ciFiles.length && (gate.runs || /leaves out the suites/.test(gate.how)))
+        return { status: "present", evidence: `${gate.how}: the six steps run inside the gate` };
       const steps = [
         "lint",
         "typecheck|type-check",

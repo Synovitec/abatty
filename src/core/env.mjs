@@ -95,3 +95,16 @@ export function ciFromEnv() {
 export function pinSaidFromEnv() {
   return Boolean(process.env.ABATTY_PIN_SAID);
 }
+
+/**
+ * The line the gate says about an inherited NODE_ENV, or "" when there is none to say. Said, not
+ * overridden: a repository may set it on purpose, and a gate that quietly changed it would be
+ * judging something else. What it must never be is invisible.
+ * @param {string} [given] the value a caller passes instead of this process's
+ */
+export function nodeEnvLine(given) {
+  const v = given ?? unexpectedNodeEnv();
+  return v
+    ? `! environment: NODE_ENV=${v} is inherited from this shell, and every step runs under it; a test or a script that expects development or test behaviour will fail for that reason alone (unset it for the push)`
+    : "";
+}

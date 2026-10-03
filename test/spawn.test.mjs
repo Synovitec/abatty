@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { launch, notInstalled, quoteForCmd, runCommand } from "../src/core/spawn.mjs";
+import { launch, notInstalled, quoteForCmd, runCommand, venvTool } from "../src/core/spawn.mjs";
 import { scriptProgram, toolFound } from "../src/core/which.mjs";
 
 // The launcher fix is proved on the platform it is for and on the platforms it must leave alone:
@@ -115,4 +115,17 @@ test("a tool in a virtualenv at the root is found whether or not the shell activ
     "",
   );
   assert.equal(toolFound(dir, "abatty-ruff-__", env), true);
+});
+
+test("a tool in the repository's virtual environment is run by its path, and one elsewhere is not", () => {
+  // A Python repository installs its tools in .venv; the gate could not run one of them until
+  // the shell had been activated by hand.
+  const dir = mkdtempSync(join(tmpdir(), "abatty-venv-"));
+  const win = process.platform === "win32";
+  mkdirSync(join(dir, ".venv", win ? "Scripts" : "bin"), { recursive: true });
+  const ruff = join(dir, ".venv", win ? "Scripts" : "bin", win ? "ruff.exe" : "ruff");
+  writeFileSync(ruff, "");
+  assert.equal(venvTool(dir, "ruff"), ruff);
+  assert.equal(venvTool(dir, "mypy"), "", "not installed there: the PATH's, as before");
+  assert.equal(venvTool(dir, "../ruff"), "", "a name, never a path");
 });

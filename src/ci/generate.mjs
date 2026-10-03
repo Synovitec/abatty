@@ -144,3 +144,16 @@ export function ident(name) {
       .slice(0, 40) || "step"
   );
 }
+
+/**
+ * The steps of a pipeline by the job they run in: always-on, the database suite's, the browser
+ * suite's. One reading for every renderer.
+ * @param {CiStep[]} steps
+ */
+export function byJob(steps) {
+  return {
+    always: steps.filter((s) => s.when === "always"),
+    db: steps.filter((s) => s.when === "db"),
+    browser: steps.filter((s) => s.when === "browser"),
+  };
+}

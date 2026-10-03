@@ -39,7 +39,7 @@ export function fixFirst(repoDir, findings) {
   return lines;
 }
 
-/** The last gate's audit, as its step log left it: failed with its advisories, or not run. @param {string} repoDir */
+/** The last gate's audit, as its step log left it: failed with its advisories, could not run, or not run. @param {string} repoDir */
 function auditLines(repoDir) {
   const log = stepLogPath(repoDir, AUDIT_STEP);
   // Not run here is urgent only where nothing else runs it: CI that runs the gate does.
@@ -50,6 +50,11 @@ function auditLines(repoDir) {
   const text = readFileSync(log, "utf8").trim();
   const day = localToday(statSync(log).mtime);
   const verdict = text.split("\n").pop() || "";
+  // A red audit read as nothing to fix when the instrument, not the work, stopped it.
+  if (/^errored/.test(verdict) || /✗ .*could not run/.test(text))
+    return [
+      `the audit could not run at the last gate (${day}): ${verdict.replace(/^errored:?\s*/, "") || "see .abatty/steps/audit_SEC.1_.log"}`,
+    ];
   if (!/^failed/.test(verdict) && !/✗ .*failed/.test(text)) return [];
   const advisories = text
     .split("\n")

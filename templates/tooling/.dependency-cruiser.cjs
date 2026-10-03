@@ -15,6 +15,9 @@
  *
  * @type {import('dependency-cruiser').IConfiguration}
  */
+// A CommonJS file in a repository whose eslint reads it as a module: without this, `module` is
+// an undefined global to `no-undef` and the lint step went red on a file init wrote.
+/* global module */
 module.exports = {
   forbidden: [
     {

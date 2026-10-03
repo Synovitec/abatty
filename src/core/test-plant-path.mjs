@@ -98,7 +98,7 @@ function reachedGlob(dir, tokens) {
   const direct = tokens.find((t) => t.includes("*") && /\.[cm]?[jt]sx?$/.test(t));
   if (direct) return direct;
   const seen = new Set();
-  let frontier = namedFiles(dir, tokens);
+  let frontier = [...namedFiles(dir, tokens), ...defaultConfigs(dir, tokens)];
   for (let level = 0; level < DEPTH && frontier.length; level++) {
     /** @type {string[]} */
     const next = [];
@@ -115,6 +115,28 @@ function reachedGlob(dir, tokens) {
     frontier = next;
   }
   return "";
+}
+
+/** The config a runner reads unasked, in the order it looks. */
+const DEFAULT_CONFIGS = {
+  vitest: ["vitest", "vite"].flatMap((n) =>
+    ["ts", "mts", "cts", "js", "mjs", "cjs"].map((e) => `${n}.config.${e}`),
+  ),
+  jest: ["js", "ts", "mjs", "cjs", "cts", "json"].map((e) => `jest.config.${e}`),
+};
+
+/**
+ * The config file a runner reads when the script names none: `vitest run` reads its
+ * `vitest.config.mts`, and a plant that ignored that file's `include` stayed green, so a working
+ * suite read as one that could not be watched failing.
+ * @param {string} dir @param {string[]} tokens
+ */
+function defaultConfigs(dir, tokens) {
+  if (tokens.some((t) => /^(?:--config|-c)(?:=|$)/.test(t))) return [];
+  const runner = tokens.find((t) => t === "vitest" || t === "jest");
+  if (!runner) return [];
+  const found = DEFAULT_CONFIGS[runner].find((f) => namedFiles(dir, [f]).length);
+  return found ? [found] : [];
 }
 
 /**

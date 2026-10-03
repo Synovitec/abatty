@@ -241,6 +241,7 @@ export function auditOutcome(repoDir, run, o = {}) {
     // Read the report for what the summary line leaves out (every affected range, where each is
     // installed); a report that does not parse leaves the tool's own last lines, as before.
     const found = advisoriesOf(run(String(cmd.json[0]), cmd.json.slice(1)).output, level);
+    if (!found && !SAYS_SEVERITY.test(String(r.output))) return unreadable(r.output);
     if (!found?.length) return failure(r.output, expiredNote);
     const said = [expiredNote, ...found.map(describeAdvisory)].filter(Boolean);
     return { outcome: "failed", detail: said.join("\n") };
@@ -276,6 +277,22 @@ export function auditOutcome(repoDir, run, o = {}) {
 
 /** @param {Allowance[]} list */
 const ids = (list) => list.map((a) => String(a.id));
+
+/** A tool's text that names a severity is a finding, however it is worded. */
+const SAYS_SEVERITY = /\b(critical|high|moderate|low)\b/i;
+
+/**
+ * An audit that exited red with neither a report nor a severity in its text: npm once printed the
+ * bare word `undefined` after a slow registry answer, and the gate counted it as failed work. That
+ * is the instrument, not the work. @param {string} output @returns {AuditOutcome}
+ */
+function unreadable(output) {
+  const said = String(output).split(/\r?\n/).filter(Boolean).slice(-3).join(" ").trim();
+  return {
+    outcome: "errored",
+    detail: `the audit answered with no report (${said || "nothing"}); run it again, and CI runs it too`,
+  };
+}
 
 /** @param {string} output @param {string} note @returns {AuditOutcome} */
 function failure(output, note) {
