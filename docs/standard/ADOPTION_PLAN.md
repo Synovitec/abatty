@@ -13,7 +13,7 @@ related:
     "../../templates/harness/README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-10-03"
 source_truth:
   - "./ENGINEERING_STANDARD.md"
   - "../../templates/harness/**"
@@ -110,8 +110,8 @@ doctor` the self-test and the drift against the package, `npx abatty rules` the 
     library, reported as n/a with the dependencies it looked for. Fixed 2026-09-18; before that
     a project with no ORM received the ORM rules), the
     `adopt-standards` skill and the `standards-reviewer` and `standards-adopter` agents
-    (`verify-change` is named by the context template and is NOT shipped: do not list it as
-    installed); `.claude/night/` in `.gitignore`. Domain reasoning that only
+    (`verify-change` is NOT shipped, and the context template names only what is: a repository
+    adds the row when it writes the skill); `.claude/night/` in `.gitignore`. Domain reasoning that only
     matters in one directory goes to `.claude/rules/<topic>.md` with `paths:` front matter,
     keeping `CLAUDE.md` under 200 lines.
 13. **The agent-readability score** computed from the ratchet metrics and printed by the gate.

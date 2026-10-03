@@ -7,7 +7,7 @@ audience: ["architect", "developer", "agent"]
 tags: ["agent-code", "settings", "hooks", "skills", "agents", "autonomy", "ratchet"]
 related: ["./ENGINEERING_STANDARD.md", "./ADOPTION_PLAN.md", "../../templates/harness/README.md"]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-10-03"
 source_truth:
   - "../../templates/harness/**"
 ---
@@ -148,10 +148,11 @@ moves `[Unreleased]` into `## [x.y.z] - YYYY-MM-DD`: minor when a phase closed, 
 otherwise. Conventional Commits; no em-dash; no `authorship`.
 
 **§8 Skills and agents.** A table: `/adopt-standards` (the programme, one phase per
-invocation), `/verify-change` (drive the real flow), `/code-review` (the plugin, used by the
-reviewer), `standards-reviewer` (read-only, the self-review before a phase commit),
-`<project>-architect` (design questions, read-only). Each row says when to use it and what it
-must not do. An agent that is not in the table is not to be invented mid-run.
+invocation), `standards-reviewer` (read-only, the self-review before a phase commit),
+`standards-adopter` (one territory by day), and the plugin skills named by their namespace.
+A repository adds the rows of what it installs itself: a `/verify-change` that drives the real
+flow, a `<project>-architect` for design questions, read-only. Each row says when to use it and
+what it must not do. An agent that is not in the table is not to be invented mid-run.
 
 **§9 Autonomy contract.** The decision table (§4 below) plus the two sentences that make a
 night run possible: _"In an unattended run (`ADOPTION_RUN=1`) you never ask. You take the
