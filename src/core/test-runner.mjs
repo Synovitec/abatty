@@ -74,6 +74,45 @@ export function testFilesCommand(repoDir) {
   if (runner === "vitest") return `${exec("vitest")} run {files}`;
   if (runner === "jest") return `${exec("jest")} {files}`;
   if (runner === "bun test") return "bun test {files}";
-  if (runner === "node --test") return "node --test {files}";
+  if (runner === "node --test")
+    return [
+      "node",
+      ...nodeFlags(String(readPackage(repoDir).scripts?.test || "")),
+      "--test",
+      "{files}",
+    ].join(" ");
   return "";
+}
+
+/** node flags that take their value as the next word. */
+const VALUED = new Set([
+  "--import",
+  "--require",
+  "-r",
+  "--loader",
+  "--conditions",
+  "-C",
+  "--env-file",
+]);
+/** What a test file run on its own does not want: a report written elsewhere, a coverage pass. */
+const RUN_WIDE =
+  /^--(test-reporter|test-coverage|experimental-test-coverage|test-concurrency|test-shard)/;
+
+/**
+ * The node flags a `node --test` script runs its files with (`--experimental-strip-types`,
+ * `--import tsx`), less the run-wide ones. mutate ran `node --test {files}` bare, so a repository
+ * whose tests needed a loader read every mutant as `tests red` and judged nothing.
+ * @param {string} script @returns {string[]}
+ */
+export function nodeFlags(script) {
+  const words = (script.match(/\bnode\b([^&|;]*)/)?.[1] || "").trim().split(/\s+/).filter(Boolean);
+  /** @type {string[]} */
+  const out = [];
+  for (let i = 0; i < words.length; i++) {
+    const w = String(words[i]);
+    if (!w.startsWith("-") || w === "--test") continue;
+    const value = VALUED.has(w) && i + 1 < words.length ? String(words[++i]) : "";
+    if (!RUN_WIDE.test(w)) out.push(...(value ? [w, value] : [w]));
+  }
+  return out;
 }

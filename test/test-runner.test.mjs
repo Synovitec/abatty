@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tempRepo } from "./helpers.mjs";
-import { testFilesCommand } from "../src/core/test-runner.mjs";
+import { nodeFlags, testFilesCommand } from "../src/core/test-runner.mjs";
 
 // `abatty mutate` ran `node --test` on every stack, so a vitest product read every mutant as
 // `tests red`. Each case below is a stack it missed.
@@ -40,4 +40,18 @@ test("a wrapper script defers to a workspace's runner, then an installed one, th
   assert.equal(testFilesCommand(platform), "node --test {files}");
   const none = tempRepo("runner-none", { "package.json": pkg({}) });
   assert.equal(testFilesCommand(none), "", "nothing names one: reported, never guessed");
+});
+
+test("a node --test script's own flags run the files mutate picks, less the run-wide ones", () => {
+  const strip = tempRepo("runner-node-flags", {
+    "package.json": pkg({
+      scripts: { test: "node --experimental-strip-types --test --test-reporter=spec test/" },
+    }),
+  });
+  assert.equal(testFilesCommand(strip), "node --experimental-strip-types --test {files}");
+  assert.deepEqual(nodeFlags("node --import tsx --test --experimental-test-coverage"), [
+    "--import",
+    "tsx",
+  ]);
+  assert.deepEqual(nodeFlags("node --test"), []);
 });

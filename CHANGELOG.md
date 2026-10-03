@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`mutate` runs a `node --test` repository's tests with the flags its test script gives
+  them.** A script like `node --experimental-strip-types --test` had its mutants run with a bare
+  `node --test`, so every TypeScript test failed to load and each mutant read as caught. The
+  script's node flags (`--import tsx` included) are kept; a reporter or a coverage pass is not.
 - **An audit that answers with no report could not run; it did not fail.** npm once printed the
   bare word `undefined` after a slow registry answer, and the gate counted that as red work with
   `undefined` as its finding. An audit that exits red with neither a report nor a severity in its
