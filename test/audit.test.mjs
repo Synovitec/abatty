@@ -131,6 +131,16 @@ test("the network is not a verdict; a repository with no lockfile is an instrume
   const r = auditOutcome(bare, () => ({ status: 0, output: "" }));
   assert.equal(r.outcome, "errored");
   assert.match(r.detail, /no lockfile/);
+  // npm printed the bare word `undefined` after a slow registry answer: no report, no severity,
+  // and the gate called it failed work.
+  const junk = auditOutcome(dir, runner(1, "undefined", "undefined"));
+  assert.equal(junk.outcome, "errored");
+  assert.match(junk.detail, /no report \(undefined\)/);
+  // a summary that names a severity is still a finding when the report does not parse
+  assert.equal(
+    auditOutcome(dir, runner(1, "found 1 high severity vulnerability", "")).outcome,
+    "failed",
+  );
 });
 
 /** pnpm's report, as `pnpm audit --json --prod` printed it on 2026-09-21 for tar-fs 2.1.1. */

@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **An audit that answers with no report could not run; it did not fail.** npm once printed the
+  bare word `undefined` after a slow registry answer, and the gate counted that as red work with
+  `undefined` as its finding. An audit that exits red with neither a report nor a severity in its
+  text is now "could not run", with what the tool said. The fix-first block names an audit that
+  could not run, with its reason, where it said nothing before.
 - **A pipeline named after the gate is not read as running it.** `ci --check`, `doctor` and
   `init` read a pipeline by its commands, but a `name: abatty gate` (the workflow's, a job's or a
   step's) matched as one, so a pipeline running only `npm test` under that name read as running
