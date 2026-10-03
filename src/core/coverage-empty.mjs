@@ -62,3 +62,32 @@ export function markHollow(file, events, log) {
     `· ${last.label} passed and measured nothing: ${none.line}. The changed lines lie outside what the step's tool includes, or it ran no test; green here proves nothing about them`,
   );
 }
+
+/**
+ * How the unit runners say they ran no test while exiting 0. `node --test` with no test file
+ * prints `# tests 0` (or `ℹ tests 0`) and passes, and the unit step read green having judged
+ * nothing. vitest, jest and bun exit non-zero there and are read as they are today.
+ * @type {[tool: string, re: RegExp][]}
+ */
+const NO_TESTS = [["node --test", /^(?:#|ℹ)\s*tests 0\s*$/m]];
+
+/**
+ * Mark a green unit step whose output says it ran no test, as markHollow does for coverage.
+ * @param {string} file @param {import("./gate.mjs").GateEvent[]} events @param {(line: string) => void} log
+ */
+export function markNoTests(file, events, log) {
+  let text = "";
+  try {
+    text = readFileSync(file, "utf8");
+  } catch {
+    return;
+  }
+  const hit = NO_TESTS.find(([, re]) => re.test(text));
+  const last = events[events.length - 1];
+  if (!hit || !last) return;
+  last.empty = `${hit[0]}: tests 0`;
+  last.detail = "ran no test";
+  log(
+    `· ${last.label} passed and ran no test (${hit[0]} found none): green here proves nothing; add a test file the runner finds`,
+  );
+}

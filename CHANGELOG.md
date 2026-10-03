@@ -16,6 +16,9 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **A unit step that ran no test says so.** `node --test` with no test file exits 0 and prints
+  `# tests 0`, and the unit step read green having judged nothing. The step stays a pass, as
+  the coverage step that measured nothing does, and its line and its event now say it ran no test.
 - **`doctor` is green on a fresh install of a preset that protects no migrations.** The harness
   self-test expected a write to `migrations/` to be denied at night, and the astro and docs
   presets protect no `migrations/`, so `doctor` read red on a fresh install. The self-test now runs
