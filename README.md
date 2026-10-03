@@ -36,7 +36,8 @@ npm i -D abatty
 ```
 
 `pnpm`, `yarn` and `bun` work the same way. The package reads no credential and installs nothing
-on your behalf: when a stack needs a tool, the tool is named and you decide.
+on your behalf unless you ask: when a stack needs a tool, the tool is named and you decide, and
+`init --apply` runs the install it names for you.
 
 ## Quick start
 
@@ -47,10 +48,11 @@ npx abatty doctor --controls # proves each gate step can fail
 npx abatty                   # where the repository stands
 ```
 
-1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet with today's numbers
-   as its floor, CI generated from the same gate definition, and the day-0 documents. Pass
-   `--stack` to name a stack instead of detecting one, or `--stage design` for a repository that
-   has no application yet.
+1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet, CI generated from the
+   same gate definition, and the day-0 documents, then lists what is left by hand in order (the
+   installs, the hooks, today's numbers as the ratchet's floor). `--apply` takes the steps a
+   machine safely can and leaves only the ones that need you. Pass `--stack` to name a stack
+   instead of detecting one, or `--stage design` for a repository that has no application yet.
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
    unattended run's stop check. It refuses the work rather than describing it.
 3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever

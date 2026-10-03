@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`abatty init --apply` takes the steps a machine safely can.** `init` ends with the steps it
+  leaves by hand; with `--apply` it runs the dependency install, the executable bits, the hooks
+  install and the ratchet's first floor itself, in that order, and stops at the first that
+  fails. What needs a person (filling the context file, writing the graph's rules and its
+  baseline, committing) is left, numbered from one. `init` without the flag prints what it
+  printed before. Lifted from the 1.0 freeze by an amendment to decision 0002.
+
 ## [0.7.0-rc.12] - 2026-10-03
 
 The twelfth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
