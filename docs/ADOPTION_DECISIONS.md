@@ -93,3 +93,13 @@ the alternative each set aside.
   committed catalog differs from the rules. The alternatives set aside: touching the catalog to
   satisfy the pair (a change made for the check, not the reader), and an excuse line for the pair
   (a new surface during the freeze).
+
+## 2026-10-04 · this repository's own git hooks, by night
+
+- **The three git hooks under `.githooks/` stay this repository's own, and `doctor` names them as
+  differing.** They run `node bin/abatty.mjs`, the source tree, where the shipped hooks run the
+  installed package: the package gates every commit and push with the code being changed, so a
+  broken guard fails here before it ships. `abatty update` would put the shipped versions beside
+  them as `.abatty-new`, never over them. The alternative set aside: installing the shipped hooks,
+  which would gate this repository with whatever version of abatty `node_modules` holds rather
+  than with the one under review.
