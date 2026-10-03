@@ -5,6 +5,21 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.1] - 2026-10-03
+
+The first candidate for 1.0's promise, under `next` (`npm i -D abatty@next`) until its replays come back clean. Six outside
+reviews found the engineering strong and the purpose buried: a stranger met thirty-six files, an
+agent harness and one company's eighty rules before a single check bit. A new repository now
+starts on a **minimal** profile of thirteen rules and about ten files (`--profile synovitec` for
+the full standard, `--agent <id>` for the harness), `init --apply` takes the safe steps itself and
+ends with the first gate, and `abatty prove` shows which of any repository's checks can fail,
+on a copy, writing nothing. Every check on by default is out of probation. Replayed from the
+packed package on fresh JavaScript, TypeScript, Next.js and Next.js monorepo projects until two
+rounds in a row found no must-level miss. **Upgrading:** a config that names no profile keeps
+`synovitec`, so no reading moves; `change.testTamper` is opt-in (add it to `ratchet.enable` to
+keep it); `code.clones` and `docs.behindCode` are redefined, and `abatty update` rewrites their
+floors.
+
 ### Added
 
 - **`abatty prove`: which of a repository's checks can actually fail, with nothing written in
