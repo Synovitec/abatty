@@ -73,7 +73,10 @@ test("a workspace's own dependencies are linked into the copy, so its tests are 
       name: "mono",
       private: true,
       workspaces: ["packages/*"],
-      scripts: { test: 'node --test "packages/a/test/*.test.js"' },
+      // Run in the workspace with no path, which Node 20 and 22 both search by their own default
+      // patterns: the quoted glob needs Node 21, and on Node 20 the fixture's own tests were red
+      // before the plant.
+      scripts: { test: "cd packages/a && node --test" },
     }),
     ".gitignore": "node_modules/\n",
     "packages/a/package.json": JSON.stringify({ name: "a" }),
