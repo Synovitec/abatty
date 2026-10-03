@@ -5,6 +5,17 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The README and the package description say what abatty is for, first.** Four outside
+  reviews found the engineering strong and the purpose buried under philosophy and vocabulary.
+  The README now opens with one promise (make your engineering rules enforceable, and prove every
+  check can fail) and what the tool does under Define, Enforce, Prove and Improve, then an
+  "Already built in" section for what reviewers asked for and the tool already does (adopting on
+  existing debt, waivers with an expiry, CI as the server-side gate, SARIF on pull requests, the
+  MCP server, your own rules), and a short glossary. The package description no longer reads as
+  one company's standard, and the Quick start no longer says `init` writes the ratchet's floor.
+
 ### Fixed
 
 - **A package no framework claims is a Node package.** `init` refused a plain library or CLI

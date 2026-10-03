@@ -5,12 +5,23 @@
 [![node](https://img.shields.io/node/v/abatty.svg)](package.json)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-An engineering standard you install rather than circulate. `abatty` puts a gate in front of your
-main branch, measures the debt behind it, and proves that every step of the gate is capable of
-failing.
+**Make your engineering rules enforceable, and prove every check can actually fail.**
 
-It has no runtime dependencies and runs on Node 20 and later. Linux and Windows are covered by CI
-on every push, against both npm and pnpm.
+Most repositories have a lint step, tests and a CI pipeline. Few can show that each of those checks
+would stop a bad change today, or that the debt they carry is not growing. `abatty` adds that layer
+over the tools you already use (eslint, your test runner, tsc, your CI), for people and for AI
+coding agents alike:
+
+|             | What `abatty` does                                                                                                                                                        | Commands                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Define**  | The rules a repository follows, as data: a built-in catalog, your own rules and probes, waivers with a reason and an expiry date                                          | `rules`, `explain`         |
+| **Enforce** | One gate run by the pre-push hook, by CI and by an agent's stop check, so the three cannot disagree; a ratchet that blocks new debt and never makes you fix the old first | `gate`, `ratchet`          |
+| **Prove**   | Plants a violation in each gate step and probe, and reports any check that stays green as **absent**                                                                      | `doctor --controls`        |
+| **Improve** | Where the repository stands, what to fix first, and floors that only ever fall                                                                                            | `status`, `measure`, `fix` |
+
+No runtime dependencies, Node 20 and later, Linux and Windows covered by CI on every push against
+npm and pnpm. The built-in rule catalog is one team's standard (Synovitec's) shipped as a profile;
+the engine does not depend on it, and a waiver sets any rule aside with its reason on record.
 
 ## Why
 
@@ -47,10 +58,10 @@ npx abatty doctor --controls # proves each gate step can fail
 npx abatty                   # where the repository stands
 ```
 
-1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet with today's numbers
-   as its floor, CI generated from the same gate definition, and the day-0 documents. Pass
-   `--stack` to name a stack instead of detecting one, or `--stage design` for a repository that
-   has no application yet.
+1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet, CI generated from the
+   same gate definition, and the day-0 documents, then lists what is left by hand in order (the
+   installs, the hooks, today's numbers as the ratchet's floor). Pass `--stack` to name a stack
+   instead of detecting one, or `--stage design` for a repository that has no application yet.
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
    unattended run's stop check. It refuses the work rather than describing it.
 3. **`doctor --controls`** plants a violation per step, runs the step, removes the file whatever
@@ -62,6 +73,40 @@ npx abatty                   # where the repository stands
    one's, so a verdict can be read back.
 4. **`abatty`** prints the reading. The reading is what the gate leaves behind, not the point of
    it.
+
+## Already built in
+
+Reviewers of the release candidates asked for several of these as missing. They are here:
+
+- **Adopt on an existing codebase without stopping work.** The ratchet records today's numbers
+  and refuses only a rise: old debt does not block a push, new debt does. A floor falls by itself
+  as the debt is paid.
+- **Exceptions with a reason and an expiry.** `rules.waived` in `abatty.config.json` sets a rule
+  aside with a reason and an `until` date; an expired waiver stops applying and the rule is
+  measured again. Audit advisories take the same form (`security.audit.allow`). The waiver rate is
+  printed with the catalog, so a rule everybody waives shows up as the rule that is wrong.
+- **CI is the wall, the hook is the convenience.** `abatty ci` generates the pipeline from the
+  same gate definition, so a bypassed local hook still meets the same steps on the server; the
+  agent guard refuses `--no-verify` and a push to `main`.
+- **Findings where the review happens.** The generated GitHub workflow uploads SARIF, so findings
+  appear on the changed lines of a pull request; `--json` on the reading commands (`measure`, `ratchet`, `rules`, `check`), and
+  `abatty serve` / `abatty publish` for a dashboard.
+- **A loop for AI agents.** `abatty mcp` serves the measurement, the ratchet, the gate and the rule
+  explanations to an MCP client; an unattended agent run cannot stop until the gate is green.
+- **Your own rules.** `abatty.rules.mjs` and `abatty.probes.mjs` add rules and metrics as pure
+  functions of the repository; a profile packages them for many repositories.
+
+## Words used here
+
+| Word        | Means                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| **gate**    | The ordered checks a change must pass, the same locally, in the hook and in CI         |
+| **ratchet** | Numbers that may only fall; **floor** is today's number for a metric or a file         |
+| **probe**   | One measured metric (a count of oversized files, of clones, of raw env reads)          |
+| **control** | A planted violation that proves a gate step or a probe can go red                      |
+| **rule**    | One requirement of the catalog, with how it is insured: hard, ratchet, review or prose |
+| **harness** | The hooks and settings that hold an AI agent to the gate                               |
+| **night**   | An unattended agent run on a branch, gated before it may stop                          |
 
 ## How it works
 
