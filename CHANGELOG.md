@@ -5,19 +5,6 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
-### Added
-
-- **The gate's verdict on the CI run's page.** Where `GITHUB_STEP_SUMMARY` names a file (every
-  GitHub Actions job), the gate appends its headline and one row per step, so whether the gate
-  held, and which steps did not run, is read where a pull request is decided, beside the SARIF
-  findings on the lines. `status` names `prove` first in its footer.
-
-### Fixed
-
-- **A repository with nothing to audit is not told to fix its audit first.** A design repository
-  with no package.json, on a preset whose gate has no audit step, read "the audit has not run
-  here" at the top of its first reading.
-
 ## [0.8.0-rc.3] - 2026-10-03
 
 The third candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.2 replays on a
@@ -29,6 +16,13 @@ another version's numbers as today's, and the headline promises what a control a
 profile (a config that names no profile keeps the standard, as before). Two `--json` fields are
 added, none removed: `github` on the CI state `doctor` reports, and `builtin` on the steps of
 `prove`. Every saved reading now writes its dated `.md` beside its JSON.
+
+### Added
+
+- **The gate's verdict on the CI run's page.** Where `GITHUB_STEP_SUMMARY` names a file (every
+  GitHub Actions job), the gate appends its headline and one row per step, so whether the gate
+  held, and which steps did not run, is read where a pull request is decided, beside the SARIF
+  findings on the lines. `status` names `prove` first in its footer.
 
 ### Changed
 
@@ -48,6 +42,10 @@ added, none removed: `github` on the CI state `doctor` reports, and `builtin` on
   keeps the standard as before.
 
 ### Fixed
+
+- **A repository with nothing to audit is not told to fix its audit first.** A design repository
+  with no package.json, on a preset whose gate has no audit step, read "the audit has not run
+  here" at the top of its first reading.
 
 - **`update` names a range on a prerelease pin.** `"abatty": "^0.7.0-rc.12"` matches the later
   candidates of 0.7.0, never `0.8.0-rc.1`, so the package manager kept the old version while
