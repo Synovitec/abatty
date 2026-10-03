@@ -33,7 +33,9 @@ under Unreleased in the same commit.
   module and read green, and an orphan file with an unused export under `app/` passed them. Both
   now name the source folders that exist (`src`, `app`, `pages`, `components`, `lib`, `server`,
   `hooks`, `utils`, and a monorepo's `apps`, `packages`, `services`); `init`'s baseline step and
-  the gate's missing-baseline message say the same command.
+  the gate's missing-baseline message say the same command. The same reading replaces every
+  folder a preset names, so a client-only Vite app is no longer given a `server/` it does not
+  have, which depcruise refused and the gate called failed work.
 - **`DOC-AGENTS-MD` holds when `CLAUDE.md` is exactly `@AGENTS.md`.** The rule read the context
   file its import leads to, `AGENTS.md` itself, for an `@AGENTS.md` it never holds, and called
   the single source `init` writes partial. It now reads `CLAUDE.md` as written, and also holds for

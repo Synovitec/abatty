@@ -41,3 +41,16 @@ test("a monorepo's graph reads its workspace folders, and knip keeps its own wor
     /"src\/\*\*\/\*\.\{js,jsx,mjs,cjs,ts,tsx\}"/,
   );
 });
+
+test("a client-only Vite app's graph names no server/ it does not have", () => {
+  const dir = tempRepo("roots-vite", {
+    "package.json": JSON.stringify({ name: "v", dependencies: { react: "19", vite: "6" } }),
+    "src/main.tsx": "export const m = 1;\n",
+  });
+  cli(["init", dir, "--stack", "vite-react"], dir);
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+  assert.equal(
+    pkg.scripts.graph,
+    "depcruise src --config .dependency-cruiser.cjs --ignore-known --output-type err",
+  );
+});

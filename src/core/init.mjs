@@ -256,7 +256,10 @@ export function initRepo(o) {
 
   // The graph reads every source folder that exists (src/core/source-roots.mjs).
   const roots = graphRoots(repoDir);
-  const rooted = (/** @type {string} */ v) => v.replace(/\bdepcruise src\b/, `depcruise ${roots}`);
+  // Every folder the preset names before its first flag is replaced: vite-react named
+  // `src server`, and a client-only app had depcruise refuse a server/ it does not have.
+  const rooted = (/** @type {string} */ v) =>
+    v.replace(/\bdepcruise (?:[\w./][\w./-]* )+(?=--)/, `depcruise ${roots} `);
 
   // 4. The pre-push hook that calls the gate, and the scripts. The hooks speak the manager the
   //    repository committed: a bun-only repository was given npx and npm run in all three.
