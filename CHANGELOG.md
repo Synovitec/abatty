@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **The headline says "verify", and the README counts how each rule is held.** "Continuously
+  prove those controls work" claimed more than a control shows; the promise is now to verify that
+  each control can still fail, and the four verbs read Define, Enforce, Verify, Improve (the
+  command stays `abatty prove`). The README gives the split of the 80 rules (48 held by a check
+  that fails, 7 by a ratchet, 13 by a review, 12 prose only) so "80 rules" no longer reads as 80
+  automated checks, held equal to the catalog by a test, and says that profiles compose: a
+  company standard can be a file or a package many repositories name.
+
 - **A repository with no config is read against the minimal profile.** Bare `abatty`, `status`
   and `measure` on an untouched repository showed the whole standard (44 checks, the Harness and
   Documents families), then 13 checks once `init` had set up the minimal profile: a stranger's

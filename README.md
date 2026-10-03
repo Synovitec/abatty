@@ -5,8 +5,8 @@
 [![node](https://img.shields.io/node/v/abatty.svg)](package.json)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove
-those controls work.**
+**Turn your engineering rules into enforceable controls, prevent new debt, and verify that each
+control can still fail.**
 
 Most repositories have a lint step, tests and a CI pipeline. Few can show that each of those checks
 would stop a bad change today, or that the debt they carry is not growing. `abatty` is the policy
@@ -19,13 +19,17 @@ or a coding agent.
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | **Define**  | The rules a repository follows, as data: a built-in catalog, your own rules and probes, waivers with a reason and an expiry date                                          | `rules`, `explain`           |
 | **Enforce** | One gate run by the pre-push hook, by CI and by an agent's stop check, so the three cannot disagree; a ratchet that blocks new debt and never makes you fix the old first | `gate`, `ratchet`            |
-| **Prove**   | Plants a violation in each gate step and probe, and reports any check that stays green as **absent**, on a copy, nothing written                                          | `prove`, `doctor --controls` |
+| **Verify**  | Plants a violation in each gate step and probe, and reports any check that stays green as **absent**, on a copy, nothing written                                          | `prove`, `doctor --controls` |
 | **Improve** | Where the repository stands, what to fix first, and floors that only ever fall                                                                                            | `status`, `measure`, `fix`   |
 
 No runtime dependencies, Node 20 and later, Linux and Windows covered by CI on every push against
-npm and pnpm. A new repository starts on the **minimal** profile: thirteen rules any stack agrees
-to. The full catalog of eighty is one team's standard (`synovitec`), a profile you add when you
-want it; the engine depends on neither, and a waiver sets any rule aside with its reason on record.
+npm and pnpm. A new repository starts on the **minimal** profile: 13 rules any stack agrees to,
+all 13 held by a machine. The full catalog of 80 is one team's standard (`synovitec`), a profile
+you add when you want it: 48 of its rules are held by a check that fails, 7 by a ratchet, 13 by a
+review and 12 are prose only, and `abatty rules` says which is which. The engine depends on
+neither, and a waiver sets any rule aside with its reason on record. Profiles compose: a company
+standard can be a file or an npm package that many repositories name beside the built-in ones,
+each repository adding its own rules (`abatty.rules.mjs`) on top.
 
 What a control shows is exact and narrow: the check went red on one known violation and green again
 without it. That a check can fail is shown; that it catches every violation of its kind, that the
