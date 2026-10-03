@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **`status` says the policy and its proof.** Two lines open the Harness block: the profiles the
+  reading is against with its number of checks, and what the last controls run proved (how many
+  judged steps went red on their plant, which stayed green, and when), or that none has run and
+  `prove` shows it on a copy. A run planted by an older version is named as such.
+
 ### Changed
 
 - **The README leads with what `prove` finds.** The headline is "Find the CI checks that can't

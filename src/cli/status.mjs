@@ -8,6 +8,8 @@ import * as t from "../ui/term.mjs";
 import { git } from "../core/repo.mjs";
 import { fixFirst } from "../core/fix-first.mjs";
 import { phaseOf, reopened } from "../rules/phases.mjs";
+import { readJsonFile } from "../core/repo.mjs";
+import { CONTROLS_FILE, currentControls } from "../core/step-controls.mjs";
 
 /**
  * @param {import("./ratchet.mjs").CliContext} c
@@ -53,6 +55,15 @@ export async function statusCommand(c, preset) {
   out(fixFirstBlock(dir, r.findings));
   out(familyTable(r.families) + "\n");
   out(t.heading("Harness"));
+  // The policy and its proof first: which standard the reading is against, and whether the gate's
+  // steps were last seen able to fail. Two reviews asked for one screen that says both.
+  out(
+    t.kv(
+      "policy",
+      `${(r.profiles || []).join(", ") || "minimal"}${t.gray(` · ${r.applicable} checks · abatty rules`)}`,
+    ) + "\n",
+  );
+  out(t.kv("proof", proofSays(dir)) + "\n");
   out(
     t.kv(
       "stack",
@@ -236,4 +247,32 @@ export function fixFirstBlock(dir, findings) {
   if (!lines.length)
     return `  ${t.glyph.ok} ${t.gray("Security: nothing to fix first (no secret in the tree, the last audit green or run in CI, no Security must missing)")}\n\n`;
   return `${t.heading("Fix these first", "security, before structure and docs")}${lines.map((l) => `  ${t.glyph.fail} ${t.red(l)}\n`).join("")}\n`;
+}
+
+/**
+ * What the last controls run proved, for the status screen: how many of the steps it judged went
+ * red on their plant, which stayed green, and when, or that none has run.
+ * @param {string} dir @returns {string}
+ */
+function proofSays(dir) {
+  /** @type {{ at?: string, abatty?: string, steps?: { label: string, outcome: string }[] } | null} */
+  const recorded = readJsonFile(dir, CONTROLS_FILE);
+  if (!recorded)
+    return t.gray("none yet · abatty prove shows it on a copy, doctor --controls records it");
+  if (!currentControls(recorded))
+    return (
+      t.yellow(`planted by abatty ${recorded.abatty || "(unrecorded)"}`) +
+      t.gray(" · abatty doctor --controls runs them again")
+    );
+  const steps = recorded.steps || [];
+  const red = steps.filter((x) => x.outcome === "red").length;
+  const green = steps.filter((x) => x.outcome === "green").map((x) => x.label);
+  const when = String(recorded.at || "").slice(0, 10);
+  return (
+    (green.length
+      ? t.red(`${green.length} step(s) stayed green: ${green.join(", ")}`) + t.gray(" · ")
+      : "") +
+    `${red} of ${red + green.length} judged step(s) went red on their plant` +
+    t.gray(when ? ` · ${when}` : "")
+  );
 }
