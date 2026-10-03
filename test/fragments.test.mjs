@@ -105,7 +105,7 @@ test("abatty changelog --release cuts the release from the command line", () => 
 
 test("the Stop hook takes a fragment as the changelog entry", () => {
   const dir = tempRepo("fragments-stop", { "package.json": NEXT_PKG, "src/a.ts": "export {};\n" });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkgPath = join(dir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
   pkg.scripts["gate:fast"] = 'node -e "process.exit(0)"';

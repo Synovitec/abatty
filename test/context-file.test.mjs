@@ -7,7 +7,7 @@ import { NEXT_PKG, cli, tempRepo } from "./helpers.mjs";
 
 test("a fresh repository is asked to fill the file the template went into, with the count", () => {
   const dir = tempRepo("ctx-fresh", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.match(r.out, /\d+\. Fill AGENTS\.md \(\d+ placeholder\(s\) in <>\)/);
   assert.equal(r.out.includes("Fill CLAUDE.md"), false, r.out);
 });
@@ -17,7 +17,7 @@ test("a repository with its own context file is told it was kept and how AGENTS.
     "package.json": NEXT_PKG,
     "CLAUDE.md": "# Mine\n\nThe real context, written by hand.\n",
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const said = "CLAUDE.md is this repository's own and was kept; AGENTS.md points at it";
   assert.ok(r.out.includes(said), r.out);
   assert.doesNotMatch(r.out, /Fill /);
@@ -29,9 +29,9 @@ test("DOC-AGENTS-MD holds for either single source init writes", async () => {
   const of = (/** @type {string} */ dir) =>
     runCatalog(buildContext(dir)).find((f) => f.id === "DOC-AGENTS-MD")?.status;
   const fresh = tempRepo("ctx-rule-fresh", { "package.json": NEXT_PKG });
-  cli(["init", fresh, "--stack", "next"], fresh);
+  cli(["init", "--profile", "synovitec", fresh, "--stack", "next"], fresh);
   assert.equal(of(fresh), "present", "CLAUDE.md imports AGENTS.md");
   const own = tempRepo("ctx-rule-own", { "package.json": NEXT_PKG, "CLAUDE.md": "# Mine\n" });
-  cli(["init", own, "--stack", "next"], own);
+  cli(["init", "--profile", "synovitec", own, "--stack", "next"], own);
   assert.equal(of(own), "present", "AGENTS.md points at CLAUDE.md");
 });

@@ -112,7 +112,7 @@ test("the Stop hook refuses a night's stop while a coupled path changed without 
     "src/db/schema.ts": "export {};\n",
     "migrations/0001.sql": "-- one\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkgPath = join(dir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
   pkg.scripts["gate:fast"] = 'node -e "process.exit(0)"';

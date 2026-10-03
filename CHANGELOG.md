@@ -7,6 +7,15 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **A minimal profile, the default of a new repository.** Thirteen rules any stack agrees to: the
+  gate, CI running it, the ratchet and the controls, a linter, a formatter and tests, the secret
+  scan, the audit, a committed lockfile, no tracked `.env`, and the 800-line cap. `init` on it
+  writes about ten files (the config, the scripts, the git hooks, the ignore files, the tool
+  configs and the day-one workflow) where it wrote thirty-six, and asks for no changelog line per
+  commit. `--agent <id>` adds the agent harness; `--profile synovitec` the full standard, its
+  documents and its changelog rule. A repository whose config names no profile keeps
+  `synovitec`, so an upgrade changes nobody's reading. `minimal` and `synovitec` can be named
+  together.
 - **`abatty init --apply` takes the steps a machine safely can.** `init` ends with the steps it
   leaves by hand; with `--apply` it runs the dependency install, the executable bits, the hooks
   install and the ratchet's first floor itself, in that order, and stops at the first that

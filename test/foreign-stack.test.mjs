@@ -11,17 +11,17 @@ import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 
 test("a language no preset covers is said and refused, unless the docs preset is asked for", () => {
   const dir = tempRepo("foreign-go", { "go.mod": "module x\n", "main.go": "package main\n" });
-  const refused = cli(["init", dir, "--yes"], dir);
+  const refused = cli(["init", "--profile", "synovitec", dir, "--yes"], dir);
   assert.equal(refused.code, 2, refused.out);
   assert.match(refused.out, /no preset for Go/);
-  const asked = cli(["init", dir, "--yes", "--stack", "docs"], dir);
+  const asked = cli(["init", "--profile", "synovitec", dir, "--yes", "--stack", "docs"], dir);
   assert.equal(asked.code, 0, asked.out);
   assert.equal(asked.out.match(/ package\.json/g)?.length, 1, "one line for one file");
 });
 
 test("a repository of documents alone still gets the docs preset unasked", () => {
   const dir = tempRepo("foreign-docs", { "docs/a.md": "# a\n" });
-  const r = cli(["init", dir, "--yes"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--yes"], dir);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /init · Documents/);
   assert.equal(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name.length > 0, true);
@@ -40,7 +40,7 @@ test("a plain JavaScript package gets no typecheck it cannot run, and a lint pla
     "package.json": JSON.stringify({ name: "fresh", scripts: { test: "node --test" } }),
     "index.js": "module.exports = 1;\n",
   });
-  assert.equal(cli(["init", js, "--yes"], js).code, 0);
+  assert.equal(cli(["init", "--profile", "synovitec", js, "--yes"], js).code, 0);
   const scripts = JSON.parse(readFileSync(join(js, "package.json"), "utf8")).scripts;
   assert.equal(scripts.typecheck, undefined);
   const plant = STEP_CONTROLS.lint?.files({
@@ -56,7 +56,7 @@ test("a plain JavaScript package gets no typecheck it cannot run, and a lint pla
     "package.json": JSON.stringify({ name: "fresh", devDependencies: { typescript: "6" } }),
     "tsconfig.json": "{}\n",
   });
-  assert.equal(cli(["init", ts, "--yes"], ts).code, 0);
+  assert.equal(cli(["init", "--profile", "synovitec", ts, "--yes"], ts).code, 0);
   assert.match(JSON.parse(readFileSync(join(ts, "package.json"), "utf8")).scripts.typecheck, /tsc/);
   const tsPlant = STEP_CONTROLS.lint?.files({
     deps: new Set(),

@@ -24,7 +24,7 @@ const OLD = NEW.split("\n").slice(0, -2).join("\n") + "\n";
 /** A repository with the harness installed by an older package: the base copy and the lock say OLD. @param {string} name */
 function installedOld(name) {
   const dir = tempRepo(name, { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const lock = readLock(dir);
   assert.ok(lock, "init wrote the lock");
   lock.abatty = "0.0.9";
@@ -39,7 +39,7 @@ function installedOld(name) {
 
 test("init writes the lock and keeps the installed copies as the base of the next merge", () => {
   const dir = tempRepo("update-init", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const lock = readLock(dir);
   assert.ok(lock);
   assert.equal(
@@ -72,7 +72,7 @@ test("untouched since the install: the file takes the package's version", () => 
 
 test("edited here while the package did not change it: yours is kept", () => {
   const dir = tempRepo("update-kept", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const mine = "// my note\n" + NEW;
   writeFileSync(join(dir, HOOK), mine);
   const r = updateRepo({ repoDir: dir, preset });
@@ -121,7 +121,7 @@ test("both changed on the same lines: a conflict leaves the new version beside y
 
 test("the config gains the keys the template gained and keeps every value set here; the scripts absent are added", () => {
   const dir = tempRepo("update-config", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const cfgPath = join(dir, "abatty.config.json");
   const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
   delete cfg.provenance;
@@ -154,7 +154,7 @@ const TOOLED = JSON.stringify({
 
 test("a script removed after it was offered stays removed; a required one comes back", () => {
   const dir = tempRepo("update-declined", { "package.json": TOOLED });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.ok(readLock(dir)?.scripts?.includes("lint"), "the lock lists the scripts offered");
   const pkgPath = join(dir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
@@ -170,7 +170,7 @@ test("a script removed after it was offered stays removed; a required one comes 
 
 test("a script the lock never offered is added, and a lock without the list reads as all offered", () => {
   const dir = tempRepo("update-offered", { "package.json": TOOLED });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const lock = readLock(dir);
   assert.ok(lock);
   lock.scripts = (lock.scripts || []).filter((s) => s !== "lint");
@@ -236,7 +236,7 @@ test("the CLI: update --dry-run writes nothing; --force takes the package's vers
 
 test("the version pin: init records the version in the config, update moves it, doctor says when the package differs", () => {
   const dir = tempRepo("update-pin", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const cfgPath = join(dir, "abatty.config.json");
   const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
   assert.match(cfg.abatty, /^\d+\.\d+\.\d+/);
@@ -263,7 +263,7 @@ test("the lock records the copy that is installed, so a file init kept still tak
   const own = "// this repository's own session brief\n";
   mkdirSync(dirname(join(dir, HOOK)), { recursive: true });
   writeFileSync(join(dir, HOOK), own);
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.equal(readFileSync(join(dir, HOOK), "utf8"), own, "init kept the repository's file");
   const lock = readLock(dir);
   assert.ok(lock);
@@ -289,13 +289,13 @@ test("the lock records the copy that is installed, so a file init kept still tak
 
 test("a file the package really installed keeps its ancestor across a re-run of init", () => {
   const dir = tempRepo("update-ancestor", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const installed = readFileSync(join(dir, HOOK), "utf8");
   assert.equal(readLock(dir)?.files[HOOK], hashOf(installed));
   // The repository edits it, then runs init again: the ancestor stays the version that was
   // installed, so a later package change still merges against the right base.
   writeFileSync(join(dir, HOOK), installed + "\n// a local note\n");
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const lock = readLock(dir);
   assert.equal(lock?.files[HOOK], hashOf(installed), "the ancestor is not moved to the edit");
   assert.equal(
@@ -307,14 +307,14 @@ test("a file the package really installed keeps its ancestor across a re-run of 
 
 test("init enables the preset's opt-in probes in a new config, never in one a repository already had", () => {
   const fresh = tempRepo("init-enable-new", { "package.json": NEXT_PKG });
-  cli(["init", fresh, "--stack", "next"], fresh);
+  cli(["init", "--profile", "synovitec", fresh, "--stack", "next"], fresh);
   const was = JSON.parse(readFileSync(join(fresh, "abatty.config.json"), "utf8"));
   assert.ok(was.ratchet.enable.includes("valid.unparsedBoundary"));
   const adopted = tempRepo("init-enable-old", {
     "package.json": NEXT_PKG,
     "abatty.config.json": JSON.stringify({ stack: "next", ratchet: { exclude: [] } }),
   });
-  cli(["init", adopted, "--stack", "next"], adopted);
+  cli(["init", "--profile", "synovitec", adopted, "--stack", "next"], adopted);
   const kept = JSON.parse(readFileSync(join(adopted, "abatty.config.json"), "utf8"));
   assert.deepEqual(
     kept.ratchet.enable,

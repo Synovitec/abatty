@@ -80,7 +80,7 @@ test("the python preset: detected from the tree, init writes the private package
   const py = tempRepo("packs-preset", PY);
   assert.equal(detectPreset(new Set(), buildContext(py).files)?.id, "python");
   assert.equal(detectPreset(new Set()), null, "never from npm dependencies");
-  const init = cli(["init", py], py);
+  const init = cli(["init", "--profile", "synovitec", py], py);
   assert.equal(init.code, 0, init.out);
   assert.match(init.out, /Python \(ruff, mypy, pytest\)/);
   assert.match(init.out, /not yet proven/);

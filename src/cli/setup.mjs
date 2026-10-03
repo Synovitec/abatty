@@ -31,6 +31,7 @@ export async function initCommand(cx, preset) {
     force: flag("--force"),
     dryRun: flag("--dry-run"),
     stage: opt("--stage") || undefined,
+    profile: opt("--profile") || undefined,
     workspaces: detectWorkspaces(dir, readAdoption(dir)),
     agents: opt("--agent")
       ? opt("--agent")

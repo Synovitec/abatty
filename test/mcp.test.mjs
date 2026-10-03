@@ -95,7 +95,7 @@ test("the gate tool runs the repository's gate as a child and returns its outcom
     "package.json": NEXT_PKG,
     "src/a.ts": "export const a = 1;\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   // A lint script whose outcome is the same on every machine: the preset names a linter it never
   // installs, so without this the gate fails here and cannot run on a clean runner, and the tool
   // under test is the one relaying the outcome.

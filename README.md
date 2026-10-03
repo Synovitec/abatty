@@ -23,8 +23,9 @@ or a coding agent.
 | **Improve** | Where the repository stands, what to fix first, and floors that only ever fall                                                                                            | `status`, `measure`, `fix` |
 
 No runtime dependencies, Node 20 and later, Linux and Windows covered by CI on every push against
-npm and pnpm. The built-in rule catalog is one team's standard (Synovitec's) shipped as a profile;
-the engine does not depend on it, and a waiver sets any rule aside with its reason on record.
+npm and pnpm. A new repository starts on the **minimal** profile: thirteen rules any stack agrees
+to. The full catalog of eighty is one team's standard (`synovitec`), a profile you add when you
+want it; the engine depends on neither, and a waiver sets any rule aside with its reason on record.
 
 ## Why
 
@@ -62,9 +63,11 @@ npx abatty doctor --controls # proves each gate step can fail
 npx abatty                   # where the repository stands
 ```
 
-1. **`init`** writes the gate, the pre-push hook that runs it, the ratchet, CI generated from the
-   same gate definition, and the day-0 documents, then lists what is left by hand in order (the
-   installs, the hooks, today's numbers as the ratchet's floor). `--apply` takes the steps a
+1. **`init`** writes the gate, the git hooks that run it, the ratchet and a CI workflow from the
+   same gate definition, about ten files on the default **minimal** profile, then lists what is
+   left by hand in order (the installs, the hooks, today's numbers as the ratchet's floor).
+   `--agent <id>` adds the harness that holds a coding agent to the gate; `--profile synovitec`
+   adds the full standard, its documents and a changelog line per commit. `--apply` takes the steps a
    machine safely can and leaves only the ones that need you. Pass `--stack` to name a stack
    instead of detecting one, or `--stage design` for a repository that has no application yet.
 2. **`gate`** is one implementation with three callers: this command, the pre-push hook, and the
@@ -359,8 +362,11 @@ enabled or not. A multi-tenant repository whose tenant column is not `tenant_id`
 `tenantKeys` so DATA-TENANT can see it.
 
 Rules can also arrive as a **profile**: a standard packaged as a unit of rules, adoption phases,
-presets and harness files. The built-in profile is one company's standard. A repository that names
-only its own carries only its own, with the same instrument underneath.
+presets and harness files. Three are built in: `minimal`, the default of a new repository;
+`synovitec`, one company's full standard, and the profile of any config that names none, so an
+upgrade moves nobody; and `cra`, a lens that maps another profile onto a regulation's
+requirements. They combine (`"profiles": ["minimal", "acme"]`), and a repository that names only
+its own carries only its own, with the same instrument underneath.
 
 ## What it does not claim
 

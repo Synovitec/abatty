@@ -10,7 +10,7 @@ import { distil, gatherNight, nightDates, renderNightReport } from "../src/night
 /** A repository with the harness committed, a no-op gate and one phase. @param {string} name */
 function nightRepo(name) {
   const dir = tempRepo(name, { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkgPath = join(dir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
   pkg.scripts["gate:fast"] = 'node -e "process.exit(0)"';

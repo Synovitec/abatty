@@ -21,7 +21,7 @@ ${t.banner(VERSION)}  ${t.gray("the engineering standard as a command")}
 
   ${t.bold("abatty")} [status] [dir] [--fresh]                                    the repository at a glance
   ${t.bold("abatty")} --version | -v                                             the package's version, and nothing else
-  ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--ci <providers>] [--agent <ids>] [--force] [--dry-run] [--apply]   the instrument, from the templates and the preset; --apply also takes the steps a machine safely can (installs, hooks, the first floor)
+  ${t.bold("abatty init")} [dir] --stack <${presets.map((p) => p.id).join("|")}> [--ci <providers>] [--agent <ids>] [--profile minimal|synovitec] [--force] [--dry-run] [--apply]   the instrument, from the templates and the preset (the minimal profile unless named); --apply also takes the steps a machine safely can (installs, hooks, the first floor)
   ${t.bold("abatty measure")} [dir] [--out <file>] [--json] [--sarif] [--quiet]  the gap analysis: score, every check, next steps by phase
   ${t.bold("abatty gate")} [dir] [--fast] [--range <git-range>] [--base <b>]     the path-aware gate the pre-push hook and the night run
   ${t.bold("abatty doctor")} [dir] [--strict] [--skip-self-test] [--controls] [--verbose]  the harness self-test and the drift against the package; --controls proves each gate step can go red, --verbose names each check as it starts

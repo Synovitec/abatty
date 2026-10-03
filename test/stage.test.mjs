@@ -104,7 +104,10 @@ test("the plan per stage, the report and the screens carry the stage, init recor
   );
   assert.equal(phasesFor([synovitec], "build").length, 14);
   const dir = tempRepo("stage-cli", { "package.json": NEXT_PKG });
-  const init = cli(["init", dir, "--stack", "next", "--stage", "design"], dir);
+  const init = cli(
+    ["init", "--profile", "synovitec", dir, "--stack", "next", "--stage", "design"],
+    dir,
+  );
   assert.equal(init.code, 0, init.out);
   assert.equal(JSON.parse(readFileSync(join(dir, "abatty.config.json"), "utf8")).stage, "design");
   const report = JSON.parse(cli(["measure", dir, "--json"], dir).out);

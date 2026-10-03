@@ -37,7 +37,7 @@ test("a config or an .eslintignore that names .claude, or no eslint at all, is l
 
 test("init lists it among the steps by hand, and doctor says it without failing", () => {
   const dir = tempRepo("hl-cli", { "package.json": NEXT_PKG, "eslint.config.mjs": FLAT });
-  const init = cli(["init", dir, "--stack", "next"], dir);
+  const init = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.match(init.out, /\d+\. eslint\.config\.mjs lints \.claude\/, the harness abatty installs/);
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(

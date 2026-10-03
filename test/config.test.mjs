@@ -60,7 +60,7 @@ test("the root file wins key by key over the older place, and both are read", ()
 
 test("init writes the one config at the root with the schema line; the hooks and the stub read it there", () => {
   const dir = tempRepo("config-init", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.ok(existsSync(join(dir, CONFIG_FILE)));
   assert.equal(existsSync(join(dir, LEGACY_CONFIG)), false, "one config, not two");
   const c = JSON.parse(readFileSync(join(dir, CONFIG_FILE), "utf8"));
@@ -133,7 +133,7 @@ test("the hooks read the repository's config, not a path settings.json pinned", 
   // the scrub off where the repository opted in, no coupled pairs, the repository's protected
   // paths replaced. Nothing said so, because the self-test resolved the config its own way.
   const dir = tempRepo("config-wiring", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const settings = JSON.parse(readFileSync(join(dir, ".claude/settings.json"), "utf8"));
   const pinned = settings.env?.ADOPTION_CONFIG;
   assert.ok(

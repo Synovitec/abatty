@@ -19,7 +19,9 @@ function checkouts(rootBranch, wtBranch, config = { baseBranch: "main", directPu
   const wt = join(dir, "wt");
   const git = (/** @type {string} */ cwd, /** @type {string[]} */ ...a) =>
     spawnSync("git", a, { cwd, stdio: "ignore" });
-  spawnSync("git", ["init", "-q", "-b", "main", root], { stdio: "ignore" });
+  spawnSync("git", ["init", "-q", "-b", "main", root], {
+    stdio: "ignore",
+  });
   git(root, "config", "user.email", "r@example.com");
   git(root, "config", "user.name", "Review");
   git(root, "commit", "-q", "--allow-empty", "--no-gpg-sign", "-m", "init");

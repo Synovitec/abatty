@@ -122,7 +122,7 @@ test("every step has a control that means something; planted, run, removed: a st
 
 test("doctor --controls prints the verdict per step and is not ok while a step is absent; the rule is present once every step went red", () => {
   const dir = fixture("controls-doctor");
-  cli(["init", dir, "--stack", "node"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "node"], dir);
   const r = cli(["doctor", dir, "--skip-self-test", "--controls"], dir);
   assert.equal(r.code, 3, r.out);
   assert.match(r.out, /Controls/);
@@ -135,7 +135,7 @@ test("doctor --controls prints the verdict per step and is not ok while a step i
   assert.ok(preset);
   const none = analyze(fresh).findings.find((f) => f.id === "INST-CONTROLS");
   assert.equal(none?.status, "missing", "no ratchet script at all");
-  cli(["init", fresh, "--stack", "next"], fresh);
+  cli(["init", "--profile", "synovitec", fresh, "--stack", "next"], fresh);
   const unrun = analyze(fresh).findings.find((f) => f.id === "INST-CONTROLS");
   assert.equal(unrun?.status, "partial");
   assert.match(unrun?.evidence || "", /controls not run yet \(abatty doctor --controls\)/);

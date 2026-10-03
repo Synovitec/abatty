@@ -116,7 +116,9 @@ for (const [id, fx] of Object.entries(FIXTURES)) {
         )?.id,
         id,
       );
-    const init = fx.noJs ? cli(["init", dir, "--stack", id], dir) : cli(["init", dir], dir);
+    const init = fx.noJs
+      ? cli(["init", "--profile", "synovitec", dir, "--stack", id], dir)
+      : cli(["init", "--profile", "synovitec", dir], dir);
     // The next steps are what THIS init wrote. A preset with no import graph must not send its
     // reader looking for a dependency-cruiser config it has no copy of.
     assert.equal(

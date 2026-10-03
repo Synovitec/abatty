@@ -103,6 +103,7 @@ if (flag("--plain")) process.env.ABATTY_PLAIN = "1";
 if (process.env.ABATTY_PLAIN === "1") t.setPlain(true);
 const VALUE_FLAGS = [
   "--stack",
+  "--profile",
   "--out",
   "--range",
   "--base",

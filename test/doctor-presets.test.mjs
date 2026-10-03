@@ -11,7 +11,7 @@ test("doctor is green on a fresh install of a preset that protects no migrations
     "docs/a.md":
       '---\ntitle: "A"\ndescription: "D"\ncategory: reference\nstatus: living\n---\n# A\n',
   });
-  cli(["init", dir, "--stack", "docs"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "docs"], dir);
   const r = cli(["doctor", dir], dir);
   assert.match(r.out, /harness ok/, r.out);
   assert.doesNotMatch(r.out, /migration[^\n]*expected deny/);

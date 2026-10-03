@@ -9,7 +9,7 @@ import { NEXT_PKG, cli, git, tempRepo } from "./helpers.mjs";
 
 test("measure keeps its report under .abatty, and leaves docs and the tree as they were", () => {
   const dir = tempRepo("measure-quiet", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "chore: the instrument");
   const before = readdirSync(join(dir, "docs")).sort();

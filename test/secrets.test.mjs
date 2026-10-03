@@ -147,7 +147,7 @@ test("the gate: the secret scan is a built-in step that stops the gate on a find
 
 test("the CLI and the hook: abatty secrets --staged is what init's pre-commit hook runs, one implementation with the gate and CI", () => {
   const dir = tempRepo("secrets-cli", { "package.json": NEXT_PKG });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   assert.match(readFileSync(join(dir, ".githooks/pre-commit"), "utf8"), /abatty secrets --staged/);
   const clean = cli(["secrets", dir], dir);
   assert.equal(clean.code, 0, clean.out);

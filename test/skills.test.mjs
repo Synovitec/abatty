@@ -28,7 +28,19 @@ test("the skill is in the open agent-skills format: name, description, license, 
 
 test("init writes the skill to every configured adapter's skills folder, identical", () => {
   const dir = tempRepo("skills-init", { "package.json": NEXT_PKG });
-  const r = cli(["init", dir, "--stack", "next", "--agent", `${PRIMARY.id},agents-md,cursor`], dir);
+  const r = cli(
+    [
+      "init",
+      "--profile",
+      "synovitec",
+      dir,
+      "--stack",
+      "next",
+      "--agent",
+      `${PRIMARY.id},agents-md,cursor`,
+    ],
+    dir,
+  );
   assert.equal(r.code, 0, r.out);
   for (const p of [
     ".claude/skills/adopt-standards/SKILL.md",
@@ -39,7 +51,7 @@ test("init writes the skill to every configured adapter's skills folder, identic
     assert.equal(readFileSync(join(dir, p), "utf8"), SKILL, `${p} is the template`);
   }
   const only = tempRepo("skills-primary", { "package.json": NEXT_PKG });
-  cli(["init", only, "--stack", "next"], only);
+  cli(["init", "--profile", "synovitec", only, "--stack", "next"], only);
   assert.ok(existsSync(join(only, ".claude/skills/adopt-standards/SKILL.md")));
   assert.equal(
     existsSync(join(only, ".agents/skills/adopt-standards/SKILL.md")),

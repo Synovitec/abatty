@@ -16,7 +16,7 @@ test("the graph and dead code read every source folder there is, app/ included",
     "src/lib/price.ts": "export const price = 1;\n",
     "components/card.tsx": "export const Card = () => null;\n",
   });
-  const r = cli(["init", dir, "--stack", "next"], dir);
+  const r = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
   assert.match(pkg.scripts.graph, /^depcruise src app components --config/);
   assert.match(
@@ -33,7 +33,7 @@ test("a monorepo's graph reads its workspace folders, and knip keeps its own wor
     "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), workspaces: ["apps/*"] }),
     "apps/web/app/page.tsx": "export default function P() { return null; }\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
   assert.match(pkg.scripts.graph, /^depcruise apps --config/);
   assert.match(
@@ -47,7 +47,7 @@ test("a client-only Vite app's graph names no server/ it does not have", () => {
     "package.json": JSON.stringify({ name: "v", dependencies: { react: "19", vite: "6" } }),
     "src/main.tsx": "export const m = 1;\n",
   });
-  cli(["init", dir, "--stack", "vite-react"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "vite-react"], dir);
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
   assert.equal(
     pkg.scripts.graph,
@@ -60,11 +60,11 @@ test("a root with no tsconfig.json gets a graph config that does not ask for one
     "package.json": JSON.stringify({ ...JSON.parse(NEXT_PKG), workspaces: ["apps/*"] }),
     "apps/web/app/page.tsx": "export default function P() { return null; }\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const config = readFileSync(join(dir, ".dependency-cruiser.cjs"), "utf8");
   assert.match(config, /\/\/ tsConfig: \{ fileName: "tsconfig\.json" \},/);
   const withTs = tempRepo("roots-tsconfig", { "package.json": NEXT_PKG, "tsconfig.json": "{}\n" });
-  cli(["init", withTs, "--stack", "next"], withTs);
+  cli(["init", "--profile", "synovitec", withTs, "--stack", "next"], withTs);
   assert.match(
     readFileSync(join(withTs, ".dependency-cruiser.cjs"), "utf8"),
     /^\s+tsConfig: \{ fileName/m,
@@ -82,7 +82,7 @@ test("a config FlatCompat loads by name is not called an unused dependency", () 
       'const compat = new FlatCompat({});\nexport default [...compat.extends("next/core-web-vitals", "next/typescript", "plugin:react/recommended")];\n',
     "app/page.tsx": "export default function P() { return null; }\n",
   });
-  cli(["init", dir, "--stack", "next"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
   const knip = readFileSync(join(dir, "knip.jsonc"), "utf8");
   assert.match(knip, /"ignoreDependencies": \["eslint-config-next", "eslint-plugin-react"\]/);
   assert.ok(knip.includes('"app/**/'), "the roots are still written");
@@ -97,7 +97,7 @@ test("an Astro site's dead-code project reads its .astro pages, and no lint scri
     "src/pages/index.astro": "---\nimport Card from '../components/Card.astro';\n---\n<Card />\n",
     "src/components/Card.astro": "<div />\n",
   });
-  cli(["init", dir, "--stack", "astro"], dir);
+  cli(["init", "--profile", "synovitec", dir, "--stack", "astro"], dir);
   assert.match(
     readFileSync(join(dir, "knip.jsonc"), "utf8"),
     /"src\/\*\*\/\*\.\{[^}]*astro[^}]*\}"/,
@@ -115,7 +115,7 @@ test("an Astro site's dead-code project reads its .astro pages, and no lint scri
     }),
     "src/pages/index.astro": "<div />\n",
   });
-  cli(["init", linted, "--stack", "astro"], linted);
+  cli(["init", "--profile", "synovitec", linted, "--stack", "astro"], linted);
   assert.match(
     JSON.parse(readFileSync(join(linted, "package.json"), "utf8")).scripts.lint,
     /eslint/,
@@ -124,6 +124,6 @@ test("an Astro site's dead-code project reads its .astro pages, and no lint scri
     "package.json": NEXT_PKG,
     "app/page.tsx": "export default 1;\n",
   });
-  cli(["init", next, "--stack", "next"], next);
+  cli(["init", "--profile", "synovitec", next, "--stack", "next"], next);
   assert.doesNotMatch(readFileSync(join(next, "knip.jsonc"), "utf8"), /astro|svelte|vue/);
 });
