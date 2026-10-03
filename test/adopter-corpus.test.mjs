@@ -20,6 +20,7 @@ import { resolveConfig } from "../src/ratchet/config.mjs";
 import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 import { runStepControls } from "../src/core/step-controls.mjs";
 import { probationReadings } from "../src/core/probation.mjs";
+import { undeclaredImports } from "../src/core/undeclared.mjs";
 
 /** What the ratchet hands a probe with the default config and no range. */
 const SCAN = { config: resolveConfig({}), range: "" };
@@ -457,6 +458,22 @@ const CASES = [
       assert.equal(after.metrics["change.testTamper"], 0, "carried, not raised");
       // The other direction: a floor already under the current definition is left alone.
       assert.doesNotMatch(cli(["update", dir], dir).out, /change\.testTamper/);
+    },
+  },
+  {
+    report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
+    claim: "a runtime's own module is not a package to add; an undeclared package still is",
+    run: () => {
+      const dir = tempRepo("adopter-runtime", {
+        "package.json": JSON.stringify({ name: "m", private: true }),
+        "src/server.ts": 'import { serve } from "bun";\nimport { test } from "bun:test";\n',
+        "load/smoke.js": 'import http from "k6/http";\nimport { sleep } from "k6";\n',
+        "src/other.ts": 'import x from "left-pad";\n',
+      });
+      assert.deepEqual(
+        undeclaredImports(dir).map((u) => u.name),
+        ["left-pad"],
+      );
     },
   },
   {

@@ -45,6 +45,10 @@ carries; the refusal names the package, the path that pulls it in, and the two w
 
 ### Fixed
 
+- **`doctor` no longer asks to install a runtime's own module.** A Bun monorepo was told
+  `bun add bun k6`: `bun` is the Bun runtime's module and `k6`, `k6/http` are provided by the k6
+  binary that runs a load script. Both are read as built in, as `node:fs` is.
+
 - **`update` carries a range probe's floor to its new definition.** A probe that judges the
   pushed commits, such as `change.testTamper`, reads skipped when `update` measures with no range,
   so a floor written under its earlier definition was never migrated and the next push was
