@@ -50,9 +50,14 @@ export function lastChange(c, path, o = {}) {
     const loose = c.git("show", "--format=", "-U0", "-w", sha, "--", path, ...indented);
     const strict = c.git("show", "--format=", "-U0", sha, "--", path);
     const body = o.bodyOnly ? frontMatterEnds(c, sha) : null;
+    // In source mode, a manifest line whose version alone moved: a dependency bumped put every
+    // document citing package.json behind, and three of an adopter's four needed no change.
+    const bumped = o.bodyOnly ? versionOnlyManifests(c, sha, strict) : new Set();
+    const ownOrBump = (/** @type {string} */ f, /** @type {string} */ l) =>
+      own(f, l) || bumped.has(f);
     if (
-      moved(loose, () => true, body, own) ||
-      moved(strict, (f) => INDENTED_FILE.test(f), body, own)
+      moved(loose, () => true, body, ownOrBump) ||
+      moved(strict, (f) => INDENTED_FILE.test(f), body, ownOrBump)
     )
       return sha;
   }
@@ -129,6 +134,56 @@ const HARNESS_LOCK = ".claude/harness.lock.json";
  */
 function recordFiles(c) {
   return new Set([baselinePath(c.adoption).replace(/^\.\//, ""), HARNESS_LOCK]);
+}
+
+/** A version or a range as a manifest writes one: `1.2.3`, `^4.6.0`, `>=20`, `~1.0.0-rc.1`. */
+const VERSION = /^(?:[\^~]|[<>]=?|=)?\s*v?\d+(?:\.\d+){0,2}[\w.+-]*$/;
+/** The manifest's sections whose values are versions; `engines` is not one: a floor that moved. */
+const DEPENDENCY_SECTIONS = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+];
+
+/**
+ * A manifest with its versions masked: the package's own and each dependency's, so two that
+ * differ in those alone read the same. @param {any} pkg
+ */
+function maskVersions(pkg) {
+  const mask = (/** @type {unknown} */ v) => (typeof v === "string" && VERSION.test(v) ? "*" : v);
+  const out = { ...pkg, version: mask(pkg.version) };
+  for (const s of DEPENDENCY_SECTIONS)
+    if (pkg[s] && typeof pkg[s] === "object")
+      out[s] = Object.fromEntries(Object.entries(pkg[s]).map(([k, v]) => [k, mask(v)]));
+  return out;
+}
+
+/**
+ * The manifests a commit changed in their versions alone: the package's own version and the
+ * dependencies' versions, each section keeping the same names. Read whole, before and after,
+ * because a zero-context diff cannot say which section a line is in: a dependency moved from
+ * devDependencies to dependencies, or an `engines` floor raised, still moves the manifest, as
+ * does one added or removed, a script or a bin.
+ * @param {import("../../rules/context.mjs").RepoContext} c @param {string} sha @param {string} diff
+ * @returns {Set<string>}
+ */
+function versionOnlyManifests(c, sha, diff) {
+  /** @type {Set<string>} */
+  const out = new Set();
+  const files = new Set([...contentLines(diff)].map(([file]) => file));
+  for (const file of files) {
+    if (!/(?:^|\/)package\.json$/.test(file)) continue;
+    try {
+      const before = JSON.parse(c.git("show", `${sha}^:${file}`));
+      const after = JSON.parse(c.git("show", `${sha}:${file}`));
+      const same = JSON.stringify(maskVersions(before)) === JSON.stringify(maskVersions(after));
+      if (same && JSON.stringify(before) !== JSON.stringify(after)) out.add(file);
+    } catch {
+      // A manifest new in this commit, or one that does not parse: content, as any other line.
+    }
+  }
+  return out;
 }
 
 /** Whether a diff line is the version pin in a file that carries one. @param {string} file @param {string} line */

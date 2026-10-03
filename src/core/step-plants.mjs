@@ -233,7 +233,7 @@ export const STEP_CONTROLS = {
       file(`${plantRoot(dir)}/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
   },
   secrets: {
-    means: "a planted cloud access key",
+    means: "a cloud access key",
     files: () => ({ [`${MARK}.txt`]: "aws_access_key_id = AKIAQWERTYUIOPASDFGH\n" }), // abatty:allow-secret - a planted control, the shape of a key with nothing behind it
   },
   // The suites. These are the steps that vanished from the trial's empty-range run, and the
@@ -259,6 +259,7 @@ export const STEP_CONTROLS = {
 /** What no planted file proves, said rather than left out: a step in this list is reported as `none` with the reason. @type {Record<string, string>} */
 export const NO_CONTROL = {
   audit: "no control: an audit is the registry's verdict",
+  scrub: "no control here: the scrub's vocabulary is proven by its own suite",
   build:
     "no control: a build is proven by its output; a broken route is the repository's control to write",
   coverage:

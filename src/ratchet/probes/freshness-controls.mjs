@@ -4,6 +4,9 @@
  * and stay green, which grow with every false reading an adopter reports.
  */
 
+/** A package.json as a package manager writes it: two-space JSON, one key a line. @param {object} pkg */
+const manifest = (pkg) => JSON.stringify(pkg, null, 2) + "\n";
+
 /** A document with front matter and whatever `extra` keys the case needs. @param {string} [extra] */
 const FM = (extra = "") =>
   `---
@@ -252,5 +255,54 @@ export const BEHIND_CODE_CONTROLS = [
     ],
     // package.json (a script beside the pin) and tool/package.json (a bin keyed abatty)
     expect: 2,
+  },
+  {
+    // A dependency bumped for an advisory put four documents citing the manifest behind, and
+    // three needed no change (an adopter's rc.2 upgrade). A dependency added still moves it.
+    name: "a dependency whose version alone moved moves no manifest; one added, moved to another section, or an engines floor raised does",
+    files: {
+      "docs/web.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "web/package.json"\n`),
+      "docs/api.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "api/package.json"\n`),
+      "web/package.json":
+        '{\n  "name": "web",\n  "version": "1.0.0",\n  "dependencies": {\n    "next": "16.3.5"\n  }\n}\n',
+      "api/package.json":
+        '{\n  "name": "api",\n  "dependencies": {\n    "hono": "^4.6.0"\n  }\n}\n',
+      "docs/lib.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "lib/package.json"\n`),
+      "docs/svc.md": FM(`last_verified: "2020-01-01"\nsource_truth:\n  - "svc/package.json"\n`),
+      // Shaped so every changed line is a `"name": "<version>"` line, which a line-by-line
+      // reading paired as a bump: an engines floor on its own line, and a dependency moved
+      // between two sections that both exist before and after.
+      "lib/package.json": manifest({ name: "lib", engines: { node: ">=18" } }),
+      "svc/package.json": manifest({
+        name: "svc",
+        dependencies: { hono: "^4.6.0" },
+        devDependencies: { dayjs: "1.11.0", vitest: "^3.0.0" },
+      }),
+    },
+    commits: [
+      {
+        files: {
+          "web/package.json":
+            '{\n  "name": "web",\n  "version": "1.0.1",\n  "dependencies": {\n    "next": "16.3.8"\n  }\n}\n',
+          "api/package.json":
+            '{\n  "name": "api",\n  "dependencies": {\n    "hono": "^4.6.0",\n    "zod": "^4.1.0"\n  }\n}\n',
+        },
+        message: "fix: next out of an advisory; zod for the api",
+      },
+      {
+        files: {
+          "lib/package.json": manifest({ name: "lib", engines: { node: ">=22" } }),
+          "svc/package.json": manifest({
+            name: "svc",
+            dependencies: { dayjs: "1.11.0", hono: "^4.6.0" },
+            devDependencies: { vitest: "^3.0.0" },
+          }),
+        },
+        message: "feat: dayjs at runtime, on node 22",
+      },
+    ],
+    // api/package.json (zod added), lib/package.json (an engines floor raised) and
+    // svc/package.json (dayjs moved to dependencies); web/package.json moved its versions alone
+    expect: 3,
   },
 ];

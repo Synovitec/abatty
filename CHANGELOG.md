@@ -5,6 +5,67 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.4] - 2026-10-04
+
+The fourth candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.3 replays on a
+bun monorepo and a Next product found, and a first page a stranger can read in a minute:
+`prove` runs on a faithful copy of the repository (its history, its branch, its ignored env
+files), `update` measures a redefined probe rather than carrying an old count, a dependency bump
+no longer puts the documents citing the manifest behind, and the README leads with what `prove`
+finds. **Upgrading:** `docs.behindCode` is redefined (v6) to count fewer false findings;
+`abatty update` rewrites its floor. No config key, command or `--json` field moves.
+
+### Added
+
+- **A typecheck red on Next's generated types says so.** After a branch switch, `.next/types`
+  still names routes the checked-out branch does not have, and the gate's typecheck failed with
+  errors that read as the code's own. When a failed step's output names errors under
+  `.next/types` or `.next/dev/types`, the gate says where they are and how to rebuild them.
+
+- **`status` says the policy and its proof.** Two lines open the Harness block: the profiles the
+  reading is against with its number of checks, and what the last controls run proved (how many
+  judged steps went red on their plant, which stayed green, and when), or that none has run and
+  `prove` shows it on a copy. A run planted by an older version is named as such.
+
+### Changed
+
+- **A dependency bump no longer puts every document citing `package.json` behind.**
+  `docs.behindCode` passes over a manifest line whose version alone changed, as it already passed
+  over the abatty pin; a dependency added, removed or moved to another section, an `engines`
+  floor, a script or a bin still move the manifest. An
+  adopter's advisory fix put four documents behind and three needed no change.
+
+- **The README leads with what `prove` finds.** The headline is "Find the CI checks that can't
+  fail", followed by real `prove` output on a project whose test script can never fail. The front
+  page is half its length (2,000 words from 4,800): how the gate, the ratchet and the controls
+  work moved to `docs/HOW_IT_WORKS.md`, every command and the output flags to
+  `docs/COMMANDS.md`, rules, probes, opt-in probes, probation and profiles to `docs/EXTENDING.md`.
+  The move corrected two lists that had drifted: the opt-in table lacked `change.testTamper`, and
+  three probes named as on probation had left it. Both lists are now held to the code by a test.
+  `HOW_IT_WORKS.md` also writes down the rebase recipe: take the base branch's baseline and config,
+  then run `update` and `baseline` again.
+
+### Fixed
+
+- **`prove` runs on a faithful copy.** The copy was the files alone in a new repository with one
+  commit and no ignored env file, so a step that reads history (the changed lines' coverage, the
+  ratchet's push range) or a test that reads `.env.local` was red before anything was planted,
+  and three working steps read as not judged. The copy is now a clone sharing the repository's
+  objects, at the same commit, branch and remote-tracking refs, with the working tree's changes
+  laid over it and the ignored `.env*` files linked; nothing is written in the repository. A
+  summary with steps not judged now shows a warning and says its count is of the judged ones.
+
+- **`update` measures a redefined range probe rather than carrying its old count.** rc.3 carried
+  `change.testTamper`'s floor under its new definition as it stood: 2 by the old question where
+  the new one counted 0, so the next ratchet run went red once and rewrote it. `update` now
+  measures over the push range when it holds commits, and otherwise (nothing pushed, or no
+  upstream and no base to find the push from) carries the floor and says it was not measured.
+
+- **`prove` reads cleanly to a stranger.** Its live lines named log files inside the copy it had
+  already removed (the summary names the folder they are kept in), the secret plant was "a planted
+  cloud access key", and the opt-in scrub read "no control declared" on a repository that never
+  turned it on; it now reads "scrub.enabled is off", as the gate says it.
+
 ## [0.8.0-rc.3] - 2026-10-03
 
 The third candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.2 replays on a

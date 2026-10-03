@@ -31,29 +31,49 @@ function moduleHomes(repoDir) {
   );
 }
 
+/** The NUL-separated paths a git listing gives (`-z`), so a path with a space is one path. @param {string} repoDir @param {string[]} args */
+function listed(repoDir, args) {
+  const r = spawnSync("git", ["ls-files", "-z", ...args], {
+    cwd: repoDir,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  return String(r.stdout || "")
+    .split(String.fromCharCode(0))
+    .filter(Boolean);
+}
+
 /**
- * The repository's files as git sees them now, copied into a fresh folder that is a repository
- * of its own (the secret scan and some linters read git), its dependencies linked: the root's and
- * every workspace's. A monorepo whose workspaces keep their own node_modules had typecheck and
- * tests fail in the copy before anything was planted, and five working steps read as unproven.
+ * The repository as it is now, in a fresh folder: a clone sharing its objects (nothing copied,
+ * nothing written in the source), at the same commit and branch, with the remote-tracking refs it
+ * has, so a step that reads history or a push range reads the same one; then the working tree's
+ * own changes laid over it, the dependencies linked (the root's and every workspace's), and the
+ * env files git ignores linked too. A copy built from the files alone, with a history of one
+ * commit, read a monorepo's coverage, ratchet and tests red before anything was planted.
  * @param {string} repoDir @returns {{ at: string, links: string[] }} the copy and the links in it
  */
 function copyOf(repoDir) {
   const at = mkdtempSync(join(tmpdir(), "abatty-prove-"));
-  const listed = spawnSync(
-    "git",
-    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--deduplicate"],
-    { cwd: repoDir, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 },
-  );
-  // NUL-separated (`-z`), so a path with a space or a quote in it is one path.
-  for (const f of String(listed.stdout || "")
-    .split(String.fromCharCode(0))
-    .filter(Boolean)) {
+  const git = (/** @type {string} */ cwd, /** @type {string[]} */ ...args) =>
+    spawnSync("git", args, { cwd, encoding: "utf8" });
+  const head = String(git(repoDir, "rev-parse", "HEAD").stdout || "").trim();
+  const branch = String(git(repoDir, "rev-parse", "--abbrev-ref", "HEAD").stdout || "").trim();
+  git(tmpdir(), "clone", "-q", "--shared", "--no-checkout", repoDir, at);
+  git(at, "fetch", "-q", repoDir, "+refs/remotes/origin/*:refs/remotes/origin/*");
+  if (head)
+    branch && branch !== "HEAD"
+      ? git(at, "checkout", "-q", "-B", branch, head)
+      : git(at, "checkout", "-q", "--detach", head);
+  const upstream = String(git(repoDir, "rev-parse", "--abbrev-ref", "@{u}").stdout || "").trim();
+  if (upstream.startsWith("origin/")) git(at, "branch", "-q", `--set-upstream-to=${upstream}`);
+  // The working tree's own state over the commit: what is changed or new, and what is gone.
+  for (const f of listed(repoDir, ["--modified", "--others", "--exclude-standard"])) {
     const from = join(repoDir, f);
     if (!existsSync(from) || lstatSync(from).isDirectory()) continue;
     mkdirSync(dirname(join(at, f)), { recursive: true });
     copyFileSync(from, join(at, f));
   }
+  for (const f of listed(repoDir, ["--deleted"])) rmSync(join(at, f), { force: true });
   /** @type {string[]} */
   const links = [];
   for (const home of moduleHomes(repoDir)) {
@@ -63,10 +83,24 @@ function copyOf(repoDir) {
     symlinkSync(join(repoDir, home, "node_modules"), link, "junction");
     links.push(link);
   }
-  const git = (/** @type {string[]} */ ...args) =>
-    spawnSync("git", args, { cwd: at, stdio: "ignore" });
-  git("init", "-q");
-  git("add", "-A");
+  // The env files the repository keeps out of git and its steps read: linked, not copied, so
+  // no secret is duplicated, and unlinked before the copy goes. A test reading DATABASE_URL from
+  // one fell back to a default in the copy and read red before its plant.
+  const ignored = ["--others", "--ignored", "--exclude-standard", "--directory"];
+  for (const f of listed(repoDir, ignored).filter((p) => /(?:^|\/)\.env[^/]*$/.test(p))) {
+    const link = join(at, f);
+    if (existsSync(link)) continue;
+    mkdirSync(dirname(link), { recursive: true });
+    try {
+      symlinkSync(join(repoDir, f), link, "file");
+    } catch {
+      // A machine that refuses file links (Windows without the privilege) gets a copy, which
+      // goes with the folder.
+      copyFileSync(join(repoDir, f), link);
+      continue;
+    }
+    links.push(link);
+  }
   return { at, links };
 }
 

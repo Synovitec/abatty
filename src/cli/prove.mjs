@@ -24,7 +24,11 @@ export async function proveCommand(cx, preset) {
     preset,
     suites: flag("--suites"),
     // What is running, as it runs: a test suite can take minutes, and a silent screen reads hung.
-    log: json ? undefined : (line) => out(`  ${t.gray(line)}\n`),
+    // A live line's log path is inside the copy, gone by the end of the run: the summary names
+    // the folder they are kept in instead.
+    log: json
+      ? undefined
+      : (line) => out(`  ${t.gray(line.replace(/;? ?what it printed: \S+/, ""))}\n`),
   });
   // The repository's own checks are counted; abatty's built-in scans are said apart: "2 of 2"
   // on a repository with one test script counted the secret scan this package brings as its own.
@@ -50,7 +54,7 @@ export async function proveCommand(cx, preset) {
     // without it. That a check can fail is shown; that it catches every violation is not.
     out(
       judged
-        ? `\n${green.length ? t.glyph.fail : t.glyph.ok} ${red.length} of ${judged} of your check(s) went red on a planted violation and green again without it${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can fail on at least that"}\n`
+        ? `\n${green.length ? t.glyph.fail : unjudged.length ? t.glyph.warn : t.glyph.ok} ${red.length} of ${judged} of your check(s)${unjudged.length ? " judged here" : ""} went red on a planted violation and green again without it${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can fail on at least that"}\n`
         : `\n${t.glyph.skip} nothing to prove: no gate step of the ${preset.id} preset runs here (no script or config for any of them)\n`,
     );
     if (builtins.length)

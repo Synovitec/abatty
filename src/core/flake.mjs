@@ -13,6 +13,7 @@ import { isAbsolute, join, posix, relative } from "node:path";
 import { readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { workspaceFolders, workspaceGlobs } from "../presets/workspaces.mjs";
 import { importersOf, reachedBy } from "./imports.mjs";
+import { staleTypesHint } from "./stale-types.mjs";
 
 /** Where the unreached failures are counted, per test file, by the commits they failed on. */
 export const FLAKES = ".abatty/flakes.json";
@@ -167,6 +168,12 @@ function readFlakes(repoDir) {
  */
 export function explainFailure(o) {
   if (!existsSync(o.log)) return [];
+  // Errors in a framework's generated types are said first, for any step (stale-types.mjs).
+  return [...staleTypesHint(readFileSync(o.log, "utf8")), ...attribute(o)];
+}
+
+/** Whose failure a red test step's is: the body of explainFailure. @param {Parameters<typeof explainFailure>[0]} o @returns {string[]} */
+function attribute(o) {
   const read = readFailures(readFileSync(o.log, "utf8"), { repoDir: o.repoDir, cwd: o.cwd });
   const failing = [...read.keys()].sort();
   // A test that ran out of time is named apart from one that failed: on an adopter's machine

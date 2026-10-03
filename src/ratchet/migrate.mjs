@@ -6,7 +6,8 @@
  * `update` does it, for those metrics and no other, and says so. A HARD metric that now counts
  * above zero is not written: that is a finding, and a person decides what it means.
  */
-import { writeJsonFile } from "../core/repo.mjs";
+import { readAdoption, writeJsonFile } from "../core/repo.mjs";
+import { pushRangeInfo } from "../core/range.mjs";
 import { buildContext } from "../rules/context.mjs";
 import { readBaseline, probeVersion } from "./baseline.mjs";
 import { compare, loadProbes, measureAll, ratchetSetup } from "./index.mjs";
@@ -25,10 +26,19 @@ export async function migrateRedefined(repoDir, o = {}) {
   const previous = readBaseline(repoDir, baselineRel);
   if (!previous) return [];
   const { probes } = await loadProbes(repoDir, config);
+  // Over the push range, as `abatty baseline` measures: a probe that judges the pushed commits
+  // read skipped with none, and its floor was carried under the new definition as a count of the
+  // old one's question (Foodify, rc.3: 2 carried where the new definition read 0).
+  // Only a range found and holding commits: an empty one (nothing pushed) counts zero of nothing,
+  // and the last-commit guess with no upstream and no base counts one commit of many, and either
+  // written as measured would claim a count nobody took. Without one the probe reads skipped and
+  // its floor is carried, said to be.
+  const pushed = pushRangeInfo(repoDir, String(readAdoption(repoDir)?.baseBranch || "main"));
+  const range = pushed.how !== "unknown" && pushed.commits > 0 ? pushed.range : "";
   const measurements = measureAll(
     probes,
     buildContext(repoDir, { tracked: true }),
-    { config, range: "" },
+    { config, range },
     previous,
   );
   // A probe on probation reads `probation` whatever its verdict would be, and one that judges a
@@ -62,11 +72,19 @@ export async function migrateRedefined(repoDir, o = {}) {
     if (!m) continue;
     const was = Number(previous.metrics?.[v.metric] ?? 0);
     const version = probeVersion(m);
-    // Nothing to count without a range: the floor is carried under the new definition as it
-    // stands, which is not a raise, and the next push is measured against it.
+    // Nothing to count even over the push range (no commit to judge): the floor is carried
+    // under the new definition as it stands, which is not a raise, and said to be carried; the
+    // next gate measures the push and locks it.
     if (m.skipped) {
       next.versions = { ...(next.versions || {}), [v.metric]: version };
-      out.push({ metric: v.metric, was, now: was, version, written: true, why: "" });
+      out.push({
+        metric: v.metric,
+        was,
+        now: was,
+        version,
+        written: true,
+        why: "carried, not measured: no pushed commit to count; the next gate measures it",
+      });
       continue;
     }
     if (isHard(m) && m.value > 0) {
