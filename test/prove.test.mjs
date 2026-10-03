@@ -8,7 +8,10 @@ import { cli, git, tempRepo } from "./helpers.mjs";
 // The first contact six outside reviews asked for: which of a repository's checks can fail,
 // with no config, no init and nothing written in it. The controls run on a copy.
 
-const copies = () => readdirSync(tmpdir()).filter((d) => d.startsWith("abatty-prove-")).length;
+const copies = () =>
+  readdirSync(tmpdir()).filter(
+    (d) => d.startsWith("abatty-prove-") && !d.startsWith("abatty-prove-logs-"),
+  ).length;
 
 test("a test script that runs the tests is proven, and nothing is written in the repository", () => {
   const dir = tempRepo("prove-real", {
@@ -46,4 +49,37 @@ test("removing the copy never reaches the repository's own node_modules, which t
   });
   cli(["prove", dir, "--stack", "node"], dir);
   assert.ok(existsSync(join(dir, "node_modules/kept/index.js")), "the dependencies are untouched");
+});
+
+test("a workspace's own dependencies are linked into the copy, so its tests are judged, not red before the plant", () => {
+  // A bun monorepo's workspaces keep their own node_modules: linked at the root alone, its
+  // typecheck and tests failed in the copy and five working steps read as unproven.
+  const dir = tempRepo("prove-workspace-modules", {
+    "package.json": JSON.stringify({
+      name: "mono",
+      private: true,
+      workspaces: ["packages/*"],
+      scripts: { test: 'node --test "packages/a/test/*.test.js"' },
+    }),
+    ".gitignore": "node_modules/\n",
+    "packages/a/package.json": JSON.stringify({ name: "a" }),
+    "packages/a/node_modules/only-here/index.js": "module.exports = 2;\n",
+    "packages/a/test/a.test.js":
+      'const { test } = require("node:test");\nconst assert = require("node:assert");\ntest("two", () => assert.equal(require("only-here"), 2));\n',
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
+  const unit = JSON.parse(r.out).steps.find((/** @type {any} */ s) => /TEST\.1/.test(s.label));
+  assert.equal(unit?.outcome, "red", JSON.stringify(unit));
+  assert.ok(existsSync(join(dir, "packages/a/node_modules/only-here/index.js")), "left in place");
+});
+
+test("a step red before its plant is counted as not judged, and its log is kept outside the repository", () => {
+  const dir = tempRepo("prove-unjudged", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node -e process.exitCode=1" } }),
+  });
+  const r = cli(["prove", dir, "--stack", "node"], dir);
+  assert.match(r.out, /1 more could not be judged here \(unit tests \(TEST\.1\)\)/);
+  const kept = r.out.match(/what each step printed: (\S+)/)?.[1] || "";
+  assert.ok(kept && !kept.startsWith(dir) && existsSync(kept), `kept at ${kept}`);
+  assert.equal(existsSync(join(dir, ".abatty")), false, "nothing written in the repository");
 });

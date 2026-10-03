@@ -25,6 +25,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { dockerRunning, launch } from "./spawn.mjs";
+import { managerFor } from "./package-manager.mjs";
 import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
@@ -137,7 +138,14 @@ export function runStepControls(o) {
     if (r.error && /** @type {NodeJS.ErrnoException} */ (r.error).code === "ENOENT") return 127;
     return r.status ?? 1;
   };
-  const run = o.run || ((cwd, script, logFile) => spawn("npm", ["run", "-s", script], logFile));
+  // In the repository's own manager: a bun monorepo's steps were run through npm.
+  const pmRun = managerFor(repoDir).run;
+  const run =
+    o.run ||
+    ((cwd, script, logFile) => {
+      const [cmd, ...args] = pmRun(script);
+      return spawn(String(cmd), args, logFile);
+    });
   const pkg = readPackage(repoDir);
   const scripts = pkg.scripts || {};
   const deps = new Set([

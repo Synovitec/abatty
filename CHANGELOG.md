@@ -7,6 +7,14 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`prove` judges a monorepo's steps, and says what it could not judge.** The copy linked only
+  the root's dependencies, so in a monorepo whose workspaces keep their own `node_modules` the
+  typecheck and the tests failed before anything was planted, and five working steps read as
+  unproven while the summary said "3 of 3". Every workspace's dependencies are linked now, a step
+  that could not be judged is counted on the summary, what each step printed is kept outside the
+  repository (the verdicts named logs inside a copy already removed), and the steps run through
+  the repository's own package manager rather than npm.
+
 - **SEC-SECRETS counts a CI workflow that runs the gate as the secret scan's CI step.** Every
   preset's gate carries the scan, fast or whole, yet the rule looked only for a scanner's name, so
   a design repository with the workflow `init` wrote (running `gate:fast`) read partial, "no CI

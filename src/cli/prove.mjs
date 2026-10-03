@@ -6,6 +6,9 @@ import { prove } from "../core/prove.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
 
+/** A step that runs here and could not be judged on its copy. */
+const UNJUDGED = /red without a plant|the tool is not installed/;
+
 /**
  * @param {import("./ratchet.mjs").CliContext} cx @param {import("../presets/index.mjs").Preset} preset
  */
@@ -36,11 +39,20 @@ export async function proveCommand(cx, preset) {
       );
     }
     const judged = red.length + green.length;
+    // A step that runs here and could not be judged (red before its plant, its tool missing) is
+    // named on the summary: "3 of 3" read as everything proven while five steps were not.
+    const unjudged = r.steps.filter((s) => s.outcome === "skipped" && UNJUDGED.test(s.detail));
     out(
       judged
-        ? `\n${green.length ? t.glyph.fail : t.glyph.ok} ${red.length} of ${judged} check(s) went red on a planted violation${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can stop a bad change"}\n\n`
-        : `\n${t.glyph.skip} nothing to prove: no gate step of the ${preset.id} preset runs here (no script or config for any of them)\n\n`,
+        ? `\n${green.length ? t.glyph.fail : t.glyph.ok} ${red.length} of ${judged} check(s) went red on a planted violation${green.length ? ` · ${t.red(`${green.length} stayed green, so ${green.length === 1 ? "it does" : "they do"} not check what ${green.length === 1 ? "its name says" : "their names say"}: ${green.map((s) => s.label).join(", ")}`)}` : ", so each can stop a bad change"}\n`
+        : `\n${t.glyph.skip} nothing to prove: no gate step of the ${preset.id} preset runs here (no script or config for any of them)\n`,
     );
+    if (unjudged.length)
+      out(
+        `${t.glyph.warn} ${t.yellow(`${unjudged.length} more could not be judged here (${unjudged.map((s) => s.label).join(", ")}): each was red before its plant, or its tool is missing; what they printed is kept`)}\n`,
+      );
+    if (r.logs) out(`  ${t.gray(`what each step printed: ${r.logs}`)}\n`);
+    out("\n");
   }
   process.exitCode = green.length ? EXIT.findings : EXIT.clean;
 }
