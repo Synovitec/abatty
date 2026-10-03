@@ -66,7 +66,17 @@ export const python = {
         label: "typecheck (CODE.3)",
         // A virtual environment in the tree is the libraries', not this repository's: read, it
         // was thousands of findings that are not this code's.
-        command: ["mypy", ".", "--exclude", "(^|/)(\\.?venv|\\.tox|build|dist|node_modules)/"],
+        // Plain substrings, searched as patterns: CI runs the command through a shell.
+        command: [
+          "mypy",
+          ".",
+          "--exclude",
+          "venv/",
+          "--exclude",
+          ".tox/",
+          "--exclude",
+          "node_modules/",
+        ],
         requires: ["mypy.ini", ".mypy.ini", "pyproject.toml"],
       },
       {

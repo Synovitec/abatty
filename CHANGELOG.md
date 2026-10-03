@@ -13,7 +13,9 @@ under Unreleased in the same commit.
   environment in the tree as this repository's code. `init` names the tools to install (ruff,
   mypy, vulture, pytest). SEC-AUDIT no longer credits the gate's built-in audit where there is
   no JavaScript lockfile for it to read, which is every Python repository: its gate has no
-  audit step. The preset stays unproven until a named repository runs it.
+  audit step. The generated pipelines (`abatty ci`, and the day-one workflow `init` writes) set
+  up Python and install those tools in every job, where the runner had neither. The preset stays
+  unproven until a named repository runs it.
 - **A workspace's suite runs the root's script when the workspace has none.** In a monorepo
   whose Next app is a workspace, the browser suite selected under `apps/web` looked for `e2e`
   in that workspace alone and reported no script, while the root's `test:e2e` was the one that

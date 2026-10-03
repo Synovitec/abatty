@@ -25,6 +25,12 @@ export function presetRules(preset: Preset | null, deps: Set<string>): {
     applies: boolean;
     needs: string[];
 }[];
+/**
+ * The tools a preset's gate runs as commands rather than as package scripts (ruff, mypy, pytest
+ * for Python): no package manager installs them, so init names them and CI installs them.
+ * @param {Preset} preset @returns {string[]}
+ */
+export function gateTools(preset: Preset): string[];
 /** @type {Preset[]} */
 export const presets: Preset[];
 /**

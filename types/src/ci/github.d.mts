@@ -14,9 +14,10 @@ export function renderGithubActions(preset: Preset, o?: CiOptions): string;
  * lockfile (pnpm before node so the cache can find it, bun with its own action) and the manager's
  * frozen install. Shared with the day-one workflow, so both pin the same actions.
  * @param {ReturnType<typeof tooling>} t @param {string} node
+ * @param {string[]} [pyTools] the tools a Python gate runs as commands, with a Python to run them
  * @returns {string[]}
  */
-export function githubSetup(t: ReturnType<typeof tooling>, node: string): string[];
+export function githubSetup(t: ReturnType<typeof tooling>, node: string, pyTools?: string[]): string[];
 export namespace ACTIONS {
     let checkout: string;
     let setupNode: string;
@@ -24,6 +25,7 @@ export namespace ACTIONS {
     let setupBun: string;
     let uploadSarif: string;
     let attest: string;
+    let setupPython: string;
 }
 export type CiStep = import("./generate.mjs").CiStep;
 export type CiOptions = import("./generate.mjs").CiOptions;

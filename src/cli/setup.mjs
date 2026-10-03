@@ -5,6 +5,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
+import { gateTools } from "../presets/index.mjs";
 import { initRepo } from "../core/init.mjs";
 import { updateRepo } from "../core/update.mjs";
 import { EXIT } from "./exit.mjs";
@@ -58,9 +59,7 @@ export async function initCommand(cx, preset) {
   if (r.missingDeps.length) out(`  ${n++}. ${addDev} ${r.missingDeps.join(" ")}\n`);
   // The tools a gate runs as commands are no package's dependency: a Python repository was told
   // nothing about ruff or pytest, and every step could not run.
-  const tools = [
-    ...new Set(preset.gate.always.flatMap((s) => (s.command ? [String(s.command[0])] : []))),
-  ].filter((c) => c !== "npx");
+  const tools = gateTools(preset);
   if (preset.pack === "python" && tools.length)
     out(
       `  ${n++}. pip install ${tools.join(" ")}  ${t.gray("· in this repository's .venv, where the gate finds them without activating it, or on the PATH")}\n`,

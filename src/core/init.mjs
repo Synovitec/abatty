@@ -32,7 +32,7 @@ import { SCHEMA_URL } from "./config.mjs";
 import { commandFor, managerFor } from "./package-manager.mjs";
 import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
-import { presetRules } from "../presets/index.mjs";
+import { gateTools, presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
 import { added, appendLines, ignoredHere, packageName } from "./init-merges.mjs";
 import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
@@ -413,7 +413,7 @@ export function initRepo(o) {
       events.push({ file: e.file, action: e.action === "written" ? "written" : "kept" });
   // 6c. No provider named: the gate in CI from the first day where nothing runs it.
   if (!providers.length && onGithub(repoDir) && ["none", "no-gate"].includes(ciGate(repoDir).state))
-    put(DAY_ONE, dayOneWorkflow(repoDir));
+    put(DAY_ONE, dayOneWorkflow(repoDir, preset.pack === "python" ? gateTools(preset) : []));
 
   // 7. The lock: the package version and the hash of every shipped file as installed, and the
   //    installed copies under .abatty/harness/<version>/ - what `abatty update` merges from.
