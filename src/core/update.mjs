@@ -26,6 +26,7 @@ import { refreshGitHooks } from "./update-hooks.mjs";
 import { managerFor } from "./package-manager.mjs";
 import { normalise, shippedFiles } from "./doctor.mjs";
 import { shimExecutable } from "./shim.mjs";
+import { runnableScripts } from "./init-merges.mjs";
 import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } from "./repo.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { ruleFacts } from "./rule-facts.mjs";
@@ -355,7 +356,9 @@ export function updateRepo(o) {
     const scripts = { ...(pkg.scripts || {}) };
     const offered = new Set(offeredScripts(lock, preset));
     const required = requiredScripts(preset);
-    const missing = Object.entries(preset.scripts).filter(([k]) => !(k in scripts));
+    const missing = Object.entries(runnableScripts(repoDir, preset.scripts)).filter(
+      ([k]) => !(k in scripts),
+    );
     const added = missing.filter(([k]) => required.has(k) || !offered.has(k));
     const declined = missing.filter(([k]) => !required.has(k) && offered.has(k)).map(([k]) => k);
     for (const [k, v] of added) scripts[k] = v;

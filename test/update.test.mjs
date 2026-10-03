@@ -146,8 +146,14 @@ test("the config gains the keys the template gained and keeps every value set he
   );
 });
 
+/** A Next app with its linter and TypeScript installed, so init offers both of their scripts. */
+const TOOLED = JSON.stringify({
+  ...JSON.parse(NEXT_PKG),
+  devDependencies: { ...JSON.parse(NEXT_PKG).devDependencies, eslint: "9", typescript: "6" },
+});
+
 test("a script removed after it was offered stays removed; a required one comes back", () => {
-  const dir = tempRepo("update-declined", { "package.json": NEXT_PKG });
+  const dir = tempRepo("update-declined", { "package.json": TOOLED });
   cli(["init", dir, "--stack", "next"], dir);
   assert.ok(readLock(dir)?.scripts?.includes("lint"), "the lock lists the scripts offered");
   const pkgPath = join(dir, "package.json");
@@ -163,7 +169,7 @@ test("a script removed after it was offered stays removed; a required one comes 
 });
 
 test("a script the lock never offered is added, and a lock without the list reads as all offered", () => {
-  const dir = tempRepo("update-offered", { "package.json": NEXT_PKG });
+  const dir = tempRepo("update-offered", { "package.json": TOOLED });
   cli(["init", dir, "--stack", "next"], dir);
   const lock = readLock(dir);
   assert.ok(lock);
