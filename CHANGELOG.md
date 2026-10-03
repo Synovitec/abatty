@@ -10,6 +10,11 @@ under Unreleased in the same commit.
 - **A package no framework claims is a Node package.** `init` refused a plain library or CLI
   with "no preset" until `--stack node` was passed; it now takes the node preset. Sources with
   no package.json and no preset still refuse and name the presets.
+- **A plain JavaScript package gets a gate it can run.** `init` wrote `tsc --noEmit` into a
+  package with no tsconfig and no TypeScript, and the typecheck step could not run; that script
+  is now left out, as an eslint `lint` with no eslint already is. The lint control planted a
+  `.ts` file that plain eslint never reads, so a working lint step read as absent; in a
+  repository with no tsconfig it now plants the same violations as `.js`.
 
 ## [0.7.0-rc.12] - 2026-10-03
 

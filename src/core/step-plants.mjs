@@ -147,13 +147,20 @@ export const STEP_CONTROLS = {
     // eslint:recommended, and the lint step read as one never watched failing.
     means:
       "a debugger statement, an unused any and a hook called conditionally (an unused import for Python)",
+    // In the repository's own language: a .ts plant in a JavaScript repository is a file plain
+    // eslint never reads, and the working lint step read as absent.
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "import os\n")
-        : file(
-            `${plantRoot(dir)}/${MARK}.ts`,
-            "debugger;\nconst abattyUnused: any = 1;\nexport function useAbattyControl(flag: boolean) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",
-          ),
+        : existsSync(join(tsHome(dir), "tsconfig.json"))
+          ? file(
+              `${plantRoot(dir)}/${MARK}.ts`,
+              "debugger;\nconst abattyUnused: any = 1;\nexport function useAbattyControl(flag: boolean) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",
+            )
+          : file(
+              `${plantRoot(dir)}/${MARK}.js`,
+              "debugger;\nconst abattyUnused = 1;\nexport function useAbattyControl(flag) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",
+            ),
   },
   typecheck: {
     means: "a type error",

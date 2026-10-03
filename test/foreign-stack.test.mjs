@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cli, tempRepo } from "./helpers.mjs";
 import { packageName } from "../src/core/init-merges.mjs";
+import { STEP_CONTROLS } from "../src/core/step-plants.mjs";
 
 // A Go service was taken for documents and handed the docs preset without a word, with a
 // package.json named after its folder verbatim, which npm refused.
@@ -30,4 +31,33 @@ test("a folder's name becomes a name npm takes", () => {
   assert.equal(packageName("My Go_Svc"), "my-go_svc");
   assert.equal(packageName("..Été 2026!"), "t-2026");
   assert.equal(packageName("***"), "repository");
+});
+
+test("a plain JavaScript package gets no typecheck it cannot run, and a lint plant eslint reads", () => {
+  // An outside review's fresh Node package got `tsc --noEmit` with no tsconfig, and its lint
+  // control planted a .ts file plain eslint never reads.
+  const js = tempRepo("plain-js", {
+    "package.json": JSON.stringify({ name: "fresh", scripts: { test: "node --test" } }),
+    "index.js": "module.exports = 1;\n",
+  });
+  assert.equal(cli(["init", js, "--yes"], js).code, 0);
+  const scripts = JSON.parse(readFileSync(join(js, "package.json"), "utf8")).scripts;
+  assert.equal(scripts.typecheck, undefined);
+  const plant = STEP_CONTROLS.lint?.files({ deps: new Set(), pack: "javascript", dir: js, scripts });
+  assert.match(Object.keys(plant || {})[0] || "", /\.js$/);
+  assert.doesNotMatch(Object.values(plant || {})[0] || "", /: (any|boolean)/);
+  // the other direction: a TypeScript package keeps both
+  const ts = tempRepo("plain-ts", {
+    "package.json": JSON.stringify({ name: "fresh", devDependencies: { typescript: "6" } }),
+    "tsconfig.json": "{}\n",
+  });
+  assert.equal(cli(["init", ts, "--yes"], ts).code, 0);
+  assert.match(JSON.parse(readFileSync(join(ts, "package.json"), "utf8")).scripts.typecheck, /tsc/);
+  const tsPlant = STEP_CONTROLS.lint?.files({
+    deps: new Set(),
+    pack: "javascript",
+    dir: ts,
+    scripts: {},
+  });
+  assert.match(Object.keys(tsPlant || {})[0] || "", /\.ts$/);
 });
