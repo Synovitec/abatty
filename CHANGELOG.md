@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **`DOC-AGENTS-MD` holds when `CLAUDE.md` is exactly `@AGENTS.md`.** The rule read the context
+  file its import leads to, `AGENTS.md` itself, for an `@AGENTS.md` it never holds, and called
+  the single source `init` writes partial. It now reads `CLAUDE.md` as written, and also holds for
+  the other single source `init` writes: a short `AGENTS.md` pointing at the repository's own
+  `CLAUDE.md`.
 - **A TypeScript library is read as TypeScript.** The repository's language was decided by
   counting `.ts` against `.js` sources, and the tool configs at the root (`eslint.config.js`,
   `.dependency-cruiser.cjs`, `prettier.config.cjs`) outnumbered a strict library's two sources:

@@ -22,3 +22,16 @@ test("a repository with its own context file is told it was kept and how AGENTS.
   assert.ok(r.out.includes(said), r.out);
   assert.doesNotMatch(r.out, /Fill /);
 });
+
+test("DOC-AGENTS-MD holds for either single source init writes", async () => {
+  const { runCatalog } = await import("../src/rules/index.mjs");
+  const { buildContext } = await import("../src/rules/context.mjs");
+  const of = (/** @type {string} */ dir) =>
+    runCatalog(buildContext(dir)).find((f) => f.id === "DOC-AGENTS-MD")?.status;
+  const fresh = tempRepo("ctx-rule-fresh", { "package.json": NEXT_PKG });
+  cli(["init", fresh, "--stack", "next"], fresh);
+  assert.equal(of(fresh), "present", "CLAUDE.md imports AGENTS.md");
+  const own = tempRepo("ctx-rule-own", { "package.json": NEXT_PKG, "CLAUDE.md": "# Mine\n" });
+  cli(["init", own, "--stack", "next"], own);
+  assert.equal(of(own), "present", "AGENTS.md points at CLAUDE.md");
+});
