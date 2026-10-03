@@ -65,7 +65,7 @@ test("init is idempotent: a second run keeps every file, --force overwrites", ()
   assert.match(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), /PreToolUse/);
 });
 
-test("a package no framework claims is a Node package; sources with no package still refuse", () => {
+test("a package no framework claims is a Node package; with no package at all, the docs preset", () => {
   // An outside review's plain Node package was refused with "no preset" until --stack node.
   const plain = tempRepo("init3", {
     "package.json": JSON.stringify({ name: "x", dependencies: {} }),
@@ -73,10 +73,20 @@ test("a package no framework claims is a Node package; sources with no package s
   const r = cli(["init", "--profile", "synovitec", plain, "--dry-run"], plain);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /init · Node service/);
-  const loose = tempRepo("init3-loose", { "src/a.ts": "export const a = 1;\n" });
-  const refused = cli(["init", "--profile", "synovitec", loose], loose);
-  assert.equal(refused.code, 2);
-  assert.match(refused.out, /--stack <next\|astro\|vite-react\|node\|python\|docs>/);
+  // A design repository (docs, a mockup's scripts, a schema, no package) was refused with "no
+  // preset" and a package.json named that did not exist; it is the docs preset's shape.
+  const design = tempRepo("init3-design", {
+    "docs/a.md": "# a\n",
+    "mockups/js/000-app.js": "window.app = 1;\n",
+    "migrate/src/a.ts": "export const a = 1;\n",
+  });
+  const r2 = cli(["init", design, "--dry-run"], design);
+  assert.equal(r2.code, 0, r2.out);
+  assert.match(r2.out, /init · Documents/);
+  assert.doesNotMatch(r2.out, /package\.json\)/);
+  // and a language no preset covers is still refused by name, never taken for documents
+  const go = tempRepo("init3-go", { "go.mod": "module x\n", "main.go": "package main\n" });
+  assert.equal(cli(["init", go, "--yes"], go).code, 2);
 });
 
 test("init --dry-run writes nothing", () => {

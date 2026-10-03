@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A repository with no package.json is the docs preset.** A design repository (documents, a
+  mockup's scripts, a schema) was refused by `prove` and `init` with "no preset" and a
+  package.json named that did not exist. With no package.json, abatty takes the docs preset; a
+  language no preset covers is still refused by name.
+
 ## [0.8.0-rc.1] - 2026-10-03
 
 The first candidate for 1.0's promise, under `next` (`npm i -D abatty@next`) until its replays come back clean. Six outside
