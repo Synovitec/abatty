@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A gate with nothing to push says so, instead of "nothing in the tree".** On main at the
+  upstream, a skipped suite read "nothing under its paths in the push or the tree" while the
+  tree held the paths; "the tree" meant uncommitted edits. It now says the pushed or uncommitted
+  files, and an empty range adds that no suite is selected and how `--range` judges committed
+  work. `--fast` no longer says uncommitted files select suites it does not run.
 - **The catalog answers in the standard's own names.** `abatty explain TEST.4` names the rule
   that carries the section (or lists them, when several do), and `rules --family TEST` finds
   the Tests family by its rules' prefix, where both found nothing; an unknown family lists the

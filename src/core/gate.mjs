@@ -88,7 +88,7 @@ export function runGate(o) {
             ? `no upstream and no ${o.base || "main"} to fork from`
             : "in CI the push is the event, not a diff against the upstream"
         }): every path is selected, ${changed.length} tracked file(s)${pending.length ? ` + ${pending.length} uncommitted` : ""}. Pass --range <before>..<sha> to narrow it`
-      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted, both select suites` : ""}`,
+      : `Gate · range ${range} · ${changed.length} pushed file(s)${pending.length ? ` + ${pending.length} uncommitted${o.fast ? "" : ", both select suites"}` : ""}${!o.fast && !changed.length && !pending.length ? " · nothing pushed and nothing uncommitted, so no suite is selected; --range <sha>..HEAD judges work already committed" : ""}`,
   );
   const wider = blind ? null : narrowerThanBranch(repoDir, o.base || "main", info);
   if (wider)
@@ -267,9 +267,9 @@ export function runGate(o) {
         events.push({
           label: name,
           outcome: "skipped",
-          detail: "no matching path in the push or the tree",
+          detail: "no matching path in the pushed or uncommitted files",
         });
-        log(`\n· skipped ${name}: nothing under its paths in the push or the tree`);
+        log(`\n· skipped ${name}: nothing under its paths in the pushed or uncommitted files`);
         continue;
       }
       // A suite with no testing script runs nothing, said loudly (suite-select.mjs).

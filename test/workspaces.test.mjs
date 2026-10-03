@@ -311,7 +311,7 @@ test("the gate runs the application's suites when only the package it imports ch
     !r.events.some(
       (e) =>
         e.label.startsWith("apps/store · ") &&
-        e.detail === "no matching path in the push or the tree",
+        e.detail === "no matching path in the pushed or uncommitted files",
     ),
     "the application's suites are not skipped: " + JSON.stringify(r.events),
   );
