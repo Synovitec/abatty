@@ -5,6 +5,20 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.7.0-rc.12] - 2026-10-03
+
+The twelfth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)
+to replay it. What the replays of every preset from npm found, fixed in one pass. On the node and
+next presets: the import graph and dead code read every source folder (`app/` included), init
+says which workspace needs a test script, the day-one workflow is written, the ratchet counts
+uncommitted files as touched and names a probe on probation that would fail, the controls plant
+where the repository's own lint and test runner look, a workspace's suite runs the root's script,
+and the probes' lexer reads a `/…/` pattern as a literal. On the experimental presets: a language
+with no preset is named instead of taken for documents, and the Python and Astro presets run as
+those repositories are set up. `rules --family` with an unknown family now exits 2 and lists the
+families; `change.testTamper` is redefined (v2, still on probation). No config key or `--json`
+field moves.
+
 ### Fixed
 
 - **An Astro site's dead-code check reads its `.astro` files, and `init` writes no lint script
