@@ -156,6 +156,7 @@ export function runCommand(repoDir, argv, o = {}) {
   return spawnStep(launch(String(cmd), args), repoDir, undefined, o.log);
 }
 
+/** Whether a Docker daemon answers here: the suites that need one are deferred loudly without it. */
 export function dockerRunning() {
   return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
 }

@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The probes read a pattern literal as a literal.** The lexer behind every probe knew strings,
+  templates and comments but not `/…/` patterns. A quote or a backtick inside one (`/["'`]x/`)
+  opened a string that ran on, so the code after it was hidden (a raw environment read went
+  uncounted) or a comment was read as code (one was invented). Reading abatty itself with the
+  fix found an export with no doc comment that the old reading had hidden.
 - **`change.testTamper` nets over the pushed range (probe v2).** A test removed in one commit
   and put back in the next, or a skip added and taken out, counted as a way out the push took.
   A commit's finding now stands only where the range as a whole still shows it in that file. A
