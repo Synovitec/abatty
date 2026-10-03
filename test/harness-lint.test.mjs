@@ -8,9 +8,11 @@ import { harnessLintHint } from "../src/core/harness-lint.mjs";
 // the line to add is said, by init and by doctor, until the config names .claude.
 
 const FLAT = 'export default [{ rules: { "max-lines": ["error", 600] } }];\n';
+/** The harness's scripts, which is what an eslint config would lint. */
+const HOOK = { ".claude/hooks/guard.mjs": "export {};\n" };
 
 test("a flat config that does not name .claude is told the ignores line", () => {
-  const dir = tempRepo("hl-flat", { "eslint.config.mjs": FLAT });
+  const dir = tempRepo("hl-flat", { ...HOOK, "eslint.config.mjs": FLAT });
   assert.deepEqual(harnessLintHint(dir), {
     config: "eslint.config.mjs",
     line: '{ ignores: [".claude/**"] }',
@@ -18,8 +20,16 @@ test("a flat config that does not name .claude is told the ignores line", () => 
 });
 
 test("a legacy config is told its own key", () => {
-  const dir = tempRepo("hl-legacy", { ".eslintrc.json": "{}\n" });
+  const dir = tempRepo("hl-legacy", { ...HOOK, ".eslintrc.json": "{}\n" });
   assert.equal(harnessLintHint(dir)?.line, 'ignorePatterns: [".claude/"]');
+});
+
+test("with no harness installed (the minimal profile) there is nothing to ignore, and nothing is said", () => {
+  const dir = tempRepo("hl-minimal", {
+    "eslint.config.mjs": FLAT,
+    ".claude/harness.lock.json": "{}\n",
+  });
+  assert.equal(harnessLintHint(dir), null);
 });
 
 test("a config or an .eslintignore that names .claude, or no eslint at all, is left alone", () => {

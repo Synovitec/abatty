@@ -34,6 +34,9 @@ function text(repoDir, rel) {
  * @param {string} repoDir @returns {{ config: string, line: string } | null}
  */
 export function harnessLintHint(repoDir) {
+  // Only where the harness's scripts are installed: under the minimal profile .claude/ holds the
+  // lock alone, a JSON file no linter reads, and the hint told a new repository to ignore it.
+  if (!existsSync(join(repoDir, ".claude", "hooks"))) return null;
   const flat = FLAT.find((f) => existsSync(join(repoDir, f)));
   const config = flat || LEGACY.find((f) => existsSync(join(repoDir, f)));
   if (!config) return null;

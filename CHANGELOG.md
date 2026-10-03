@@ -59,6 +59,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`init` no longer tells a minimal repository to make its linter ignore `.claude/`.** The
+  minimal profile installs no agent harness, and `.claude/` holds only the harness lock, a JSON
+  file no linter reads; the hint now applies where the harness's scripts are installed.
+
 - **A JavaScript repository's test control plants a test its runner runs.** With no tsconfig
   the plant was a `.ts` file, which `node --test` never runs, so a working test suite read as
   absent. Where there is neither a tsconfig nor a TypeScript source, the plant is `.mjs`.
