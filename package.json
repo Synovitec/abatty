@@ -21,7 +21,6 @@
     "quality-gate",
     "technical-debt",
     "pre-push",
-    "ai-agents",
     "policy-as-code",
     "ci-gate"
   ],
