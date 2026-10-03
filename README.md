@@ -66,7 +66,7 @@ npm run gate                 # the gate, which the pre-push hook also runs
 npx abatty                   # where the repository stands, and what to do next
 ```
 
-`init` writes about ten files on the minimal profile and ends on a green gate: `--apply` installs
+`init` writes about ten files on the minimal profile and ends on a first gate run: `--apply` installs
 the tools it names, sets the hooks and records today's numbers as the floor, so old debt never
 blocks a push and new debt always does. The package reads no credential and installs nothing you
 did not ask for. [How it works](docs/HOW_IT_WORKS.md) has what each file is for, the gate's order,

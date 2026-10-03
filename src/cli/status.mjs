@@ -5,10 +5,9 @@
  */
 import { buildReport, latestReport } from "../core/report.mjs";
 import * as t from "../ui/term.mjs";
-import { git } from "../core/repo.mjs";
+import { git, readJsonFile } from "../core/repo.mjs";
 import { fixFirst } from "../core/fix-first.mjs";
 import { phaseOf, reopened } from "../rules/phases.mjs";
-import { readJsonFile } from "../core/repo.mjs";
 import { CONTROLS_FILE, currentControls } from "../core/step-controls.mjs";
 
 /**
