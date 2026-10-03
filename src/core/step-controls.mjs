@@ -109,7 +109,7 @@ export function plantedIn(files, folder) {
 /**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean, suites?: boolean }} o `suites: false` judges the always-on steps alone
  * @returns {{ at: string, abatty: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o) {
@@ -305,7 +305,7 @@ export function runStepControls(o) {
   };
 
   for (const s of preset.gate.always) judge(s, s.label);
-  for (const suite of preset.gate.suites) {
+  for (const suite of o.suites === false ? [] : preset.gate.suites) {
     if (suite.docker && !dockerUp()) {
       for (const s of suite.steps)
         steps.push({

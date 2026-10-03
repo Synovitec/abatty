@@ -5,6 +5,7 @@
  * REPOSITORY'S OWN script will read it. `step-controls.mjs` plants, runs and judges; this
  * module only knows what to plant and where.
  */
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, posix } from "node:path";
 import { readJsonFile } from "./repo.mjs";
@@ -53,7 +54,19 @@ function checkedExt(dir) {
   }
   for (const ext of [".ts", ".mts", ".mjs", ".js"])
     if (include.some((pattern) => pattern.endsWith(ext))) return ext;
-  return ".ts";
+  // No tsconfig and no TypeScript source is plain JavaScript: a .ts plant was a test `node --test`
+  // never runs, and a working suite read as absent. A module file every runner reads as
+  // JavaScript, whichever way the package's "type" points.
+  return existsSync(join(dir, "tsconfig.json")) || hasTypeScript(dir) ? ".ts" : ".mjs";
+}
+
+/** Whether a folder holds TypeScript sources git knows of. @param {string} dir */
+function hasTypeScript(dir) {
+  const r = spawnSync("git", ["ls-files", "--", "*.ts", "*.tsx", "*.mts"], {
+    cwd: dir,
+    encoding: "utf8",
+  });
+  return Boolean(String(r.stdout || "").trim());
 }
 
 /**

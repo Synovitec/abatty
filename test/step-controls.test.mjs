@@ -207,13 +207,23 @@ test("the plant follows the repository: the typecheck's own extension and the te
   assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(folderCtx) || {}), [
     "tests/abatty-control.__.test.mjs",
   ]);
-  const tsCtx = { ...ctx, dir: process.cwd() + "/no-such-dir", scripts: { test: "vitest run" } };
+  const tsDir = tempRepo("plant-ts", { "tsconfig.json": "{}\n", "src/a.ts": "export {};\n" });
+  const tsCtx = { ...ctx, dir: tsDir, scripts: { test: "vitest run" } };
   assert.deepEqual(Object.keys(STEP_CONTROLS.typecheck?.files(tsCtx) || {}), [
     "src/abatty-control.__.ts",
   ]);
   assert.deepEqual(Object.keys(STEP_CONTROLS.test?.files(tsCtx) || {}), [
     "src/abatty-control.__.test.ts",
   ]);
+  // and plain JavaScript, with no tsconfig and no TypeScript source: a module file, never .ts,
+  // which `node --test` would not run and a working suite would read as absent
+  const jsDir = tempRepo("plant-js", { "src/a.js": "module.exports = 1;\n" });
+  assert.deepEqual(
+    Object.keys(
+      STEP_CONTROLS.test?.files({ ...ctx, dir: jsDir, scripts: { test: "node --test" } }) || {},
+    ),
+    ["src/abatty-control.__.test.mjs"],
+  );
 });
 
 test("against a narrow typecheck and a one-folder test runner, both steps go red: the control the old plant could not reach", () => {

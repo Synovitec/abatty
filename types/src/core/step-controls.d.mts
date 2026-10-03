@@ -18,7 +18,7 @@ export function plantedIn(files: Record<string, string>, folder: unknown): Recor
 /**
  * Run the controls of a preset's steps in a repository, the always-on ones and the suites':
  * plant, run, remove, confirm clean, judge.
- * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean }} o
+ * @param {{ repoDir: string, preset: import("../presets/index.mjs").Preset, log?: (line: string) => void, run?: (cwd: string, script: string, logFile: string) => number, dockerUp?: () => boolean, suites?: boolean }} o `suites: false` judges the always-on steps alone
  * @returns {{ at: string, abatty: string, steps: StepOutcome[], absent: string[] }}
  */
 export function runStepControls(o: {
@@ -27,6 +27,7 @@ export function runStepControls(o: {
     log?: (line: string) => void;
     run?: (cwd: string, script: string, logFile: string) => number;
     dockerUp?: () => boolean;
+    suites?: boolean;
 }): {
     at: string;
     abatty: string;

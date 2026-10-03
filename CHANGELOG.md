@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Added
 
+- **`abatty prove`: which of a repository's checks can actually fail, with nothing written in
+  it.** Each gate step of the detected preset is planted with a violation and run, on a copy of
+  the repository (its files as they are now, its dependencies linked, not copied), and the copy
+  is removed. No config, no `init`, no commit: the first thing to run on a repository, and the
+  one six outside reviews asked for. A check that stays green is named as absent and the run
+  exits 3; `--suites` adds the build, browser and database suites; `--json` for a script.
 - **`init` on the minimal profile ends green.** Replayed from the packed package on a fresh
   JavaScript project: `init --apply` took the installs, the executable bits, the hooks, the
   import graph's baseline and the ratchet's floor in nine seconds, the commit went through every
@@ -46,6 +52,9 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **A JavaScript repository's test control plants a test its runner runs.** With no tsconfig
+  the plant was a `.ts` file, which `node --test` never runs, so a working test suite read as
+  absent. Where there is neither a tsconfig nor a TypeScript source, the plant is `.mjs`.
 - **OBS-TRACKER credits a tracker configured through the repository's env module.** It read
   only a raw `process.env` access, which VALID-ENV penalises, so a repository that moved its
   OpenTelemetry endpoint to `serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT")` went from present to

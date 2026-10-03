@@ -50,6 +50,7 @@ const KNOWN = [
   "measure",
   "gate",
   "doctor",
+  "prove",
   "update",
   "config",
   "agents",
@@ -295,6 +296,13 @@ switch (command) {
     if (!preset) break;
     const { gateCommand } = await import("../src/cli/verdict.mjs");
     await gateCommand(ctx, preset);
+    break;
+  }
+  case "prove": {
+    const { proveCommand } = await import("../src/cli/prove.mjs");
+    const preset = await choosePreset(true);
+    if (!preset) break;
+    await proveCommand(ctx, preset);
     break;
   }
   case "doctor": {
