@@ -16,6 +16,11 @@ under Unreleased in the same commit.
   at 1.60, and every browser worker died before a test ran; nothing read the skew. `doctor` now
   reads the installed versions of families that expect one shared version (Playwright, Prisma,
   React and React DOM, Vitest and its plugins) and names a family whose members disagree.
+- **The changelog rule covers a Next app's folders and spares abatty's own records.** A `feat:`
+  commit under `app/` needed no changelog line, since the Next preset named `src/` alone; it now
+  names `app/`, `components/`, `lib/` and `pages/` too. And committing the baseline `init` asks
+  for was refused by the commit-msg hook for want of a line, though the file is abatty's own
+  record: the baseline and the harness lock are now spared, at commit time and over the range.
 - **The import graph and dead code read every source folder, a Next app's `app/` included.** The
   graph script read `src` alone wherever a `src/` existed, and the knip template a fixed
   `src/ server/ lib/`: a Next App Router app with its code in `app/` had both steps judge one

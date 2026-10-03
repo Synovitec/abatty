@@ -8,7 +8,7 @@
  * path, so the cure is always a new commit, never a rewrite.
  */
 
-/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done */
+/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp, unless?: string[] }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done; `unless`: paths under `when` that never count (abatty's own records) */
 /** @typedef {{ sha: string, subject: string, body?: string, files: string[] }} Commit chronological order */
 /** @typedef {{ path: string, detail: string }} Offender */
 
@@ -81,7 +81,7 @@ export function coupledFindings(commits, pairs) {
       // make the hook's escape a promise the range check breaks. It excuses itself alone; it
       // cures nothing before it.
       if (pair.excuse && pair.excuse.test(c.body || "")) continue;
-      const hit = c.files.filter((f) => whenHit.some((m) => m(f)));
+      const hit = c.files.filter((f) => whenHit.some((m) => m(f)) && !spared(pair, f));
       if (hit.length)
         pending.push({
           path: c.sha,
@@ -109,7 +109,7 @@ export function stagedVerdict(staged, pairs, message = "") {
     const whenHit = pair.when.map(pathMatcher);
     const thenHit = pair.then.map(pathMatcher);
     if (staged.some((f) => thenHit.some((m) => m(f)))) continue;
-    const hit = staged.filter((f) => whenHit.some((m) => m(f)));
+    const hit = staged.filter((f) => whenHit.some((m) => m(f)) && !spared(pair, f));
     if (!hit.length) continue;
     if (excused)
       return { ok: true, detail: `${pair.then.join(" or ")} not staged; the message says why` };
@@ -120,6 +120,9 @@ export function stagedVerdict(staged, pairs, message = "") {
   }
   return { ok: true, detail: "" };
 }
+
+/** Whether a file under a pair's `when` is one it spares. @param {Pair} pair @param {string} file */
+const spared = (pair, file) => (pair.unless || []).some((u) => pathMatcher(u)(file));
 
 /** A message that says why the counterpart is untouched: a decision, not a hole. */
 export const REASON = /^\s*no-changelog:\s*\S/im;
@@ -142,6 +145,9 @@ export function changelogPairs(c) {
       ],
       why: "a change is written in the changelog of the same push",
       excuse: REASON,
+      // What abatty writes as its own record is not a change to write up: `init` asked for the
+      // baseline to be committed, and the commit-msg hook refused it for want of a line.
+      unless: ["scripts/ci/standards-baseline.json", ".claude/harness.lock.json"],
     },
   ];
 }

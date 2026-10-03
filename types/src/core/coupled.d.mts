@@ -7,7 +7,7 @@
  * without a `then` path is an offender until a later commit of the range touches the `then`
  * path, so the cure is always a new commit, never a rewrite.
  */
-/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done */
+/** @typedef {{ when: string[], then: string[], why: string, excuse?: RegExp, unless?: string[] }} Pair `excuse`: a line in a commit's message that stands for the counterpart, said rather than done; `unless`: paths under `when` that never count (abatty's own records) */
 /** @typedef {{ sha: string, subject: string, body?: string, files: string[] }} Commit chronological order */
 /** @typedef {{ path: string, detail: string }} Offender */
 /**
@@ -61,13 +61,14 @@ export function commitsOf(git: (...args: string[]) => string, range: string): Co
 /** A message that says why the counterpart is untouched: a decision, not a hole. */
 export const REASON: RegExp;
 /**
- * `excuse`: a line in a commit's message that stands for the counterpart, said rather than done
+ * `excuse`: a line in a commit's message that stands for the counterpart, said rather than done; `unless`: paths under `when` that never count (abatty's own records)
  */
 export type Pair = {
     when: string[];
     then: string[];
     why: string;
     excuse?: RegExp;
+    unless?: string[];
 };
 /**
  * chronological order
