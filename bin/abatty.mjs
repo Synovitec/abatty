@@ -154,9 +154,14 @@ async function choosePreset(required) {
   const p = id
     ? presetById(id)
     : detectPreset(dependencyNames(dir), buildContext(dir).files) ||
-      (!existsSync(join(dir, "package.json")) && buildContext(dir).stack.docsOnly
-        ? presetById("docs")
-        : null);
+      (!existsSync(join(dir, "package.json"))
+        ? buildContext(dir).stack.docsOnly
+          ? presetById("docs")
+          : null
+        : // A package no framework claims is a Node package: a plain library or CLI was refused
+          // with "no preset" until --stack node was passed. Here, not in detectPreset, which also
+          // reads each workspace, where a plain package is not one to gate.
+          presetById("node"));
   // A language no preset covers is said, never taken for documents (src/presets/foreign.mjs).
   const { foreignLanguage } = await import("../src/presets/foreign.mjs");
   const foreign = !id && p?.id === "docs" ? foreignLanguage(buildContext(dir).files) : "";

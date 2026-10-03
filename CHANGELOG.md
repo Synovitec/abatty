@@ -5,6 +5,12 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A package no framework claims is a Node package.** `init` refused a plain library or CLI
+  with "no preset" until `--stack node` was passed; it now takes the node preset. Sources with
+  no package.json and no preset still refuse and name the presets.
+
 ## [0.7.0-rc.12] - 2026-10-03
 
 The twelfth release candidate, under `next`: `npm i -D abatty@next` (or `pnpm add -D`, `yarn add -D`)

@@ -65,13 +65,18 @@ test("init is idempotent: a second run keeps every file, --force overwrites", ()
   assert.match(readFileSync(join(dir, ".claude/hooks/guard.mjs"), "utf8"), /PreToolUse/);
 });
 
-test("init without a detectable stack refuses and names the presets", () => {
-  const dir = tempRepo("init3", {
+test("a package no framework claims is a Node package; sources with no package still refuse", () => {
+  // An outside review's plain Node package was refused with "no preset" until --stack node.
+  const plain = tempRepo("init3", {
     "package.json": JSON.stringify({ name: "x", dependencies: {} }),
   });
-  const r = cli(["init", dir], dir);
-  assert.equal(r.code, 2);
-  assert.match(r.out, /--stack <next\|astro\|vite-react\|node\|python\|docs>/);
+  const r = cli(["init", plain, "--dry-run"], plain);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /init · Node service/);
+  const loose = tempRepo("init3-loose", { "src/a.ts": "export const a = 1;\n" });
+  const refused = cli(["init", loose], loose);
+  assert.equal(refused.code, 2);
+  assert.match(refused.out, /--stack <next\|astro\|vite-react\|node\|python\|docs>/);
 });
 
 test("init --dry-run writes nothing", () => {
