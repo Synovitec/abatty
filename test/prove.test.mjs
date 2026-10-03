@@ -105,3 +105,13 @@ test("a step red before its plant is counted as not judged, and its log is kept 
   assert.ok(kept && !kept.startsWith(dir) && existsSync(kept), `kept at ${kept}`);
   assert.equal(existsSync(join(dir, ".abatty")), false, "nothing written in the repository");
 });
+
+test("a scrub the repository turned on is named as proven by its own suite, not as switched off", () => {
+  const dir = tempRepo("prove-scrub-on", {
+    "package.json": JSON.stringify({ name: "p", private: true }),
+    "abatty.config.json": JSON.stringify({ scrub: { enabled: true } }),
+  });
+  const r = cli(["prove", dir, "--stack", "node"], dir);
+  assert.match(r.out, /no trace of the tools \(scrub\)\s+no control here: the scrub's vocabulary/);
+  assert.doesNotMatch(r.out, /scrub\.enabled is off/);
+});
