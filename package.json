@@ -1,6 +1,6 @@
 {
   "name": "abatty",
-  "version": "0.8.0-rc.1",
+  "version": "0.8.0-rc.2",
   "description": "Turn your engineering rules into enforceable controls, prevent new debt, and continuously prove those controls work: the policy layer above your linters, tests, scanners and CI, for people and coding agents alike.",
   "license": "Apache-2.0",
   "repository": {

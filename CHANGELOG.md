@@ -5,6 +5,18 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0-rc.2] - 2026-10-03
+
+The second candidate for 1.0, under `next` (`npm i -D abatty@next`). What the first replay of
+rc.1 found on a design-stage repository that had never met abatty: it was refused with "no
+preset", its first baseline was refused outright by one HARD metric, and `doctor` and `status`
+judged an agent harness the minimal profile never installs. A repository with no package.json
+is now the docs preset, a first baseline holds HARD debt already there as a ratchet until it
+reaches zero, and the harness is judged only where it is installed. **Upgrading:**
+`valid.utcDay` (v2), `docs.citations` (v2) and `docs.danglingRefs` (v4) are redefined, each to
+count fewer false findings; `abatty update` rewrites their floors. No config key, command or
+`--json` field moves.
+
 ### Fixed
 
 - **`docs.citations` and `docs.danglingRefs` read a design repository's documents right
