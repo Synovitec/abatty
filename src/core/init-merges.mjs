@@ -60,3 +60,18 @@ export function added(after, before, kind) {
   );
   return keys.length ? `${kind} added: ${keys.join(", ")}` : "";
 }
+
+/**
+ * A folder's name as npm takes a package name: lower case, no spaces, nothing npm refuses. The
+ * folder `My Go_Svc` was written as the name verbatim, and npm refused every command after.
+ * @param {string} folder @returns {string}
+ */
+export function packageName(folder) {
+  const name = folder
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[._-]+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 214);
+  return name || "repository";
+}

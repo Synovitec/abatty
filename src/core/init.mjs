@@ -34,7 +34,7 @@ import { gitHooks, indexExecutable } from "./git-hooks.mjs";
 import { PRIMARY, configuredAdapters, toMdc } from "../agents/index.mjs";
 import { presetRules } from "../presets/index.mjs";
 import { needLabel, ruleFacts } from "./rule-facts.mjs";
-import { added, appendLines, ignoredHere } from "./init-merges.mjs";
+import { added, appendLines, ignoredHere, packageName } from "./init-merges.mjs";
 import { existingDocRows, indexOwnDocs } from "./docs-index.mjs";
 import { depcruiseFor, graphRoots, knipForRoots } from "./source-roots.mjs";
 import { DAY_ONE, ciGate, dayOneWorkflow, onGithub } from "../ci/day-one.mjs";
@@ -267,17 +267,19 @@ export function initRepo(o) {
     put(rel, text, { merge: false, executable: true });
   // A repository without a package (documents alone) gets a private one: `npm run gate` and
   // `npm run hooks:install` are how the instrument is called, whatever the stack.
-  if (!existsSync(join(repoDir, "package.json"))) {
+  const fresh = !existsSync(join(repoDir, "package.json"));
+  if (fresh) {
     if (!dryRun)
       writeJsonFile(repoDir, "package.json", {
-        name: basename(repoDir),
+        name: packageName(basename(repoDir)),
         private: true,
         scripts: Object.fromEntries(Object.entries(preset.scripts).map(([k, v]) => [k, rooted(v)])),
       });
     events.push({ file: "package.json", action: "written" });
   }
   const pkg = readPackage(repoDir);
-  if (existsSync(join(repoDir, "package.json"))) {
+  // The package just written is not also "kept": one file, one line.
+  if (!fresh && existsSync(join(repoDir, "package.json"))) {
     const scripts = { ...(pkg.scripts || {}) };
     for (const [k, v] of Object.entries(preset.scripts))
       if (!(k in scripts) || force) scripts[k] = rooted(v);

@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`init` says when a repository is written in a language abatty has no preset for.** A Go
+  service was taken for documents and given the docs preset silently, a gate with none of Go's
+  build, test or lint. Go, Rust, the JVM, .NET, Ruby, PHP, Swift, Elixir and C or C++ are now
+  named and `init` stops; `--stack docs` installs the harness and the documents rules on purpose.
+  The package.json `init` writes takes a name npm accepts (`My Go_Svc` was written verbatim), and
+  is reported once instead of as both written and kept.
 - **The context file `init` writes names no skill it does not install.** Its skills table listed
   `/verify-change`, `/code-review` and an architect agent that nothing installs, and an agent
   reading it went looking for them. The table keeps what abatty ships and the plugin skills
