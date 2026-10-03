@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **The gate's verdict on the CI run's page.** Where `GITHUB_STEP_SUMMARY` names a file (every
+  GitHub Actions job), the gate appends its headline and one row per step, so whether the gate
+  held, and which steps did not run, is read where a pull request is decided, beside the SARIF
+  findings on the lines. `status` names `prove` first in its footer.
+
 ### Fixed
 
 - **A repository with nothing to audit is not told to fix its audit first.** A design repository
