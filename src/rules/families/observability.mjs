@@ -216,9 +216,14 @@ export const rules = [
           .files(/(^|\/)(instrumentation(-client)?|sentry\.[\w-]+\.config)\.(ts|js|mjs)$/)
           .map((f) => c.read(f)),
       ].join("\n");
+      // Or through the repository's env module, which is what VALID-ENV asks for: a tracker read
+      // as `serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT")` or `env.SENTRY_DSN` read as partial, so the
+      // rule rewarded the raw read the other rule penalises.
       const fromEnv =
         /process\.env(\.|\[\s*["'`])[A-Z_]*(SENTRY|BUGSNAG|ROLLBAR|OTEL|DSN)/.test(text) ||
-        /import\.meta\.env\.[A-Z_]*(SENTRY|DSN)/.test(text);
+        /import\.meta\.env\.[A-Z_]*(SENTRY|DSN)/.test(text) ||
+        /\w\(\s*["'`][A-Z_]*(SENTRY|BUGSNAG|ROLLBAR|OTEL|DSN)[A-Z_]*["'`]\s*\)/.test(text) ||
+        /\benv\w*\.[A-Z_]*(SENTRY|BUGSNAG|ROLLBAR|OTEL|DSN)/i.test(text);
       return {
         status: fromEnv ? "present" : "partial",
         evidence: fromEnv

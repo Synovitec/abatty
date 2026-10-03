@@ -20,6 +20,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **OBS-TRACKER credits a tracker configured through the repository's env module.** It read
+  only a raw `process.env` access, which VALID-ENV penalises, so a repository that moved its
+  OpenTelemetry endpoint to `serverEnv("OTEL_EXPORTER_OTLP_ENDPOINT")` went from present to
+  partial. A tracker variable named through an accessor (`serverEnv("…")`, `env.SENTRY_DSN`)
+  counts; a literal DSN still does not.
 - **A package no framework claims is a Node package.** `init` refused a plain library or CLI
   with "no preset" until `--stack node` was passed; it now takes the node preset. Sources with
   no package.json and no preset still refuse and name the presets.
