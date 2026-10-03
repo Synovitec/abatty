@@ -209,7 +209,7 @@ export const rules = [
       const dep = TRACKERS.find((t) => c.has(t));
       if (!dep) return { status: "missing", evidence: "no error tracker" };
       // Dot or bracket access, and Next's instrumentation files, where a tracker is initialised:
-      // `process.env["SENTRY_DSN"]` in `instrumentation.ts` read as not from the environment.
+      // the DSN read by bracket in `instrumentation.ts` read as not from the environment.
       const text = [
         serverText(c),
         ...c

@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`change.testTamper` nets over the pushed range (probe v2).** A test removed in one commit
+  and put back in the next, or a skip added and taken out, counted as a way out the push took.
+  A commit's finding now stands only where the range as a whole still shows it in that file. A
+  new control holds the undone case at zero; the probe stays on probation.
 - **Two observability rules read a correct setup as a gap.** OBS-REDACTION counted the
   logger's own `censor: "[REDACTED]"` as masking by hand and said partial; the replacement value
   is the configuration. OBS-TRACKER missed a tracker configured by bracket access

@@ -215,7 +215,7 @@
     "change.changelogMissing": "hard v1",
     "change.coupledMissing": "hard v1",
     "change.refactorTests": "hard opt-in v1",
-    "change.testTamper": "ratchet probation v1",
+    "change.testTamper": "ratchet probation v2",
     "code.barrels": "ratchet v1",
     "code.clones": "ratchet opt-in v1",
     "code.undocumentedExports": "ratchet opt-in probation v1",
