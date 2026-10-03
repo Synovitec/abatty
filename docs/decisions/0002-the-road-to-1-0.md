@@ -96,3 +96,9 @@ and lands in a pull request of its own, so it can be declined without touching a
      probation, every finding over twenty-eight local repositories having been read and found
      real; `change.testTamper` becomes opt-in, since failing a push on an unexplained
      suppression is a team's policy, not a default.
+
+  Item 4 was dropped from 1.0 the same day: most of a gate's time is the test suite, and running
+  only the tests a change touches is each runner's own feature (vitest and jest have one, plain
+  `node --test` has none), so doing it honestly is a second gate per runner. `gate --fast`
+  already leaves the suites out, and a fresh repository's gate runs in seconds. Items 1, 2, 3 and
+  5 landed.

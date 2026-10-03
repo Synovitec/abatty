@@ -39,6 +39,13 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **Every check on by default is out of probation.** `docs.frontMatterSyntax` and
+  `docs.danglingRefs` now fail a run like any other ratchet metric: read over twenty-eight local
+  repositories, every finding they left was real. `change.testTamper` becomes opt-in: its
+  findings were real too, but failing a push on a suppression with no reason given is a team's
+  policy, not every repository's default. **Upgrading:** a repository that relied on it adds
+  `"change.testTamper"` to `ratchet.enable`; enabled, it fails like any other. The probes still
+  on probation are all opt-in, which is what decision 0002 asks of 1.0.
 - **The README and the package description say what abatty is for, first.** Four outside
   reviews found the engineering strong and the purpose buried under philosophy and vocabulary.
   The README now opens with one promise (turn your engineering rules into enforceable controls,

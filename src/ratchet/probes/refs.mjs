@@ -70,7 +70,8 @@ export const probes = [
   {
     metric: "docs.danglingRefs",
     kind: "ratchet",
-    probation: true,
+    // Out of probation on 2026-10-03 (decision 0002, the 1.0 scope): over twenty-eight local
+    // repositories, after v3, its two findings were names the code had really lost.
     // 3: a record written at a point in time (an archive, decision or sprint folder, a decided
     // decision record) is not read, as an archived status is not.
     version: 3,

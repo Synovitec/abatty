@@ -91,7 +91,8 @@
       "docs.supersededChain",
       "obs.catchOnlyLogs",
       "sec.weakRandom",
-      "code.undocumentedExports"
+      "code.undocumentedExports",
+      "change.testTamper"
     ],
     "hard": [],
     "ratchet": [],

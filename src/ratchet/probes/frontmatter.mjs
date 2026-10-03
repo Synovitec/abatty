@@ -109,7 +109,8 @@ export const probes = [
   {
     metric: "docs.frontMatterSyntax",
     kind: "ratchet",
-    probation: true,
+    // Out of probation on 2026-10-03 (decision 0002, the 1.0 scope): run read-only over
+    // twenty-eight local repositories, its four findings were all front matter a YAML reader refuses.
     standard: ["DOC.2"],
     title: "Documents whose front matter a YAML reader refuses",
     why: "A block a YAML reader refuses is no front matter to a site generator or a content schema, even when a hand reading finds its keys: the document drops out of every list built from it. Fix the line named: a key written once, at the left margin, a quote closed, a value with a `: ` in it quoted.",

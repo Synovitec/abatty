@@ -170,7 +170,10 @@ export const probes = [
   {
     metric: "change.testTamper",
     kind: "ratchet",
-    probation: true,
+    // Opt-in from 2026-10-03 (decision 0002, the 1.0 scope): its findings over twenty-nine local
+    // repositories were real, and each was a suppression with no reason given; failing a push
+    // on one is a team's policy, not every repository's default. Enabled, it fails like any other.
+    optIn: true,
     // v2: netted over the range, so a commit that undoes another's way out clears both.
     // v3: a skip on a condition, and a suppression that states its reason, are not counted.
     version: 3,
