@@ -22,6 +22,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { CONTROLS_LOGS, runStepControls } from "./step-controls.mjs";
+import { sweepStale } from "./prove-sweep.mjs";
 import { workspaceFolders, workspaceGlobs } from "../presets/workspaces.mjs";
 
 /** The folders whose dependencies the copy links: the root's, and each workspace's. @param {string} repoDir */
@@ -165,6 +166,8 @@ function keepLogs(at, r) {
  * @returns {ReturnType<typeof runStepControls> & { logs?: string }}
  */
 export function prove(o) {
+  // What earlier runs left, a copy stopped before its cleanup above all (prove-sweep.mjs).
+  sweepStale();
   const copy = copyOf(o.repoDir);
   try {
     const r = runStepControls({

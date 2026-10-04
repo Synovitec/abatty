@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
+  terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,
+  with its links to the repository's dependencies; and every run keeps its logs. The next run now
+  removes copies older than two hours, unlinking each link first and never following one, and
+  logs older than a week.
+
 - **`prove`'s copy carries what the repository generated.** Code a repository generates into a
   folder git ignores (a Prisma client under `generated/`, an API client, codegen output) was
   missing from the copy, so on a Next and Prisma product the typecheck, the tests and the
