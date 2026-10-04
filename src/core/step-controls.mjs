@@ -269,7 +269,9 @@ export function runStepControls(o) {
       steps.push({
         label,
         outcome: "green",
-        detail: `stayed GREEN on ${means}: the check is absent`,
+        // Where the plant was: a plant the step never reads reads the same, and the path says
+        // which in seconds (a checkJs repository saw four working steps called absent).
+        detail: `stayed GREEN on ${means} (planted at ${Object.keys(files).join(", ")}): the check is absent`,
         ms,
       });
       log(`  GREEN: absent (${ms} ms); what it printed: ${controlLog(label, "planted")}`);

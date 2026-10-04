@@ -7,6 +7,16 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`prove` no longer calls a JavaScript repository's working checks absent.** On a React and Node
+  repository written in JavaScript and type-checked through `checkJs`, `prove` reported lint,
+  typecheck, dead code and the ratchet as absent: each plant was a `.ts` file those tools never
+  read, because a tsconfig existed and its include named `types/*.d.ts`. A plant's language now
+  comes from the repository's own sources (a declaration file is not one), the type-error plant
+  follows the include pattern that reaches the plant's folder, and a `.js` plant carries a JSDoc
+  type rather than TypeScript syntax. A check that stays green now says where its plant was.
+
+### Fixed
+
 - **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
   terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,
   with its links to the repository's dependencies; and every run keeps its logs. The next run now

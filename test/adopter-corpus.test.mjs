@@ -478,6 +478,41 @@ const CASES = [
     },
   },
   {
+    report: "vite-react · 2026-10-04 · rc.4 prove, a checkJs JavaScript repository",
+    claim:
+      "the lint, typecheck, dead-code and size plants are JavaScript where the sources are, and TypeScript where they are",
+    run: () => {
+      /** The plant of a step, by its key. @param {string} dir @param {string} key */
+      const plant = (dir, key) =>
+        Object.entries(
+          STEP_CONTROLS[key]?.files({ deps: new Set(), pack: "javascript", dir, scripts: {} }) ||
+            {},
+        )[0] || ["", ""];
+      // React and a Node server in JavaScript, checked by tsc through checkJs; its include also
+      // names declaration files, which made every plant .ts and four working steps "absent".
+      const js = tempRepo("adopter-checkjs", {
+        "package.json": JSON.stringify({ name: "p", type: "module" }),
+        "tsconfig.json": JSON.stringify({
+          compilerOptions: { allowJs: true, checkJs: true, noEmit: true },
+          include: ["src/**/*.js", "src/**/*.jsx", "server/**/*.js", "types/*.d.ts"],
+        }),
+        "src/main.js": "export const a = 1;\n",
+        "types/globals.d.ts": "declare const VERSION: string;\n",
+      });
+      for (const key of ["lint", "typecheck", "dead", "standards"])
+        assert.match(plant(js, key)[0], /^src\/abatty-control\.__\.js$/, key);
+      assert.match(plant(js, "typecheck")[1], /@type \{number\}/, "a JSDoc type, not a colon");
+      // The other direction: a TypeScript repository keeps TypeScript plants.
+      const ts = tempRepo("adopter-ts", {
+        "package.json": JSON.stringify({ name: "p" }),
+        "tsconfig.json": JSON.stringify({ include: ["src/**/*.ts"] }),
+        "src/main.ts": "export const a: number = 1;\n",
+      });
+      for (const key of ["lint", "typecheck", "dead", "standards"])
+        assert.match(plant(ts, key)[0], /^src\/abatty-control\.__\.ts$/, key);
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
     claim: "a runtime's own module is not a package to add; an undeclared package still is",
     run: () => {
