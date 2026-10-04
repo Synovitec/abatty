@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,9 +10,27 @@ import { localToday } from "../src/core/today.mjs";
 // nothing. Every test file imports this one, so clearing it here clears it for all of them.
 delete process.env.ADOPTION_CONFIG;
 
+// Every fixture is removed when the test process ends: they were left in the temp folder, about
+// 750 a run, and a contributor machine held 126,103 of them. Kept with ABATTY_KEEP_FIXTURES=1
+// to read one after a failure. rmSync does not follow a link, so a fixture linking elsewhere
+// removes only the link.
+/** @type {string[]} */
+const fixtures = [];
+process.on("exit", () => {
+  if (process.env.ABATTY_KEEP_FIXTURES === "1") return;
+  for (const dir of fixtures) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // A file a child still holds on Windows: left for the system to clear.
+    }
+  }
+});
+
 /** A fresh temp directory that is a git repository with one commit on main. @param {string} name @param {Record<string,string>} [files] */
 export function tempRepo(name, files = {}) {
   const dir = mkdtempSync(join(tmpdir(), `abatty-${name}-`));
+  fixtures.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), content);
