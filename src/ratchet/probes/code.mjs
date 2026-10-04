@@ -26,8 +26,11 @@ const DAY_OFF_IT =
   "(?:\\.(?:slice|substring|substr)\\(\\s*0\\s*,\\s*10\\s*\\)" +
   "|\\.split\\(\\s*[\"'`]T[\"'`]\\s*\\)\\s*\\[\\s*0\\s*\\])";
 const UTC_DAY = new RegExp(INSTANT + DAY_OFF_IT, "g");
-/** An instant built for its day: with Date.UTC, or at local noon. */
-const SAFE_INSTANT = /Date\.UTC\s*\(|["'`]T12:00(?::00)?["'`]/;
+/**
+ * An instant built for its day: with Date.UTC (fields in, fields out, no time zone), or at local
+ * noon. Shared with VALID-LOCAL-DAY, which reads the same practice and once disagreed on it.
+ */
+export const SAFE_INSTANT = /Date\.UTC\s*\(|["'`]T12:00(?::00)?["'`]/;
 
 /**
  * The 1-based line an offset falls on. WHY it matters: a finding without a line is placed at the

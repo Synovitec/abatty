@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **VALID-LOCAL-DAY passes a calendar computed in UTC on purpose.** A day taken off an instant
+  built with `Date.UTC(...)` (fields in, fields out, no time zone) was flagged; the rule now
+  reads it as `valid.utcDay` already did, and still flags a day taken off the current instant.
+
 - **`doctor` no longer reads a method named `import` as a package.** `Quill.import('delta')` was
   reported as an import of an undeclared package named `delta`; a call on an object
   (`x.import(...)`, `x.require(...)`) is no module load.

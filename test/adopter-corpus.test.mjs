@@ -513,6 +513,28 @@ const CASES = [
     },
   },
   {
+    report: "vite-react · 2026-10-04 · rc.4 measure, a calendar in UTC on purpose",
+    claim:
+      "VALID-LOCAL-DAY passes a day taken off an instant built with Date.UTC; a day off now still fails",
+    run: () => {
+      /** VALID-LOCAL-DAY over one source file. @param {string} src */
+      const read = (src) => {
+        const dir = tempRepo("adopter-utc", {
+          "package.json": JSON.stringify({ name: "p" }),
+          "src/day.js": src,
+        });
+        return runCatalog(buildContext(dir), RULES).find((f) => f.id === "VALID-LOCAL-DAY")?.status;
+      };
+      const slice = [".toISOString()", ".slice(0, 10)"].join("");
+      // Fields in, fields out: no time zone is involved.
+      assert.equal(
+        read(`export const back = (y, m, d, n) => new Date(Date.UTC(y, m - 1, d - n))${slice};\n`),
+        "present",
+      );
+      assert.equal(read(`export const today = () => new Date()${slice};\n`), "missing");
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
     claim: "a runtime's own module is not a package to add; an undeclared package still is",
     run: () => {
