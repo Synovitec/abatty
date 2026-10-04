@@ -7,6 +7,10 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`doctor` no longer reads a method named `import` as a package.** `Quill.import('delta')` was
+  reported as an import of an undeclared package named `delta`; a call on an object
+  (`x.import(...)`, `x.require(...)`) is no module load.
+
 - **`prove` tells timeouts and abatty's own scan apart.** A clean run whose only failures are
   timeouts (four tests a scanner slowed on a fresh copy, all passing in the repository) now says
   so instead of reading as a broken suite. abatty's own secret scan, red on what the tree already

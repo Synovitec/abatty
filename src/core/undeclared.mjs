@@ -12,8 +12,10 @@ import { aliasScopes, unalias } from "./ts-paths.mjs";
 import { codeOnly } from "../ratchet/probes/lex.mjs";
 
 /** A bare specifier as imported or required: `pkg`, `@scope/pkg`, `pkg/sub`. */
+// A method named import or require on an object (`Quill.import('delta')`) is no module load: the
+// call forms are read only where no `.` comes before them.
 const IMPORT =
-  /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"'./][^"']*)["']/gm;
+  /(?:\bfrom\s*|(?<!\.\s*)\bimport\s*\(\s*|(?<!\.\s*)\brequire\s*\(\s*|^\s*import\s+)["']([^"'./][^"']*)["']/gm;
 const SOURCE = /\.[cm]?[jt]sx?$/;
 const BUILTIN = new Set(builtinModules.flatMap((m) => [m, `node:${m}`]));
 /**
