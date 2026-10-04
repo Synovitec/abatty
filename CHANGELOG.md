@@ -7,6 +7,13 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`config --migrate` keeps the old file while old hooks still read it.** It moved
+  `.claude/adoption.json` to `abatty.config.json` while the installed hooks still read the old
+  path, so `directPushToBase: false` and the rest fell back to their defaults until `update`'s
+  merges were done. Where the installed hooks predate the root file, the old file is now kept
+  beside the new one, and the command says to remove it once `update` has installed hooks that
+  read the root file.
+
 - **The lint hint names `.abatty/` too.** An eslint flat config does not read `.gitignore`, and an
   adopter's lint counted sixty errors in the template copies `update` keeps under
   `.abatty/harness/`. Where those copies exist, `init` and `doctor` now give the ignores line for
