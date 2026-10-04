@@ -12,6 +12,13 @@ export function failingTestFiles(text: string, o?: {
     cwd?: string;
 }): string[];
 /**
+ * How many tests a step's output reports as timed out, when every failure in it is a timeout, or
+ * 0 when any failed otherwise or none did. A copy on a fresh disk (a scanner reading every new
+ * file) timed out four tests that passed in the repository, and read as a broken suite.
+ * @param {string} text @returns {number}
+ */
+export function onlyTimedOut(text: string): number;
+/**
  * What a failed step says about itself: which failing tests this push reaches, which it does not,
  * and which of those have failed unreached before (the count is written here). Nothing is
  * attributed when the push's range is unknown: every file then reads as changed, and an

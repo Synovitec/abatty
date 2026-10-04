@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **The lint hint names `.abatty/` too.** An eslint flat config does not read `.gitignore`, and an
+  adopter's lint counted sixty errors in the template copies `update` keeps under
+  `.abatty/harness/`. Where those copies exist, `init` and `doctor` now give the ignores line for
+  `.abatty/**` beside `.claude/**`.
+
 - **`update` writes `package.json` in its own form, and only scripts that can run.** It rewrote a
   tab-indented manifest with two spaces, and added `graph` and `dead` scripts while neither
   dependency-cruiser nor knip was installed, so the next gate failed. A JSON file abatty writes now

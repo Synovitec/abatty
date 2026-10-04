@@ -16,7 +16,22 @@ test("a flat config that does not name .claude is told the ignores line", () => 
   assert.deepEqual(harnessLintHint(dir), {
     config: "eslint.config.mjs",
     line: '{ ignores: [".claude/**"] }',
+    folders: [".claude"],
   });
+});
+
+test("the installed copies under .abatty/ are named too, and left alone once the config names them", () => {
+  // A flat config does not read .gitignore: an adopter's lint counted sixty errors in the
+  // template copies update keeps under .abatty/harness/.
+  const copies = { ".abatty/harness/0.8.0/hooks/guard.mjs": "export {};\n" };
+  const dir = tempRepo("hl-copies", { ...HOOK, ...copies, "eslint.config.mjs": FLAT });
+  assert.equal(harnessLintHint(dir)?.line, '{ ignores: [".claude/**", ".abatty/**"] }');
+  const half = tempRepo("hl-half", {
+    ...HOOK,
+    ...copies,
+    "eslint.config.mjs": 'export default [{ ignores: [".claude/**"] }];\n',
+  });
+  assert.equal(harnessLintHint(half)?.line, '{ ignores: [".abatty/**"] }');
 });
 
 test("a legacy config is told its own key", () => {
@@ -48,7 +63,10 @@ test("a config or an .eslintignore that names .claude, or no eslint at all, is l
 test("init lists it among the steps by hand, and doctor says it without failing", () => {
   const dir = tempRepo("hl-cli", { "package.json": NEXT_PKG, "eslint.config.mjs": FLAT });
   const init = cli(["init", "--profile", "synovitec", dir, "--stack", "next"], dir);
-  assert.match(init.out, /\d+\. eslint\.config\.mjs lints \.claude\/, the harness abatty installs/);
+  assert.match(
+    init.out,
+    /\d+\. eslint\.config\.mjs lints \.claude\/ and \.abatty\/, the harness abatty installs/,
+  );
   const doc = cli(["doctor", dir, "--skip-self-test"], dir);
   assert.match(
     doc.out,
