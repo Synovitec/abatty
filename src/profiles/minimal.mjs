@@ -23,7 +23,7 @@ export const minimal = {
   id: "minimal",
   name: "Minimal: the gate, the ratchet, the proof, and the basics every stack shares",
   description:
-    "Thirteen rules a repository of any stack agrees to: one gate run by the hook and by CI, a ratchet with today's floor, controls that prove each step can fail, a linter, a formatter and tests, the secret scan, the audit, a committed lockfile, no tracked .env, and no file over 800 lines. The default of a new repository; add synovitec or your own profile for more.",
+    "A conservative baseline of thirteen rules: one gate run by the hook and by CI, a ratchet with today's floor, controls that prove each step can fail, a linter, a formatter and tests, the secret scan, the audit, a committed lockfile, no tracked .env, and no file over 800 lines. The default of a new repository; add synovitec or your own profile for more.",
   rules: PLAN.flatMap(([phase, ids]) =>
     ids.map((id) => {
       const rule = byId.get(id);

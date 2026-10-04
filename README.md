@@ -25,6 +25,10 @@ The test script there is `node --test || true`: the tests run, and CI stays gree
 say. `prove` copies the repository, plants one violation per check, runs the check, and tells you
 which ones never go red. Nothing is written in your repository and nothing needs setting up.
 
+`prove` runs your repository's own scripts, with your environment and your local `.env` files,
+as running its tests does: the copy protects your working tree, it is not a sandbox. Run it on a
+repository whose tests you would run.
+
 ## What it is
 
 Most repositories have a lint step, tests and a CI pipeline. Few can show that each of those checks
@@ -42,7 +46,7 @@ or a coding agent.
 | **Improve** | Where the repository stands, what to fix first, and floors that only ever fall                                                                                            | `status`, `measure`, `fix`   |
 
 No runtime dependencies, Node 20 and later, Linux and Windows covered by CI on every push against
-npm and pnpm. A new repository starts on the **minimal** profile: 13 rules any stack agrees to,
+npm and pnpm. A new repository starts on the **minimal** profile, a conservative baseline of 13 rules,
 all 13 held by a machine. The full catalog of 80 is one team's standard (`synovitec`), a profile
 you add when you want it: 48 of its rules are held by a check that fails, 7 by a ratchet, 13 by a
 review and 12 are prose only, and `abatty rules` says which is which. The engine depends on
@@ -74,8 +78,7 @@ the ratchet's rules and how every guard is proven.
 
 ## Already built in
 
-Reviewers of the release candidates asked for each of these as missing. Each is one command or one
-key away:
+What a team usually asks for next, each one command or one key away:
 
 | You need                                            | Where it is                                        | What it does                                                                                                                                          |
 | --------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |

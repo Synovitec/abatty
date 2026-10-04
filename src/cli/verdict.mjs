@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { CONFIG_FILE, LEGACY_CONFIG } from "../core/config.mjs";
 import { detectWorkspaces } from "../presets/workspaces.mjs";
 import { doctor } from "../core/doctor.mjs";
+import { commonNamesNote } from "../core/opt-in.mjs";
 import { harnessLintSays } from "../core/harness-lint.mjs";
 import { ciSays } from "../ci/day-one.mjs";
 import { managerFor } from "../core/package-manager.mjs";
@@ -226,7 +227,8 @@ export async function doctorCommand(cx, preset) {
     out(
       `  ${t.glyph.warn} opt-in probes not enabled here, with what each would read today (ratchet.enable):\n${reading
         .map(
-          (p) => `      ${p.metric.padEnd(26)} ${String(p.reads).padStart(4)}  ${t.gray(p.title)}`,
+          (p) =>
+            `      ${p.metric.padEnd(26)} ${String(p.reads).padStart(4)}  ${t.gray(p.title)}${commonNamesNote(p.metric, dir) ? t.yellow(` · ${commonNamesNote(p.metric, dir)}`) : ""}`,
         )
         .join(
           "\n",

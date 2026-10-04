@@ -5,6 +5,41 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
+  terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,
+  with its links to the repository's dependencies; and every run keeps its logs. The next run now
+  removes copies older than two hours, unlinking each link first and never following one, and
+  logs older than a week.
+
+- **`prove`'s copy carries what the repository generated.** Code a repository generates into a
+  folder git ignores (a Prisma client under `generated/`, an API client, codegen output) was
+  missing from the copy, so on a Next and Prisma product the typecheck, the tests and the
+  changed lines' coverage read red before anything was planted. Ignored folders the working
+  tree has are now copied into it, except dependencies, builds, caches and reports; copied, not
+  linked, so a step that regenerates them cannot write into the repository.
+
+### Changed
+
+- **`doctor`'s preview says when a reading rests on the common names.** An opt-in probe that
+  reads guard, bound or field names (`auth.unguardedAction` and five others) read 71 on an
+  adopter whose guards had names of their own, and 71 read as 71 holes. Until the repository
+  lists its names in the config, the preview says the reading is on the common names only and
+  which key takes yours.
+
+- **`prove` names the suites a default run leaves out.** A repository with a database or browser
+  suite saw neither in the list, judged nor skipped, and read it as forgotten; the summary now
+  names each suite it has a script for as not run by default, and `--suites` as the way to add
+  them.
+
+- **`prove` says what it runs.** It writes nothing in the repository, but it runs the
+  repository's own scripts with your environment and your local `.env` files, as running its
+  tests does: the copy protects the working tree, it is not a sandbox. Its first line, the README
+  and `docs/HOW_IT_WORKS.md` now say so. The minimal profile is described as a conservative
+  baseline rather than rules "any stack agrees to", and the README's "Already built in" table is
+  introduced for a new user rather than to past reviewers.
+
 ## [0.8.0-rc.4] - 2026-10-04
 
 The fourth candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.3 replays on a

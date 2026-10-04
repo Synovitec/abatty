@@ -134,5 +134,13 @@ script looks: its glob, the runner config or wrapper it hands over, or, behind a
 What each run printed is kept, the planted run's and the clean one's, so a verdict can be read
 back. A step that is red before anything is planted proves nothing and is reported as not judged.
 
+What `prove` protects is your working tree, not your machine. The copy is a clone that shares the
+repository's objects, at the same commit and branch, with the working tree's changes laid over it
+and the ignored `.env*` files linked, so the steps see what they see in the repository; nothing is
+written in the repository. The steps are still the repository's own scripts, run with your
+environment and those env files: whatever its tests can reach (the network, a local database, a
+token in the environment), they reach from the copy too. It is code execution, as running the
+tests is, and not a sandbox. Run it on a repository whose tests you would run.
+
 The agent harness has its own self-test, which drives one hundred and two guard decisions in both
 modes and is itself verified by mutation.

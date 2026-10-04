@@ -55,3 +55,28 @@ export function readingOf(p, ctx, config) {
     };
   }
 }
+
+/** The opt-in probes that read names a repository lists, by the config key that lists them. */
+const NAMED_BY = {
+  "auth.unguardedAction": "authCalls",
+  "auth.unguardedPage": "pageGuards",
+  "api.unboundedList": "boundedBy",
+  "api.rowReturn": "secretFields",
+  "api.floatMoney": "moneyFields",
+  "fn.shapeExemptions": "shapeList",
+};
+
+/**
+ * What to say beside a preview read on the common names alone: an adopter's guards had names of
+ * their own, and 71 readings of auth.unguardedAction read as 71 holes where there were none.
+ * Empty where the repository lists its own, or the probe reads no names.
+ * @param {string} metric @param {string} repoDir @returns {string}
+ */
+export function commonNamesNote(metric, repoDir) {
+  const key = NAMED_BY[/** @type {keyof typeof NAMED_BY} */ (metric)];
+  if (!key) return "";
+  const listed = /** @type {Record<string, unknown>} */ (readAdoption(repoDir)?.ratchet || {})[key];
+  return Array.isArray(listed) && listed.length
+    ? ""
+    : `read on the common names only; list yours in ratchet.${key}`;
+}

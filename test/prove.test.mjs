@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { cli, git, tempRepo } from "./helpers.mjs";
@@ -28,6 +28,8 @@ test("a test script that runs the tests is proven, and nothing is written in the
   // counted it as the repository's.
   assert.match(r.out, /1 of 1 of your check\(s\) went red on a planted violation and green again/);
   assert.match(r.out, /and abatty's own secret scan/);
+  // It says what it is before it runs anything: the repository's own scripts, not a sandbox.
+  assert.match(r.out, /runs this repository's own scripts with your environment.*not a sandbox/);
   // The demo a stranger reads: no live log path into the removed copy, the plant said once, and
   // the opt-in scrub said off rather than missing a control.
   assert.doesNotMatch(r.out, /\.abatty\/steps\/controls/);
@@ -101,6 +103,8 @@ test("a step red before its plant is counted as not judged, and its log is kept 
   });
   const r = cli(["prove", dir, "--stack", "node"], dir);
   assert.match(r.out, /1 more could not be judged here \(unit tests \(TEST\.1\)\)/);
+  // Where to look: the copy is faithful, so the cause is most often the repository or the machine.
+  assert.match(r.out, /most often the repository's own failure or the machine's/);
   const kept = r.out.match(/what each step printed: (\S+)/)?.[1] || "";
   assert.ok(kept && !kept.startsWith(dir) && existsSync(kept), `kept at ${kept}`);
   assert.equal(existsSync(join(dir, ".abatty")), false, "nothing written in the repository");
@@ -160,4 +164,39 @@ test("a summary with steps not judged is a warning, and says its count is of the
   const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
   assert.match(r.out, /\[!\] 1 of 1 of your check\(s\) judged here went red/);
   assert.match(r.out, /1 more could not be judged here \(typecheck \(CODE\.3\)\)/);
+});
+
+test("what the repository generated into an ignored folder is in the copy, so its tests are judged", () => {
+  // A Next and Prisma product generates its client into a gitignored generated/: the copy had
+  // none, and its typecheck and tests read red before any plant. Builds and caches stay out.
+  const dir = tempRepo("prove-generated", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+    ".gitignore": "generated/\ndist/\n",
+    "test/client.test.js":
+      'const { test } = require("node:test");\ntest("client", () => require("../generated/prisma/client.js"));\n',
+  });
+  mkdirSync(join(dir, "generated/prisma"), { recursive: true });
+  writeFileSync(join(dir, "generated/prisma/client.js"), "module.exports = {};\n");
+  const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
+  const unit = JSON.parse(r.out).steps.find((/** @type {any} */ s) => /TEST\.1/.test(s.label));
+  assert.equal(unit?.outcome, "red", JSON.stringify(unit));
+  assert.equal(git(dir, "status", "--porcelain"), "", "nothing written in the repository");
+});
+
+test("a suite the repository has is named as not run by default; none is named where it has none", () => {
+  const dir = tempRepo("prove-suites", {
+    "package.json": JSON.stringify({
+      name: "p",
+      scripts: { test: "node --test", "test:integration": "node --test tests/integration" },
+    }),
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
+  assert.match(r.out, /not run by default: database suite[^·]*· --suites runs them too/);
+  const bare = tempRepo("prove-no-suites", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+  });
+  assert.doesNotMatch(
+    cli(["prove", bare, "--stack", "node", "--plain"], bare).out,
+    /not run by default/,
+  );
 });

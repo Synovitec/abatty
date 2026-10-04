@@ -22,6 +22,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { CONTROLS_LOGS, runStepControls } from "./step-controls.mjs";
+import { sweepStale } from "./prove-sweep.mjs";
 import { workspaceFolders, workspaceGlobs } from "../presets/workspaces.mjs";
 
 /** The folders whose dependencies the copy links: the root's, and each workspace's. @param {string} repoDir */
@@ -101,8 +102,28 @@ function copyOf(repoDir) {
     }
     links.push(link);
   }
+  // What the repository generated and keeps out of git (a Prisma client under generated/, an
+  // API client, codegen output): copied, not linked, since a step may regenerate it and must not
+  // write into the repository through a link. Without it, a Next and Prisma product read its
+  // typecheck and tests red before any plant. Dependencies, builds and caches are not sources.
+  for (const d of listed(repoDir, ignored).filter((p) => p.endsWith("/") && !NOT_SOURCES.test(p))) {
+    const to = join(at, d);
+    if (existsSync(to)) continue;
+    cpSync(join(repoDir, d), to, {
+      recursive: true,
+      filter: (from) => !/[/\\]node_modules(?:[/\\]|$)/.test(from.slice(repoDir.length)),
+    });
+  }
   return { at, links };
 }
+
+/**
+ * The ignored folders that are not the repository's own generated sources: dependencies, build
+ * outputs, caches, reports and abatty's own records. They are linked (node_modules), rebuilt by
+ * the steps, or not read by them, and copying them would copy gigabytes.
+ */
+const NOT_SOURCES =
+  /(?:^|\/)(?:node_modules|\.git|\.next|\.nuxt|\.svelte-kit|\.astro|\.turbo|\.cache|\.parcel-cache|\.vercel|\.output|\.abatty|dist|build|out|coverage|target|\.venv|venv|__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|playwright-report|test-results|storybook-static|\.idea|\.vscode)\/$/;
 
 /**
  * Remove the copy: every dependency link is unlinked on its own before anything is removed
@@ -145,6 +166,8 @@ function keepLogs(at, r) {
  * @returns {ReturnType<typeof runStepControls> & { logs?: string }}
  */
 export function prove(o) {
+  // What earlier runs left, a copy stopped before its cleanup above all (prove-sweep.mjs).
+  sweepStale();
   const copy = copyOf(o.repoDir);
   try {
     const r = runStepControls({
