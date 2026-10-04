@@ -7,6 +7,11 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **OBS-CONSOLE no longer counts a server's command-line scripts.** 217 of an adopter's 248
+  console calls were in `server/scripts/`, tools whose job is to print, and others were in the
+  logger itself. Scripts (`scripts/`, `bin/`, `cli/`) and the logger module are now passed over;
+  a console call in a route or a worker still counts.
+
 - **VALID-LOCAL-DAY passes a calendar computed in UTC on purpose.** A day taken off an instant
   built with `Date.UTC(...)` (fields in, fields out, no time zone) was flagged; the rule now
   reads it as `valid.utcDay` already did, and still flags a day taken off the current instant.

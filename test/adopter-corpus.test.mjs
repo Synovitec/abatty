@@ -535,6 +535,28 @@ const CASES = [
     },
   },
   {
+    report: "vite-react · 2026-10-04 · rc.4 measure, console in CLI scripts",
+    claim:
+      "OBS-CONSOLE passes over a server's command-line scripts and its logger; a route's console call still counts",
+    run: () => {
+      const log = ["console", "log"].join(".");
+      const dir = tempRepo("adopter-console", {
+        "package.json": JSON.stringify({ name: "p", dependencies: { express: "4.0.0" } }),
+        "eslint.config.js": "export default [{ rules: { 'no-console': 'error' } }];\n",
+        "server/scripts/reindex.js": `${log}("reindexed");\n`,
+        "server/lib/logger.js": `export const info = (m) => ${log}(JSON.stringify({ m }));\n`,
+        "server/routes/users.js": "export const list = () => [];\n",
+      });
+      const read = () => runCatalog(buildContext(dir), RULES).find((f) => f.id === "OBS-CONSOLE");
+      assert.equal(read()?.status, "present", read()?.evidence);
+      writeFileSync(
+        join(dir, "server/routes/users.js"),
+        `export const list = () => ${log}("x");\n`,
+      );
+      assert.equal(read()?.status, "partial", "a route's own console call still counts");
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
     claim: "a runtime's own module is not a package to add; an undeclared package still is",
     run: () => {

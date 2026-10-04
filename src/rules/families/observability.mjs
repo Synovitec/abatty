@@ -42,6 +42,23 @@ const serverText = (c) =>
     .map((f) => c.read(f))
     .join("\n");
 
+/**
+ * The server sources whose console output is a leak, joined: not a command-line script, whose job
+ * is to print (217 of an adopter's 248 calls were in server/scripts/), nor the logger, which
+ * writes there by design. @param {import("../context.mjs").RepoContext} c
+ */
+const consoleText = (c) =>
+  c
+    .files(/(^|\/)(app\/api|api|server|routes|workers?|jobs)\/.*\.(ts|tsx|js|jsx|mjs|cjs)$/)
+    .filter(
+      (f) =>
+        !/(^|\/)(__mocks__|mocks?|__tests__|tests?|scripts|bin|cli)\/|\.(test|spec)\.[^/]+$/.test(
+          f,
+        ) && !/(^|\/)[^/]*logger[^/]*$/.test(f),
+    )
+    .map((f) => c.read(f))
+    .join("\n");
+
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
   {
@@ -118,7 +135,7 @@ export const rules = [
     check: (c) => {
       // ESLint and oxlint call it no-console; Biome calls it suspicious/noConsole.
       const rule = /no-console|noConsole/.test(c.lintText);
-      const calls = (serverText(c).match(/\bconsole\.(log|info|debug|warn|error)\s*\(/g) || [])
+      const calls = (consoleText(c).match(/\bconsole\.(log|info|debug|warn|error)\s*\(/g) || [])
         .length;
       if (!rule)
         return {
