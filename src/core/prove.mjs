@@ -101,8 +101,28 @@ function copyOf(repoDir) {
     }
     links.push(link);
   }
+  // What the repository generated and keeps out of git (a Prisma client under generated/, an
+  // API client, codegen output): copied, not linked, since a step may regenerate it and must not
+  // write into the repository through a link. Without it, a Next and Prisma product read its
+  // typecheck and tests red before any plant. Dependencies, builds and caches are not sources.
+  for (const d of listed(repoDir, ignored).filter((p) => p.endsWith("/") && !NOT_SOURCES.test(p))) {
+    const to = join(at, d);
+    if (existsSync(to)) continue;
+    cpSync(join(repoDir, d), to, {
+      recursive: true,
+      filter: (from) => !/[/\\]node_modules(?:[/\\]|$)/.test(from.slice(repoDir.length)),
+    });
+  }
   return { at, links };
 }
+
+/**
+ * The ignored folders that are not the repository's own generated sources: dependencies, build
+ * outputs, caches, reports and abatty's own records. They are linked (node_modules), rebuilt by
+ * the steps, or not read by them, and copying them would copy gigabytes.
+ */
+const NOT_SOURCES =
+  /(?:^|\/)(?:node_modules|\.git|\.next|\.nuxt|\.svelte-kit|\.astro|\.turbo|\.cache|\.parcel-cache|\.vercel|\.output|\.abatty|dist|build|out|coverage|target|\.venv|venv|__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|playwright-report|test-results|storybook-static|\.idea|\.vscode)\/$/;
 
 /**
  * Remove the copy: every dependency link is unlinked on its own before anything is removed

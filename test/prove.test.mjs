@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { cli, git, tempRepo } from "./helpers.mjs";
@@ -162,4 +162,21 @@ test("a summary with steps not judged is a warning, and says its count is of the
   const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
   assert.match(r.out, /\[!\] 1 of 1 of your check\(s\) judged here went red/);
   assert.match(r.out, /1 more could not be judged here \(typecheck \(CODE\.3\)\)/);
+});
+
+test("what the repository generated into an ignored folder is in the copy, so its tests are judged", () => {
+  // A Next and Prisma product generates its client into a gitignored generated/: the copy had
+  // none, and its typecheck and tests read red before any plant. Builds and caches stay out.
+  const dir = tempRepo("prove-generated", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+    ".gitignore": "generated/\ndist/\n",
+    "test/client.test.js":
+      'const { test } = require("node:test");\ntest("client", () => require("../generated/prisma/client.js"));\n',
+  });
+  mkdirSync(join(dir, "generated/prisma"), { recursive: true });
+  writeFileSync(join(dir, "generated/prisma/client.js"), "module.exports = {};\n");
+  const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
+  const unit = JSON.parse(r.out).steps.find((/** @type {any} */ s) => /TEST\.1/.test(s.label));
+  assert.equal(unit?.outcome, "red", JSON.stringify(unit));
+  assert.equal(git(dir, "status", "--porcelain"), "", "nothing written in the repository");
 });

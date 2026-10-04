@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`prove`'s copy carries what the repository generated.** Code a repository generates into a
+  folder git ignores (a Prisma client under `generated/`, an API client, codegen output) was
+  missing from the copy, so on a Next and Prisma product the typecheck, the tests and the
+  changed lines' coverage read red before anything was planted. Ignored folders the working
+  tree has are now copied into it, except dependencies, builds, caches and reports; copied, not
+  linked, so a step that regenerates them cannot write into the repository.
+
 ### Changed
 
 - **`prove` says what it runs.** It writes nothing in the repository, but it runs the
