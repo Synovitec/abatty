@@ -103,6 +103,8 @@ test("a step red before its plant is counted as not judged, and its log is kept 
   });
   const r = cli(["prove", dir, "--stack", "node"], dir);
   assert.match(r.out, /1 more could not be judged here \(unit tests \(TEST\.1\)\)/);
+  // Where to look: the copy is faithful, so the cause is most often the repository or the machine.
+  assert.match(r.out, /most often the repository's own failure or the machine's/);
   const kept = r.out.match(/what each step printed: (\S+)/)?.[1] || "";
   assert.ok(kept && !kept.startsWith(dir) && existsSync(kept), `kept at ${kept}`);
   assert.equal(existsSync(join(dir, ".abatty")), false, "nothing written in the repository");

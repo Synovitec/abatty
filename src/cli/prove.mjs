@@ -64,7 +64,7 @@ export async function proveCommand(cx, preset) {
       );
     if (unjudged.length)
       out(
-        `${t.glyph.warn} ${t.yellow(`${unjudged.length} more could not be judged here (${unjudged.map((s) => s.label).join(", ")}): each was red before its plant, or its tool is missing; what they printed is kept`)}\n`,
+        `${t.glyph.warn} ${t.yellow(`${unjudged.length} more could not be judged here (${unjudged.map((s) => s.label).join(", ")}): each was red before its plant, or its tool is missing. The copy is the repository at this commit, so a red before the plant is most often the repository's own failure or the machine's (a flaky test, a service down, a file only this machine has); what they printed is kept`)}\n`,
       );
     // The suites are out of a default run: said, where the repository has one, so a database or
     // browser suite does not read as forgotten (an adopter set TEST_DATABASE_URL and saw none).
