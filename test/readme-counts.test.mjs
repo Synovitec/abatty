@@ -27,7 +27,7 @@ test("the README's rule counts are the catalog's", () => {
   assert.equal(m.hard, m.total, "every minimal rule is held by a machine, as the README says");
   assert.ok(
     README.includes(
-      `profile: ${m.total} rules any stack agrees to, all ${m.total} held by a machine`,
+      `profile, a conservative baseline of ${m.total} rules, all ${m.total} held by a machine`,
     ),
     `README: minimal has ${m.total}`,
   );

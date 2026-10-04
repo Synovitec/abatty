@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **`prove` says what it runs.** It writes nothing in the repository, but it runs the
+  repository's own scripts with your environment and your local `.env` files, as running its
+  tests does: the copy protects the working tree, it is not a sandbox. Its first line, the README
+  and `docs/HOW_IT_WORKS.md` now say so. The minimal profile is described as a conservative
+  baseline rather than rules "any stack agrees to", and the README's "Already built in" table is
+  introduced for a new user rather than to past reviewers.
+
 ## [0.8.0-rc.4] - 2026-10-04
 
 The fourth candidate for 1.0, under `next` (`npm i -D abatty@next`). What the rc.3 replays on a

@@ -17,7 +17,7 @@ export async function proveCommand(cx, preset) {
   const json = flag("--json");
   if (!json)
     out(
-      `\n${t.banner(VERSION)}  ${t.bold("prove")} ${t.gray(`· ${preset.name} · on a copy of this repository; nothing is written here`)}\n\n`,
+      `\n${t.banner(VERSION)}  ${t.bold("prove")} ${t.gray(`· ${preset.name} · on a copy of this repository; nothing is written here`)}\n  ${t.gray("it runs this repository's own scripts with your environment, as running its tests does: not a sandbox")}\n\n`,
     );
   const r = prove({
     repoDir: dir,

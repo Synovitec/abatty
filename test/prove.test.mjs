@@ -28,6 +28,8 @@ test("a test script that runs the tests is proven, and nothing is written in the
   // counted it as the repository's.
   assert.match(r.out, /1 of 1 of your check\(s\) went red on a planted violation and green again/);
   assert.match(r.out, /and abatty's own secret scan/);
+  // It says what it is before it runs anything: the repository's own scripts, not a sandbox.
+  assert.match(r.out, /runs this repository's own scripts with your environment.*not a sandbox/);
   // The demo a stranger reads: no live log path into the removed copy, the plant said once, and
   // the opt-in scrub said off rather than missing a control.
   assert.doesNotMatch(r.out, /\.abatty\/steps\/controls/);
