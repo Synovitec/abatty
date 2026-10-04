@@ -35,6 +35,25 @@ import { localToday } from "./today.mjs";
 
 /** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
 export const LOCK = ".claude/harness.lock.json";
+
+/** The package each tool a preset's scripts call comes from, by the command's name. */
+const SCRIPT_TOOLS = {
+  depcruise: "dependency-cruiser",
+  knip: "knip",
+  eslint: "eslint",
+  tsc: "typescript",
+  prettier: "prettier",
+  vitest: "vitest",
+};
+
+/** What a script left out for want of its tool says. @param {[string, string][]} left */
+function waits(left) {
+  if (!left.length) return "";
+  const tools = [
+    ...new Set(left.map(([, v]) => Object.entries(SCRIPT_TOOLS).find(([b]) => v.includes(b))?.[1])),
+  ];
+  return `not added, its tool not installed: ${left.map(([k]) => k).join(", ")} (install ${tools.join(", ")} as dev dependencies, then run update again)`;
+}
 /** Where `update` keeps the copy each file was installed from, the base of its three-way merge. */
 export const BASE_DIR = ".abatty/harness";
 
@@ -360,7 +379,15 @@ export function updateRepo(o) {
     const missing = Object.entries(
       runnableScripts(repoDir, scopedTools(initScope(repoDir, {}), repoDir, preset).scripts),
     ).filter(([k]) => !(k in scripts));
-    const added = missing.filter(([k]) => required.has(k) || !offered.has(k));
+    // A script whose tool is not installed is left out and named: update installs nothing, and a
+    // `graph` or `dead` script added with no dependency-cruiser or knip made the next gate fail.
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    const needs = (/** @type {string} */ v) =>
+      Object.entries(SCRIPT_TOOLS).find(([bin]) => new RegExp(`\\b${bin}\\b`).test(v))?.[1] || "";
+    const uninstalled = missing.filter(([, v]) => needs(v) && !deps[needs(v)]);
+    const added = missing.filter(
+      ([k, v]) => (required.has(k) || !offered.has(k)) && !uninstalled.some(([u]) => u === k),
+    );
     const declined = missing.filter(([k]) => !required.has(k) && offered.has(k)).map(([k]) => k);
     for (const [k, v] of added) scripts[k] = v;
     // A lock from before the list is read as "all offered", which is an inference: said as one,
@@ -375,9 +402,18 @@ export function updateRepo(o) {
       events.push({
         file: "package.json",
         action: "merged",
-        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept].filter(Boolean).join("; "),
+        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept, waits(uninstalled)]
+          .filter(Boolean)
+          .join("; "),
       });
-    } else events.push({ file: "package.json", action: "in step", ...(kept && { detail: kept }) });
+    } else {
+      const said = [kept, waits(uninstalled)].filter(Boolean).join("; ");
+      events.push({
+        file: "package.json",
+        action: uninstalled.length ? "kept" : "in step",
+        ...(said && { detail: said }),
+      });
+    }
   }
   if (!dryRun) writeLock(repoDir, preset, version);
   return {

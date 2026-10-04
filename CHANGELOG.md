@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Fixed
 
+- **`update` writes `package.json` in its own form, and only scripts that can run.** It rewrote a
+  tab-indented manifest with two spaces, and added `graph` and `dead` scripts while neither
+  dependency-cruiser nor knip was installed, so the next gate failed. A JSON file abatty writes now
+  keeps its indentation, and `update` leaves out a script whose tool is not a dependency, naming
+  the install it waits for.
+
 - **OBS-CONSOLE no longer counts a server's command-line scripts.** 217 of an adopter's 248
   console calls were in `server/scripts/`, tools whose job is to print, and others were in the
   logger itself. Scripts (`scripts/`, `bin/`, `cli/`) and the logger module are now passed over;

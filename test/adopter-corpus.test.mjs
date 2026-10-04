@@ -557,6 +557,30 @@ const CASES = [
     },
   },
   {
+    report: "vite-react · 2026-10-04 · rc.4 update, a manifest indented with tabs",
+    claim: "update keeps a tab-indented package.json in tabs",
+    run: () => {
+      const dir = viteTabs("adopter-tabs");
+      cli(["update", dir], dir);
+      const text = readFileSync(join(dir, "package.json"), "utf8");
+      assert.match(text, /^\t"name": "web",$/m, text);
+      assert.doesNotMatch(text, /^ {2}"/m, "no line in two spaces");
+    },
+  },
+  {
+    report: "vite-react · 2026-10-04 · rc.4 update, scripts for tools not installed",
+    claim: "update adds no script whose tool is not installed, and names the install it waits for",
+    run: () => {
+      const dir = viteTabs("adopter-uninstalled");
+      const r = cli(["update", dir, "--plain"], dir);
+      const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+      assert.equal(scripts.graph, undefined, "no depcruise script without dependency-cruiser");
+      assert.equal(scripts.dead, undefined, "no knip script without knip");
+      assert.match(r.out, /not added, its tool not installed: .*graph.*dead/);
+      assert.ok(scripts.gate, "a script needing nothing new is still added");
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
     claim: "a runtime's own module is not a package to add; an undeclared package still is",
     run: () => {
@@ -608,3 +632,25 @@ function designAdopter() {
 }
 
 for (const c of CASES) test(`${c.report}: ${c.claim}`, c.run);
+
+/** A React and Vite package indented with tabs, on the full standard, with no graph or dead-code tool. @param {string} name */
+function viteTabs(name) {
+  return tempRepo(name, {
+    "package.json":
+      [
+        "{",
+        '\t"name": "web",',
+        '\t"type": "module",',
+        '\t"scripts": {',
+        '\t\t"test": "vitest run"',
+        "\t},",
+        '\t"devDependencies": {',
+        '\t\t"react": "19.0.0",',
+        '\t\t"vite": "8.0.0",',
+        '\t\t"vitest": "3.0.0"',
+        "\t}",
+        "}",
+      ].join("\n") + "\n",
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
+  });
+}
