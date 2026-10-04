@@ -115,6 +115,17 @@ export function failingTestFiles(text, o = {}) {
 }
 
 /**
+ * How many tests a step's output reports as timed out, when every failure in it is a timeout, or
+ * 0 when any failed otherwise or none did. A copy on a fresh disk (a scanner reading every new
+ * file) timed out four tests that passed in the repository, and read as a broken suite.
+ * @param {string} text @returns {number}
+ */
+export function onlyTimedOut(text) {
+  const counts = [...readFailures(text, {}).values()];
+  return counts.every((n) => !n.failed) ? counts.reduce((sum, n) => sum + n.timedOut, 0) : 0;
+}
+
+/**
  * Each failing test file, repository-relative, with how many of its failures timed out and how
  * many failed otherwise.
  * @param {string} text @param {{ repoDir?: string, cwd?: string }} o

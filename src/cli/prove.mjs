@@ -50,7 +50,14 @@ export async function proveCommand(cx, preset) {
     const judged = red.length + green.length;
     // A step that runs here and could not be judged (red before its plant, its tool missing) is
     // named on the summary: "3 of 3" read as everything proven while five steps were not.
-    const unjudged = r.steps.filter((s) => s.outcome === "skipped" && UNJUDGED.test(s.detail));
+    // The repository's own checks only: abatty's scan, red on what the tree already holds, is
+    // said on its own line, not counted among "your checks" (an adopter's own scan was green).
+    const unjudged = r.steps.filter(
+      (s) => !s.builtin && s.outcome === "skipped" && UNJUDGED.test(s.detail),
+    );
+    const builtinRed = r.steps.filter(
+      (s) => s.builtin && s.outcome === "skipped" && UNJUDGED.test(s.detail),
+    );
     // What is shown is said exactly: each went red on ONE planted violation and green again
     // without it. That a check can fail is shown; that it catches every violation is not.
     out(
@@ -61,6 +68,11 @@ export async function proveCommand(cx, preset) {
     if (builtins.length)
       out(
         `  ${t.gray(`and abatty's own ${builtins.map((s) => s.label).join(", ")}, which needs no setup here`)}\n`,
+      );
+    for (const s of builtinRed)
+      out(
+        `  ${t.gray(`abatty's own ${s.label} already finds something in the tree, so its plant proves nothing here · abatty secrets lists what it finds`)}
+`,
       );
     if (unjudged.length)
       out(

@@ -29,6 +29,7 @@ import { managerFor } from "./package-manager.mjs";
 import { git, readAdoption, readPackage, writeJsonFile } from "./repo.mjs";
 import { scanSecrets } from "./secrets.mjs";
 import { scrubConfig } from "./scrub.mjs";
+import { onlyTimedOut } from "./flake.mjs";
 import { NO_CONTROL, STEP_CONTROLS } from "./step-plants.mjs";
 import { testRunEnv } from "./env.mjs";
 import { liveDevServer } from "./suite-select.mjs";
@@ -282,10 +283,15 @@ export function runStepControls(o) {
     // and calling that "proven" is the false red the trial hit on its first day.
     const clean = exec(logs.clean);
     if (clean !== 0) {
+      // A run whose only failures are timeouts says so: on a fresh copy a scanner reading every
+      // new file slowed four tests past their limit, and a working suite read as broken.
+      const slow = existsSync(logs.clean) ? onlyTimedOut(readFileSync(logs.clean, "utf8")) : 0;
       steps.push({
         label,
         outcome: "skipped",
-        detail: `red without a plant (exit ${clean}): nothing to prove until the step is green on its own; what it printed: ${controlLog(label, "clean")}`,
+        detail: slow
+          ? `red without a plant: ${slow} test(s) timed out on the copy and none failed otherwise (a slower disk, or a scanner reading the fresh copy); nothing to prove until it runs in time; what it printed: ${controlLog(label, "clean")}`
+          : `red without a plant (exit ${clean}): nothing to prove until the step is green on its own; what it printed: ${controlLog(label, "clean")}`,
         ms,
       });
       log(`  red without a plant: nothing proven; what it printed: ${controlLog(label, "clean")}`);

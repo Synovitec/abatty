@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { git, tempRepo } from "./helpers.mjs";
-import { explainFailure, failingTestFiles } from "../src/core/flake.mjs";
+import { explainFailure, failingTestFiles, onlyTimedOut } from "../src/core/flake.mjs";
 import { runScript } from "../src/core/spawn.mjs";
 import { runGate } from "../src/core/gate.mjs";
 import { presetById } from "../src/presets/index.mjs";
@@ -276,4 +276,14 @@ test("the gate says a red test that imports the changed module is the push's, an
     lines.join("\n"),
     /nothing this change touched reaches them through their imports: test\/flaky\.test\.mjs/,
   );
+});
+
+test("an output whose only failures are timeouts is counted; one with any other failure is not", () => {
+  // A fresh copy on a scanned disk timed out four tests that pass in the repository; prove now
+  // says so rather than reading the suite as broken.
+  const timeouts = [" FAIL  src/a.test.ts > slow", "Error: Test timed out in 5000ms."].join("\n");
+  assert.equal(onlyTimedOut(timeouts), 1);
+  const mixed = [timeouts, "FAIL src/b.test.ts", "AssertionError: expected 1 to be 2"].join("\n");
+  assert.equal(onlyTimedOut(mixed), 0);
+  assert.equal(onlyTimedOut("all green\n"), 0, "nothing failed, nothing timed out");
 });

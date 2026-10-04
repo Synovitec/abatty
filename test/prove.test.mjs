@@ -200,3 +200,28 @@ test("a suite the repository has is named as not run by default; none is named w
     /not run by default/,
   );
 });
+
+test("a step whose only failures are timeouts says so, rather than reading as broken", () => {
+  const dir = tempRepo("prove-timeouts", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+    "test/slow.test.js":
+      'const { test } = require("node:test");\ntest("slow", { timeout: 20 }, () => new Promise((r) => setTimeout(r, 400)));\n',
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--json"], dir);
+  const unit = JSON.parse(r.out).steps.find((/** @type {any} */ s) => /TEST\.1/.test(s.label));
+  assert.match(String(unit?.detail), /1 test\(s\) timed out on the copy and none failed otherwise/);
+});
+
+test("abatty's own scan, red on what the tree holds, is said apart from the repository's checks", () => {
+  // An adopter's own scan step was green; abatty's built-in one found fixtures and was counted
+  // among "your checks" that could not be judged.
+  const key = ["AKIA", "QWERTYUIOPASDFGH"].join("");
+  const dir = tempRepo("prove-builtin-red", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+    "test/a.test.js": 'const { test } = require("node:test");\ntest("a", () => {});\n',
+    "fixtures/creds.txt": `aws_access_key_id = ${key}\n`,
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
+  assert.match(r.out, /abatty's own secret scan \(SEC\.1\) already finds something in the tree/);
+  assert.doesNotMatch(r.out, /could not be judged here \([^)]*secret scan/);
+});
