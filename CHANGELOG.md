@@ -22,6 +22,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **`doctor`'s preview says when a reading rests on the common names.** An opt-in probe that
+  reads guard, bound or field names (`auth.unguardedAction` and five others) read 71 on an
+  adopter whose guards had names of their own, and 71 read as 71 holes. Until the repository
+  lists its names in the config, the preview says the reading is on the common names only and
+  which key takes yours.
+
 - **`prove` names the suites a default run leaves out.** A repository with a database or browser
   suite saw neither in the list, judged nor skipped, and read it as forgotten; the summary now
   names each suite it has a script for as not run by default, and `--suites` as the way to add

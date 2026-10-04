@@ -17,6 +17,13 @@ export function offProbes(repoDir: string): OffProbe[];
  */
 export function readingOf(p: import("../ratchet/index.mjs").Probe, ctx: import("../rules/context.mjs").RepoContext, config: import("../ratchet/index.mjs").RatchetConfig): OffProbe;
 /**
+ * What to say beside a preview read on the common names alone: an adopter's guards had names of
+ * their own, and 71 readings of auth.unguardedAction read as 71 holes where there were none.
+ * Empty where the repository lists its own, or the probe reads no names.
+ * @param {string} metric @param {string} repoDir @returns {string}
+ */
+export function commonNamesNote(metric: string, repoDir: string): string;
+/**
  * `reads`: the findings it would count here, or null when it cannot read this way (a rule
  * about a push, read without one) or failed to, with `why` saying which.
  */

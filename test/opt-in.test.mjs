@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tempRepo } from "./helpers.mjs";
-import { offProbes } from "../src/core/opt-in.mjs";
+import { commonNamesNote, offProbes } from "../src/core/opt-in.mjs";
 
 // An adopter's coverage exclude list grew for weeks beside a probe that counts it, off by default,
 // and nothing had said it existed. Doctor names each opt-in probe left off with its reading.
@@ -37,4 +37,16 @@ test("a probe enabled or excluded is not listed as left off", () => {
   const names = offProbes(dir).map((p) => p.metric);
   assert.equal(names.includes("test.coverageExclusions"), false);
   assert.equal(names.includes("code.clones"), false);
+});
+
+test("a preview read on the common names says so, until the repository lists its own", () => {
+  // An adopter's guards had names of their own: 71 readings of auth.unguardedAction, none a hole.
+  const bare = tempRepo("names-common", { "package.json": JSON.stringify({ name: "p" }) });
+  assert.match(commonNamesNote("auth.unguardedAction", bare), /list yours in ratchet\.authCalls/);
+  const listed = tempRepo("names-own", {
+    "package.json": JSON.stringify({ name: "p" }),
+    "abatty.config.json": JSON.stringify({ ratchet: { authCalls: ["requireRestaurantAccess"] } }),
+  });
+  assert.equal(commonNamesNote("auth.unguardedAction", listed), "");
+  assert.equal(commonNamesNote("code.clones", bare), "", "a probe that reads no names");
 });
