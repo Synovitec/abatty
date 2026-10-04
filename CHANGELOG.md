@@ -22,6 +22,11 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **`prove` names the suites a default run leaves out.** A repository with a database or browser
+  suite saw neither in the list, judged nor skipped, and read it as forgotten; the summary now
+  names each suite it has a script for as not run by default, and `--suites` as the way to add
+  them.
+
 - **`prove` says what it runs.** It writes nothing in the repository, but it runs the
   repository's own scripts with your environment and your local `.env` files, as running its
   tests does: the copy protects the working tree, it is not a sandbox. Its first line, the README

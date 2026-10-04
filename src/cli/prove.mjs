@@ -5,6 +5,7 @@
 import { prove } from "../core/prove.mjs";
 import { EXIT } from "./exit.mjs";
 import * as t from "../ui/term.mjs";
+import { readJsonFile } from "../core/repo.mjs";
 
 /** A step that runs here and could not be judged on its copy. */
 const UNJUDGED = /red without a plant|the tool is not installed/;
@@ -65,8 +66,24 @@ export async function proveCommand(cx, preset) {
       out(
         `${t.glyph.warn} ${t.yellow(`${unjudged.length} more could not be judged here (${unjudged.map((s) => s.label).join(", ")}): each was red before its plant, or its tool is missing; what they printed is kept`)}\n`,
       );
+    // The suites are out of a default run: said, where the repository has one, so a database or
+    // browser suite does not read as forgotten (an adopter set TEST_DATABASE_URL and saw none).
+    const suites = flag("--suites") ? [] : suitesHere(dir, preset);
+    if (suites.length)
+      out(`  ${t.gray(`not run by default: ${suites.join("; ")} · --suites runs them too`)}\n`);
     if (r.logs) out(`  ${t.gray(`what each step printed: ${r.logs}`)}\n`);
     out("\n");
   }
   process.exitCode = green.length ? EXIT.findings : EXIT.clean;
+}
+
+/**
+ * The preset's suites this repository has a script for, by name: the ones a default run leaves
+ * out. @param {string} dir @param {import("../presets/index.mjs").Preset} preset @returns {string[]}
+ */
+function suitesHere(dir, preset) {
+  const scripts = readJsonFile(dir, "package.json")?.scripts || {};
+  return (preset.gate.suites || [])
+    .filter((suite) => suite.steps.some((s) => typeof scripts[String(s.script)] === "string"))
+    .map((suite) => suite.name);
 }

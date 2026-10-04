@@ -180,3 +180,21 @@ test("what the repository generated into an ignored folder is in the copy, so it
   assert.equal(unit?.outcome, "red", JSON.stringify(unit));
   assert.equal(git(dir, "status", "--porcelain"), "", "nothing written in the repository");
 });
+
+test("a suite the repository has is named as not run by default; none is named where it has none", () => {
+  const dir = tempRepo("prove-suites", {
+    "package.json": JSON.stringify({
+      name: "p",
+      scripts: { test: "node --test", "test:integration": "node --test tests/integration" },
+    }),
+  });
+  const r = cli(["prove", dir, "--stack", "node", "--plain"], dir);
+  assert.match(r.out, /not run by default: database suite[^·]*· --suites runs them too/);
+  const bare = tempRepo("prove-no-suites", {
+    "package.json": JSON.stringify({ name: "p", scripts: { test: "node --test" } }),
+  });
+  assert.doesNotMatch(
+    cli(["prove", bare, "--stack", "node", "--plain"], bare).out,
+    /not run by default/,
+  );
+});
