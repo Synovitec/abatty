@@ -132,7 +132,11 @@ script looks: its glob, the runner config or wrapper it hands over, or, behind a
 (`turbo run test`), the first workspace that runs the task. Where a script cannot be followed,
 `controls` in the config names the folder (`"test:integration": "apps/web/tests/integration"`).
 What each run printed is kept, the planted run's and the clean one's, so a verdict can be read
-back. A step that is red before anything is planted proves nothing and is reported as not judged.
+back. A step that is red before anything is planted proves nothing and is reported as not judged,
+saying when its only failures were timeouts; a step that stays green names the file it was
+planted in, so a plant the step never reads is told from a step that checks nothing. A plant is
+written in the repository's own language: JavaScript where the sources are, whatever a tsconfig
+says.
 
 What `prove` protects is your working tree, not your machine. The copy is a clone that shares the
 repository's objects, at the same commit and branch, with the working tree's changes laid over it

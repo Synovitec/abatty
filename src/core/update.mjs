@@ -32,28 +32,10 @@ import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } 
 import { presetRules } from "../presets/index.mjs";
 import { ruleFacts } from "./rule-facts.mjs";
 import { localToday } from "./today.mjs";
+import { scriptsWaitingForTools } from "./script-tools.mjs";
 
 /** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
 export const LOCK = ".claude/harness.lock.json";
-
-/** The package each tool a preset's scripts call comes from, by the command's name. */
-const SCRIPT_TOOLS = {
-  depcruise: "dependency-cruiser",
-  knip: "knip",
-  eslint: "eslint",
-  tsc: "typescript",
-  prettier: "prettier",
-  vitest: "vitest",
-};
-
-/** What a script left out for want of its tool says. @param {[string, string][]} left */
-function waits(left) {
-  if (!left.length) return "";
-  const tools = [
-    ...new Set(left.map(([, v]) => Object.entries(SCRIPT_TOOLS).find(([b]) => v.includes(b))?.[1])),
-  ];
-  return `not added, its tool not installed: ${left.map(([k]) => k).join(", ")} (install ${tools.join(", ")} as dev dependencies, then run update again)`;
-}
 /** Where `update` keeps the copy each file was installed from, the base of its three-way merge. */
 export const BASE_DIR = ".abatty/harness";
 
@@ -379,12 +361,9 @@ export function updateRepo(o) {
     const missing = Object.entries(
       runnableScripts(repoDir, scopedTools(initScope(repoDir, {}), repoDir, preset).scripts),
     ).filter(([k]) => !(k in scripts));
-    // A script whose tool is not installed is left out and named: update installs nothing, and a
-    // `graph` or `dead` script added with no dependency-cruiser or knip made the next gate fail.
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-    const needs = (/** @type {string} */ v) =>
-      Object.entries(SCRIPT_TOOLS).find(([bin]) => new RegExp(`\\b${bin}\\b`).test(v))?.[1] || "";
-    const uninstalled = missing.filter(([, v]) => needs(v) && !deps[needs(v)]);
+    // A script whose tool is not installed is left out and named (script-tools.mjs).
+    const wait = scriptsWaitingForTools(missing, { ...pkg.dependencies, ...pkg.devDependencies });
+    const uninstalled = wait.waiting;
     const added = missing.filter(
       ([k, v]) => (required.has(k) || !offered.has(k)) && !uninstalled.some(([u]) => u === k),
     );
@@ -402,12 +381,12 @@ export function updateRepo(o) {
       events.push({
         file: "package.json",
         action: "merged",
-        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept, waits(uninstalled)]
+        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept, wait.says]
           .filter(Boolean)
           .join("; "),
       });
     } else {
-      const said = [kept, waits(uninstalled)].filter(Boolean).join("; ");
+      const said = [kept, wait.says].filter(Boolean).join("; ");
       events.push({
         file: "package.json",
         action: uninstalled.length ? "kept" : "in step",
