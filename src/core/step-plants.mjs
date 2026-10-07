@@ -76,29 +76,36 @@ function checkedExt(repoDir) {
 }
 
 /**
- * Whether a folder holds TypeScript sources git knows of. A declaration file is not one: a
+ * Whether git knows of a source matching one of the patterns. A declaration file is not one: a
  * JavaScript repository that ships `types/*.d.ts` writes no TypeScript.
- * @param {string} dir
+ * @param {string} dir @param {string[]} patterns
  */
-function hasTypeScript(dir) {
-  const r = spawnSync("git", ["ls-files", "--", "*.ts", "*.tsx", "*.mts"], {
-    cwd: dir,
-    encoding: "utf8",
-  });
+function hasSources(dir, patterns) {
+  const r = spawnSync("git", ["ls-files", "--", ...patterns], { cwd: dir, encoding: "utf8" });
   return String(r.stdout || "")
     .split("\n")
     .some((f) => f && !/\.d\.[cm]?ts$/.test(f));
 }
+
+/** Whether a folder holds TypeScript sources git knows of. @param {string} dir */
+const hasTypeScript = (dir) => hasSources(dir, ["*.ts", "*.tsx", "*.mts"]);
 
 /**
  * The extension of a planted source file the repository's linter, dead-code check, formatter and
  * size probe read: TypeScript where the repository writes it, JavaScript elsewhere. Decided from
  * the sources, not from a tsconfig's existence: a checkJs repository's lint, dead-code and size
  * plants were `.ts`, which its eslint, knip and ratchet never read, and three working steps read
- * as absent. @param {string} dir
+ * as absent. Where the plant goes holds no source yet, the tsconfig decides: a fresh TypeScript
+ * package has written nothing, and a `.js` plant there is one its linter never reads.
+ * @param {string} dir
  */
 function sourceExt(dir) {
-  return hasTypeScript(tsHome(dir)) ? ".ts" : ".js";
+  const home = tsHome(dir);
+  if (hasTypeScript(home)) return ".ts";
+  const root = plantRoot(dir);
+  const js = ["js", "jsx", "mjs", "cjs"].map((e) => `${root}/*.${e}`);
+  if (hasSources(dir, js)) return ".js";
+  return existsSync(join(home, "tsconfig.json")) ? ".ts" : ".js";
 }
 
 /** Whether an extension is JavaScript, where a type is a JSDoc comment rather than a colon. @param {string} ext */
@@ -204,7 +211,7 @@ export const STEP_CONTROLS = {
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "import os\n")
-        : hasTypeScript(tsHome(dir))
+        : sourceExt(dir) === ".ts"
           ? file(
               `${plantRoot(dir)}/${MARK}.ts`,
               "debugger;\nconst abattyUnused: any = 1;\nexport function useAbattyControl(flag: boolean) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",

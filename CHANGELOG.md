@@ -59,7 +59,9 @@ are gone. No config key, command or `--json` field moves, so upgrading from rc.4
   read, because a tsconfig existed and its include named `types/*.d.ts`. A plant's language now
   comes from the repository's own sources (a declaration file is not one), the type-error plant
   follows the include pattern that reaches the plant's folder, and a `.js` plant carries a JSDoc
-  type rather than TypeScript syntax. A check that stays green now says where its plant was.
+  type rather than TypeScript syntax. A repository with no source yet where the plant goes, such
+  as a fresh TypeScript package, takes its tsconfig's word. A check that stays green now says
+  where its plant was.
 
 - **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
   terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,
