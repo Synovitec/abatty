@@ -51,7 +51,8 @@ are gone. No config key, command or `--json` field moves, so upgrading from rc.4
   timeouts (four tests a scanner slowed on a fresh copy, all passing in the repository) now says
   so instead of reading as a broken suite. abatty's own secret scan, red on what the tree already
   holds, is said on a line of its own and no longer counted among the repository's checks that
-  could not be judged.
+  could not be judged. A failing test is read under a Windows short-name folder
+  (`RUNNER~1`) and, in Node's TAP output, under a folder with a space in its name.
 
 - **`prove` no longer calls a JavaScript repository's working checks absent.** On a React and Node
   repository written in JavaScript and type-checked through `checkJs`, `prove` reported lint,
