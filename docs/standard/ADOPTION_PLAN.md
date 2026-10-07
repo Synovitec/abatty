@@ -6,12 +6,7 @@ status: living
 audience: ["architect", "developer", "agent"]
 tags: ["standards", "onboarding", "transformation", "ratchet", "phases", "checklist"]
 related:
-  [
-    "./ENGINEERING_STANDARD.md",
-    "https://github.com/Synovitec/ops-hub/blob/main/engineering/ADOPTION_STATUS.md",
-    "./AUTONOMOUS_ADOPTION.md",
-    "../../templates/harness/README.md",
-  ]
+  ["./ENGINEERING_STANDARD.md", "./AUTONOMOUS_ADOPTION.md", "../../templates/harness/README.md"]
 scope: synovitec
 last_verified: "2026-10-03"
 source_truth:
@@ -35,7 +30,7 @@ agent's time on a 50k-line codebase, measured twice.
 
 ## A. A new project - day 0
 
-Before either path, measure: `node ops-hub/engineering/tools/gap-analysis.mjs <repo>` writes
+Before either path, measure: `npx abatty measure <repo>` writes
 a dated report with every mechanism present, partial or missing and the phase that closes it.
 Run it again after each phase; the two readings side by side are the progress.
 
@@ -133,7 +128,7 @@ budgets are what few context files carry and agents most often miss.
 
 <One sentence: what the product is and who it is for.>
 This file is the agent's entry point. The rules are the standard
-(ops-hub/engineering/ENGINEERING_STANDARD.md); how they apply here is docs/CODE_CONVENTIONS.md;
+(`ENGINEERING_STANDARD.md`); how they apply here is docs/CODE_CONVENTIONS.md;
 the narrative is docs/README.md.
 
 ## 1. The non-negotiables <3 to 6; violating one is an incident, not a bug>
@@ -313,7 +308,7 @@ when the code has stopped moving. Docs and JSDoc are independent and run alongsi
 
 ## C. Where each repository stands
 
-That reading is project-specific and dated, so it lives in [`ADOPTION_STATUS.md`](https://github.com/Synovitec/ops-hub/blob/main/engineering/ADOPTION_STATUS.md)
+That reading is project-specific and dated, so it lives in the repository's own `ADOPTION_STATUS.md`
 rather than here: one table per reading, the reference implementation of each mechanism, and
 the shortest path for each repository. This plan stays general.
 

@@ -7,6 +7,12 @@ under Unreleased in the same commit.
 
 ### Changed
 
+- **No other repository is named.** The presets, the lessons, the research notes, the docs and
+  the changelog said which products proved what; they now say what kind of repository it was (a
+  production Next app, an e-commerce app, an adopter). `init` prints "proven by a production Next
+  app, 2026-09-14" where it printed a product's name, and the rule that a preset names its
+  repository now says it names the kind and the date.
+
 - **The README shows what `prove` has found before what it is.** Four checks that were green in
   CI the day they were found (a lint that lints nothing, a browser suite that never ran, a suite
   that never ran on Node 20, an agent allowed to read `.env.prod`), a section on holding a coding
@@ -3534,7 +3540,7 @@ Each is named, with what to do:
   `provenance.trailer`: a disclosure line every unattended commit carries, the guard refusing a
   night commit written without it; the skill writes it. The self-test proves both (default,
   scrub on, provenance on). This package keeps the scrub on for itself.
-- The template folder is `templates/harness` and is owned here (no sync from ops-hub any more);
+- The template folder is `templates/harness` and is owned here (no sync from the standard's first home any more);
   the context-file template is `agent-context.md.template`; the stub is `stub-agent.*`.
 - Every mention of the tools in the package's files was rewritten by the map or by hand (the
   runner's identifiers, the fixtures' server names, the docs' audience values).
@@ -3664,14 +3670,14 @@ Each is named, with what to do:
   hook, the scripts and the day-0 documents from the templates and the preset; existing files
   kept, `--force` to overwrite, `--dry-run`), `measure` (the gap analysis as a library: score,
   every check, next steps by phase, the dated report with the standard's front matter), `gate`
-  (the path-aware gate ported from paycore_dms's, driven by the preset: format with
+  (the path-aware gate ported from a production Next app's, driven by the preset: format with
   `--end-of-line auto`, lint, typecheck, import graph, dead code, unit tests, ratchet with the
   changelog range, then the suites by path, deferred without Docker), `doctor` (the repository's
   harness self-test and the formatting-blind drift against the shipped templates), `presets`.
-- Three presets: `next` (proven by paycore_dms), `vite-react` (Paycore-Task-Manager), `node`
+- Three presets: `next` (proven on a production Next app), `vite-react` (on a production Vite and React app), `node`
   (not yet proven, said so).
-- The templates synced from `ops-hub/engineering/templates` with a test that fails when they
-  differ; the gap analysis generated from `ops-hub/engineering/tools/gap-analysis.mjs`.
-- Proven on paycore_dms: `measure` reads 80/100 over 63 checks like the ops-hub tool, `gate
+- The templates synced from the standard's first home with a test that fails when they
+  differ; the gap analysis generated from the standard's first gap-analysis script.
+- Proven on a production Next app: `measure` reads 80/100 over 63 checks like the original tool, `gate
   --fast` runs its seven steps green (761 tests), `doctor` reads its Prettier-formatted harness
   as in step.

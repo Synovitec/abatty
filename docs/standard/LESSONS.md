@@ -20,12 +20,12 @@ repository named.
 **On instruments**
 
 - A line-scoped check reported 20 of 21 correctly labelled icon buttons because the attribute
-  list spans lines. Parse the whole opening tag. (dms)
+  list spans lines. Parse the whole opening tag. (a Next app)
 - A CRLF worktree makes every `$`-anchored regex match nothing; normalise line endings at the
-  reader, and keep a CRLF control case. (dms, ecomm)
+  reader, and keep a CRLF control case. (a Next app, an e-commerce app)
 - An `ignores` glob reads a Next.js segment `[companyId]` as a character class. Escape it and
   pin three controls: on for a clean file, off for the bracketed path, on for a clean sibling.
-  (dms)
+  (a Next app)
 - A probe reads the tree it ships in, so its own pattern, prose and control fixtures are findings
   against itself: 4 of 7 type escapes and 3 of 7 raw environment reads were the probes' own text,
   and an opt-in probe nobody enabled counted eight of its own lines unseen. Assemble the spellings
@@ -38,129 +38,129 @@ repository named.
   for that document, without a word. Read what the formatter writes. (abatty)
 - A placeholder guard `\bNN\b` never matched `00NN_name`; a `\b` at a path boundary matched a
   path's own suffix. Boundaries are `(?<![\w/])`, tested against a foreign path and a web
-  path. (dms)
+  path. (a Next app)
 - `JSON.stringify` on a Sequelize where clause serialises `Op` symbols to `{}`, so the
-  assertion compared against an empty object. (Task-Manager)
+  assertion compared against an empty object. (a Vite app)
 - A test file that fails to COLLECT reports `Tests N passed, Test Files 1 failed`. Read the
-  file count. (Task-Manager)
+  file count. (a Vite app)
 - A dependency can enforce a control this repository never mentions (Better Auth's TOTP
   lockout). Grep finds nothing; check the dependency's resolved defaults, write a test that
-  fails if an upgrade changes them, and record it. (ecomm)
+  fails if an upgrade changes them, and record it. (an e-commerce app)
 - Do not measure while the tree is moving. A coverage run that overlapped files being written
   describes a tree that never existed; commit without the figure rather than with a wrong
-  one. (Task-Manager)
+  one. (a Vite app)
 - Two copies of one rule set drift (a fn-shape config for the ratchet and another for the
   editor; one regex listing rule families for citations and another for definitions). Feed
-  both readers from one list. (dms)
+  both readers from one list. (a Next app)
 - A guard that greps for the shape of the last defect reports green through the next one.
-  (ecomm, `costPrice: true` versus a bare `include`)
+  (an e-commerce app, `costPrice: true` versus a bare `include`)
 - A comment asserting a protection nobody verified ("covered by `claimKey`" - it never called
-  it). (ecomm)
+  it). (an e-commerce app)
 - The mirror of scanned-zero: a walker that skipped `.claude` made every check reading
   `.claude/rules` or `.claude/hooks` report "missing" on every repository, forever, with the
   right words. Prove a check in BOTH directions on a throwaway tree where the answer is
-  known, not only on the repository that lacks the thing. (gap analysis, Task-Manager)
+  known, not only on the repository that lacks the thing. (gap analysis, a Vite app)
 - A generated `.d.ts` ends in `.ts`: one such file made a 4,000-file JavaScript repository
   read as TypeScript, judged on strict flags it had declined by decision and charged 3,504
   `any` from its own declarations. Decide the language by non-declaration counts, and read
   the flag a repository chose (`checkJs`) before the flags it did not. (gap analysis,
-  Task-Manager)
+  a Vite app)
 - A mass-format commit changes no truth a document describes, and a freshness check that dates
   a doc's sources by `git log` marks fifty docs stale at once; the only way to clear them would
   be bumping `last_verified` on each, a verification nobody did. Let the check step over the
   revisions in `.git-blame-ignore-revs`, the file git keeps for exactly this, and prove it both
-  ways (0 stale with the line, 52 without). (Task-Manager)
+  ways (0 stale with the line, 52 without). (a Vite app)
 - ESLint flat config keeps only the last block's options for a rule: three per-vendor
   `no-restricted-imports` blocks left only the last vendor's in force, silently. Build the rule
   once per file from a table, and read the resolved config for one file (`--print-config`)
-  before trusting a rule with more than one block. (Task-Manager)
+  before trusting a rule with more than one block. (a Vite app)
 - A four-second green over 600 files is not a verdict until a planted violation is refused;
   neither is a mutation test whose mutant was never planted (grep the file first). Both were
-  green for the wrong reason once on the same day. (Task-Manager)
+  green for the wrong reason once on the same day. (a Vite app)
 - Retiring a barrel moves every test that mocked it: a `vi.mock` of the index silently stops
   applying once the importer reads the defining file, and the real module runs. Rewrite the
   mocks to the defining files in the same change, one per module, comments moved with them.
-  (Task-Manager, 13 files)
+  (a Vite app, 13 files)
 - A coverage floor pinned to the hundredth flaps: one area read 90.20 and 90.13 on consecutive
   runs of the same tree. Pin to a tenth, and read a second full run before trusting a floor
-  that sits on the measured figure. (Task-Manager)
+  that sits on the measured figure. (a Vite app)
 - A replacement that reads context (quotes as neighbours) needs its shapes named before it runs:
   a quoted lone dash is a placeholder and keeps no spaces, a quoted spaced one is a separator;
-  the first pass turned 17 placeholders into `' - '` and only the tests said so. (Task-Manager)
+  the first pass turned 17 placeholders into `' - '` and only the tests said so. (a Vite app)
 - The per-file floor catches what the total forgives on the day it lands: a template's
   self-test copied into `.claude/` was 25 lines over a utility budget and named in the first
-  run. A harness is not the repository's source; exempt it, and keep the floor. (Task-Manager)
+  run. A harness is not the repository's source; exempt it, and keep the floor. (a Vite app)
 
 **On refactoring**
 
 - Relocating a long function is not shortening it; the per-file floor is what lets the gate
-  say so. Three relocations dressed as fixes in one day. (dms)
+  say so. Three relocations dressed as fixes in one day. (a Next app)
 - Splitting for function shape adds signatures and returns, and pushed three files over their
-  file budget while every function passed. Split the FILES too. (dms)
+  file budget while every function passed. Split the FILES too. (a Next app)
 - The seams are usually already in the file: section comments (`// ---- print ----`), a prop
   doc that says "owns STATE and CHROME", a `{mobile ? … : …}` branch. Split by what a piece
-  is FOR, never where a line count fell. (dms)
+  is FOR, never where a line count fell. (a Next app)
 - A refactor reconstructed a string from memory (`s.searchPlaceholder`) that did not exist;
   the compiler caught it. Restore verbatim from git and diff every key, class and attribute
-  before and after. (dms)
+  before and after. (a Next app)
 - A template refactor is verified by OUTPUT: render every email before and after into two
-  directories and `diff -r`. (dms)
+  directories and `diff -r`. (a Next app)
 - A tidy-up that guards on a DERIVED value instead of the COLUMN silently starts filing a row
-  the taxonomy never gave a home. Read the original against the replacement. (dms)
-- A hook extracted from a component must keep hook order stable. (Task-Manager)
+  the taxonomy never gave a home. Read the original against the replacement. (a Next app)
+- A hook extracted from a component must keep hook order stable. (a Vite app)
 - Read the test before choosing a refactor's shape: a suite mocking a library BARREL breaks
   when a child switches to a deep import; `f(a, cond ? x : undefined)` fails
-  `toHaveBeenCalledWith(a)` because `undefined` is not nothing. (Task-Manager)
+  `toHaveBeenCalledWith(a)` because `undefined` is not nothing. (a Vite app)
 - A source-reading test pins a decision that is easy to undo; when the code moves, the test
-  follows it and reads only the file that owns the decision. (dms)
+  follows it and reads only the file that owns the decision. (a Next app)
 
 **On testing guards**
 
 - A mutation must EXIST before a green suite means anything: grep the file for the change.
-  Three "working guards" in one day were mutations that failed to apply. (Task-Manager)
-- A rule enforced twice survives every single-line mutation. Break both halves. (Task-Manager)
+  Three "working guards" in one day were mutations that failed to apply. (a Vite app)
+- A rule enforced twice survives every single-line mutation. Break both halves. (a Vite app)
 - A guard can be real while its test is inert: check the assertion can tell the two outcomes
-  apart. (Task-Manager)
+  apart. (a Vite app)
 - A contract two handlers cannot tell apart from its violation is not a contract (both
   branches called `markClassified` and returned `true` for the caller to call it again; the
-  `AND status = 'quarantined'` guard hid it from 19 tests). (dms)
+  `AND status = 'quarantined'` guard hid it from 19 tests). (a Next app)
 
 **On configuration that is present, correct-looking and inert**
 
 - 25+ instances in one repository: a middleware imported and never mounted, a login-attempt
   service never called, a plugin that reports zero because a setting is missing. Grep for the
-  CALL, not the import, and mutation-test it. (Task-Manager)
+  CALL, not the import, and mutation-test it. (a Vite app)
 - A migration tool that restarts numbering would create the tenant tables without RLS; the
-  script is disabled with a message that explains why. (dms)
+  script is disabled with a message that explains why. (a Next app)
 - A CRON route present in the repository and wired to no scheduler is work that does not
-  happen; the app schedules its own periodic jobs now. (ecomm)
+  happen; the app schedules its own periodic jobs now. (an e-commerce app)
 - A `.default({})` on a settings section the form never sends re-zeroes it on every save;
-  omission is how a form clears a value, so a partial section is a data-loss trap. (ecomm)
+  omission is how a form clears a value, so a partial section is a data-loss trap. (an e-commerce app)
 
 **On platforms**
 
 - A Windows-generated lockfile drops the `@esbuild/*` platform entries and `npm ci` fails in
-  Docker. Regenerate on Linux. (Task-Manager)
+  Docker. Regenerate on Linux. (a Vite app)
 - Python's `/tmp` is not bash's on this machine; an intermediate file written from one is
-  invisible to the other. (ecomm)
+  invisible to the other. (an e-commerce app)
 - `.env.development.local` wins over `.env.local` in `next dev` only; build, start, E2E and
-  production never read it. (dms)
+  production never read it. (a Next app)
 - A segment `loading.tsx` blocks same-route Server Actions from refreshing the page in
-  production builds only. (dms)
-- A DataLoader cached across requests serves one user's rows to another. (Task-Manager)
+  production builds only. (a Next app)
+- A DataLoader cached across requests serves one user's rows to another. (a Vite app)
 - A PSP token cache keyed by nothing handed the first store's sandbox token to every live
-  store for nine hours. Key a cache by the credentials that minted it. (ecomm)
+  store for nine hours. Key a cache by the credentials that minted it. (an e-commerce app)
 - A Prisma `Decimal` does not pad its scale when stringified: `7.00` reached the wire as
   `"7"` and `25.20` as `"25.2"`, contradicting the published two-fraction-digit promise on 28
-  field/route pairs. Serialise money through one `money()` at the envelope. (ecomm)
+  field/route pairs. Serialise money through one `money()` at the envelope. (an e-commerce app)
 - Spreading two Sequelize `where` objects to combine a tenant scope with a caller's filter
   REPLACES a duplicate `Op.and`/`Op.or` key instead of ANDing it; the scope is applied with
-  `Op.and` after the builder. (Task-Manager)
+  `Op.and` after the builder. (a Vite app)
 - A `${…}` anywhere in a Woodpecker file, comments included, is expanded before parsing and
   kills the pipeline with no steps and no status; a secret in `commands:` is `$${NAME}`.
-  (Task-Manager, ecomm)
+  (a Vite app, an e-commerce app)
 
-**On driving an agent unattended from Windows** (found by the stub night on dms, 2026-09-13;
+**On driving an agent unattended from Windows** (found by the stub night on a Next app, 2026-09-13;
 each one made the harness "succeed" while doing nothing, or blame the wrong thing)
 
 - Windows PowerShell 5.1 `Out-File -Encoding utf8` writes a BOM, and `JSON.parse` refuses
@@ -188,7 +188,7 @@ checkout` saying "Already on") is a terminating error. Use "Continue" and judge 
   thousands of staged paths batches them by size (`xargs -s`). A suite that runs only in CI has
   never been proven on a developer machine: 18 tests failed here on a green branch (timezone,
   locale, CRLF, a `.env` read at import). Pin `TZ=UTC` in the runner and stub `dotenv` where a
-  module reads it. (Task-Manager, first full run on Windows)
+  module reads it. (a Vite app, first full run on Windows)
 - A stub that plays the agent's part against the REAL Stop hook and the REAL gate finds
   what the hook self-test cannot: every defect above passed 41 green checks.
 

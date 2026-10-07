@@ -28,7 +28,7 @@ export async function migrateRedefined(repoDir, o = {}) {
   const { probes } = await loadProbes(repoDir, config);
   // Over the push range, as `abatty baseline` measures: a probe that judges the pushed commits
   // read skipped with none, and its floor was carried under the new definition as a count of the
-  // old one's question (Foodify, rc.3: 2 carried where the new definition read 0).
+  // old one's question (an adopter, rc.3: 2 carried where the new definition read 0).
   // Only a range found and holding commits: an empty one (nothing pushed) counts zero of nothing,
   // and the last-commit guess with no upstream and no base counts one commit of many, and either
   // written as measured would claim a count nobody took. Without one the probe reads skipped and
@@ -43,7 +43,7 @@ export async function migrateRedefined(repoDir, o = {}) {
   );
   // A probe on probation reads `probation` whatever its verdict would be, and one that judges a
   // pushed range reads `skipped` with no range here, so neither floor under an old definition was
-  // migrated: the gate, measuring the push, then read it redefined and refused (Foodify, rc.2,
+  // migrated: the gate, measuring the push, then read it redefined and refused (an adopter, rc.2,
   // change.testTamper). The version the floor was written under says it as well.
   const movedOn = (/** @type {string} */ metric) => {
     const m = measurements.find((x) => x.metric === metric);

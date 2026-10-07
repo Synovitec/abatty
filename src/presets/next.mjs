@@ -1,5 +1,5 @@
 /**
- * The Next.js (App Router) preset - what paycore_dms proved: a single npm app, flat modules
+ * The Next.js (App Router) preset - what a production Next app proved: a single npm app, flat modules
  * under src/, Drizzle or Prisma for the schema, Vitest, Playwright + axe, Woodpecker CI.
  * A preset says what a stack's repository looks like; the standard says what must hold.
  */
@@ -13,7 +13,7 @@ export const next = {
   id: "next",
   name: "Next.js (App Router)",
   proven:
-    "paycore_dms, 2026-09-14 (instrument, harness, graph and dead code in the gate, first unattended night closed a phase)",
+    "a production Next app, 2026-09-14 (instrument, harness, graph and dead code in the gate, first unattended night closed a phase)",
   detect: (deps) => deps.has("next"),
   adoption: {
     commands: {

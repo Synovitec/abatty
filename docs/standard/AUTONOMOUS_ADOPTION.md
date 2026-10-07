@@ -411,7 +411,7 @@ procedure and the defects that only this run could find are in the
 [templates README](../../templates/harness/README.md#a-dry-night-with-the-stub-before-a-paid-one).
 What the stub cannot prove - that a real `the agent's headless mode` under these flags runs a command without
 a prompt and fires both hooks - is what the canary proves, and `-CanaryOnly` is the first thing
-to run on a repository. It ran for real on `paycore_dms` on 2026-09-14 (3 turns, 24 s,
+to run on a repository. It ran for real on a production Next app on 2026-09-14 (3 turns, 24 s,
 0.41 USD): the command ran with no prompt, the guard refused `--no-verify` and the refusal was
 counted in `permission_denials`, the Stop hook ran the real gate and left its receipt reading
 the base copy (`ADOPTION_STATUS.md`). The first paid night after it should still be short

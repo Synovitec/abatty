@@ -24,8 +24,9 @@ Violating one of these is an incident, not a bug.
 3. **A guard nobody has watched fail is not a guard.** Every probe carries control cases in both
    directions, and every gate step proves it can go red (`abatty doctor --controls`). A check
    that reports nothing is indistinguishable from a check that is switched off.
-4. **A preset is real only when a named repository has run it.** The preset names the repository
-   and the date, or it says nobody yet. Never claim one that has not.
+4. **A preset is real only when a real repository has run it.** The preset says what kind of
+   repository and the date, or it says nobody yet. Never claim one that has not, and never name
+   another repository anywhere in this one: an adopter is "an adopter", a product is its kind.
 5. **The gate runs before a push, never bypassed.** Hook bypass is not a workflow.
 
 ## 2. Commands
@@ -140,7 +141,7 @@ when two readings of the request lead to materially different work.
 | A ratchet number must rise to land a step                           | Refuse the step; split differently; never raise a floor at night                                                                       |
 | A probe or a gate step would be added without control cases         | Refuse it; a guard nobody has watched fail is not a guard                                                                              |
 | A runtime dependency would make the change easy                     | Refuse it; write it, or leave the feature undone and say so                                                                            |
-| A preset would be claimed as proven                                 | Only a named repository and a date prove one; otherwise nobody yet                                                                     |
+| A preset would be claimed as proven                                 | Only a real repository and a date prove one; otherwise nobody yet                                                                      |
 | A rule reads one tool where it means a practice                     | Fix the rule, with a case for the tool it missed                                                                                       |
 | The seam of a split is unclear                                      | Split by what a piece is FOR; if no seam is visible, leave the file and record `seam-unclear`                                          |
 | The same change would touch more than ten files                     | A codemod under `scripts/codemods/`, dry-run first, one commit, the count in the message                                               |

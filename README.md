@@ -152,17 +152,17 @@ nobody has watched fail is not a guard.
 
 A preset describes what a stack's repository looks like: its paths, scripts, gate steps, suites
 and rule files. The standard says what must hold; the preset says where to find it. A preset is
-real when a named repository has run it, and the tool says so plainly rather than implying
+real when a real repository has run it, and the tool says so plainly rather than implying
 coverage it does not have.
 
-| Preset       | Status                                     |
-| ------------ | ------------------------------------------ |
-| `next`       | Proven by paycore_dms, 2026-09-14          |
-| `vite-react` | Proven by Paycore-Task-Manager, 2026-09-13 |
-| `node`       | Proven by abatty, 2026-09-18               |
-| `astro`      | Not yet proven by a repository             |
-| `python`     | Not yet proven by a repository             |
-| `docs`       | Not yet proven by a repository             |
+| Preset       | Status                                                |
+| ------------ | ----------------------------------------------------- |
+| `next`       | Proven on a production Next app, 2026-09-14           |
+| `vite-react` | Proven on a production Vite and React app, 2026-09-13 |
+| `node`       | Proven by abatty, 2026-09-18                          |
+| `astro`      | Not yet proven by a repository                        |
+| `python`     | Not yet proven by a repository                        |
+| `docs`       | Not yet proven by a repository                        |
 
 Monorepos compose. Workspaces are read from the root manifest, a pnpm workspace file, or the
 conventional `apps/*`, `packages/*` and `services/*` directories. Each workspace is gated with its

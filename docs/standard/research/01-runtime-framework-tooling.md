@@ -14,7 +14,7 @@ last_verified: "2026-09-13"
 
 Researched against official docs (nodejs.org, nextjs.org, typescriptlang.org, typescript-eslint.io,
 eslint.org, OWASP) and widely-recognised secondary sources where no official page exists. Read
-against `ops-hub/engineering/ENGINEERING_STANDARD.md` (last_verified 2026-09-13).
+against `ENGINEERING_STANDARD.md` (last_verified 2026-09-13).
 
 ## 1. Node.js 22 LTS / 24
 
@@ -219,7 +219,7 @@ against `ops-hub/engineering/ENGINEERING_STANDARD.md` (last_verified 2026-09-13)
   compile time rather than by convention and review).
 - CODE.3/CODE.4 say nothing about type-only imports. Enforcing `import type`
   (`consistent-type-imports` or `verbatimModuleSyntax`) stops a type-only import from dragging
-  runtime code across a bundle or package boundary - relevant to a monorepo with `@ecomm/types`
+  runtime code across a bundle or package boundary - relevant to a monorepo with `@acme/types`
   imported from both server and edge-adjacent code.
 - OBS.1 says "no PII" but names no mechanism. Add a concrete instrument (redaction by field path
   at the logger configuration, not per call site) the way SEC.1 already gets a concrete

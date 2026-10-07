@@ -104,7 +104,7 @@ process.on("SIGTERM", () => {
 test("the logger's own censor is configuration, and a tracker read by bracket in instrumentation is from the environment", () => {
   // An adopter's pino config with `censor: "[REDACTED]"` read as hand-written masking, and its
   // `process.env["SENTRY_DSN"]` in instrumentation.ts as not read from the environment.
-  const f = read("obs-hygio", {
+  const f = read("obs-adopter", {
     "package.json": PKG({ pino: "9", "@sentry/node": "8" }),
     "src/server/logger.ts":
       'import pino from "pino";\nexport const log = pino({\n  redact: { paths: ["password"], censor: "[REDACTED]" },\n});\n',
@@ -114,7 +114,7 @@ test("the logger's own censor is configuration, and a tracker read by bracket in
   assert.equal(of(f, "OBS-REDACTION").status, "present", of(f, "OBS-REDACTION").evidence);
   assert.equal(of(f, "OBS-TRACKER").status, "present", of(f, "OBS-TRACKER").evidence);
   // and the other direction: a mask written at a call site still counts
-  const byHand = read("obs-hygio-hand", {
+  const byHand = read("obs-adopter-hand", {
     "package.json": PKG({ pino: "9" }),
     "src/server/logger.ts": 'export const log = pino({ redact: ["password"] });\n',
     "src/server/user.ts": 'log.info({ email: "[redacted]" });\n',

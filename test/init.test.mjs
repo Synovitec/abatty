@@ -49,7 +49,7 @@ test("init --stack next writes the harness, the tooling, the scripts and the day
   assert.equal(pkg.scripts.test, "node -e process.exit(0)", "an existing script is kept");
   assert.match(readFileSync(join(dir, ".gitignore"), "utf8"), /\.claude\/night\//);
   assert.match(r.out, /npm i -D dependency-cruiser knip/);
-  assert.match(r.out, /proven by paycore_dms/);
+  assert.match(r.out, /proven by a production Next app/);
 });
 
 test("init is idempotent: a second run keeps every file, --force overwrites", () => {
