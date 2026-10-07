@@ -16,6 +16,7 @@ import { EXIT } from "./exit.mjs";
 import { writeStepSummary } from "./step-summary.mjs";
 import { ciFromEnv } from "../core/env.mjs";
 import { git, readAdoption } from "../core/repo.mjs";
+import { dropHookGitVars } from "../core/git-env.mjs";
 import { pushLines, pushPlan, refRange } from "../core/push-refs.mjs";
 import { readFileSync } from "node:fs";
 import * as t from "../ui/term.mjs";
@@ -26,6 +27,8 @@ import { stalePatchNote, stalePatches } from "../core/patches.mjs";
  */
 export async function gateCommand(cx, preset) {
   const { dir, opt, flag, out, err, VERSION } = cx;
+  // A hook's GIT_DIR, inherited by a step's fixture repositories, wrote into this one.
+  dropHookGitVars(dir);
   if (flag("--preflight")) process.exit(preflightScreen(cx, preset));
   const base = opt("--base") || readAdoption(dir)?.baseBranch || "main";
   // --refs: the pre-push hook hands the lines git gave it, and the gate judges the push they
