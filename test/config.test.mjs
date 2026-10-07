@@ -191,3 +191,24 @@ test("the hooks fall back to the repository's own package manager when the confi
   assert.equal(own.gate, "make gate", "a command the config names wins");
   assert.equal(own.lintFile, "bun x eslint --max-warnings=0", "and the others keep their fallback");
 });
+
+test("--migrate keeps the old file while the installed hooks still read only it", () => {
+  // A harness from before the root file read .claude/adoption.json alone: removing it made
+  // directPushToBase fall back to its default until update's merges were done.
+  const legacy = JSON.stringify({ directPushToBase: false });
+  const old = tempRepo("migrate-old-hooks", {
+    ".claude/adoption.json": legacy,
+    ".claude/hooks/lib.mjs": 'export const CONFIG = ".claude/adoption.json";\n',
+  });
+  const m = migrateConfig(old);
+  assert.ok(existsSync(join(old, "abatty.config.json")), "the root file is written");
+  assert.ok(existsSync(join(old, ".claude/adoption.json")), "the old one is kept");
+  assert.match(m.reason, /kept: the installed hooks still read it/);
+  // The other direction: hooks that read the root file let the old one go.
+  const current = tempRepo("migrate-new-hooks", {
+    ".claude/adoption.json": legacy,
+    ".claude/hooks/lib.mjs": 'export const ROOT_CONFIG = "abatty.config.json";\n',
+  });
+  migrateConfig(current);
+  assert.equal(existsSync(join(current, ".claude/adoption.json")), false);
+});

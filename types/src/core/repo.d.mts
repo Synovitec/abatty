@@ -17,9 +17,9 @@ export function printWidth(dir: string): any;
  * baseline in .prettierignore. Objects are expanded (the formatter keeps an expanded object as
  * it is); an array of plain values goes on one line when the line fits the width, one value per
  * line otherwise, which is what the formatter does and what JSON.stringify never does.
- * @param {unknown} value @param {number} [width]
+ * @param {unknown} value @param {number} [width] @param {string} [unit] one level of indentation
  */
-export function formatJson(value: unknown, width?: number): string;
+export function formatJson(value: unknown, width?: number, unit?: string): string;
 /** Run git in a directory; "" when it fails - a command must never crash on git. @param {string} dir @param {string[]} args */
 export function git(dir: string, ...args: string[]): string;
 /**

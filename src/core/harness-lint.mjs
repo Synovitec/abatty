@@ -31,26 +31,38 @@ function text(repoDir, rel) {
 /**
  * The eslint config that would read `.claude/` and the line that keeps it out, or null when there
  * is no eslint config or it (or `.eslintignore`) already names `.claude`.
- * @param {string} repoDir @returns {{ config: string, line: string } | null}
+ * @param {string} repoDir @returns {{ config: string, line: string, folders: string[] } | null}
  */
 export function harnessLintHint(repoDir) {
   // Only where the harness's scripts are installed: under the minimal profile .claude/ holds the
   // lock alone, a JSON file no linter reads, and the hint told a new repository to ignore it.
-  if (!existsSync(join(repoDir, ".claude", "hooks"))) return null;
+  // .abatty/ too, once it holds the installed copies `update` merges from: a flat config does
+  // not read .gitignore, and an adopter's lint counted sixty errors in them.
+  const folders = [
+    existsSync(join(repoDir, ".claude", "hooks")) ? ".claude" : "",
+    existsSync(join(repoDir, ".abatty", "harness")) ? ".abatty" : "",
+  ].filter(Boolean);
+  if (!folders.length) return null;
   const flat = FLAT.find((f) => existsSync(join(repoDir, f)));
   const config = flat || LEGACY.find((f) => existsSync(join(repoDir, f)));
   if (!config) return null;
-  if ([config, ".eslintignore"].some((f) => text(repoDir, f).includes(".claude"))) return null;
+  const named = [config, ".eslintignore"].map((f) => text(repoDir, f)).join("\n");
+  const missing = folders.filter((d) => !named.includes(d));
+  if (!missing.length) return null;
   return {
     config,
-    line: flat ? '{ ignores: [".claude/**"] }' : 'ignorePatterns: [".claude/"]',
+    folders: missing,
+    line: flat
+      ? `{ ignores: [${missing.map((d) => `"${d}/**"`).join(", ")}] }`
+      : `ignorePatterns: [${missing.map((d) => `"${d}/"`).join(", ")}]`,
   };
 }
 
 /**
  * What to tell the reader, in one sentence.
- * @param {{ config: string, line: string }} hint @returns {string}
+ * @param {{ config: string, line: string, folders?: string[] }} hint @returns {string}
  */
 export function harnessLintSays(hint) {
-  return `${hint.config} lints .claude/, the harness abatty installs: add ${hint.line} so your lint judges the product, not the instrument (abatty does not edit your eslint config)`;
+  const where = (hint.folders || [".claude"]).map((d) => `${d}/`).join(" and ");
+  return `${hint.config} lints ${where}, the harness abatty installs: add ${hint.line} so your lint judges the product, not the instrument (abatty does not edit your eslint config)`;
 }

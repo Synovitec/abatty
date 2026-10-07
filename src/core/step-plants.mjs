@@ -39,35 +39,77 @@ const longFile = (n) =>
  */
 
 /**
- * The extension a repository's typecheck actually covers, from its tsconfig include patterns.
- * `.ts` when there is no tsconfig to read, which is the shape a repository adopting one gets.
- * @param {string} dir
+ * The extension a repository's typecheck actually covers where the plant goes, from its tsconfig
+ * include patterns: a pattern that reaches the plant folder first, then any; declaration patterns
+ * never, since a `types/*.d.ts` entry made a checkJs repository's plant `.ts`, a file its
+ * `src/**\/*.js` include never reached, and its working typecheck read as absent.
+ * @param {string} repoDir the repository, or the workspace a plant is deferred into
  */
-function checkedExt(dir) {
-  /** @type {string[]} */
-  let include = [];
+function checkedExt(repoDir) {
+  const dir = tsHome(repoDir);
+  /** @type {{ include?: unknown, compilerOptions?: { allowJs?: boolean, checkJs?: boolean } } | null} */
+  let cfg = null;
   try {
-    const cfg = readJsonFile(dir, "tsconfig.json");
-    include = Array.isArray(cfg?.include) ? cfg.include.map(String) : [];
+    cfg = readJsonFile(dir, "tsconfig.json");
   } catch {
     /* a tsconfig with comments in it is not a reason to plant nothing */
   }
-  for (const ext of [".ts", ".mts", ".mjs", ".js"])
-    if (include.some((pattern) => pattern.endsWith(ext))) return ext;
-  // No tsconfig and no TypeScript source is plain JavaScript: a .ts plant was a test `node --test`
-  // never runs, and a working suite read as absent. A module file every runner reads as
-  // JavaScript, whichever way the package's "type" points.
-  return existsSync(join(dir, "tsconfig.json")) || hasTypeScript(dir) ? ".ts" : ".mjs";
+  const include = (Array.isArray(cfg?.include) ? cfg.include.map(String) : []).filter(
+    (p) => !/\.d\.[cm]?ts$/.test(p),
+  );
+  const root = plantRoot(repoDir)
+    .split("/")
+    .slice(dir === repoDir ? 0 : 2)
+    .join("/");
+  const reaching = include.filter(
+    (p) => p.startsWith(`${root}/`) || p.startsWith("**/") || !p.includes("/"),
+  );
+  for (const patterns of [reaching, include])
+    for (const ext of [".ts", ".tsx", ".mts", ".mjs", ".js", ".jsx"])
+      if (patterns.some((pattern) => pattern.endsWith(ext))) return ext.replace(/x$/, "");
+  // No include to read. TypeScript sources: TypeScript. A tsconfig over JavaScript alone
+  // (allowJs or checkJs, no .ts source) checks JavaScript. No tsconfig and no TypeScript is plain
+  // JavaScript: a module file every runner reads as JavaScript, whichever way "type" points.
+  if (hasTypeScript(dir)) return ".ts";
+  if (cfg) return cfg.compilerOptions?.allowJs || cfg.compilerOptions?.checkJs ? ".js" : ".ts";
+  return ".mjs";
+}
+
+/**
+ * Whether git knows of a source matching one of the patterns. A declaration file is not one: a
+ * JavaScript repository that ships `types/*.d.ts` writes no TypeScript.
+ * @param {string} dir @param {string[]} patterns
+ */
+function hasSources(dir, patterns) {
+  const r = spawnSync("git", ["ls-files", "--", ...patterns], { cwd: dir, encoding: "utf8" });
+  return String(r.stdout || "")
+    .split("\n")
+    .some((f) => f && !/\.d\.[cm]?ts$/.test(f));
 }
 
 /** Whether a folder holds TypeScript sources git knows of. @param {string} dir */
-function hasTypeScript(dir) {
-  const r = spawnSync("git", ["ls-files", "--", "*.ts", "*.tsx", "*.mts"], {
-    cwd: dir,
-    encoding: "utf8",
-  });
-  return Boolean(String(r.stdout || "").trim());
+const hasTypeScript = (dir) => hasSources(dir, ["*.ts", "*.tsx", "*.mts"]);
+
+/**
+ * The extension of a planted source file the repository's linter, dead-code check, formatter and
+ * size probe read: TypeScript where the repository writes it, JavaScript elsewhere. Decided from
+ * the sources, not from a tsconfig's existence: a checkJs repository's lint, dead-code and size
+ * plants were `.ts`, which its eslint, knip and ratchet never read, and three working steps read
+ * as absent. Where the plant goes holds no source yet, the tsconfig decides: a fresh TypeScript
+ * package has written nothing, and a `.js` plant there is one its linter never reads.
+ * @param {string} dir
+ */
+function sourceExt(dir) {
+  const home = tsHome(dir);
+  if (hasTypeScript(home)) return ".ts";
+  const root = plantRoot(dir);
+  const js = ["js", "jsx", "mjs", "cjs"].map((e) => `${root}/*.${e}`);
+  if (hasSources(dir, js)) return ".js";
+  return existsSync(join(home, "tsconfig.json")) ? ".ts" : ".js";
 }
+
+/** Whether an extension is JavaScript, where a type is a JSDoc comment rather than a colon. @param {string} ext */
+const isJs = (ext) => /\.[cm]?jsx?$/.test(ext);
 
 /**
  * The folder a planted source file goes in: `src` where the repository has one; in a monorepo
@@ -140,7 +182,7 @@ function failingTest(dir, rel, rootDeps) {
 /** Where a failing test goes for this script to run it (test-plant-path.mjs). @param {string} dir @param {string} script */
 const testPath = (dir, script) =>
   testPlantPath(dir, script, {
-    extOf: (d) => checkedExt(tsHome(d)),
+    extOf: (d) => checkedExt(d),
     rootOf: plantRoot,
     mark: MARK,
   });
@@ -152,7 +194,10 @@ export const STEP_CONTROLS = {
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "x    =   {  'a':1 }\n")
-        : file(`${plantRoot(dir)}/${MARK}.ts`, "const   x={a:1,b:2}\nexport   const y=x\n"),
+        : file(
+            `${plantRoot(dir)}/${MARK}${sourceExt(dir)}`,
+            "const   x={a:1,b:2}\nexport   const y=x\n",
+          ),
   },
   lint: {
     // One violation per common rule set, so the plant is caught by whichever the repository
@@ -166,7 +211,7 @@ export const STEP_CONTROLS = {
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "import os\n")
-        : existsSync(join(tsHome(dir), "tsconfig.json"))
+        : sourceExt(dir) === ".ts"
           ? file(
               `${plantRoot(dir)}/${MARK}.ts`,
               "debugger;\nconst abattyUnused: any = 1;\nexport function useAbattyControl(flag: boolean) {\n  if (flag) useAbattyOther();\n}\nfunction useAbattyOther() {}\n",
@@ -181,12 +226,12 @@ export const STEP_CONTROLS = {
     files: ({ pack, dir }) => {
       if (pack === "python")
         return file(`${plantRoot(dir)}/${MARK}.py`, 'abatty_control: int = "not a number"\n');
-      const ext = checkedExt(tsHome(dir));
+      const ext = checkedExt(dir);
       // A tsconfig that only includes JavaScript is checking JavaScript (`checkJs`), where the
       // annotation is a JSDoc type rather than a colon. Planting the colon form there is a
       // SYNTAX error the compiler never reaches, or a file it never reads: either way the step
       // stays green and the control lies about the step rather than about the file.
-      const annotated = /[jm]js?$/.test(ext)
+      const annotated = isJs(ext)
         ? '/** @type {number} */\nexport const abattyControl = "not a number";\n'
         : 'export const abattyControl: number = "not a number";\n';
       return file(`${plantRoot(dir)}/${MARK}${ext}`, annotated);
@@ -207,7 +252,7 @@ export const STEP_CONTROLS = {
     files: ({ pack, dir }) =>
       pack === "python"
         ? file(`${plantRoot(dir)}/${MARK}.py`, "def abatty_unused():\n    return 1\n")
-        : file(`${plantRoot(dir)}/${MARK}.ts`, "export const abattyUnused = 1;\n"),
+        : file(`${plantRoot(dir)}/${MARK}${sourceExt(dir)}`, "export const abattyUnused = 1;\n"),
   },
   "coverage:changed": {
     // A new source file no test reaches, with a branch in it: every line of it is a changed line,
@@ -217,8 +262,8 @@ export const STEP_CONTROLS = {
     // Typed in the file's own language: an untyped parameter made a coverage command that also
     // typechecks go red on the type, and read as a coverage step proven red.
     files: ({ dir }) => {
-      const ext = checkedExt(tsHome(dir));
-      const signature = /[jm]js?$/.test(ext)
+      const ext = checkedExt(dir);
+      const signature = isJs(ext)
         ? "/** @param {boolean} flag */\nexport function abattyUncovered(flag) {"
         : "export function abattyUncovered(flag: boolean): number {";
       return file(
@@ -230,7 +275,7 @@ export const STEP_CONTROLS = {
   standards: {
     means: "a file over the 800-line cap",
     files: ({ pack, dir }) =>
-      file(`${plantRoot(dir)}/${MARK}.${pack === "python" ? "py" : "ts"}`, longFile(801)),
+      file(`${plantRoot(dir)}/${MARK}${pack === "python" ? ".py" : sourceExt(dir)}`, longFile(801)),
   },
   secrets: {
     means: "a cloud access key",

@@ -6,7 +6,7 @@ status: living
 audience: ["developer", "architect", "agent"]
 tags: ["versioning", "release", "roadmap"]
 related: ["../VERSIONING.md", "../../CONTRIBUTING.md"]
-last_verified: "2026-10-03"
+last_verified: "2026-10-07"
 ---
 
 # 0002 - The road to 1.0
@@ -102,3 +102,13 @@ and lands in a pull request of its own, so it can be declined without touching a
   `node --test` has none), so doing it honestly is a second gate per runner. `gate --fast`
   already leaves the suites out, and a fresh repository's gate runs in seconds. Items 1, 2, 3 and
   5 landed.
+
+- **2026-10-07 · 0.8.0 ships without its own candidate** (accepted by the maintainer on
+  2026-10-07). The rc.4 replays found misses, the worst being `prove` calling a JavaScript
+  repository's working checks absent and `update` adding scripts whose tools were missing. By
+  item 1 that asks for an rc.5 and its replay before the final version. The maintainer chose to
+  ship 0.8.0 instead: `latest` had stood at 0.6.1 through four candidates, so a plain install
+  got the oldest code; every fix since rc.4 is held by a test; and the contract snapshot
+  has not moved since rc.4. The exception is to item 1 alone. Item 4 still asks for two
+  consecutive candidates replayed clean, and 0.8.0 counts as neither, so the next minor's
+  candidates start that count.

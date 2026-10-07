@@ -18,14 +18,17 @@ import { staleTypesHint } from "./stale-types.mjs";
 /** Where the unreached failures are counted, per test file, by the commits they failed on. */
 export const FLAKES = ".abatty/flakes.json";
 
-const TEST_FILE = String.raw`[\w./\\:@-]+\.(?:spec|test|e2e)\.[cm]?[jt]sx?`;
+// `~` for a Windows short name: a hosted runner's temp folder is `C:\Users\RUNNER~1\...`.
+const TEST_EXT = String.raw`\.(?:spec|test|e2e)\.[cm]?[jt]sx?`;
+const TEST_FILE = String.raw`[\w./\\:@~-]+${TEST_EXT}`;
 /**
  * A failing test file as the runners print one: Playwright's `✘`/numbered `[project] › file`,
  * vitest's and jest's `FAIL file`, Node's `test at file:line` (spec) and `location: 'file:l:c'`
- * (TAP, what it prints when its output is a pipe).
+ * (TAP, what it prints when its output is a pipe). TAP quotes its path, so a folder with a space
+ * in it is read there to the closing quote.
  */
 const FAILED = new RegExp(
-  String.raw`(?:^|\s)(?:FAIL|✘|×|\d+\)|test at)\s+(?:\d+\s+)?(?:\[[^\]\n]+\]\s+›\s+)?(${TEST_FILE})|location:\s*'(${TEST_FILE}):\d+`,
+  String.raw`(?:^|\s)(?:FAIL|✘|×|\d+\)|test at)\s+(?:\d+\s+)?(?:\[[^\]\n]+\]\s+›\s+)?(${TEST_FILE})|location:\s*'([^'\n]+?${TEST_EXT}):\d+`,
   "gm",
 );
 
@@ -112,6 +115,17 @@ function failuresIn(plain, byName) {
  */
 export function failingTestFiles(text, o = {}) {
   return [...readFailures(text, o).keys()].sort();
+}
+
+/**
+ * How many tests a step's output reports as timed out, when every failure in it is a timeout, or
+ * 0 when any failed otherwise or none did. A copy on a fresh disk (a scanner reading every new
+ * file) timed out four tests that passed in the repository, and read as a broken suite.
+ * @param {string} text @returns {number}
+ */
+export function onlyTimedOut(text) {
+  const counts = [...readFailures(text, {}).values()];
+  return counts.every((n) => !n.failed) ? counts.reduce((sum, n) => sum + n.timedOut, 0) : 0;
 }
 
 /**

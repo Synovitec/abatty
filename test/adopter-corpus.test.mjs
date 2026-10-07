@@ -478,6 +478,109 @@ const CASES = [
     },
   },
   {
+    report: "vite-react · 2026-10-04 · rc.4 prove, a checkJs JavaScript repository",
+    claim:
+      "the lint, typecheck, dead-code and size plants are JavaScript where the sources are, and TypeScript where they are",
+    run: () => {
+      /** The plant of a step, by its key. @param {string} dir @param {string} key */
+      const plant = (dir, key) =>
+        Object.entries(
+          STEP_CONTROLS[key]?.files({ deps: new Set(), pack: "javascript", dir, scripts: {} }) ||
+            {},
+        )[0] || ["", ""];
+      // React and a Node server in JavaScript, checked by tsc through checkJs; its include also
+      // names declaration files, which made every plant .ts and four working steps "absent".
+      const js = tempRepo("adopter-checkjs", {
+        "package.json": JSON.stringify({ name: "p", type: "module" }),
+        "tsconfig.json": JSON.stringify({
+          compilerOptions: { allowJs: true, checkJs: true, noEmit: true },
+          include: ["src/**/*.js", "src/**/*.jsx", "server/**/*.js", "types/*.d.ts"],
+        }),
+        "src/main.js": "export const a = 1;\n",
+        "types/globals.d.ts": "declare const VERSION: string;\n",
+      });
+      for (const key of ["lint", "typecheck", "dead", "standards"])
+        assert.match(plant(js, key)[0], /^src\/abatty-control\.__\.js$/, key);
+      assert.match(plant(js, "typecheck")[1], /@type \{number\}/, "a JSDoc type, not a colon");
+      // The other direction: a TypeScript repository keeps TypeScript plants.
+      const ts = tempRepo("adopter-ts", {
+        "package.json": JSON.stringify({ name: "p" }),
+        "tsconfig.json": JSON.stringify({ include: ["src/**/*.ts"] }),
+        "src/main.ts": "export const a: number = 1;\n",
+      });
+      for (const key of ["lint", "typecheck", "dead", "standards"])
+        assert.match(plant(ts, key)[0], /^src\/abatty-control\.__\.ts$/, key);
+    },
+  },
+  {
+    report: "vite-react · 2026-10-04 · rc.4 measure, a calendar in UTC on purpose",
+    claim:
+      "VALID-LOCAL-DAY passes a day taken off an instant built with Date.UTC; a day off now still fails",
+    run: () => {
+      /** VALID-LOCAL-DAY over one source file. @param {string} src */
+      const read = (src) => {
+        const dir = tempRepo("adopter-utc", {
+          "package.json": JSON.stringify({ name: "p" }),
+          "src/day.js": src,
+        });
+        return runCatalog(buildContext(dir), RULES).find((f) => f.id === "VALID-LOCAL-DAY")?.status;
+      };
+      const slice = [".toISOString()", ".slice(0, 10)"].join("");
+      // Fields in, fields out: no time zone is involved.
+      assert.equal(
+        read(`export const back = (y, m, d, n) => new Date(Date.UTC(y, m - 1, d - n))${slice};\n`),
+        "present",
+      );
+      assert.equal(read(`export const today = () => new Date()${slice};\n`), "missing");
+    },
+  },
+  {
+    report: "vite-react · 2026-10-04 · rc.4 measure, console in CLI scripts",
+    claim:
+      "OBS-CONSOLE passes over a server's command-line scripts and its logger; a route's console call still counts",
+    run: () => {
+      const log = ["console", "log"].join(".");
+      const dir = tempRepo("adopter-console", {
+        "package.json": JSON.stringify({ name: "p", dependencies: { express: "4.0.0" } }),
+        "eslint.config.js": "export default [{ rules: { 'no-console': 'error' } }];\n",
+        "server/scripts/reindex.js": `${log}("reindexed");\n`,
+        "server/lib/logger.js": `export const info = (m) => ${log}(JSON.stringify({ m }));\n`,
+        "server/routes/users.js": "export const list = () => [];\n",
+      });
+      const read = () => runCatalog(buildContext(dir), RULES).find((f) => f.id === "OBS-CONSOLE");
+      assert.equal(read()?.status, "present", read()?.evidence);
+      writeFileSync(
+        join(dir, "server/routes/users.js"),
+        `export const list = () => ${log}("x");\n`,
+      );
+      assert.equal(read()?.status, "partial", "a route's own console call still counts");
+    },
+  },
+  {
+    report: "vite-react · 2026-10-04 · rc.4 update, a manifest indented with tabs",
+    claim: "update keeps a tab-indented package.json in tabs",
+    run: () => {
+      const dir = viteTabs("adopter-tabs");
+      cli(["update", dir], dir);
+      const text = readFileSync(join(dir, "package.json"), "utf8");
+      assert.match(text, /^\t"name": "web",$/m, text);
+      assert.doesNotMatch(text, /^ {2}"/m, "no line in two spaces");
+    },
+  },
+  {
+    report: "vite-react · 2026-10-04 · rc.4 update, scripts for tools not installed",
+    claim: "update adds no script whose tool is not installed, and names the install it waits for",
+    run: () => {
+      const dir = viteTabs("adopter-uninstalled");
+      const r = cli(["update", dir, "--plain"], dir);
+      const scripts = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).scripts;
+      assert.equal(scripts.graph, undefined, "no depcruise script without dependency-cruiser");
+      assert.equal(scripts.dead, undefined, "no knip script without knip");
+      assert.match(r.out, /not added, its tool not installed: .*graph.*dead/);
+      assert.ok(scripts.gate, "a script needing nothing new is still added");
+    },
+  },
+  {
     report: "monorepo · 2026-10-03 · rc.2 doctor, bun and k6",
     claim: "a runtime's own module is not a package to add; an undeclared package still is",
     run: () => {
@@ -529,3 +632,25 @@ function designAdopter() {
 }
 
 for (const c of CASES) test(`${c.report}: ${c.claim}`, c.run);
+
+/** A React and Vite package indented with tabs, on the full standard, with no graph or dead-code tool. @param {string} name */
+function viteTabs(name) {
+  return tempRepo(name, {
+    "package.json":
+      [
+        "{",
+        '\t"name": "web",',
+        '\t"type": "module",',
+        '\t"scripts": {',
+        '\t\t"test": "vitest run"',
+        "\t},",
+        '\t"devDependencies": {',
+        '\t\t"react": "19.0.0",',
+        '\t\t"vite": "8.0.0",',
+        '\t\t"vitest": "3.0.0"',
+        "\t}",
+        "}",
+      ].join("\n") + "\n",
+    "abatty.config.json": JSON.stringify({ profiles: ["synovitec"] }),
+  });
+}

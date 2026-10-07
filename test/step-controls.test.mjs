@@ -68,7 +68,10 @@ test("every step has a control that means something; planted, run, removed: a st
   const by = Object.fromEntries(r.steps.map((s) => [s.label.replace(/ \(.*/, ""), s]));
   assert.equal(by["lint"]?.outcome, "red", JSON.stringify(by["lint"]));
   assert.equal(by["typecheck"]?.outcome, "green", "a typecheck that checks nothing is absent");
-  assert.match(by["typecheck"]?.detail || "", /stayed GREEN on a type error: the check is absent/);
+  assert.match(
+    by["typecheck"]?.detail || "",
+    /stayed GREEN on a type error \(planted at [^)]+\): the check is absent/,
+  );
   assert.equal(by["unit tests"]?.outcome, "skipped");
   assert.equal(by["import graph"]?.outcome, "skipped", "no config");
   assert.equal(by["format"]?.outcome, "red", "prettier --check on an unformatted file");

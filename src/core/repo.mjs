@@ -21,7 +21,11 @@ export function readJsonFile(dir, rel) {
 export function writeJsonFile(dir, rel, value) {
   const p = join(dir, rel);
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, formatJson(value, printWidth(dir)));
+  // The file's own indentation kept: a repository formatting with tabs had its package.json
+  // rewritten with two spaces by an update that only added scripts.
+  const before = existsSync(p) ? readFileSync(p, "utf8") : "";
+  const unit = /^\t/m.test(before) && !/^ {2}"/m.test(before) ? "\t" : "  ";
+  writeFileSync(p, formatJson(value, printWidth(dir), unit));
 }
 
 /**
@@ -54,9 +58,9 @@ export function printWidth(dir) {
  * baseline in .prettierignore. Objects are expanded (the formatter keeps an expanded object as
  * it is); an array of plain values goes on one line when the line fits the width, one value per
  * line otherwise, which is what the formatter does and what JSON.stringify never does.
- * @param {unknown} value @param {number} [width]
+ * @param {unknown} value @param {number} [width] @param {string} [unit] one level of indentation
  */
-export function formatJson(value, width = 80) {
+export function formatJson(value, width = 80, unit = "  ") {
   /** @param {unknown} v @param {string} indent @param {number} used columns before the value @returns {string} */
   const fmt = (v, indent, used) => {
     if (Array.isArray(v)) {
@@ -66,13 +70,13 @@ export function formatJson(value, width = 80) {
         // the comma after the value counts toward the line, as the formatter measures it
         if (used + inline.length + 1 <= width) return inline;
       }
-      const inner = indent + "  ";
+      const inner = indent + unit;
       return `[\n${v.map((x) => inner + fmt(x, inner, inner.length)).join(",\n")}\n${indent}]`;
     }
     if (v && typeof v === "object") {
       const entries = Object.entries(v).filter(([, x]) => x !== undefined);
       if (!entries.length) return "{}";
-      const inner = indent + "  ";
+      const inner = indent + unit;
       return `{\n${entries
         .map(([k, x]) => {
           const head = `${inner}${JSON.stringify(k)}: `;

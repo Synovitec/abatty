@@ -32,6 +32,7 @@ import { CONFIG_FILE, LEGACY_CONFIG, readJsonFile, readPackage, writeJsonFile } 
 import { presetRules } from "../presets/index.mjs";
 import { ruleFacts } from "./rule-facts.mjs";
 import { localToday } from "./today.mjs";
+import { scriptsWaitingForTools } from "./script-tools.mjs";
 
 /** The harness lock: what is installed in THIS repository and at which version, not what the package ships. */
 export const LOCK = ".claude/harness.lock.json";
@@ -360,7 +361,12 @@ export function updateRepo(o) {
     const missing = Object.entries(
       runnableScripts(repoDir, scopedTools(initScope(repoDir, {}), repoDir, preset).scripts),
     ).filter(([k]) => !(k in scripts));
-    const added = missing.filter(([k]) => required.has(k) || !offered.has(k));
+    // A script whose tool is not installed is left out and named (script-tools.mjs).
+    const wait = scriptsWaitingForTools(missing, { ...pkg.dependencies, ...pkg.devDependencies });
+    const uninstalled = wait.waiting;
+    const added = missing.filter(
+      ([k, v]) => (required.has(k) || !offered.has(k)) && !uninstalled.some(([u]) => u === k),
+    );
     const declined = missing.filter(([k]) => !required.has(k) && offered.has(k)).map(([k]) => k);
     for (const [k, v] of added) scripts[k] = v;
     // A lock from before the list is read as "all offered", which is an inference: said as one,
@@ -375,9 +381,18 @@ export function updateRepo(o) {
       events.push({
         file: "package.json",
         action: "merged",
-        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept].filter(Boolean).join("; "),
+        detail: [`added ${added.map(([k]) => k).join(", ")}`, kept, wait.says]
+          .filter(Boolean)
+          .join("; "),
       });
-    } else events.push({ file: "package.json", action: "in step", ...(kept && { detail: kept }) });
+    } else {
+      const said = [kept, wait.says].filter(Boolean).join("; ");
+      events.push({
+        file: "package.json",
+        action: uninstalled.length ? "kept" : "in step",
+        ...(said && { detail: said }),
+      });
+    }
   }
   if (!dryRun) writeLock(repoDir, preset, version);
   return {

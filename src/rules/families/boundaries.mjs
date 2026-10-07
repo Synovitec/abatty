@@ -6,6 +6,7 @@
 import { BOUNDARY, SOURCES } from "../applies.mjs";
 import { probeFindings } from "../probe-count.mjs";
 import { matchesAny, regexes } from "../../ratchet/probes/lib.mjs";
+import { SAFE_INSTANT } from "../../ratchet/probes/code.mjs";
 
 /** @type {import("../index.mjs").Rule[]} */
 export const rules = [
@@ -85,10 +86,16 @@ export const rules = [
         new RegExp("\\.to(?:ISO|JSON)String\\(\\)\\s*" + "\\.split\\(\\s*[\"'`]T[\"'`]"),
         new RegExp("utcnow\\(\\)\\s*" + "\\.(?:date|strftime)\\("),
       ];
-      const hits = c.sourceFiles.flatMap((f) => {
-        const text = c.read(f);
-        return forms.some((re) => re.test(text)) ? [f] : [];
-      });
+      // A day taken off an instant built for it (Date.UTC, a noon anchor) on the same line is not
+      // the bug, as valid.utcDay already reads it: a calendar computed in UTC on purpose was flagged.
+      const offends = (/** @type {string} */ text) =>
+        forms.some((re) =>
+          [...text.matchAll(new RegExp(re.source, "g"))].some(
+            (m) =>
+              !SAFE_INSTANT.test(text.slice(text.lastIndexOf("\n", m.index ?? 0) + 1, m.index)),
+          ),
+        );
+      const hits = c.sourceFiles.flatMap((f) => (offends(c.read(f)) ? [f] : []));
       return {
         status: hits.length ? "missing" : "present",
         evidence: hits.length

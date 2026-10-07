@@ -5,7 +5,64 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-07
+
+The first final release since 0.6.1, now under `latest` (`npm i -D abatty`). It is 0.8.0-rc.4 plus
+what its replays on a JavaScript React and Node product and a Next and Prisma product found:
+`prove` judges a JavaScript repository with JavaScript plants, carries the code a repository
+generates into its copy, cleans up after an interrupted run and says what it runs; `update` keeps
+`package.json` in its own form and adds no script whose tool is missing; and four false findings
+are gone. No config key, command or `--json` field moves, so upgrading from rc.4 needs nothing.
+
 ### Fixed
+
+- **`config --migrate` keeps the old file while old hooks still read it.** It moved
+  `.claude/adoption.json` to `abatty.config.json` while the installed hooks still read the old
+  path, so `directPushToBase: false` and the rest fell back to their defaults until `update`'s
+  merges were done. Where the installed hooks predate the root file, the old file is now kept
+  beside the new one, and the command says to remove it once `update` has installed hooks that
+  read the root file.
+
+- **The lint hint names `.abatty/` too.** An eslint flat config does not read `.gitignore`, and an
+  adopter's lint counted sixty errors in the template copies `update` keeps under
+  `.abatty/harness/`. Where those copies exist, `init` and `doctor` now give the ignores line for
+  `.abatty/**` beside `.claude/**`.
+
+- **`update` writes `package.json` in its own form, and only scripts that can run.** It rewrote a
+  tab-indented manifest with two spaces, and added `graph` and `dead` scripts while neither
+  dependency-cruiser nor knip was installed, so the next gate failed. A JSON file abatty writes now
+  keeps its indentation, and `update` leaves out a script whose tool is not a dependency, naming
+  the install it waits for.
+
+- **OBS-CONSOLE no longer counts a server's command-line scripts.** 217 of an adopter's 248
+  console calls were in `server/scripts/`, tools whose job is to print, and others were in the
+  logger itself. Scripts (`scripts/`, `bin/`, `cli/`) and the logger module are now passed over;
+  a console call in a route or a worker still counts.
+
+- **VALID-LOCAL-DAY passes a calendar computed in UTC on purpose.** A day taken off an instant
+  built with `Date.UTC(...)` (fields in, fields out, no time zone) was flagged; the rule now
+  reads it as `valid.utcDay` already did, and still flags a day taken off the current instant.
+
+- **`doctor` no longer reads a method named `import` as a package.** `Quill.import('delta')` was
+  reported as an import of an undeclared package named `delta`; a call on an object
+  (`x.import(...)`, `x.require(...)`) is no module load.
+
+- **`prove` tells timeouts and abatty's own scan apart.** A clean run whose only failures are
+  timeouts (four tests a scanner slowed on a fresh copy, all passing in the repository) now says
+  so instead of reading as a broken suite. abatty's own secret scan, red on what the tree already
+  holds, is said on a line of its own and no longer counted among the repository's checks that
+  could not be judged. A failing test is read under a Windows short-name folder
+  (`RUNNER~1`) and, in Node's TAP output, under a folder with a space in its name.
+
+- **`prove` no longer calls a JavaScript repository's working checks absent.** On a React and Node
+  repository written in JavaScript and type-checked through `checkJs`, `prove` reported lint,
+  typecheck, dead code and the ratchet as absent: each plant was a `.ts` file those tools never
+  read, because a tsconfig existed and its include named `types/*.d.ts`. A plant's language now
+  comes from the repository's own sources (a declaration file is not one), the type-error plant
+  follows the include pattern that reaches the plant's folder, and a `.js` plant carries a JSDoc
+  type rather than TypeScript syntax. A repository with no source yet where the plant goes, such
+  as a fresh TypeScript package, takes its tsconfig's word. A check that stays green now says
+  where its plant was.
 
 - **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
   terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,

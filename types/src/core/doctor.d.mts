@@ -69,6 +69,7 @@ export function doctor(o: {
     harnessLint: {
         config: string;
         line: string;
+        folders: string[];
     } | null;
     ci: {
         state: "gate" | "fast" | "no-gate" | "none";

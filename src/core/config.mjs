@@ -116,12 +116,30 @@ export function migrateConfig(repoDir, o = {}) {
   const root = readJsonFile(repoDir, CONFIG_FILE) || {};
   const merged = { $schema: SCHEMA_URL, ...legacy, ...root };
   delete merged.$comment;
+  // Hooks installed before the root file existed read the old path only: removing it made
+  // directPushToBase and the rest fall back to their defaults until update's merges were done.
+  // The old file is kept while they are installed, and said to be.
+  const oldHooks = installedHooksReadLegacy(repoDir);
   if (!o.dryRun) {
     writeJsonFile(repoDir, CONFIG_FILE, merged);
-    rmSync(join(repoDir, LEGACY_CONFIG));
+    if (!oldHooks) rmSync(join(repoDir, LEGACY_CONFIG));
   }
+  const over =
+    root && Object.keys(root).length ? " (merged over the root file, its values kept)" : "";
   return {
     moved: true,
-    reason: `${LEGACY_CONFIG} → ${CONFIG_FILE}${root && Object.keys(root).length ? " (merged over the root file, its values kept)" : ""}; commit both, the hooks read the root file from here on`,
+    reason: oldHooks
+      ? `${LEGACY_CONFIG} copied to ${CONFIG_FILE}${over} and kept: the installed hooks still read it. Run abatty update to install hooks that read the root file, then remove ${LEGACY_CONFIG}`
+      : `${LEGACY_CONFIG} → ${CONFIG_FILE}${over}; commit both, the hooks read the root file from here on`,
   };
+}
+
+/**
+ * Whether the hooks installed here read only the old config path: a harness from before the root
+ * file, whose lib.mjs never names it. False where no harness is installed.
+ * @param {string} repoDir @returns {boolean}
+ */
+function installedHooksReadLegacy(repoDir) {
+  const lib = join(repoDir, ".claude", "hooks", "lib.mjs");
+  return existsSync(lib) && !readFileSync(lib, "utf8").includes(CONFIG_FILE);
 }

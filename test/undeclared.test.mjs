@@ -43,3 +43,16 @@ test("builtins, virtual modules, aliases, workspaces, strings and comments are n
   });
   assert.deepEqual(undeclaredImports(dir), []);
 });
+
+test("a method named import or require is no module load; the real forms still are", () => {
+  // A rich-text editor's Quill.import('delta') was read as an import of a package named delta.
+  const dir = tempRepo("undeclared-method", {
+    "package.json": JSON.stringify({ name: "p" }),
+    "src/editor.js":
+      "const Delta = Quill.import('delta');\nconst x = registry.require('blots');\nconst z = await import('zod');\n",
+  });
+  assert.deepEqual(
+    undeclaredImports(dir).map((u) => u.name),
+    ["zod"],
+  );
+});
