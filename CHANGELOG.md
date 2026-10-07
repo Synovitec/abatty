@@ -5,6 +5,13 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Added
+
+- **An icon, and a badge for the README.** The icon (a grown-up holding a child's hand, with a
+  green check) opens the README, and `docs/assets/badge.svg` is a "checks proven" badge a
+  repository can show once `npx abatty prove` reports that every check went red on its planted
+  violation. The README says what the badge claims: what `prove` reported the day it ran.
+
 ### Changed
 
 - **No other repository is named.** The presets, the lessons, the research notes, the docs and
