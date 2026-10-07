@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A push from a git worktree can no longer write into the repository through its tests.** A
+  pre-push hook run from a linked worktree exports an absolute `GIT_DIR`, and every gate step
+  inherited it: a test suite that made a fixture repository with `git init` wrote into the real
+  one instead, turning its config bare and rewriting its main branch. The gate now drops git's
+  per-repository variables when they only repeat the repository the folder already is; set on
+  purpose to name another repository, they stay.
+
 ## [0.8.0] - 2026-10-07
 
 The first final release since 0.6.1, now under `latest` (`npm i -D abatty`). It is 0.8.0-rc.4 plus

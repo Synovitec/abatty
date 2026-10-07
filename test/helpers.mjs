@@ -3,12 +3,16 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { localToday } from "../src/core/today.mjs";
+import { GIT_REPO_VARS } from "../src/core/env.mjs";
 
 // The suite is hermetic: the harness a developer installed in THIS repository exports
 // ADOPTION_CONFIG for every child process, and inherited into a fixture it points the hooks at a
 // file that is not there, so they run on defaults and the checks that read the config find
 // nothing. Every test file imports this one, so clearing it here clears it for all of them.
 delete process.env.ADOPTION_CONFIG;
+// The same for git's own: a pre-push hook run from a linked worktree exports an absolute GIT_DIR,
+// and every fixture's `git init` and commit went into this repository instead of its own.
+for (const k of GIT_REPO_VARS) delete process.env[k];
 
 // Every fixture is removed when the test process ends: they were left in the temp folder, about
 // 750 a run, and a contributor machine held 126,103 of them. Kept with ABATTY_KEEP_FIXTURES=1
