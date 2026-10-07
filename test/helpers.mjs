@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { localToday } from "../src/core/today.mjs";
-import { GIT_REPO_VARS } from "../src/core/git-env.mjs";
+import { GIT_REPO_VARS } from "../src/core/env.mjs";
 
 // The suite is hermetic: the harness a developer installed in THIS repository exports
 // ADOPTION_CONFIG for every child process, and inherited into a fixture it points the hooks at a

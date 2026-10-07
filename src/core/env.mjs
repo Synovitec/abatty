@@ -76,6 +76,45 @@ export function testRunEnv() {
   return env;
 }
 
+/**
+ * Git's per-repository variables, what `git rev-parse --local-env-vars` lists: a hook exports
+ * some of them, and a child that inherits them works on that repository wherever it runs.
+ */
+export const GIT_REPO_VARS = [
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_CONFIG",
+  "GIT_CONFIG_PARAMETERS",
+  "GIT_CONFIG_COUNT",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_IMPLICIT_WORK_TREE",
+  "GIT_GRAFT_FILE",
+  "GIT_INDEX_FILE",
+  "GIT_NO_REPLACE_OBJECTS",
+  "GIT_REPLACE_REF_BASE",
+  "GIT_PREFIX",
+  "GIT_SHALLOW_FILE",
+  "GIT_COMMON_DIR",
+];
+
+/** Whether this process was given any of git's per-repository variables. */
+export function gitRepoVarsSet() {
+  return GIT_REPO_VARS.some((k) => process.env[k] !== undefined);
+}
+
+/** This process's environment without git's per-repository variables: what git finds from a folder alone. */
+export function envWithoutGitRepoVars() {
+  const env = { ...process.env };
+  for (const k of GIT_REPO_VARS) delete env[k];
+  return env;
+}
+
+/** Drops git's per-repository variables from this process, so no child inherits them. */
+export function dropGitRepoVars() {
+  for (const k of GIT_REPO_VARS) delete process.env[k];
+}
+
 /** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
 export function envNames() {
   return Object.keys(process.env);

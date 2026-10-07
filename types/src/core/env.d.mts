@@ -50,6 +50,14 @@ export function childEnv(extra: Record<string, string>): NodeJS.ProcessEnv | und
  * @returns {NodeJS.ProcessEnv}
  */
 export function testRunEnv(): NodeJS.ProcessEnv;
+/** Whether this process was given any of git's per-repository variables. */
+export function gitRepoVarsSet(): boolean;
+/** This process's environment without git's per-repository variables: what git finds from a folder alone. */
+export function envWithoutGitRepoVars(): {
+    [key: string]: string | undefined;
+};
+/** Drops git's per-repository variables from this process, so no child inherits them. */
+export function dropGitRepoVars(): void;
 /** The names of the variables this process was given, never their values: what a check of "is it set" needs. */
 export function envNames(): string[];
 /** The port the service listens on when none is given, or "". */
@@ -67,3 +75,8 @@ export function pinSaidFromEnv(): boolean;
  * @param {string} [given] the value a caller passes instead of this process's
  */
 export function nodeEnvLine(given?: string): string;
+/**
+ * Git's per-repository variables, what `git rev-parse --local-env-vars` lists: a hook exports
+ * some of them, and a child that inherits them works on that repository wherever it runs.
+ */
+export const GIT_REPO_VARS: string[];
