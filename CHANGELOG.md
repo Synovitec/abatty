@@ -5,6 +5,14 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **The README shows what `prove` has found before what it is.** Four checks that were green in
+  CI the day they were found (a lint that lints nothing, a browser suite that never ran, a suite
+  that never ran on Node 20, an agent allowed to read `.env.prod`), a section on holding a coding
+  agent to the same gate, and a one-line way to try it. The note on what `prove` runs moved under
+  the quick start, where it answers "is it safe to run?".
+
 ## [0.8.0] - 2026-10-07
 
 The first final release since 0.6.1, now under `latest` (`npm i -D abatty`). It is 0.8.0-rc.4 plus

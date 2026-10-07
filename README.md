@@ -25,9 +25,29 @@ The test script there is `node --test || true`: the tests run, and CI stays gree
 say. `prove` copies the repository, plants one violation per check, runs the check, and tells you
 which ones never go red. Nothing is written in your repository and nothing needs setting up.
 
-`prove` runs your repository's own scripts, with your environment and your local `.env` files,
-as running its tests does: the copy protects your working tree, it is not a sandbox. Run it on a
-repository whose tests you would run.
+**Try it on your repository now, in under a minute:** `npx abatty prove`
+
+## What it has found
+
+Every one of these was green in CI the day it was found:
+
+- **A lint that lints nothing.** A monorepo's root lint passed while fourteen of its workspaces
+  had `"lint": "echo 'lint deferred' && exit 0"`.
+- **A browser suite that never ran.** A Next app in a workspace matched none of the suite's
+  paths, so every push skipped it. Its first full run found 25 real page errors.
+- **Its own test suite, on the oldest Node it supports.** `node --test "test/*.test.mjs"` expands
+  the glob only from Node 21, so on Node 20 the runner found no file and the suite had never run.
+- **A coding agent allowed to read `.env.prod`.** A deny rule narrowed to eight named env files
+  left `.env.staging`, `.env.prod` and every backup readable by the agent, and every check stayed
+  green.
+
+## Built for code an agent writes too
+
+A coding agent told to make CI green has two ways to do it: fix the code, or weaken the check.
+`abatty` holds the agent to the same gate as a person (the pre-push hook, CI, and the agent's own
+stop check run one implementation), refuses a change that raises a debt number, and proves that
+each check still goes red. A guard switched off does not go unnoticed: the next `prove` plants
+its violation, sees it stay green, and reports it as absent.
 
 ## What it is
 
@@ -75,6 +95,10 @@ the tools it names, sets the hooks and records today's numbers as the floor, so 
 blocks a push and new debt always does. The package reads no credential and installs nothing you
 did not ask for. [How it works](docs/HOW_IT_WORKS.md) has what each file is for, the gate's order,
 the ratchet's rules and how every guard is proven.
+
+**Is `prove` safe to run?** It writes nothing in your repository, but it runs the repository's own
+scripts, with your environment and your local `.env` files, as running its tests does: the copy
+protects your working tree, it is not a sandbox. Run it on a repository whose tests you would run.
 
 ## Already built in
 
