@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/Synovitec/abatty/main/docs/assets/abatty.svg" width="96" height="96" alt="Abatty"></p>
+
 # abatty
 
 [![npm](https://img.shields.io/npm/v/abatty.svg)](https://www.npmjs.com/package/abatty)
@@ -99,6 +101,20 @@ the ratchet's rules and how every guard is proven.
 **Is `prove` safe to run?** It writes nothing in your repository, but it runs the repository's own
 scripts, with your environment and your local `.env` files, as running its tests does: the copy
 protects your working tree, it is not a sandbox. Run it on a repository whose tests you would run.
+
+## Proven your checks? Say so
+
+When `npx abatty prove` reports that every one of your checks went red on its planted violation
+and green again without it, your README can say so:
+
+[![abatty: checks proven](https://raw.githubusercontent.com/Synovitec/abatty/main/docs/assets/badge.svg)](https://github.com/Synovitec/abatty)
+
+```md
+[![abatty: checks proven](https://raw.githubusercontent.com/Synovitec/abatty/main/docs/assets/badge.svg)](https://github.com/Synovitec/abatty)
+```
+
+The badge is a claim you make, not one it checks again: it says what `prove` reported the day
+you ran it. Run `prove` again when a check changes.
 
 ## Already built in
 
