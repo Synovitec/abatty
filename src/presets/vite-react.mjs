@@ -12,7 +12,8 @@ import { CHANGED_COVERAGE } from "./steps.mjs";
 export const viteReact = {
   id: "vite-react",
   name: "React + Vite (client) with a Node server",
-  proven: "a production Vite and React app, 2026-09-13 (instrument and harness; graph and dead code pending)",
+  proven:
+    "a production Vite and React app, 2026-09-13 (instrument and harness; graph and dead code pending)",
   detect: (deps) => deps.has("vite") && deps.has("react") && !deps.has("next"),
   adoption: {
     commands: {
