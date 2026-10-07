@@ -5,6 +5,8 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-07
+
 ### Added
 
 - **An icon, and a badge for the README.** The icon (a grown-up holding a child's hand, with a
