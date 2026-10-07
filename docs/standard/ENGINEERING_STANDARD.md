@@ -17,7 +17,7 @@ related:
     "../README.md",
   ]
 scope: synovitec
-last_verified: "2026-09-24"
+last_verified: "2026-10-07"
 source_truth:
   - "./research/*.md"
   - "./guides/*.md"
