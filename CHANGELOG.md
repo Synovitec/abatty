@@ -5,6 +5,15 @@ under Unreleased in the same commit.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-07
+
+The first final release since 0.6.1, now under `latest` (`npm i -D abatty`). It is 0.8.0-rc.4 plus
+what its replays on a JavaScript React and Node product and a Next and Prisma product found:
+`prove` judges a JavaScript repository with JavaScript plants, carries the code a repository
+generates into its copy, cleans up after an interrupted run and says what it runs; `update` keeps
+`package.json` in its own form and adds no script whose tool is missing; and four false findings
+are gone. No config key, command or `--json` field moves, so upgrading from rc.4 needs nothing.
+
 ### Fixed
 
 - **`config --migrate` keeps the old file while old hooks still read it.** It moved
@@ -51,8 +60,6 @@ under Unreleased in the same commit.
   comes from the repository's own sources (a declaration file is not one), the type-error plant
   follows the include pattern that reaches the plant's folder, and a `.js` plant carries a JSDoc
   type rather than TypeScript syntax. A check that stays green now says where its plant was.
-
-### Fixed
 
 - **`prove` clears what an interrupted run left.** A run stopped before its cleanup (a closed
   terminal, a tool's time limit) left its copy in the temporary folder, 49 MB on a monorepo,
