@@ -147,7 +147,7 @@ export function tamperIn(git, range) {
   );
   // Netted over the range: a case removed in one commit and put back in the next, or a skip
   // added and taken out, is not a way out the push took. Each commit's finding stands only when
-  // the range as a whole still shows that kind in that file (Hygio counted a restore as tamper).
+  // the range as a whole still shows that kind in that file (an adopter counted a restore as tamper).
   const base = range.includes("...") ? range : range.replace("..", "...");
   const whole = waysOut(
     "",

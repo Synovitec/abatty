@@ -178,7 +178,7 @@ test("a TypeScript library is not read as JavaScript for the tool configs at its
 });
 
 test("the rules a lint configuration imports are its rules: a shared config package and a relative module", () => {
-  // Hygio's root config was one line importing `@acme/eslint-config` from a workspace package,
+  // An adopter's root config was one line importing `@acme/eslint-config` from a workspace package,
   // and every rule that reads the configuration read missing.
   const shared = read("lint-shared-package", {
     ...SERVICE,

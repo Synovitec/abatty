@@ -12,7 +12,7 @@ last_verified: "2026-09-13"
 
 # Research cluster 3: UI, components, accessibility, i18n (2025-2026 practice)
 
-Read against `ops-hub/engineering/ENGINEERING_STANDARD.md` (sections 3 Code rules, 6 Product surface rules, 8 Lessons catalogue, 9 What may differ). Sources are official docs first; a blog is used only from a recognized authority, dated/versioned where it matters.
+Read against `ENGINEERING_STANDARD.md` (sections 3 Code rules, 6 Product surface rules, 8 Lessons catalogue, 9 What may differ). Sources are official docs first; a blog is used only from a recognized authority, dated/versioned where it matters.
 
 ## Topic 1 - React 19 component architecture
 
@@ -146,7 +146,7 @@ Read against `ops-hub/engineering/ENGINEERING_STANDARD.md` (sections 3 Code rule
 - Add React 19 compiler memoization guidance: stop reaching for `useMemo`/`useCallback`/`React.memo` by default; the two real exceptions are code inside `try/catch` and libraries that depend on referential equality. Prevents both "over-memoized" and "under-memoized" review disputes on any repo running React 19.
 - Add an ICU/CLDR plural rule to I18N.1: forbid a naive `count === 1 ? x : y` ternary and require ICU MessageFormat plural branches with a mandatory `other` case. The standard already requires "no markup in catalogue value" and complete locale keys, but says nothing about plural correctness, a distinct and common defect class in a genuinely multi-language platform.
 - Add RTL readiness to I18N.2 (CSS logical properties, a single `dir`-driven stylesheet) - the English-floor fallback rule says nothing about layout direction, and a platform that accepts "any ISO 639-1 code" will eventually serve an RTL language.
-- Promote the Web Push permission-vs-subscription distinction, and the silent-breakage-on-VAPID-key-rotation lesson, into PWA.1 itself and into the §8 lessons catalogue. Both are currently recorded only in one repository's own CLAUDE.md ("nothing reports an error" on rotation) - exactly the kind of hard-won, cross-stack-relevant, silently-failing lesson the standard's own §9 promotion rule ("updated when the third repository makes the same deviation") and P.1 ("a guard nobody has watched fail") exist to absorb, and it is confirmed as a universal MDN-documented API behavior, not an ecomm-specific quirk.
+- Promote the Web Push permission-vs-subscription distinction, and the silent-breakage-on-VAPID-key-rotation lesson, into PWA.1 itself and into the §8 lessons catalogue. Both are currently recorded only in one repository's own CLAUDE.md ("nothing reports an error" on rotation) - exactly the kind of hard-won, cross-stack-relevant, silently-failing lesson the standard's own §9 promotion rule ("updated when the third repository makes the same deviation") and P.1 ("a guard nobody has watched fail") exist to absorb, and it is confirmed as a universal MDN-documented API behavior, not an an e-commerce app-specific quirk.
 - Add mobile viewport-unit guidance (`100svh` vs `100dvh`, and never animating toward `100dvh`) to UI.1/PWA.1 for any phone-first surface - currently unaddressed, and adjacent to but distinct from the "never serve a stale shell" lesson PWA.1 already encodes.
 - Note in PWA.1 (or its rationale) that Lighthouse's PWA category and installability audit have been removed/changed as of the current criteria, so any future PWA gate should target Chrome's installability documentation directly rather than a Lighthouse PWA score that no longer exists in its old form.
 

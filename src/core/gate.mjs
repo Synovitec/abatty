@@ -1,6 +1,6 @@
 /**
  * The gate: everything that must hold before a push, in one place, driven by the preset.
- * Ported from the gate paycore_dms proved (scripts/ci/gate.mjs, 2026-09): one implementation
+ * Ported from the gate a production Next app proved (scripts/ci/gate.mjs, 2026-09): one implementation
  * called by `.githooks/pre-push`, `npm run gate` and the night's Stop hook.
  *
  * PATH-AWARE ON PURPOSE. The always-on set runs in about two minutes. The expensive suites run

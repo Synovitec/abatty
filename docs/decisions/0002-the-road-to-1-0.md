@@ -46,8 +46,9 @@ The instruments for a promise now exist:
    A change to a surface still rewrites the contract snapshot and is named under Upgrading.
 
 3. **1.0 covers the `node` and `next` presets only.** `astro`, `python` and `docs` stay
-   experimental, outside the promise, until a named repository runs each. A preset names its
-   repository and the date only once the repository's owner confirms it (CLAUDE.md §1.4).
+   experimental, outside the promise, until a real repository runs each. A preset says what kind of
+   repository proved it and the date, only once the repository's owner confirms it, and never
+   its name (CLAUDE.md §1.4).
 4. **The promise is made when the evidence says so:**
    - the contract snapshot unchanged across two consecutive minors;
    - two consecutive candidates replayed with no must-level miss;
@@ -67,7 +68,7 @@ and lands in a pull request of its own, so it can be declined without touching a
 
 - **2026-10-03 · `init --apply`** (a flag on an existing command; proposed). The adopters'
   first hour was the steps `init` leaves by hand, typed one at a time, and a step typed wrong was
-  the first red they met (Tocoda's report of 2026-10-02, item 6). That is install friction, not
+  the first red they met (an adopter's report of 2026-10-02, item 6). That is install friction, not
   a miss the freeze lists. The flag takes the steps a machine can take safely (the dependency
   install, the executable bits, the hooks, the ratchet's first floor) and stops at the first
   that fails; the rest stay by hand. It adds no config key, probe or output field, the contract
